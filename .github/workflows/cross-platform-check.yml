@@ -28,7 +28,7 @@ jobs:
         uses: pnpm/action-setup@v6
 
       - name: Install Node.js
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@v7
         with:
           # Use the current LTS release so local and CI builds share a stable
           # runtime rather than adopting a Current release early.
