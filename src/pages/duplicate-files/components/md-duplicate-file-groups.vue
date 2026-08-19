@@ -32,19 +32,25 @@ import { RenderBatchUtils } from '@/lib/utils/render-batch';
 
 const { locale, t } = useI18n({ useScope: 'global' });
 
-const props = defineProps<{
-  scanId: number;
-  category: FileCategoryId;
-  groups: DuplicateGroup[];
-  keeperRule: DuplicateKeeperRuleId;
-  selectedPaths: string[];
-  selectionDisabled: boolean;
-  openDisabled: boolean;
-  deleteDisabled: boolean;
-  hasMore: boolean;
-  loadingMore: boolean;
-  remainingGroupCount: number;
-}>();
+const props = withDefaults(
+  defineProps<{
+    scanId: number;
+    category: FileCategoryId;
+    groups: DuplicateGroup[];
+    keeperRule: DuplicateKeeperRuleId;
+    selectedPaths: string[];
+    aiRecommendedPaths?: string[];
+    selectionDisabled: boolean;
+    openDisabled: boolean;
+    deleteDisabled: boolean;
+    hasMore: boolean;
+    loadingMore: boolean;
+    remainingGroupCount: number;
+  }>(),
+  {
+    aiRecommendedPaths: () => [],
+  }
+);
 const emit = defineEmits<{
   openEntry: [entry: DuplicateFileEntry];
   reveal: [path: string];
@@ -56,6 +62,7 @@ const emit = defineEmits<{
 const groupsScroll = ref<InstanceType<typeof MdResultTable> | null>(null);
 const collapsedGroupIds = ref<ReadonlySet<string>>(new Set());
 const selectedPathSet = computed(() => new Set(props.selectedPaths));
+const aiRecommendedPathSet = computed(() => new Set(props.aiRecommendedPaths));
 const keeperPathByGroup = computed(
   () =>
     new Map(
@@ -304,6 +311,14 @@ function loadMoreGroups() {
               <span class="member-path">
                 <MdMiddleEllipsis :text="PathUtils.display(entry.path)" :tail-length="32" />
               </span>
+              <span
+                v-if="aiRecommendedPathSet.has(entry.path)"
+                class="ai-badge"
+                :title="t('duplicateFiles.aiAdvisorBadge')"
+              >
+                <MdIcon :name="ICON_NAMES.smartSelect" :size="11" />
+                <span>{{ t('duplicateFiles.aiAdvisorBadge') }}</span>
+              </span>
               <span class="member-actions">
                 <MdResultRowAction
                   variant="ghost"
@@ -523,12 +538,26 @@ function loadMoreGroups() {
   transition: opacity 0.14s ease;
 }
 
+.ai-badge {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 3px;
+  border-radius: var(--radius-sm);
+  padding: 1px 6px;
+  margin-left: 6px;
+  font-size: var(--font-content-meta);
+  font-weight: 500;
+  line-height: 1.3;
+  @apply border border-primary/20 bg-primary/10 text-primary;
+}
+
 .member-row:is(:hover, :has(:focus-visible)) .member-actions {
   opacity: 1;
   pointer-events: auto;
 }
 
-.member-row:is(:hover, :has(:focus-visible)) .member-path {
+.member-row:is(:hover, :has(:focus-visible)) .member-primary {
   padding-right: 64px;
 }
 

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import {
   DropdownMenuContent,
+  DropdownMenuItem,
   DropdownMenuItemIndicator,
   DropdownMenuLabel,
   DropdownMenuPortal,
@@ -22,11 +23,13 @@ defineProps<{
   keeperRule: DuplicateKeeperRuleId;
   selectedCount: number;
   disabled: boolean;
+  analyzing?: boolean;
 }>();
 
 const emit = defineEmits<{
   toggle: [];
   selectRule: [rule: DuplicateKeeperRuleId];
+  aiSelect: [];
 }>();
 
 const { t } = useI18n({ useScope: 'global' });
@@ -41,7 +44,7 @@ function selectRule(value: unknown) {
 <template>
   <div
     class="smart-select-split"
-    :data-active="selectedCount > 0"
+    :data-active="selectedCount > 0 || analyzing"
     role="group"
     :aria-label="t('duplicateFiles.smartSelect')"
   >
@@ -50,12 +53,14 @@ function selectRule(value: unknown) {
       size="sm"
       variant="ghost"
       type="button"
-      :disabled="disabled"
+      :disabled="disabled || analyzing"
       @click="emit('toggle')"
     >
-      <MdIcon :name="selectedCount ? ICON_NAMES.close : ICON_NAMES.smartSelect" :size="14" />
-      <span>{{ t(selectedCount ? 'duplicateFiles.clearSelection' : 'duplicateFiles.smartSelect') }}</span>
-      <small v-if="selectedCount">{{ FormatUtils.integer(selectedCount) }}</small>
+      <MdIcon v-if="analyzing" class="icon-spin" :name="ICON_NAMES.refresh" :size="14" />
+      <MdIcon v-else :name="selectedCount ? ICON_NAMES.close : ICON_NAMES.smartSelect" :size="14" />
+      <span v-if="analyzing">{{ t('largeFiles.selectionMode.analyzing') }}</span>
+      <span v-else>{{ t(selectedCount ? 'duplicateFiles.clearSelection' : 'duplicateFiles.smartSelect') }}</span>
+      <small v-if="selectedCount && !analyzing">{{ FormatUtils.integer(selectedCount) }}</small>
     </Button>
 
     <DropdownMenuRoot>
@@ -65,7 +70,7 @@ function selectRule(value: unknown) {
           size="sm"
           variant="ghost"
           type="button"
-          :disabled="disabled"
+          :disabled="disabled || analyzing"
           :aria-label="t('duplicateFiles.smartSelectMenuLabel')"
         >
           <MdIcon :name="ICON_NAMES.chevronDown" :size="14" />
@@ -81,6 +86,16 @@ function selectRule(value: unknown) {
           <DropdownMenuLabel class="smart-select-menu-label">
             {{ t('duplicateFiles.smartSelectMenuLabel') }}
           </DropdownMenuLabel>
+          <DropdownMenuItem
+            class="smart-select-menu-item smart-select-ai-item cursor-pointer text-primary font-medium"
+            @select="emit('aiSelect')"
+          >
+            <span class="smart-select-check" aria-hidden="true">
+              <MdIcon :name="ICON_NAMES.smartSelect" :size="15" />
+            </span>
+            <span>{{ t('duplicateFiles.aiSelect') }}</span>
+          </DropdownMenuItem>
+          <DropdownMenuSeparator class="mx-1 my-1 h-px bg-border" />
           <DropdownMenuRadioGroup :model-value="keeperRule" @update:model-value="selectRule">
             <DropdownMenuRadioItem v-for="rule in keeperRules" :key="rule" :value="rule" class="smart-select-menu-item">
               <span class="smart-select-check" aria-hidden="true">
@@ -164,6 +179,10 @@ function selectRule(value: unknown) {
   padding: 8px;
   font-size: var(--font-content-secondary);
   outline: none;
+}
+
+.smart-select-ai-item {
+  @apply text-primary font-medium hover:bg-primary/10;
 }
 
 .smart-select-check {

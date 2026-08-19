@@ -22,7 +22,9 @@ import type { TraversalProgress } from '@/lib/models/progress';
 import { CleanupRuleSelectionUtils } from '@/lib/utils/cleanup-rule-selection';
 import type { CleanupSelectionMode } from '@/lib/utils/cleanup-rule-selection';
 import { ByteSizeService } from '@/lib/services/byte-size-service';
+import { AiAdvisorService } from '@/lib/services/ai-advisor-service';
 import { FormatUtils } from '@/lib/utils/format';
+import { useAppStore } from '@/stores/app-store';
 
 import { groupApplicationLeftovers, recommendedApplicationLeftoverIds } from './application-leftover-groups';
 import { selectedCleanupCloseRequirement } from './cleanup-close-requirement';
@@ -45,6 +47,7 @@ const MdOperationProgress = defineAsyncComponent(loadOperationProgress);
 const MdSelectionActionBar = defineAsyncComponent(loadSelectionActionBar);
 
 const { t } = useI18n({ useScope: 'global' });
+const appStore = useAppStore();
 
 const props = defineProps<{
   busy: boolean;
@@ -72,6 +75,7 @@ const emit = defineEmits<{
   scan: [deepProjectDiscovery: boolean];
   selectAll: [ruleIds: string[], selected: boolean];
   toggleSource: [ruleId: string, path: string];
+  error: [error: unknown];
 }>();
 
 const confirmOpen = ref(false);
@@ -85,6 +89,23 @@ const dialogCleanupResult = ref<PresentedCleanupResult | null>(null);
 const dialogLeftoverResult = ref<ApplicationLeftoverResult | null>(null);
 const currentScanIsDeep = ref(false);
 const selectedLeftoverIds = ref<string[]>([]);
+const aiAnalyzing = ref(false);
+const aiRecommendedRuleIds = ref<string[]>([]);
+let aiAbortController: AbortController | null = null;
+let aiStaggerTimer: ReturnType<typeof setTimeout> | null = null;
+
+function abortAiAnalysis() {
+  if (aiStaggerTimer !== null) {
+    clearTimeout(aiStaggerTimer);
+    aiStaggerTimer = null;
+  }
+  if (aiAbortController) {
+    aiAbortController.abort();
+    aiAbortController = null;
+  }
+  aiAnalyzing.value = false;
+}
+
 const scanRules = computed(() => props.scan?.rules ?? []);
 const selectableRuleIds = computed(() => CleanupRuleSelectionUtils.selectableRuleIds(scanRules.value));
 const recommendedRuleIds = computed(() => CleanupRuleSelectionUtils.recommendedRuleIds(scanRules.value));
@@ -120,20 +141,26 @@ const selectedItemCount = computed(() => selectedCleanupItemCount.value + select
 const totalSelectedBytes = computed(() => props.selectedBytes + selectedLeftoverBytes.value);
 const totalFoundBytes = computed(() => foundCleanupBytes.value + (props.leftovers?.totalBytes ?? 0));
 const selectionMode = computed<CleanupSelectionMode>(() => {
-  const cleanupMode = CleanupRuleSelectionUtils.selectionMode(
-    scanRules.value,
-    props.selectedRuleIds,
-    props.sourceSelections
-  );
+  if (aiAnalyzing.value) return 'smart';
+  const effectiveRecommended =
+    aiRecommendedRuleIds.value.length > 0 ? aiRecommendedRuleIds.value : recommendedRuleIds.value;
+  const selected = new Set(props.selectedRuleIds);
+  const selectable = selectableRuleIds.value;
   const leftoverCount = leftoverCandidates.value.length;
   const selectedLeftoverCount = selectedLeftoverIds.value.length;
   const selectedRecommendedLeftovers =
     selectedLeftoverCount === recommendedLeftoverIds.value.length &&
     recommendedLeftoverIds.value.every(candidateId => selectedLeftoverSet.value.has(candidateId));
-  if (!selectedLeftoverCount && ['smart', 'none'].includes(cleanupMode)) return cleanupMode;
-  if (!leftoverCount) return cleanupMode;
-  if (cleanupMode === 'smart' && selectedRecommendedLeftovers) return 'smart';
-  if (cleanupMode === 'all' && selectedLeftoverCount === leftoverCount) return 'all';
+
+  if (!selected.size && !selectedLeftoverCount) return 'none';
+  if (props.sourceSelections.length) return 'manual';
+
+  const matchesRecommended =
+    selected.size === effectiveRecommended.length && effectiveRecommended.every(id => selected.has(id));
+  const matchesAll = selected.size === selectable.length && selectable.every(id => selected.has(id));
+
+  if (matchesRecommended && (!leftoverCount || selectedRecommendedLeftovers)) return 'smart';
+  if (matchesAll && (!leftoverCount || selectedLeftoverCount === leftoverCount)) return 'all';
   return 'manual';
 });
 const selectedRunningProcesses = computed(() => [
@@ -181,6 +208,7 @@ function openConfirm() {
 }
 
 function execute() {
+  abortAiAnalysis();
   confirmOpen.value = false;
   resultOpen.value = false;
   awaitingCleanupResult.value = Boolean(selectedRules.value.length);
@@ -198,14 +226,18 @@ function closeApplications(ruleIds: string[], mode: ApplicationCloseMode) {
 }
 
 function selectAll(ruleIds: string[], selected: boolean) {
+  if (aiAnalyzing.value) abortAiAnalysis();
   emit('selectAll', ruleIds, selected);
 }
 
 function toggleSource(ruleId: string, path: string) {
+  if (aiAnalyzing.value) abortAiAnalysis();
   emit('toggleSource', ruleId, path);
 }
 
 async function startScan(deep: boolean) {
+  abortAiAnalysis();
+  aiRecommendedRuleIds.value = [];
   // These components are not needed by the startup empty state. Load them
   // immediately before a scan so the initial bundle stays small without
   // allowing a blank async placeholder when progress or results first appear.
@@ -222,6 +254,7 @@ async function startScan(deep: boolean) {
 
 function toggleLeftover(candidate: ApplicationLeftoverCandidate) {
   if (props.busy) return;
+  if (aiAnalyzing.value) abortAiAnalysis();
   selectedLeftoverIds.value = selectedLeftoverSet.value.has(candidate.candidateId)
     ? selectedLeftoverIds.value.filter(candidateId => candidateId !== candidate.candidateId)
     : [...selectedLeftoverIds.value, candidate.candidateId];
@@ -229,25 +262,92 @@ function toggleLeftover(candidate: ApplicationLeftoverCandidate) {
 
 function setLeftoverGroupSelected(candidateIds: string[], selected: boolean) {
   if (props.busy) return;
+  if (aiAnalyzing.value) abortAiAnalysis();
   const targetIds = new Set(candidateIds);
   selectedLeftoverIds.value = selected
     ? [...new Set([...selectedLeftoverIds.value, ...candidateIds])]
     : selectedLeftoverIds.value.filter(candidateId => !targetIds.has(candidateId));
 }
 
-function setSelectionMode(value: unknown) {
+async function setSelectionMode(value: unknown) {
   if (!['smart', 'all', 'none'].includes(String(value))) return;
   const mode = String(value) as Exclude<CleanupSelectionMode, 'manual'>;
-  emit('selectAll', selectableRuleIds.value, false);
-  selectedLeftoverIds.value = [];
-  if (mode === 'smart') {
-    emit('selectAll', recommendedRuleIds.value, true);
-    selectedLeftoverIds.value = recommendedLeftoverIds.value;
-  } else if (mode === 'all') {
+
+  abortAiAnalysis();
+
+  if (mode === 'none') {
+    aiRecommendedRuleIds.value = [];
+    emit('selectAll', selectableRuleIds.value, false);
+    selectedLeftoverIds.value = [];
+    return;
+  }
+
+  if (mode === 'all') {
+    aiRecommendedRuleIds.value = [];
     emit('selectAll', selectableRuleIds.value, true);
     selectedLeftoverIds.value = leftoverCandidates.value.map(candidate => candidate.candidateId);
+    return;
+  }
+
+  if (mode === 'smart') {
+    aiAnalyzing.value = true;
+    aiRecommendedRuleIds.value = [];
+    emit('selectAll', selectableRuleIds.value, false);
+    selectedLeftoverIds.value = recommendedLeftoverIds.value;
+
+    const controller = new AbortController();
+    aiAbortController = controller;
+
+    try {
+      const config = {
+        apiKey: appStore.settings.aiApiKey,
+        baseUrl: appStore.settings.aiApiBaseUrl,
+        model: appStore.settings.aiModel,
+      };
+      const recommended = await AiAdvisorService.analyzeCleanupRules(scanRules.value, config, controller.signal);
+      if (controller.signal.aborted) return;
+
+      aiRecommendedRuleIds.value = recommended;
+      if (!recommended.length) {
+        aiAnalyzing.value = false;
+        aiAbortController = null;
+        return;
+      }
+
+      // Smooth staggered selection animation (50ms interval)
+      const rulesToSelect = [...recommended];
+      let index = 0;
+      const batchSize = Math.max(1, Math.floor(rulesToSelect.length / 10));
+
+      const processBatch = () => {
+        if (controller.signal.aborted) return;
+        const nextBatch = rulesToSelect.slice(index, index + batchSize);
+        index += batchSize;
+        emit('selectAll', nextBatch, true);
+
+        if (index < rulesToSelect.length) {
+          aiStaggerTimer = setTimeout(processBatch, 50);
+        } else {
+          aiAnalyzing.value = false;
+          aiAbortController = null;
+          aiStaggerTimer = null;
+        }
+      };
+
+      processBatch();
+    } catch (error: unknown) {
+      if (controller.signal.aborted) return;
+      aiAnalyzing.value = false;
+      aiAbortController = null;
+      emit('error', error);
+    }
   }
 }
+
+watch(scanRules, rules => {
+  const existingIds = new Set(rules.map(r => r.ruleId));
+  aiRecommendedRuleIds.value = aiRecommendedRuleIds.value.filter(id => existingIds.has(id));
+});
 
 watch(
   () => [props.result, props.leftoverResult, props.busy] as const,
@@ -315,13 +415,14 @@ watch(
         :hint="selectionHint"
         :action-label="t('cleanup.clean')"
         :disabled="!selectedItemCount"
-        :busy="busy"
+        :busy="busy || aiAnalyzing"
         @action="openConfirm"
       >
         <template #options>
           <MdCleanupSelectionMode
-            :busy="busy"
+            :busy="busy || aiAnalyzing"
             :mode="selectionMode"
+            :analyzing="aiAnalyzing"
             :recommended-bytes="recommendedCleanupBytes"
             :total-bytes="totalFoundBytes"
             @change="setSelectionMode"
@@ -365,6 +466,7 @@ watch(
         :busy="busy"
         :leftovers="leftovers"
         :rules="scan.rules"
+        :ai-recommended-rule-ids="aiRecommendedRuleIds"
         :selected-leftover-ids="selectedLeftoverIds"
         :selected-rule-ids="selectedRuleIds"
         :source-selections="sourceSelections"

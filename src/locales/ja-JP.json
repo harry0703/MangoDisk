@@ -390,7 +390,16 @@
     "deleteSafetyNote": "変更されたファイルまたは利用できなくなったファイルは自動的にスキップされます",
     "deleteCompleted": "大容量ファイルのクリーンアップが完了しました",
     "deleteCompletedWithWarnings": "大容量ファイルのクリーンアップが警告付きで完了しました",
-    "deleteCompletedDescription": "{count} ファイルを削除し、{size} を解放しました。{failed} ファイルは削除できませんでした | {count} ファイルを削除し、{size} を解放しました。{failed} ファイルは削除できませんでした"
+    "deleteCompletedDescription": "{count} ファイルを削除し、{size} を解放しました。{failed} ファイルは削除できませんでした | {count} ファイルを削除し、{size} を解放しました。{failed} ファイルは削除できませんでした",
+    "selectionMode": {
+      "label": "選択",
+      "smart": "スマート選択",
+      "all": "すべて選択",
+      "none": "すべて解除",
+      "manual": "手動選択",
+      "analyzing": "AI 分析中…"
+    },
+    "aiAdvisorBadge": "AI 推奨"
   },
   "fileCategories": {
     "all": "すべて",
@@ -420,6 +429,8 @@
     "summaryReclaimableScanning": "現在の解放可能容量",
     "minimumSize": "最小ファイル",
     "smartSelect": "スマート選択",
+    "aiSelect": "AI 推奨",
+    "aiAdvisorBadge": "AI 推奨",
     "smartSelectMenuLabel": "スマート選択方法",
     "smartSelectSafetyHint": "各グループに少なくとも 1 つのファイルを残します。方法を変更すると選択内容が再生成されます",
     "keeperRuleLabels": {

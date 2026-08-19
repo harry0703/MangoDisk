@@ -35,6 +35,8 @@ const props = defineProps<{
   busy: boolean;
   changing: boolean;
   copiedActionKey: string | null;
+  aiRecommended?: boolean;
+  aiRecommendedItemIds?: string[];
 }>();
 const emit = defineEmits<{
   toggleExpanded: [];
@@ -83,7 +85,13 @@ function localizedDiagnostics(artifact: StartupArtifact): string {
         >
           <MdApplicationIcon :src="iconSrc" :platform="isWindows ? 'windowsRegistry' : 'macosBundle'" :size="40" />
           <span class="startup-identity">
-            <strong class="md-result-primary">{{ group.name }}</strong>
+            <span class="startup-name-line">
+              <strong class="md-result-primary">{{ group.name }}</strong>
+              <span v-if="aiRecommended" class="ai-badge" :title="t('largeFiles.aiAdvisorBadge')">
+                <MdIcon :name="ICON_NAMES.smartSelect" :size="11" />
+                <span>{{ t('largeFiles.aiAdvisorBadge') }}</span>
+              </span>
+            </span>
             <small v-if="subtitle || group.version">
               <template v-if="subtitle">{{ subtitle }}</template>
               <template v-if="group.version">
@@ -196,6 +204,14 @@ function localizedDiagnostics(artifact: StartupArtifact): string {
             </span>
             <span class="startup-native-identity">
               <strong class="md-result-primary">{{ artifact.displayName }}</strong>
+              <span
+                v-if="aiRecommendedItemIds?.includes(artifact.itemId)"
+                class="ai-badge"
+                :title="t('largeFiles.aiAdvisorBadge')"
+              >
+                <MdIcon :name="ICON_NAMES.smartSelect" :size="11" />
+                <span>{{ t('largeFiles.aiAdvisorBadge') }}</span>
+              </span>
             </span>
             <span v-if="startupArtifactRevealPath(artifact)" class="startup-native-actions">
               <MdResultRowAction

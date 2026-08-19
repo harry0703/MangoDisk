@@ -390,7 +390,16 @@
     "deleteSafetyNote": "Files that changed or became unavailable are skipped automatically",
     "deleteCompleted": "Large file cleanup complete",
     "deleteCompletedWithWarnings": "Large file cleanup completed with warnings",
-    "deleteCompletedDescription": "Deleted {count} file and released {size}; {failed} failed | Deleted {count} files and released {size}; {failed} failed"
+    "deleteCompletedDescription": "Deleted {count} file and released {size}; {failed} failed | Deleted {count} files and released {size}; {failed} failed",
+    "selectionMode": {
+      "label": "Selection",
+      "smart": "Smart recommendation",
+      "all": "Select all",
+      "none": "Select none",
+      "manual": "Manual selection",
+      "analyzing": "AI analyzing…"
+    },
+    "aiAdvisorBadge": "AI Recommended"
   },
   "fileCategories": {
     "all": "All",
@@ -420,6 +429,8 @@
     "summaryReclaimableScanning": "can reclaim so far",
     "minimumSize": "Minimum file",
     "smartSelect": "Smart select",
+    "aiSelect": "AI Advisor",
+    "aiAdvisorBadge": "AI Advisor",
     "smartSelectMenuLabel": "Smart selection method",
     "smartSelectSafetyHint": "At least one file remains in each group. Changing the method regenerates the selection",
     "keeperRuleLabels": {

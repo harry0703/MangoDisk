@@ -39,7 +39,9 @@ import { ICON_NAMES } from '@/lib/models/ui';
 import { ApplicationIconService } from '@/lib/services/application-icon-service';
 import { ByteSizeService } from '@/lib/services/byte-size-service';
 import { OperatingSystemService } from '@/lib/services/operating-system-service';
+import { AiAdvisorService } from '@/lib/services/ai-advisor-service';
 import { FormatUtils } from '@/lib/utils/format';
+import { useAppStore } from '@/stores/app-store';
 
 import {
   applicationCatalogFilters,
@@ -58,6 +60,7 @@ import {
   UNINSTALL_CANCELLATION_TOAST_ID,
 } from './application-uninstall-confirmation';
 import {
+  defaultApplicationComponentIds,
   selectedApplicationBytes,
   selectionIncludesUserData,
   setVisibleApplicationSelection,
@@ -65,6 +68,7 @@ import {
   toggleApplicationSelection,
 } from './application-uninstall-selection';
 import MdApplicationUninstallRow from './components/md-application-uninstall-row.vue';
+import MdApplicationUninstallSelectionMode from './components/md-application-uninstall-selection-mode.vue';
 
 const { t } = useI18n({ useScope: 'global' });
 const props = defineProps<{
@@ -92,14 +96,22 @@ const emit = defineEmits<{
   cancelExecution: [];
   closeApplications: [applicationIds: string[], mode: ApplicationCloseMode];
   open: [path: string];
+  error: [error: unknown];
 }>();
 
+const appStore = useAppStore();
 const query = ref('');
 const filter = ref<ApplicationCatalogFilter>('all');
 const sort = ref<ApplicationCatalogSort>('sizeDescending');
 const expandedId = ref<string | null>(null);
 const selectedIds = ref<string[]>([]);
 const selectedComponentIds = ref<Record<string, string[]>>({});
+const selectionMode = ref<'smart' | 'all' | 'none' | 'manual'>('none');
+const aiAnalyzing = ref(false);
+const aiRecommendedIds = ref<string[]>([]);
+const aiRecommendedSet = computed(() => new Set(aiRecommendedIds.value));
+let aiAbortController: AbortController | null = null;
+let aiStaggerTimer: ReturnType<typeof setTimeout> | null = null;
 const confirmOpen = ref(false);
 const closeDialogOpen = ref(false);
 const closePhase = ref<'selection' | 'force'>('selection');
@@ -290,6 +302,7 @@ watch(
 
 onBeforeUnmount(() => {
   iconRequestVersion += 1;
+  abortAiAnalysis();
 });
 
 function handleApplicationIconError(iconPath: string | null) {
@@ -297,6 +310,151 @@ function handleApplicationIconError(iconPath: string | null) {
   const icons = new Map(iconUrls.value);
   icons.delete(iconPath);
   iconUrls.value = icons;
+}
+
+function abortAiAnalysis() {
+  if (aiStaggerTimer !== null) {
+    clearTimeout(aiStaggerTimer);
+    aiStaggerTimer = null;
+  }
+  if (aiAbortController) {
+    aiAbortController.abort();
+    aiAbortController = null;
+  }
+  aiAnalyzing.value = false;
+}
+
+function syncSelectionMode(ids: string[]) {
+  const count = ids.length;
+  const total = actionableCandidates.value.length;
+  if (count === 0) {
+    selectionMode.value = 'none';
+    return;
+  }
+  if (total > 0 && count === total) {
+    selectionMode.value = 'all';
+    return;
+  }
+  if (
+    aiRecommendedIds.value.length > 0 &&
+    count === aiRecommendedIds.value.length &&
+    aiRecommendedIds.value.every(id => ids.includes(id))
+  ) {
+    selectionMode.value = 'smart';
+    return;
+  }
+  selectionMode.value = 'manual';
+}
+
+async function handleSelectionModeChange(value: unknown) {
+  if (!['smart', 'all', 'none'].includes(String(value))) return;
+  const mode = String(value) as 'smart' | 'all' | 'none' | 'manual';
+
+  abortAiAnalysis();
+
+  if (mode === 'none') {
+    selectionMode.value = 'none';
+    aiRecommendedIds.value = [];
+    selectedIds.value = [];
+    selectedComponentIds.value = {};
+    return;
+  }
+
+  if (mode === 'all') {
+    selectionMode.value = 'all';
+    aiRecommendedIds.value = [];
+    selectedIds.value = actionableCandidates.value.map(candidate => candidate.applicationId);
+    selectedComponentIds.value = Object.fromEntries(
+      actionableCandidates.value.map(candidate => [candidate.applicationId, defaultApplicationComponentIds(candidate)])
+    );
+    return;
+  }
+
+  if (mode === 'smart') {
+    selectionMode.value = 'smart';
+    aiAnalyzing.value = true;
+    aiRecommendedIds.value = [];
+    selectedIds.value = [];
+    selectedComponentIds.value = {};
+
+    const controller = new AbortController();
+    aiAbortController = controller;
+
+    try {
+      const config = {
+        apiKey: appStore.settings.aiApiKey,
+        baseUrl: appStore.settings.aiApiBaseUrl,
+        model: appStore.settings.aiModel,
+      };
+      const appPayload = actionableCandidates.value.map(candidate => ({
+        ...candidate,
+        id: candidate.applicationId,
+        sizeMB: Math.round(candidate.totalBytes / 1024 / 1024),
+      }));
+      const recommended = await AiAdvisorService.analyzeApplications(appPayload, config, controller.signal);
+      if (controller.signal.aborted) return;
+
+      const resolvedIds = recommended
+        .map(id => {
+          if (actionableCandidates.value.some(c => c.applicationId === id)) return id;
+          const num = Number(id);
+          if (!isNaN(num) && appPayload[num]) return appPayload[num].applicationId;
+          return id;
+        })
+        .filter(id => actionableCandidates.value.some(c => c.applicationId === id));
+
+      aiRecommendedIds.value = resolvedIds;
+      if (!resolvedIds.length) {
+        selectedIds.value = [];
+        selectedComponentIds.value = {};
+        aiAnalyzing.value = false;
+        aiAbortController = null;
+        return;
+      }
+
+      // Smooth staggered selection animation (50ms interval)
+      const idsToSelect = [...resolvedIds];
+      let index = 0;
+      const batchSize = Math.max(1, Math.floor(idsToSelect.length / 20));
+
+      const processBatch = () => {
+        if (controller.signal.aborted) return;
+        const nextBatch = idsToSelect.slice(index, index + batchSize);
+        index += batchSize;
+
+        const newSelectedIds = [...selectedIds.value];
+        const newComponents = { ...selectedComponentIds.value };
+
+        for (const appId of nextBatch) {
+          const candidate = actionableCandidates.value.find(c => c.applicationId === appId);
+          if (candidate) {
+            if (!newSelectedIds.includes(appId)) {
+              newSelectedIds.push(appId);
+            }
+            newComponents[appId] = defaultApplicationComponentIds(candidate);
+          }
+        }
+
+        selectedIds.value = newSelectedIds;
+        selectedComponentIds.value = newComponents;
+
+        if (index < idsToSelect.length) {
+          aiStaggerTimer = setTimeout(processBatch, 50);
+        } else {
+          aiAnalyzing.value = false;
+          aiAbortController = null;
+          aiStaggerTimer = null;
+        }
+      };
+
+      processBatch();
+    } catch (error: unknown) {
+      if (controller.signal.aborted) return;
+      aiAnalyzing.value = false;
+      aiAbortController = null;
+      emit('error', error);
+    }
+  }
 }
 
 watch([query, filter, sort], async () => {
@@ -311,9 +469,11 @@ watch(
   readyIds => {
     const readySet = new Set(readyIds);
     selectedIds.value = selectedIds.value.filter(applicationId => readySet.has(applicationId));
+    aiRecommendedIds.value = aiRecommendedIds.value.filter(applicationId => readySet.has(applicationId));
     selectedComponentIds.value = Object.fromEntries(
       Object.entries(selectedComponentIds.value).filter(([applicationId]) => readySet.has(applicationId))
     );
+    syncSelectionMode(selectedIds.value);
   }
 );
 
@@ -362,6 +522,9 @@ watch(
 
     // Clear the completed selection immediately so the action bar cannot
     // submit the same batch again while the result toast is being published.
+    abortAiAnalysis();
+    aiRecommendedIds.value = [];
+    selectionMode.value = 'none';
     selectedIds.value = [];
     selectedComponentIds.value = {};
     expandedId.value = null;
@@ -403,20 +566,31 @@ watch(
 
 function toggleSelection(candidate: ApplicationUninstallCandidate) {
   if (busy.value) return;
+  if (aiAnalyzing.value) {
+    abortAiAnalysis();
+  }
   const next = toggleApplicationSelection(selection.value, candidate);
   selectedIds.value = next.applicationIds;
   selectedComponentIds.value = next.componentIds;
+  syncSelectionMode(selectedIds.value);
 }
 
 function toggleComponent(candidate: ApplicationUninstallCandidate, component: ApplicationUninstallComponentSummary) {
   if (busy.value) return;
+  if (aiAnalyzing.value) {
+    abortAiAnalysis();
+  }
   const next = toggleApplicationComponent(selection.value, candidate, component);
   selectedIds.value = next.applicationIds;
   selectedComponentIds.value = next.componentIds;
+  syncSelectionMode(selectedIds.value);
 }
 
 function toggleFilteredSelection(checked: boolean) {
   if (busy.value || !filteredReadyIds.value.length) return;
+  if (aiAnalyzing.value) {
+    abortAiAnalysis();
+  }
   const next = setVisibleApplicationSelection(
     selection.value,
     filteredCandidates.value.filter(applicationCanStartUninstall),
@@ -424,10 +598,14 @@ function toggleFilteredSelection(checked: boolean) {
   );
   selectedIds.value = next.applicationIds;
   selectedComponentIds.value = next.componentIds;
+  syncSelectionMode(selectedIds.value);
 }
 
 function clearSelection() {
   if (busy.value) return;
+  abortAiAnalysis();
+  aiRecommendedIds.value = [];
+  selectionMode.value = 'none';
   selectedIds.value = [];
   selectedComponentIds.value = {};
 }
@@ -724,8 +902,9 @@ function confirmCancelExecution() {
                 :selected="selectedSet.has(candidate.applicationId)"
                 :selected-component-ids="selectedComponentIds[candidate.applicationId] ?? []"
                 :expanded="expandedId === candidate.applicationId"
-                :busy="busy"
+                :busy="busy || aiAnalyzing"
                 :uninstall-enabled="catalog.executionSupported"
+                :ai-recommended="aiRecommendedSet.has(candidate.applicationId)"
                 @toggle-selection="toggleSelection(candidate)"
                 @toggle-component="toggleComponent(candidate, $event)"
                 @toggle-expanded="expandedId = expandedId === candidate.applicationId ? null : candidate.applicationId"
@@ -744,7 +923,7 @@ function confirmCancelExecution() {
         :title="t('applicationUninstall.initialTitle')"
         :description="t('applicationUninstall.initialDescription')"
       >
-        <Button size="lg" type="button" :disabled="busy" @click="emit('scan')">
+        <Button size="lg" type="button" :disabled="busy || aiAnalyzing" @click="emit('scan')">
           <MdIcon :name="ICON_NAMES.scan" :size="17" />
           {{ t('applicationUninstall.startScan') }}
         </Button>
@@ -760,10 +939,18 @@ function confirmCancelExecution() {
         :clear-label="selectedCandidates.length ? t('applicationUninstall.clearSelection') : undefined"
         :action-label="t('applicationUninstall.uninstallSelected')"
         :disabled="!selectedCandidates.length"
-        :busy="busy"
+        :busy="busy || aiAnalyzing"
         @clear="clearSelection"
         @action="prepareSelection"
       >
+        <template #options>
+          <MdApplicationUninstallSelectionMode
+            :busy="busy"
+            :mode="selectionMode"
+            :analyzing="aiAnalyzing"
+            @change="handleSelectionModeChange"
+          />
+        </template>
         <template #action-icon>
           <span v-if="preparing || executing" class="button-spinner" />
           <MdIcon v-else :name="ICON_NAMES.uninstall" :size="17" />

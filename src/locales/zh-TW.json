@@ -59,7 +59,11 @@
       "skip": "暫時略過",
       "openSettings": "開啟系統設定"
     },
-    "filters": { "all": "全部", "enabled": "已啟用", "disabled": "已停用" },
+    "filters": {
+      "all": "全部",
+      "enabled": "已啟用",
+      "disabled": "已停用"
+    },
     "sourceKinds": {
       "registryRun": "登錄檔啟動",
       "startupFolder": "啟動資料夾",
@@ -285,7 +289,7 @@
     },
     "selectionMode": {
       "label": "選擇方式",
-      "smart": "智慧建議",
+      "smart": "AI 建議",
       "all": "全部選取",
       "none": "全部取消選取",
       "manual": "手動選取"
@@ -390,7 +394,16 @@
     "deleteSafetyNote": "檔案發生變化或無法存取時會自動跳過",
     "deleteCompleted": "大型檔案清理完成",
     "deleteCompletedWithWarnings": "大型檔案清理已完成，部分項目未刪除",
-    "deleteCompletedDescription": "已刪除 {count} 個檔案，釋放 {size}，{failed} 個失敗"
+    "deleteCompletedDescription": "已刪除 {count} 個檔案，釋放 {size}，{failed} 個失敗",
+    "selectionMode": {
+      "label": "選擇方式",
+      "smart": "AI 建議",
+      "all": "全部選取",
+      "none": "全部取消選取",
+      "manual": "手動選取",
+      "analyzing": "AI 分析中…"
+    },
+    "aiAdvisorBadge": "AI 建議"
   },
   "fileCategories": {
     "all": "全部",
@@ -420,6 +433,8 @@
     "summaryReclaimableScanning": "已發現可釋放",
     "minimumSize": "最小檔案",
     "smartSelect": "智慧選取",
+    "aiSelect": "AI 建議",
+    "aiAdvisorBadge": "AI 建議",
     "smartSelectMenuLabel": "智慧選取方式",
     "smartSelectSafetyHint": "每組至少保留 1 個檔案；切換方式會重新產生選取項目",
     "keeperRuleLabels": {

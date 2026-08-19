@@ -24,6 +24,7 @@ const props = defineProps<{
   expanded: boolean;
   busy: boolean;
   uninstallEnabled: boolean;
+  aiRecommended?: boolean;
 }>();
 const emit = defineEmits<{
   toggleSelection: [];
@@ -138,7 +139,13 @@ function displayedComponentSize(component: ApplicationUninstallComponentSummary)
         >
           <MdApplicationIcon :src="iconSrc" :platform="candidate.platform" @error="emit('iconError')" />
           <span class="application-identity">
-            <strong class="md-result-primary">{{ candidate.name }}</strong>
+            <span class="application-name-line">
+              <strong class="md-result-primary">{{ candidate.name }}</strong>
+              <span v-if="aiRecommended" class="ai-badge" :title="t('largeFiles.aiAdvisorBadge')">
+                <MdIcon :name="ICON_NAMES.smartSelect" :size="11" />
+                <span>{{ t('largeFiles.aiAdvisorBadge') }}</span>
+              </span>
+            </span>
             <small>
               {{ candidate.publisher || candidate.primaryIdentifier }}
               <template v-if="candidate.version">

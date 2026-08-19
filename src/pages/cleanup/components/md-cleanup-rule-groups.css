@@ -288,6 +288,19 @@
   @apply bg-success/10 text-success-foreground;
 }
 
+.ai-badge {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 3px;
+  border-radius: var(--radius-sm);
+  padding: 1px 6px;
+  font-size: var(--font-content-meta);
+  font-weight: 500;
+  line-height: 1.3;
+  @apply border border-primary/20 bg-primary/10 text-primary;
+}
+
 .rule-size {
   display: flex;
   min-width: 72px;

@@ -62,4 +62,7 @@ export interface AppSettings {
   largeFileMinimumBytes: number;
   duplicateFileMinimumBytes: number;
   duplicateKeeperRule: DuplicateKeeperRuleId;
+  aiApiKey: string;
+  aiApiBaseUrl: string;
+  aiModel: string;
 }
