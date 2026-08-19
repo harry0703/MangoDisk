@@ -59,7 +59,11 @@
       "skip": "Not Now",
       "openSettings": "Open System Settings"
     },
-    "filters": { "all": "All", "enabled": "Enabled", "disabled": "Disabled" },
+    "filters": {
+      "all": "All",
+      "enabled": "Enabled",
+      "disabled": "Disabled"
+    },
     "sourceKinds": {
       "registryRun": "Registry startup",
       "startupFolder": "Startup folder",
@@ -767,7 +771,22 @@
     "websiteAction": "Official Website",
     "repositoryAction": "GitHub",
     "licenseAction": "GPL-3.0 License",
-    "versionValue": "Version {version}"
+    "versionValue": "Version {version}",
+    "aiSection": "AI Settings",
+    "aiBaseUrlTitle": "API Base URL",
+    "aiBaseUrlDescription": "Custom AI service endpoint",
+    "aiBaseUrlPlaceholder": "e.g., https://api.openai.com/v1",
+    "aiApiKeyTitle": "API Key",
+    "aiApiKeyDescription": "Custom API Key (stored locally, direct connection)",
+    "aiApiKeyPlaceholder": "sk-xxx",
+    "aiModelTitle": "Model Name",
+    "aiModelDescription": "Custom AI model name",
+    "aiConfigTitle": "AI Advisor Configuration",
+    "aiConfigDescription": "Configure custom API Key, Base URL, and Model",
+    "aiConfigAction": "Configure",
+    "aiDialogTitle": "AI Advisor Configuration",
+    "aiDialogDescription": "Configure custom model endpoints and credentials. Leave blank to use defaults",
+    "aiSaveAction": "Done"
   },
   "updates": {
     "availableTitle": "MangoDisk {version} is available",

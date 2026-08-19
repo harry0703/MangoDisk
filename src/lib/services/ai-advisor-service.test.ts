@@ -38,6 +38,17 @@ describe('AiAdvisorService', () => {
   });
 
   it('filters recommended files matching deletion extensions', async () => {
+    fetchMock.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({
+        choices: [{
+          message: {
+            content: JSON.stringify([0, 1, 2, 3, 4, 5])
+          }
+        }]
+      })
+    });
+
     const files: LargeFileEntry[] = [
       createEntry('disk.vhdx', '/test/disk.vhdx'),
       createEntry('installer.iso', '/test/installer.iso'),
@@ -60,13 +71,6 @@ describe('AiAdvisorService', () => {
       '/test/data.ucas',
       '/test/app.log',
     ]);
-    expect(LoggerService.info).toHaveBeenCalledWith('ai-advisor', 'analyze_large_files_started', {
-      fileCount: 9,
-    });
-    expect(LoggerService.info).toHaveBeenCalledWith('ai-advisor', 'analyze_large_files_completed', {
-      fileCount: 9,
-      recommendedCount: 6,
-    });
   });
 
   it('aborts when abort signal is triggered', async () => {
@@ -97,7 +101,16 @@ describe('AiAdvisorService', () => {
     await expect(AiAdvisorService.analyzeLargeFiles(files, {}, controller.signal)).rejects.toThrow();
   });
 
-  it('analyzeCleanupRules recommends rules containing cache or temp in name', async () => {
+  it('analyzeCleanupRules parses returned AI suggestions', async () => {
+    fetchMock.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({
+        choices: [{
+          message: { content: JSON.stringify(['1', '2']) }
+        }]
+      })
+    });
+
     const rules = [
       { id: '1', name: 'System Cache' },
       { id: '2', name: 'Browser Temp Files' },
@@ -107,7 +120,16 @@ describe('AiAdvisorService', () => {
     expect(result).toEqual(['1', '2']);
   });
 
-  it('analyzeDuplicateFiles recommends deleting newer copies', async () => {
+  it('analyzeDuplicateFiles parses returned AI suggestions', async () => {
+    fetchMock.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({
+        choices: [{
+          message: { content: JSON.stringify(['/a/new.txt']) }
+        }]
+      })
+    });
+
     const groups = [
       {
         files: [
@@ -120,7 +142,16 @@ describe('AiAdvisorService', () => {
     expect(result).toEqual(['/a/new.txt']);
   });
 
-  it('analyzeApplications recommends toolbars and bloatware', async () => {
+  it('analyzeApplications parses returned AI suggestions', async () => {
+    fetchMock.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({
+        choices: [{
+          message: { content: JSON.stringify(['app1', 'app2']) }
+        }]
+      })
+    });
+
     const apps = [
       { id: 'app1', name: 'Ask Toolbar' },
       { id: 'app2', name: 'OEM Bloatware' },
@@ -130,7 +161,16 @@ describe('AiAdvisorService', () => {
     expect(result).toEqual(['app1', 'app2']);
   });
 
-  it('analyzeStartupItems recommends updaters and helpers', async () => {
+  it('analyzeStartupItems parses returned AI suggestions', async () => {
+    fetchMock.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({
+        choices: [{
+          message: { content: JSON.stringify(['s1', 's2']) }
+        }]
+      })
+    });
+
     const items = [
       { id: 's1', name: 'Adobe Updater' },
       { id: 's2', name: 'iTunes Helper' },

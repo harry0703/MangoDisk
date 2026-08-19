@@ -30,7 +30,7 @@ export class AiAdvisorService {
 
     const apiKey = config.apiKey || ''; 
     // Fallback to MangoDisk's provided proxy if no custom key is set
-    const baseUrl = config.baseUrl || 'https://api.mangodisk.com/v1';
+    const baseUrl = config.baseUrl || 'https://api.mangodisk.app/v1';
     const model = config.model || 'deepseek-chat';
 
     // To save tokens, we only send the filename and size, not the full absolute path
@@ -56,20 +56,6 @@ Output ONLY a valid JSON object with a single key "ids" containing an array of t
       
       if (apiKey) {
         headers['Authorization'] = `Bearer ${apiKey}`;
-      }
-
-      // TODO(demo): Remove this block once the real proxy is deployed.
-      // If using the default un-implemented endpoint, fallback to a local mock so the UI demo works!
-      if (baseUrl === 'https://api.mangodisk.com/v1' && !apiKey) {
-        await new Promise(r => setTimeout(r, 1500));
-        if (signal?.aborted) throw new DOMException('Aborted', 'AbortError');
-        const RECOMMENDED_EXTENSIONS = new Set(['.vhdx', '.iso', '.img', '.vmdk', '.ucas', '.log']);
-        const mockIds = payloadFiles
-          .filter(f => [...RECOMMENDED_EXTENSIONS].some(ext => f.name.toLowerCase().endsWith(ext)))
-          .map(f => f.id);
-        
-        const mockRecommendedPaths = mockIds.map(id => files[id]?.path).filter(Boolean) as string[];
-        return mockRecommendedPaths;
       }
 
       const response = await fetch(`${baseUrl}/chat/completions`, {
@@ -142,17 +128,11 @@ Output ONLY a valid JSON object with a single key "ids" containing an array of t
     LoggerService.info('ai-advisor', 'analyze_cleanup_rules_started', { count: rules.length });
 
     const apiKey = config.apiKey || ''; 
-    const baseUrl = config.baseUrl || 'https://api.mangodisk.com/v1';
+    const baseUrl = config.baseUrl || 'https://api.mangodisk.app/v1';
     const model = config.model || 'deepseek-chat';
 
     const payload = rules.map((r, i) => ({ id: r.id || i, name: r.name || r.title, description: r.description }));
     const systemPrompt = "You are an AI disk cleanup advisor. Review the following cleanup rules. Recommend rules that are safe to apply (e.g. caches, temp files, trash). Output ONLY a valid JSON object with a single key 'ids' containing an array of the string IDs you recommend.";
-    
-    if (baseUrl === 'https://api.mangodisk.com/v1' && !apiKey) {
-      await new Promise(r => setTimeout(r, 1500));
-      if (signal?.aborted) throw new DOMException('Aborted', 'AbortError');
-      return payload.filter(r => (r.name || '').toLowerCase().includes('cache') || (r.name || '').toLowerCase().includes('temp')).map(r => String(r.id));
-    }
 
     try {
       const response = await fetch(`${baseUrl}/chat/completions`, {
@@ -187,24 +167,11 @@ Output ONLY a valid JSON object with a single key "ids" containing an array of t
     LoggerService.info('ai-advisor', 'analyze_duplicates_started', { count: duplicateGroups.length });
 
     const apiKey = config.apiKey || ''; 
-    const baseUrl = config.baseUrl || 'https://api.mangodisk.com/v1';
+    const baseUrl = config.baseUrl || 'https://api.mangodisk.app/v1';
     const model = config.model || 'deepseek-chat';
 
     const payload = duplicateGroups.map((g, i) => ({ id: i, files: (g.files || []).map((f: any) => ({ path: f.path, modifiedTime: f.modifiedTime })) }));
     const systemPrompt = "You are an AI disk cleanup advisor. For each duplicate group, recommend which file paths are safe to DELETE. Typically, keep the oldest or the one in the most 'original' looking folder, and delete the newer copies or those in temp/download folders. Output ONLY a valid JSON object with a single key 'paths' containing an array of string paths to delete.";
-    
-    if (baseUrl === 'https://api.mangodisk.com/v1' && !apiKey) {
-      await new Promise(r => setTimeout(r, 1500));
-      if (signal?.aborted) throw new DOMException('Aborted', 'AbortError');
-      const pathsToDelete: string[] = [];
-      for (const g of duplicateGroups) {
-        if (g.files && g.files.length > 1) {
-          const sorted = [...g.files].sort((a, b) => (b.modifiedTime || 0) - (a.modifiedTime || 0));
-          pathsToDelete.push(...sorted.slice(0, sorted.length - 1).map(f => f.path));
-        }
-      }
-      return pathsToDelete;
-    }
 
     try {
       const response = await fetch(`${baseUrl}/chat/completions`, {
@@ -239,17 +206,11 @@ Output ONLY a valid JSON object with a single key "ids" containing an array of t
     LoggerService.info('ai-advisor', 'analyze_apps_started', { count: apps.length });
 
     const apiKey = config.apiKey || ''; 
-    const baseUrl = config.baseUrl || 'https://api.mangodisk.com/v1';
+    const baseUrl = config.baseUrl || 'https://api.mangodisk.app/v1';
     const model = config.model || 'deepseek-chat';
 
     const payload = apps.map((a, i) => ({ id: a.id || i, name: a.name, publisher: a.publisher, sizeMB: a.sizeMB }));
     const systemPrompt = "You are an AI disk cleanup advisor. Recommend applications that are likely bloatware, unwanted toolbars, or rarely used massive games. Output ONLY a valid JSON object with a single key 'ids' containing an array of string IDs you recommend uninstalling.";
-    
-    if (baseUrl === 'https://api.mangodisk.com/v1' && !apiKey) {
-      await new Promise(r => setTimeout(r, 1500));
-      if (signal?.aborted) throw new DOMException('Aborted', 'AbortError');
-      return payload.filter(a => (a.name || '').toLowerCase().includes('toolbar') || (a.name || '').toLowerCase().includes('bloat')).map(a => String(a.id));
-    }
 
     try {
       const response = await fetch(`${baseUrl}/chat/completions`, {
@@ -284,17 +245,11 @@ Output ONLY a valid JSON object with a single key "ids" containing an array of t
     LoggerService.info('ai-advisor', 'analyze_startup_started', { count: startupItems.length });
 
     const apiKey = config.apiKey || ''; 
-    const baseUrl = config.baseUrl || 'https://api.mangodisk.com/v1';
+    const baseUrl = config.baseUrl || 'https://api.mangodisk.app/v1';
     const model = config.model || 'deepseek-chat';
 
     const payload = startupItems.map((s, i) => ({ id: s.id || i, name: s.name, command: s.command }));
     const systemPrompt = "You are an AI disk cleanup advisor. Recommend startup items that can be safely disabled to improve boot time (e.g. updater services, game launchers). Do NOT recommend disabling essential system drivers or security software. Output ONLY a valid JSON object with a single key 'ids' containing an array of string IDs you recommend disabling.";
-    
-    if (baseUrl === 'https://api.mangodisk.com/v1' && !apiKey) {
-      await new Promise(r => setTimeout(r, 1500));
-      if (signal?.aborted) throw new DOMException('Aborted', 'AbortError');
-      return payload.filter(s => (s.name || '').toLowerCase().includes('updater') || (s.name || '').toLowerCase().includes('helper')).map(s => String(s.id));
-    }
 
     try {
       const response = await fetch(`${baseUrl}/chat/completions`, {

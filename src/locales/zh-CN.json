@@ -771,7 +771,22 @@
     "websiteAction": "官方网站",
     "repositoryAction": "GitHub",
     "licenseAction": "GPL-3.0 许可证",
-    "versionValue": "版本 {version}"
+    "versionValue": "版本 {version}",
+    "aiSection": "AI 设置",
+    "aiBaseUrlTitle": "API Base URL",
+    "aiBaseUrlDescription": "自定义 AI 服务接口地址",
+    "aiBaseUrlPlaceholder": "例如：https://api.openai.com/v1",
+    "aiApiKeyTitle": "API Key",
+    "aiApiKeyDescription": "自定义 AI 服务密钥 (仅存储于本地，直连不经过中转)",
+    "aiApiKeyPlaceholder": "sk-xxx",
+    "aiModelTitle": "模型名称",
+    "aiModelDescription": "自定义 AI 模型名称",
+    "aiConfigTitle": "AI 建议配置",
+    "aiConfigDescription": "配置自定义 API Key、Base URL 及模型",
+    "aiConfigAction": "配置",
+    "aiDialogTitle": "AI 建议配置",
+    "aiDialogDescription": "设置自定义模型接口与凭证，留空则使用内置默认配置",
+    "aiSaveAction": "完成"
   },
   "updates": {
     "availableTitle": "MangoDisk {version} 可用",
