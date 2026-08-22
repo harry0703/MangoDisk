@@ -1,0 +1,1332 @@
+{
+  "navigation": {
+    "cleanup": "Derin Temizlik",
+    "analysis": "Disk Alanı Analizi",
+    "large-files": "Büyük Dosya Temizliği",
+    "duplicate-files": "Yinelenen Dosya Temizliği",
+    "application-uninstall": "Uygulama Kaldırıcı",
+    "history": "Temizlik Geçmişi",
+    "settings": "Ayarlar"
+  },
+  "common": {
+    "cancel": "İptal",
+    "close": "Kapat",
+    "minimize": "Küçült",
+    "maximize": "Büyüt",
+    "restore": "Geri Yükle",
+    "safe": "Düşük risk",
+    "operationFailed": "İşlem başarısız oldu",
+    "loadMore": "Daha fazla göster",
+    "filterFileCategory": "Dosya türüne göre filtrele",
+    "estimatedRelease": "Boşaltılacak alan",
+    "limitedResults": "En büyük sonuçlar gösteriliyor; bazı eşleşmeler listelenmiyor",
+    "fileCount": "{count} dosya | {count} dosya",
+    "itemCount": "{count} öğe | {count} öğe",
+    "locationCount": "{count} konum | {count} konum"
+  },
+  "errors": {
+    "operationBusy": "Diskinizin yavaşlamasını önlemek için mevcut işlemin tamamlanmasını bekleyin veya işlemi iptal edip tekrar deneyin",
+    "invalidInput": "Geçersiz istek. Seçili öğeleri gözden geçirip tekrar deneyin",
+    "operationCancelled": "İşlem iptal edildi",
+    "operationFailed": "İşlem tamamlanamadı. Tekrar deneyin",
+    "permissionDenied": "MangoDisk bu işlemi tamamlamak için gerekli izne sahip değil",
+    "persistenceFailed": "MangoDisk işlem verilerini kaydedemedi. Tekrar deneyin",
+    "taskJoinFailed": "Bir arka plan görevi beklenmedik şekilde durdu. Tekrar deneyin"
+  },
+  "errorTitles": {
+    "invalidInput": "Seçiminizi gözden geçirin",
+    "operationBusy": "Başka bir disk işlemi çalışıyor",
+    "operationCancelled": "İşlem iptal edildi",
+    "operationFailed": "İşlem başarısız oldu",
+    "permissionDenied": "İzin gerekli",
+    "persistenceFailed": "Veriler kaydedilemedi",
+    "taskJoinFailed": "Arka plan görevi durdu"
+  },
+  "errorReasons": {
+    "resourceBusy": {
+      "title": "Öğe kullanımda",
+      "message": "Bu öğe Dosya Gezgini'nde veya başka bir uygulamada açık. İlgili pencereyi veya uygulamayı kapatıp tekrar deneyin"
+    },
+    "accessDeniedOrBusy": {
+      "title": "Öğeye erişilemiyor",
+      "message": "Sistem erişimi reddetti. Öğe kullanımda olabilir veya daha yüksek yetki gerektirebilir; ilgili uygulamaları kapatıp tekrar deneyin"
+    },
+    "itemChanged": {
+      "title": "Öğe kısa süre önce değişti",
+      "message": "Silme işlemi hazırlanırken bu öğe değişti. MangoDisk yanlış içeriği silmemek için işlemi durdurdu; öğeyi yeniden analiz edin"
+    }
+  },
+  "folderPicker": {
+    "commonFolders": "Yaygın Klasörler",
+    "standardFolders": {
+      "downloads": "İndirilenler",
+      "documents": "Belgeler",
+      "pictures": "Resimler",
+      "videos": "Videolar",
+      "music": "Müzik"
+    }
+  },
+  "scanScope": {
+    "label": "Analiz kapsamı",
+    "chooseFolder": "Klasör seç…",
+    "removeFolder": "{name} klasörünü geçmişten kaldır"
+  },
+  "overview": {
+    "startScan": "Taramayı Başlat",
+    "rescan": "Tekrar Tara"
+  },
+  "cleanup": {
+    "title": "Derin Temizlik",
+    "diskUsageSummary": "{available} kullanılabilir",
+    "diskUsageDetails": "{name}: {used} kullanılıyor, {available} kullanılabilir, toplam {total}",
+    "selected": "Seçili",
+    "totalSize": "toplam {size}",
+    "selectAll": "Tümünü seç",
+    "selectRule": "Temizlik öğesini seç: {name}",
+    "categoryItemCount": "{count} öğe | {count} öğe",
+    "categoryTitles": {
+      "system": "Sistem önbellekleri",
+      "userCache": "Kullanıcı önbellek dosyaları",
+      "application": "Uygulama önbellekleri",
+      "browser": "Tarayıcı verileri",
+      "development": "Geliştirici araçları",
+      "project": "Proje derleme artıkları",
+      "xcode": "Xcode verileri",
+      "applicationOptimization": "Uygulama optimizasyonu",
+      "ai": "Yapay zekâ modelleri ve önbellekleri",
+      "container": "Konteyner önbellekleri"
+    },
+    "categoryDescriptions": {
+      "system": "Geçici dosyalar, tanılama verileri ve sistem önbellekleri",
+      "userCache": "Kullanıcı klasörünüzdeki uygulama ve geliştirici aracı önbellekleri",
+      "application": "Uygulamalar tarafından oluşturulan önbellekler ve geçici içerikler",
+      "browser": "Tarayıcılar tarafından oluşturulan geçici web sitesi verileri",
+      "development": "Geliştirici araçlarına ait geçici indirmeler, indeksler ve önbellekler",
+      "project": "Projelerin yeniden oluşturabileceği bağımlılıklar ve derleme çıktıları",
+      "xcode": "Xcode tarafından oluşturulan aygıt desteği, arşivler ve geliştirme verileri",
+      "applicationOptimization": "Bu Mac'in kullanmadığı işlemci mimarilerine ait uygulama kodları",
+      "ai": "İndirilen yapay zekâ modelleri ve geçici aktarım dosyaları",
+      "container": "Konteyner araçlarından kalan kullanılmayan derleme önbelleği"
+    },
+    "selectSource": "Temizleme konumunu seç: {path}",
+    "selectionState": {
+      "all": "Tüm alt öğeler seçili",
+      "partial": "Bazı alt öğeler seçili",
+      "none": "Seçili değil"
+    },
+    "selectionMode": {
+      "label": "Seçim",
+      "smart": "Akıllı öneri",
+      "all": "Tümünü seç",
+      "none": "Hiçbirini seçme",
+      "manual": "Manuel seçim"
+    },
+    "estimated": "Boşaltılacak alan",
+    "selectedSummary": "Seçili öğeler",
+    "requiresClose": "Kapatılması gereken uygulamalar",
+    "clean": "Temizle",
+    "scanFirst": "Temizlenebilir öğeleri bul",
+    "emptyDescription": "Güvenle temizlenebilecek sistem önbelleklerini, uygulama önbelleklerini ve geçici dosyaları tara",
+    "planDialogTitle": "Temizliği onayla",
+    "adjustSelection": "Seçime geri dön",
+    "execute": "Temizliği başlat",
+    "actualReleased": "Boşaltılan alan",
+    "resultDescription": "Öğe sonuçlarını ve disk alanı değişikliklerini gözden geçirin",
+    "cancelledResultDescription": "Tamamlanan öğeler temizlenmiş olarak kalır; henüz başlanmamış öğeler atlandı",
+    "previewCompleted": "Kontrol tamamlandı",
+    "previewPassed": "Kontroller tamamlandı. Hiçbir dosya silinmedi",
+    "completed": "Temizlik tamamlandı",
+    "completedWithWarnings": "Temizlik uyarılarla tamamlandı",
+    "completedDescription": "{count} öğe işlendi ve {size} boşaltıldı; {failed} öğe atlandı veya başarısız oldu | {count} öğe işlendi ve {size} boşaltıldı; {failed} öğe atlandı veya başarısız oldu",
+    "cancelled": "Temizlik iptal edildi",
+    "processedItems": "İşlenen öğeler",
+    "failedItems": "Atlanan veya başarısız olanlar",
+    "cleanableFound": "Temizlenebilir öğeler",
+    "summaryCount": "{count} temizlenebilir öğe bulundu | {count} temizlenebilir öğe bulundu",
+    "summarySpace": "en fazla şu kadar alan boşaltılabilir:",
+    "noCleanableInGroup": "Bu grup kontrol edildi ve temizlenebilir içerik bulunamadı",
+    "selectedItemCount": "{count} öğe seçildi | {count} öğe seçildi",
+    "appsToCloseCount": "{count} uygulama kapatılmalı | {count} uygulama kapatılmalı",
+    "closeAppsBeforeCleanup": "Çalışmalarınızı kaydedin ve şu uygulamaları kapatın: {processes}. Açık kalan uygulamalara ait öğeler güvenli şekilde atlanacaktır",
+    "closeAppsBeforeCleanupGeneric": "Çalışmalarınızı kaydedin ve ilgili uygulamaları kapatın. Açık kalan uygulamalara ait öğeler güvenli şekilde atlanacaktır",
+    "requiresCloseProcesses": "Kapatılması gereken uygulamalar: {processes}",
+    "applicationComponentCount": "Optimize edilebilecek öğe yok | Optimize edilebilecek {count} öğe var | Optimize edilebilecek {count} öğe var",
+    "sourceRequiresClose": "Temizlemeden önce uygulamayı kapatın",
+    "sourceAccessLimited": "Tam olarak okunamadığı için kapsam dışında bırakıldı",
+    "sourceFiles": "{count} dosya",
+    "sourceModified": "Son değiştirilme: {time}",
+    "aggregateOnlyDetails": "Yalnızca temizleme kapsamı, öğe sayısı ve toplam boyut kullanılabilir; tek tek dosyalar listelenemez",
+    "scanMode": {
+      "label": "Tarama türünü seçin",
+      "standard": "Standart Tarama",
+      "standardDescription": "Mevcut kullanıcı için temizlenebilir öğeleri ve geliştirme projelerini kontrol eder",
+      "allLocalDisks": "Tüm Yerel Disklerde Ara",
+      "allLocalDisksDescription": "Daha fazla geliştirme projesi bulmak için tüm sabit yerel diskleri tarar. Daha uzun sürer"
+    },
+    "deepDiscoveryProgressHint": "Daha fazla geliştirme projesi için yerel diskler taranıyor. İstediğiniz zaman iptal edebilirsiniz"
+  },
+  "analysis": {
+    "title": "Disk Alanı Analizi",
+    "pathLabel": "Geçerli konum",
+    "start": "Analizi Başlat",
+    "analyzing": "Klasörler taranıyor…",
+    "rescan": "Tekrar Analiz Et",
+    "result": "Geçerli klasör",
+    "treemap": "Alan Haritası",
+    "treemapRemainder": "Daha küçük öğe · {count} | Daha küçük öğeler · {count}",
+    "treemapRemainderHint": "{count} küçük öğe toplam {size} alan kullanıyor. Tüm ayrıntılar listede görülebilir | {count} küçük öğe toplam {size} alan kullanıyor. Tüm ayrıntılar listede görülebilir",
+    "details": "Liste",
+    "back": "Geri",
+    "forward": "İleri",
+    "home": "Analiz köküne dön",
+    "localDisk": "Yerel disk",
+    "name": "Ad",
+    "size": "Boyut",
+    "fileCount": "Dosyalar",
+    "modified": "Son değiştirilme",
+    "sortAscending": "Artan sırala",
+    "sortDescending": "Azalan sırala",
+    "showInFileManager": "Dosya Yöneticisinde Göster",
+    "deletePermanently": "Kalıcı Olarak Sil",
+    "deleteTitle": "Bu öğe kalıcı olarak silinsin mi?",
+    "deleteDescription": "Dosya veya klasör hemen silinecek ve geri getirilemeyecek",
+    "deleteAction": "Kalıcı Olarak Sil",
+    "emptyTitle": "Disk alanını nelerin kullandığını görün",
+    "emptyDescription": "Seçili konumdaki dosya ve klasörlerin disk alanını nasıl kullandığını analiz edin",
+    "folderFileSummary": "{folders} klasör · {files} dosya | {folders} klasör · {files} dosya",
+    "folderSpaceSummary": "{folders} klasör · {size} | {folders} klasör · {size}"
+  },
+  "largeFiles": {
+    "title": "Büyük Dosya Temizliği",
+    "start": "Taramayı Başlat",
+    "rescan": "Tekrar Tara",
+    "emptyTitle": "Büyük dosyaları bul",
+    "emptyDescription": "Seçili konumu en az {size} boyutundaki dosyalar için tara",
+    "fileName": "Dosya adı",
+    "location": "Yol",
+    "size": "Boyut",
+    "minimumSize": "Minimum dosya boyutu",
+    "modified": "Değiştirilme",
+    "openLocation": "Dosya Konumunu Aç",
+    "deletePermanently": "Kalıcı Olarak Sil",
+    "noResults": "Bu kapsamda eşleşen büyük dosya bulunamadı",
+    "noResultsDescription": "Boyut eşiğini düşürün, dosya türlerini değiştirin veya başka bir tarama kapsamı seçin",
+    "summaryCount": "En az {size} boyutunda {count} dosya bulundu | En az {size} boyutunda {count} dosya bulundu",
+    "summarySpace": "kullanılan alan:",
+    "thresholdChangedNotice": "Yeni minimum dosya boyutunu uygulamak için tekrar tarayın",
+    "scanning": "Büyük dosyalar taranıyor…",
+    "scanHint": "Disk genelinde dosya bilgilerini tarar ve korumalı klasörleri atlar",
+    "deleteConfirmTitle": "Bu dosya kalıcı olarak silinsin mi?",
+    "deleteConfirmDescription": "Bu işlem geri alınamaz",
+    "deleteConfirmAction": "Kalıcı Olarak Sil",
+    "selected": "Seçili",
+    "selectAll": "Tüm sonuçları seç",
+    "batchDelete": "Kalıcı Olarak Sil",
+    "batchDeleteTitle": "Seçili büyük dosyalar kalıcı olarak silinsin mi?",
+    "batchDeleteDescription": "Seçili dosyalar geri getirilemez",
+    "deleteSafetyNote": "Değişen veya erişilemez hâle gelen dosyalar otomatik olarak atlanır",
+    "deleteCompleted": "Büyük dosya temizliği tamamlandı",
+    "deleteCompletedWithWarnings": "Büyük dosya temizliği uyarılarla tamamlandı",
+    "deleteCompletedDescription": "{count} dosya silindi ve {size} alan boşaltıldı; {failed} başarısız | {count} dosya silindi ve {size} alan boşaltıldı; {failed} başarısız"
+  },
+  "fileCategories": {
+    "all": "Tümü",
+    "video": "Video",
+    "audio": "Ses",
+    "document": "Belgeler",
+    "archive": "Arşivler",
+    "image": "Görseller",
+    "other": "Diğer"
+  },
+  "duplicateFiles": {
+    "title": "Yinelenen Dosya Temizliği",
+    "start": "Taramayı Başlat",
+    "rescan": "Tekrar Tara",
+    "emptyTitle": "Yinelenen dosyaları bul",
+    "emptyDescription": "Seçili disk veya klasörü aynı içeriğe sahip dosyalar için tara",
+    "scanning": "Yinelenen dosyalar aranıyor…",
+    "validatingCandidates": "Olası eşleşmeler kontrol ediliyor…",
+    "comparingContents": "Dosya içerikleri karşılaştırılıyor…",
+    "scanHint": "Dosyalar içeriklerine göre karşılaştırılır. Büyük dosyalar yalnızca gerektiğinde tamamen okunur",
+    "deleteCompleted": "Yinelenen dosya temizliği tamamlandı",
+    "deleteCompletedWithWarnings": "Yinelenen dosya temizliği uyarılarla tamamlandı",
+    "deleteCompletedDescription": "{count} yinelenen dosya silindi ve {size} alan boşaltıldı; {failed} başarısız | {count} yinelenen dosya silindi ve {size} alan boşaltıldı; {failed} başarısız",
+    "summaryCount": "{count} yinelenen dosya grubu bulundu | {count} yinelenen dosya grubu bulundu",
+    "summaryReclaimable": "en fazla şu kadar alan boşaltılabilir:",
+    "summaryReclaimableScanning": "şu ana kadar boşaltılabilecek alan:",
+    "smartSelect": "Akıllı seçim",
+    "smartSelectRule": "Korunacak dosya",
+    "clearSelection": "Seçimi temizle",
+    "selected": "Seçili",
+    "noResults": "Bu kapsamda içeriği tamamen aynı olan dosya bulunamadı",
+    "noResultsDescription": "Dosya türlerini değiştirin veya başka bir konum seçip tekrar tarayın",
+    "selectGroup": "{count} kopyayı seç | {count} kopyayı seç",
+    "selectGroupHint": "Geçerli ayarınıza göre bir dosyayı koruyup diğer kopyaları seçin",
+    "clearGroupSelectionHint": "Bu gruptaki seçili kopyaları temizle",
+    "groupSelectionApplied": "{count} seçildi",
+    "batchDelete": "Kalıcı Olarak Sil",
+    "deletePermanently": "Kalıcı Olarak Sil",
+    "deleteSingleTitle": "Bu kopya kalıcı olarak silinsin mi?",
+    "deleteSingleDescription": "Bu işlem geri alınamaz",
+    "deleteTitle": "Seçili yinelenen kopyalar kalıcı olarak silinsin mi?",
+    "deleteDescription": "Seçili kopyalar geri getirilemez",
+    "deleteSafetyNote": "Her grupta en az bir dosya korunur. Değişen veya erişilemeyen dosyalar otomatik olarak atlanır",
+    "copyCount": "{count} kopya | {count} kopya",
+    "groupCount": "{count} yinelenen grup | {count} yinelenen grup",
+    "groupSummary": "{count} kopya · her biri {size} · en fazla {reclaimable} boşaltılabilir | {count} kopya · her biri {size} · en fazla {reclaimable} boşaltılabilir",
+    "directoryGroupSummary": "{count} aynı klasör · her birinde {files} · en fazla {reclaimable} boşaltılabilir | {count} aynı klasör · her birinde {files} · en fazla {reclaimable} boşaltılabilir"
+  },
+  "applicationLeftovers": {
+    "categoryTitle": "Uygulama kalıntıları",
+    "scanning": "Kaldırılmış uygulamalardan kalan veriler kontrol ediliyor…",
+    "scanHint": "Yalnızca artık yüklü olmayan bir uygulamayla açıkça ilişkilendirilebilen veriler gösterilir. Tarama hiçbir şeyi değiştirmez",
+    "accessLimitedDescription": "MangoDisk'in diğer uygulama verilerine erişmesine Sistem Ayarları → Gizlilik ve Güvenlik bölümünden izin verin, ardından tekrar tarayın",
+    "incompleteDescription": "Hatalı işlem riskini önlemek için hiçbir kalıntı gösterilmiyor. Daha sonra tekrar deneyin",
+    "emptyTitle": "Doğrulanmış uygulama kalıntısı bulunamadı",
+    "emptyDescription": "Güvenli şekilde uygulama kalıntısı olduğu doğrulanabilen veri bulunamadı",
+    "resultTitle": "Doğrulanmış uygulama kalıntıları",
+    "planSummary": "{applications} uygulamadan kalan {locations} konum",
+    "planImpact": "Seçili uygulama kalıntıları kalıcı olarak silinir ve geri getirilemez",
+    "selectCandidate": "{name} için kalan verileri seç",
+    "selectLocation": "{name} konumunu seç",
+    "locationCount": "{count} kalıntı konumu | {count} kalıntı konumu",
+    "executionSummary": "{count} öğe silindi ve {size} alan boşaltıldı; {failed} atlandı",
+    "sources": {
+      "sandboxContainer": "Özel uygulama verileri",
+      "applicationSupport": "Uygulama destek dosyaları",
+      "preferences": "Tercihler",
+      "logs": "Uygulama günlükleri",
+      "savedState": "Kaydedilmiş pencere verileri",
+      "webData": "Web sitesi ve ağ verileri",
+      "applicationScripts": "Uygulama betikleri"
+    }
+  },
+  "applicationUninstall": {
+    "title": "Uygulama Kaldırıcı",
+    "startScan": "Taramayı Başlat",
+    "rescan": "Tekrar Tara",
+    "scanning": "Yüklü uygulamalar taranıyor…",
+    "readingApplicationCatalog": "Yüklü uygulamalar okunuyor",
+    "checkingProcesses": "Çalışan uygulamalar kontrol ediliyor",
+    "validatingApplications": "Değişiklikler kontrol ediliyor",
+    "inspectingApplication": "Uygulama ayrıntıları kontrol ediliyor",
+    "currentScanStage": "Geçerli adım",
+    "currentApplicationSource": "Geçerli kaynak",
+    "currentApplication": "Kontrol edilen uygulama",
+    "checkedApplications": "Kontrol edilen uygulamalar",
+    "scannedApplicationData": "Kontrol edilen veriler",
+    "scanHint": "Yüklü uygulamaları ve ilişkili dosyaları hiçbir değişiklik yapmadan kontrol eder",
+    "searchPlaceholder": "Uygulama veya geliştirici ara",
+    "all": "Tümü",
+    "ready": "Hazır",
+    "running": "Çalışıyor",
+    "unavailable": "Kullanılamıyor",
+    "applicationName": "Uygulama adı",
+    "status": "Durum",
+    "applicationSize": "Boyut",
+    "applicationSizeUnavailable": "Bilinmiyor",
+    "estimatedPackageSize": "Yaklaşık {size}",
+    "windowsAppPackageSizeHint": "Paylaşılan dosyalar bu tahmine dahil değildir",
+    "lastUsed": "Son kullanım",
+    "lastUsedUnavailable": "Kullanım kaydı yok",
+    "installedOrUpdated": "Yüklenme veya güncellenme",
+    "installDateUnavailable": "Tarih kullanılamıyor",
+    "sortByName": "Uygulama adına göre sırala",
+    "sortByStatus": "Uygulama durumuna göre sırala",
+    "sortBySize": "Uygulama boyutuna göre sırala",
+    "sortByDate": "Tarihe göre sırala",
+    "summary": "{count} uygulama bulundu | {count} uygulama bulundu",
+    "summarySpace": "kullanılan alan:",
+    "selectVisible": "Geçerli sonuçları seç",
+    "selectApplication": "{name} uygulamasını seç",
+    "selectComponent": "{application} için {component} bileşenini seç",
+    "showApplicationLocation": "{application} uygulamasını klasörde göster",
+    "showComponentLocation": "{component} bileşenini klasörde göster",
+    "emptyTitle": "Eşleşen uygulama yok",
+    "emptyDescription": "Aramayı temizleyin veya yüklü uygulamaları tekrar tarayın",
+    "incompleteTitle": "Yüklü uygulamalar tamamen okunamadı",
+    "incompleteDescription": "Hatalı işlem riskini önlemek için kaldırma işlemi kullanılamıyor. Daha sonra tekrar deneyin",
+    "viewOnlyTitle": "Bu sistemde uygulama kaldırma kullanılamıyor",
+    "viewOnlyDescription": "Yüklü uygulamaları inceleyebilirsiniz ancak MangoDisk burada uygulamaları kaldıramaz",
+    "applicationRunning": "Önce uygulamayı kapatın",
+    "requiresElevation": "Yönetici gerekli",
+    "requiresElevationDescriptionWindows": "Bu uygulama kaldırılırken yönetici onayı istenecektir",
+    "requiresElevationDescriptionMacos": "Bu uygulamayı kaldırmak için yönetici onayı gerekiyor. MangoDisk henüz bu kaldırma işlemini gerçekleştiremiyor ancak uygulamanın konumunu inceleyebilirsiniz",
+    "readyForReview": "Hazır",
+    "viewOnly": "Kaldırma kullanılamıyor",
+    "orphanedRegistration": "Uygulama dosyaları eksik",
+    "version": "Sürüm {version}",
+    "showLocation": "Klasörde göster",
+    "preflightFailed": "Uygulama değişti. Listeyi yenileyip tekrar deneyin",
+    "batchPreflightFailedSummary": "Bazı uygulamalar değişti. Listeyi yenileyip tekrar deneyin",
+    "selectedApplicationsLabel": "Seçili uygulamalar",
+    "selectedSizeLabel": "Boşaltılacak alan",
+    "uninstallSelected": "Seçilenleri Kaldır",
+    "uninstallEntryUnavailableDescription": "Windows bu uygulama için çalışan bir kaldırma seçeneği sağlamadı",
+    "orphanedRegistrationDescription": "Windows bu uygulamayı hâlâ listeliyor ancak uygulamanın dosyaları ve kaldırıcı programı eksik",
+    "possibleRelatedLocations": "Olası ilişkili kullanıcı verileri",
+    "possibleRelatedLocationsDescription": "Bu klasörler birden fazla uygulamaya ait olabilir. Yalnızca inceleme amacıyla gösterilir ve kaldırılmaz",
+    "showPossibleRelatedLocation": "{application} ile ilişkili olabilecek bir klasörü göster",
+    "confirmBatchTitle": "Seçili {count} uygulama kaldırılsın mı?",
+    "confirmBatchDescription": "Seçili uygulamalar ve geçici verileri kalıcı olarak silinecek ve geri getirilemeyecek",
+    "confirmBatchWithDataDescription": "Seçili uygulamalar ve doğrulanmış ilişkili verileri kalıcı olarak silinecek ve geri getirilemeyecek. Buna ayarlar veya yerel dosyalar dahil olabilir",
+    "confirmNativeBatchTitle": "Seçili {count} uygulama kaldırılsın mı?",
+    "confirmNativeBatchDescription": "Windows seçili uygulamaları tek tek kaldıracaktır. Ek onay veya ilerleme pencereleri görebilirsiniz",
+    "confirmNativeElevationDescription": "Bazı seçili uygulamalar yönetici izni gerektirir. Windows veya uygulama sizden onay isteyebilir",
+    "preparingBatchSummary": "Seçili uygulamalar kontrol ediliyor",
+    "confirmBatchSummary": "{count} uygulama kaldırılmaya hazır",
+    "validatingBatch": "Seçili uygulamalar doğrulanıyor",
+    "finalizingBatch": "Kaldırma sonuçları tamamlanıyor",
+    "uninstallingApplicationTitle": "{name} kaldırılıyor",
+    "executionProgressDescription": "{total} uygulamanın {completed} tanesi tamamlandı",
+    "cancellingBatch": "Uygulama kaldırma durduruluyor…",
+    "cancellingBatchDescription": "Geçerli sistem kaldırma adımı yine de tamamlanabilir; başka uygulama başlatılmayacaktır",
+    "executionProgressValue": "{completed} / {total}",
+    "uninstallItemList": "Uygulama kaldırma ilerlemesi",
+    "uninstallItemPending": "Kaldırılmayı bekliyor",
+    "uninstallItemActive": "Kaldırılıyor",
+    "uninstallItemInteractive": "Uygulamanın kaldırma penceresindeki adımları tamamlayın",
+    "uninstallItemCompleted": "Kaldırma tamamlandı",
+    "uninstallItemCancelled": "Başlamadan önce atlandı",
+    "uninstallItemFailed": "Tamamlanamadı",
+    "uninstallItemStatus": {
+      "pending": "Bekliyor",
+      "active": "Kaldırılıyor",
+      "completed": "Tamamlandı",
+      "cancelled": "Atlandı",
+      "failed": "Tamamlanmadı"
+    },
+    "cancelExecutionAction": "Kaldırmayı iptal et",
+    "cancellingAction": "İptal ediliyor…",
+    "cancelExecutionConfirmTitle": "Bu uygulama kaldırma işlemi durdurulsun mu?",
+    "cancelExecutionConfirmDescription": "Henüz başlamamış uygulamalar kaldırılmayacak. Daha önce kaldırılmış uygulamalar geri yüklenemez ve geçerli sistem kaldırma penceresi yine de tamamlanabilir",
+    "stopExecutionAction": "Kaldırmayı durdur",
+    "executionCancelledTitle": "Uygulama kaldırma durduruldu",
+    "executionCancelledDescription": "{completed} uygulama kaldırıldı; MangoDisk diğer {cancelled} uygulamanın sonucunu doğrulayamadı",
+    "unknownApplication": "Bilinmeyen uygulama",
+    "confirmBatchAction": "Kaldırmayı Onayla",
+    "cancelledTitle": "Kaldırma iptal edildi",
+    "cancelledDescription": "Hiçbir uygulama kaldırılmadı",
+    "completed": "Uygulama kaldırma tamamlandı",
+    "completedWithWarnings": "Kaldırma işlemi tamamen tamamlanamadı",
+    "batchExecutionSummary": "{count} uygulama kaldırıldı ve {size} alan boşaltıldı; {failed} tamamlanamadı",
+    "batchExecutionEstimateSummary": "{count} uygulama kaldırıldı. Tahmini alan: {size}. {failed} tamamlanamadı",
+    "restartRequired": "Windows, değişikliğin tamamlanması için yeniden başlatma gerektiğini bildiriyor",
+    "componentKinds": {
+      "applicationBinary": "Uygulama",
+      "nativeInstaller": "Windows kaldırıcı",
+      "windowsAppPackage": "Microsoft Store paketi",
+      "windowsMsiPackage": "Windows Installer paketi",
+      "windowsScoopPackage": "Scoop paketi",
+      "windowsChocolateyPackage": "Chocolatey paketi",
+      "windowsRegisteredUninstaller": "Kayıtlı kaldırıcı",
+      "cache": "Uygulama önbelleği",
+      "applicationSupport": "Uygulama destek dosyaları",
+      "preferences": "Tercihler",
+      "logs": "Uygulama günlükleri",
+      "savedState": "Kaydedilmiş pencere verileri",
+      "sandboxContainer": "Özel uygulama verileri",
+      "webData": "Web sitesi ve ağ verileri"
+    },
+    "executionModes": {
+      "silent": "Genellikle ek işlem gerektirmez",
+      "interactive": "Bir kaldırma penceresi gösterebilir",
+      "externalClient": "Kaldırma için paket yöneticisini kullanır"
+    },
+    "componentRisks": {
+      "required": "Kaldırma için gerekli",
+      "rebuildable": "Yeniden oluşturulabilir",
+      "userData": "Kullanıcı verileri içerebilir"
+    },
+    "initialTitle": "Yüklü uygulamaları yönetin",
+    "initialDescription": "Uygulama depolama alanını inceleyin ve kaldırma sırasında ilişkili dosyaları temizleyin"
+  },
+  "history": {
+    "title": "Temizlik Geçmişi",
+    "clear": "Geçmişi Temizle",
+    "clearConfirmTitle": "Tüm temizlik geçmişi temizlensin mi?",
+    "clearConfirmDescription": "Tüm temizlik kayıtları kalıcı olarak kaldırılacaktır. Bu işlem geri alınamaz ancak hiçbir dosya silinmez",
+    "clearConfirmAction": "Geçmişi Temizle",
+    "emptyTitle": "Henüz temizlik geçmişi yok",
+    "emptyDescription": "Tamamlanan temizlik işlemleri burada görünecek",
+    "categories": {
+      "deepCleanup": "Derin Temizlik",
+      "largeFileCleanup": "Büyük Dosya Temizliği",
+      "duplicateFileCleanup": "Yinelenen Dosya Temizliği",
+      "applicationUninstall": "Uygulama Kaldırıcı"
+    },
+    "operation": "İşlem",
+    "expected": "Beklenen",
+    "estimated": "Tahmini",
+    "actual": "Gerçekleşen",
+    "notCounted": "Temizlenen alana dahil değil",
+    "resultSpace": "Sonuç",
+    "statusWarnings": "Bazı öğeler atlandı",
+    "detailTitle": "Temizlik ayrıntıları",
+    "detailDescription": "Seçili öğeleri, alan değişikliklerini ve işlem sonuçlarını gözden geçirin",
+    "cleanupItems": "Temizlik öğeleri",
+    "uninstalledApplications": "Kaldırılan uygulamalar",
+    "affectedItems": "İşlenen öğeler",
+    "affectedApplications": "Kaldırılan uygulamalar",
+    "failedItems": "Atlanan veya başarısız olanlar",
+    "failedApplications": "Tamamlanamayan uygulamalar",
+    "deleted": "Kalıcı olarak silindi",
+    "deleteFailed": "Silinemedi",
+    "moreItemsOmitted": "{count} öğe daha genişletilmedi | {count} öğe daha genişletilmedi",
+    "duration": "Süre",
+    "recordSummary": "{items} temizlik öğesi · {files} işlendi | {items} temizlik öğesi · {files} işlendi",
+    "uninstallRecordSummary": "{items} uygulama seçildi · {files} kaldırıldı | {items} uygulama seçildi · {files} kaldırıldı",
+    "applicationLeftoverStatuses": {
+      "previewed": "Kontroller tamamlandı; hiçbir dosya silinmedi",
+      "completed": "Kalıcı olarak silindi",
+      "cancelled": "İşleme başlamadan önce iptal edildi",
+      "failed": "İşlenmedi"
+    },
+    "applicationLeftoverReasons": {
+      "candidateChanged": "İçerik onaylandıktan sonra değiştiği için atlandı",
+      "ownerReappeared": "İlgili uygulama veya yüklü uygulama listesi değiştiği için öğe atlandı",
+      "applicationRunning": "İlgili bir uygulama hâlâ çalışıyor",
+      "permanentDeleteFailed": "Öğe kalıcı olarak silinemedi"
+    },
+    "applicationUninstallStatuses": {
+      "previewed": "Kontroller tamamlandı; hiçbir dosya silinmedi",
+      "completed": "Kaldırma tamamlandı",
+      "cancelled": "Kaldırma başlamadan önce iptal edildi",
+      "failed": "İşlenmedi"
+    },
+    "applicationUninstallReasons": {
+      "applicationUnavailable": "Uygulama kullanılamıyor",
+      "applicationRunning": "Uygulama hâlâ çalışıyor",
+      "processStateUnavailable": "Uygulamanın çalışma durumu doğrulanamadı",
+      "catalogChanged": "Yüklü uygulamalar değişti; tekrar gözden geçirin",
+      "componentUnavailable": "Kaldırma için seçilen bir öğe kullanılamıyor",
+      "componentChanged": "Kaldırma için seçilen bir öğe gözden geçirildikten sonra değişti",
+      "unsupportedExecutor": "Bu sistemde kaldırma kullanılamıyor",
+      "executionAborted": "Önceki bir işlem başarısız olduğu için kalan içerikler silinmedi",
+      "externalUninstallerContinuing": "Sistem kaldırma penceresi hâlâ çalışıyor; sonucu doğrulanamadı",
+      "permanentDeleteFailed": "Öğe kalıcı olarak silinemedi",
+      "nativeInstallerFailed": "Windows Installer kaldırma işlemini tamamlayamadı",
+      "verificationFailed": "MangoDisk sonucu doğrulayamadı"
+    }
+  },
+  "settings": {
+    "title": "Ayarlar",
+    "generalSection": "Genel",
+    "scanSection": "Tarama Tercihleri",
+    "macosPermissionsSection": "macOS İzinleri",
+    "supportSection": "Destek",
+    "aboutSection": "Hakkında",
+    "languageTitle": "Dil",
+    "languageDescription": "MangoDisk'in kullanacağı dili seçin",
+    "languageNames": {
+      "zhCN": "简体中文",
+      "enUS": "İngilizce"
+    },
+    "themeTitle": "Tema",
+    "themeDescription": "Açık, koyu veya sistem temasını kullanın",
+    "themeLight": "Açık",
+    "themeDark": "Koyu",
+    "themeSystem": "Sistemi takip et",
+    "fullDiskAccessTitle": "Tam Disk Erişimi",
+    "fullDiskAccessDescription": "Daha kapsamlı temizlik sonuçları için MangoDisk'in korumalı sistem ve uygulama verilerini taramasına izin verir",
+    "openPrivacySettings": "Sistem Ayarları",
+    "permissionStatus": {
+      "notChecked": "Kontrol edilmedi",
+      "available": "Erişim doğrulandı",
+      "limited": "Erişim sınırlı"
+    },
+    "duplicateFileMinimumTitle": "Minimum yinelenen dosya boyutu",
+    "duplicateFileMinimumDescription": "Yinelenen Dosya Temizliği bu boyuttan küçük dosyaları atlar",
+    "duplicateKeeperRuleTitle": "Akıllı Seçim sırasında korunacak dosya",
+    "duplicateKeeperRuleDescription": "Her grupta eşleşen bir dosyayı korur ve kalan kopyaları seçer",
+    "duplicateKeeperRuleLabels": {
+      "shortestPath": "En kısa yola sahip dosya",
+      "shortestName": "En kısa ada sahip dosya",
+      "oldestModified": "En eski değiştirilme tarihine sahip dosya",
+      "newestModified": "En son değiştirilen dosya"
+    },
+    "feedbackTitle": "Geri Bildirim",
+    "feedbackDescription": "Sorunları veya önerileri GitHub üzerinden bildirin",
+    "feedbackAction": "Geri Bildirim Gönder",
+    "diagnosticLogsTitle": "Tanılama Günlükleri",
+    "diagnosticLogsDescription": "Sorun giderme için MangoDisk çalışma zamanı günlüklerini görüntüleyin",
+    "openLogFolderAction": "Klasörü Aç",
+    "softwareUpdateTitle": "Yazılım Güncellemeleri",
+    "updateCheckAction": "Güncellemeleri Denetle",
+    "updateChecking": "Denetleniyor…",
+    "updateVersionAvailable": "{version} sürümü kullanılabilir",
+    "updateDownloading": "İndiriliyor…",
+    "updateDownloadingProgress": "İndiriliyor · %{percent}",
+    "updateReadyToInstall": "Yüklemeye hazır",
+    "updateInstalling": "Yükleniyor…",
+    "updateRestartRequired": "Yeniden başlatma gerekli",
+    "updateRestarting": "Yeniden başlatılıyor…",
+    "updateUpToDate": "Güncel",
+    "updateUpToDateWithVersion": "Sürüm {version} · Güncel",
+    "updateRetry": "Tekrar Dene",
+    "updateCheckFailedTitle": "Güncellemeler denetlenemedi",
+    "updateCheckUnknownError": "Güncelleme hizmeti bilinmeyen bir hata döndürdü",
+    "versionUnknown": "Yükleniyor…",
+    "aboutTitle": "MangoDisk Hakkında",
+    "aboutDescription": "Disk temizleme ve depolama analizi için açık kaynaklı, hafif ve güvenli bir platformlar arası araç",
+    "projectLinksLabel": "Proje bağlantıları",
+    "websiteAction": "Resmî Web Sitesi",
+    "repositoryAction": "GitHub",
+    "licenseAction": "GPL-3.0 Lisansı",
+    "versionValue": "Sürüm {version}"
+  },
+  "updates": {
+    "availableTitle": "MangoDisk {version} kullanılabilir",
+    "currentVersionDescription": "Mevcut sürüm {version}",
+    "checkDescription": "Daha yeni bir sürüm olup olmadığını kontrol et",
+    "checkingDescription": "Güncelleme hizmetine bağlanılıyor…",
+    "upToDateDescription": "MangoDisk {version} güncel",
+    "releaseNotes": "Yenilikler",
+    "noReleaseNotes": "Bu güncelleme iyileştirmeler ve hata düzeltmeleri içeriyor",
+    "downloadUpdate": "Güncellemeyi İndir",
+    "continueInBackground": "Arka Planda Devam Et",
+    "downloadedTitle": "MangoDisk {version} hazır",
+    "installedTitle": "MangoDisk {version} yüklendi",
+    "downloadComplete": "İndirme tamamlandı · MangoDisk yüklemeden sonra yeniden başlatılacak",
+    "installAndRestart": "Yükle ve Yeniden Başlat",
+    "restartRequired": "Yükleme tamamlandı · Güncellemeyi tamamlamak için MangoDisk'i yeniden başlatın",
+    "restartNow": "Şimdi Yeniden Başlat",
+    "restarting": "MangoDisk yeniden başlatılıyor…",
+    "notNow": "Şimdi Değil",
+    "later": "Daha Sonra",
+    "retry": "Tekrar Dene",
+    "downloading": "Güncelleme indiriliyor…",
+    "downloadProgress": "{total} içinden {downloaded} indirildi",
+    "installing": "Güncelleme yükleniyor…",
+    "downloadFailed": "İndirme başarısız oldu",
+    "installFailed": "Yükleme başarısız oldu",
+    "restartFailed": "MangoDisk yeniden başlatılamadı",
+    "navigationNotice": "Yeni bir sürüm kullanılabilir"
+  },
+  "loading": {
+    "starting": "Disk bilgileri okunuyor…",
+    "scanning": "Boşaltılabilir içerik analiz ediliyor…",
+    "cancelling": "Tarama iptal ediliyor…",
+    "processing": "İşleniyor",
+    "currentStage": "Analiz ediliyor",
+    "currentDirectory": "Taranıyor",
+    "preparingDirectory": "Klasörler hazırlanıyor…",
+    "currentAnalysisDirectory": "Geçerli öğe",
+    "preparingAnalysisDirectory": "Analiz hazırlanıyor…",
+    "checkedItems": "dosya kontrol edildi",
+    "accessibleRuleProgress": "{total} kontrolün {completed} tanesi tamamlandı, {checked} dosya tarandı, {bytes} tarandı",
+    "checkedChecks": "Kontrol ilerlemesi",
+    "traversedData": "Taranan veri",
+    "elapsed": "Geçen süre",
+    "cancelHint": "Tarama yalnızca dosya bilgilerini okur; iptal etmek hiçbir şeyi değiştirmez",
+    "cleaning": "Seçili öğeler temizleniyor…",
+    "cleaningCurrentItem": "{name} temizleniyor",
+    "cleaningApplicationLeftovers": "Seçili uygulama verileri temizleniyor…",
+    "cancelCleanupAction": "Temizliği iptal et",
+    "cancelCleanupConfirmTitle": "Bu temizlik durdurulsun mu?",
+    "cancelCleanupConfirmDescription": "Henüz başlanmamış öğeler temizlenmeyecek. Tamamlanmış öğeler geri getirilemez ve geçerli sistem adımı yine de tamamlanabilir",
+    "stopCleanupAction": "Temizliği durdur",
+    "cancellingCleanupAction": "İptal ediliyor…",
+    "cancellingCleanup": "Temizlik durduruluyor…",
+    "cancellingCleanupHint": "Geçerli sistem adımı tamamlanabilir; henüz başlanmamış öğeler temizlenmeyecek",
+    "previewing": "Seçili öğeler kontrol ediliyor…",
+    "previewingCurrentItem": "{name} kontrol ediliyor",
+    "validating": "Seçili öğeler doğrulanıyor…",
+    "finalizing": "Temizlik sonuçları tamamlanıyor…",
+    "cleaningSafetyHint": "Seçiminiz temizleniyor; yanlışlıkla silmeyi önlemek için değişmiş veya kullanımda olan içerikler atlanır",
+    "previewingSafetyHint": "Seçili öğeler hiçbir şey silinmeden veya değiştirilmeden inceleniyor",
+    "elapsedSeconds": "{count} sn | {count} sn",
+    "cleanupItemList": "Temizlik öğesi ilerlemesi",
+    "cleanupItemWaiting": "Temizlenmeyi bekliyor",
+    "cleanupItemValidating": "Geçerli temizlik kapsamı kontrol ediliyor",
+    "cleanupItemSystemProcessing": "Sistem bu öğeyi işliyor",
+    "cleanupItemCompleted": "{count} işlendi, {size} alan boşaltıldı",
+    "cleanupItemChecked": "Kontrol tamamlandı; hiçbir içerik değiştirilmedi",
+    "cleanupItemPartial": "{count} işlendi ve {size} alan boşaltıldı; bazı içerikler atlandı",
+    "cleanupItemSkipped": "Bu öğe işlenmedi; ayrıntılar için sonucu inceleyin",
+    "cleanupItemDone": "Tamamlandı",
+    "cleanupItemSkippedLabel": "Atlandı",
+    "cleanupItemActive": "İşleniyor",
+    "cleanupItemPending": "Bekliyor",
+    "ruleProgress": "Öğe ilerlemesi",
+    "ruleProgressValue": "{completed} / {total}",
+    "cleanupProgressSummary": "{total} öğenin {completed} tanesi tamamlandı",
+    "processedItems": "İşlenen",
+    "releasedSpace": "Boşaltılan alan",
+    "checkedData": "Kontrol edilen veri",
+    "stepMayTakeMinutes": "Birkaç dakika sürebilir"
+  },
+  "cleanupRules": {
+    "categories": {
+      "ai": "Yapay zekâ modelleri ve önbellekleri",
+      "system": "Sistem",
+      "browser": "Tarayıcılar",
+      "container": "Konteynerler",
+      "dev": "Geliştirici araçları",
+      "app": "Uygulamalar"
+    },
+    "entries": {
+      "system.user-temp": {
+        "name": "Eski geçici dosyalar",
+        "description": "İşletim sistemi ve uygulamalar tarafından oluşturulan geçici çalışma dosyaları.",
+        "impact": "Kullanımda olan dosyalar atlanır. Uygulamalar gerektiğinde geçici içeriği yeniden oluşturur."
+      },
+      "system.darwin-user-cache": {
+        "name": "Etkin olmayan sistem önbelleği",
+        "description": "Yedi günden uzun süredir güncellenmemiş kullanıcı bazlı sistem önbellek dosyaları.",
+        "impact": "Ayarlar ve kişisel dosyalar korunur. macOS gerektiğinde önbellek verilerini yeniden oluşturur."
+      },
+      "system.old-diagnostic-logs": {
+        "name": "Eski tanılama günlükleri",
+        "description": "Yedi günden eski kullanıcı düzeyindeki uygulama günlükleri ve çökme raporları.",
+        "impact": "Yakın tarihli günlükler korunur ancak kaldırılan eski tanılama verileri daha sonra kullanılamaz."
+      },
+      "system.quicklook-cache": {
+        "name": "Quick Look önbelleği",
+        "description": "Quick Look tarafından oluşturulan küçük resimler ve geçici önizlemeler.",
+        "impact": "Orijinal dosyalar korunur. İlk yeni önizlemenin oluşturulması biraz zaman alabilir."
+      },
+      "system.help-cache": {
+        "name": "Sistem Yardım önbelleği",
+        "description": "macOS Yardım tarafından kullanılan indirilen içerikler ve arama verileri.",
+        "impact": "Yardım ayarları korunur. Yardım içeriği bir sonraki açılışta yeniden yüklenebilir."
+      },
+      "system.geo-services-cache": {
+        "name": "Harita ve konum önbelleği",
+        "description": "Haritalar ve konum servisleri tarafından saklanan önbelleğe alınmış coğrafi veriler.",
+        "impact": "Konum izinları değişmez. Harita verileri yeniden indirilebilir."
+      },
+      "system.apple-media-cache": {
+        "name": "Apple medya servisleri önbelleği",
+        "description": "App Store, Müzik ve diğer Apple medya servisleri tarafından kullanılan geçici veriler.",
+        "impact": "Satın alımlar ve medya arşivleri korunur. İçerik bir sonraki kullanımda yeniden yüklenebilir."
+      },
+      "system.parsecd-cache": {
+        "name": "Sistem önerileri önbelleği",
+        "description": "macOS öneri servisi tarafından oluşturulan geçici indeksler.",
+        "impact": "Kişisel dosyalar korunur. macOS gerektiğinde öneri indekslerini yeniden oluşturur."
+      },
+      "system.apple-intelligence-cache": {
+        "name": "Apple Intelligence önbelleği",
+        "description": "Yerel Apple Intelligence servisleri tarafından oluşturulan geçici veriler.",
+        "impact": "Modeller ve kişisel içerikler korunur. Bazı önbellek verileri başlangıçta yeniden oluşturulabilir."
+      },
+      "system.thumbnail-cache": {
+        "name": "Küçük resim ve simge önbelleği",
+        "description": "Windows Dosya Gezgini tarafından oluşturulan küçük resim ve simge veritabanları.",
+        "impact": "Windows klasörler tekrar açıldıkça önizlemeleri ve simgeleri yeniden oluşturur."
+      },
+      "system.directx-shader-cache": {
+        "name": "DirectX gölgelendirici önbelleği",
+        "description": "Grafik sürücüleri ve uygulamalar tarafından oluşturulan derlenmiş DirectX gölgelendirici önbelleği.",
+        "impact": "Oyunlar ve uygulama verileri korunur. Grafik uygulamaları gölgelendiricileri kısa süreliğine yeniden derleyebilir."
+      },
+      "system.crash-dumps": {
+        "name": "Çökme dökümleri",
+        "description": "Uygulamalar çöktüğünde oluşturulan tanılama döküm dosyaları.",
+        "impact": "Silinen dökümler daha önceki çökmeleri incelemek için kullanılamaz."
+      },
+      "system.error-reports": {
+        "name": "Windows hata raporları",
+        "description": "Windows Hata Raporlama tarafından oluşturulan kullanıcı ve sistem tanılama raporları.",
+        "impact": "Windows çalışmaya devam eder ancak kaldırılan raporlar artık sorun giderme amacıyla kullanılamaz."
+      },
+      "system.stale-partial-downloads": {
+        "name": "Eski tamamlanmamış indirmeler",
+        "description": "Yedi günden uzun süredir değişmemiş, tarayıcı veya indirme yöneticilerine ait tamamlanmamış dosyalar.",
+        "impact": "Kaldırılan indirmeler devam ettirilemez. Yakın tarihli görevler ve tamamlanmış dosyalar korunur."
+      },
+      "app.slack-cache": {
+        "name": "Slack önbelleği",
+        "description": "Slack tarafından oluşturulan yeniden oluşturulabilir web yanıtı, betik ve grafik önbelleği.",
+        "impact": "Çalışma alanları, mesajlar ve oturum durumu korunur. Temizlemeden önce Slack'i kapatın."
+      },
+      "app.discord-cache": {
+        "name": "Discord önbelleği",
+        "description": "Discord tarafından oluşturulan yeniden oluşturulabilir web yanıtı, betik ve grafik önbelleği.",
+        "impact": "Hesaplar, sohbetler ve oturum durumu korunur. Temizlemeden önce Discord'u kapatın."
+      },
+      "app.zoom-cache": {
+        "name": "Zoom önbelleği",
+        "description": "Zoom tarafından kaydedilen geçici dosyalar.",
+        "impact": "Kayıtlar, sohbet dosyaları ve ayarlar korunur. Temizlemeden önce Zoom'u kapatın."
+      },
+      "app.teams-cache": {
+        "name": "Microsoft Teams önbelleği",
+        "description": "Yeni ve klasik Microsoft Teams tarafından kullanılan yeniden oluşturulabilir web ve grafik önbelleği.",
+        "impact": "Sohbetler, hesaplar ve indirilen dosyalar korunur. Temizlemeden önce Teams'i kapatın."
+      },
+      "app.chatgpt-cache": {
+        "name": "ChatGPT önbelleği",
+        "description": "ChatGPT masaüstü uygulaması tarafından kaydedilen geçici dosyalar.",
+        "impact": "Konuşmalar ve oturum durumu korunur. Temizlemeden önce ChatGPT'yi kapatın."
+      },
+      "app.claude-cache": {
+        "name": "Claude önbelleği",
+        "description": "Claude Desktop tarafından kaydedilen geçici dosyalar.",
+        "impact": "Oturumlar, kimlik bilgileri ve günlükler korunur. Temizlemeden önce Claude'u kapatın."
+      },
+      "app.lm-studio-cache": {
+        "name": "LM Studio önbelleği",
+        "description": "LM Studio tarafından standart macOS önbellek dizininde oluşturulan yeniden oluşturulabilir içerik.",
+        "impact": "Modeller, sohbetler ve eski veri dizinleri korunur. Temizlemeden önce LM Studio'yu kapatın."
+      },
+      "app.figma-cache": {
+        "name": "Figma önbelleği",
+        "description": "Figma masaüstü uygulaması tarafından oluşturulan yeniden oluşturulabilir web, betik ve grafik önbelleği.",
+        "impact": "Yerel taslaklar ve tasarım dosyaları korunur. Temizlemeden önce Figma'yı kapatın."
+      },
+      "app.adobe-media-cache": {
+        "name": "Adobe medya önbelleği",
+        "description": "Adobe Creative uygulamaları tarafından oluşturulan medya analizi ve önizleme önbelleği.",
+        "impact": "Proje medyaları ve hazır ayarlar korunur. Projeler yeniden açıldığında medya tekrar analiz edilebilir."
+      },
+      "app.office-cache": {
+        "name": "Microsoft Office önbelleği",
+        "description": "Word, Excel ve PowerPoint tarafından oluşturulan standart uygulama önbelleği.",
+        "impact": "Belgeler, Otomatik Kurtarma verileri ve bulut içeriği korunur. Temizlemeden önce Office uygulamalarını kapatın."
+      },
+      "app.media-cache": {
+        "name": "Medya uygulaması önbelleği",
+        "description": "Müzik, podcast ve video uygulamaları tarafından oluşturulan standart sistem önbelleği.",
+        "impact": "Kitaplıklar, çevrimdışı içerikler ve medya dosyaları korunur. Temizlemeden önce ilgili uygulamaları kapatın."
+      },
+      "app.media-analysis-cache": {
+        "name": "Medya analiz önbelleği",
+        "description": "Korumalı alanda çalışan fotoğraf ve medya analiz servisleri tarafından oluşturulan önbellek ve geçici dosyalar.",
+        "impact": "Fotoğraflar ve videolar korunur. Arka plan analizi bazı verileri yeniden oluşturabilir."
+      },
+      "app.core-device-cache": {
+        "name": "Apple aygıt desteği önbelleği",
+        "description": "Apple aygıt bağlantı servisleri tarafından oluşturulan yerel önbellek.",
+        "impact": "Aygıt yedekleri korunur. Aygıt yeniden bağlandığında önbellek yeniden oluşturulabilir."
+      },
+      "app.wallpaper-agent-cache": {
+        "name": "Duvar kâğıdı önbelleği",
+        "description": "Korumalı duvar kâğıdı servisi tarafından oluşturulan çalışma zamanı önbelleği.",
+        "impact": "Duvar kâğıdı dosyaları, ayarlar ve önizleme kapakları korunur."
+      },
+      "app.google-updater-cache": {
+        "name": "Google güncelleyici önbelleği",
+        "description": "Google Updater tarafından indirilen uzantı güncellemeleri ve geçici yükleme dosyaları.",
+        "impact": "Uygulamalar kaldırılmaz. Güncelleme içeriği yeniden indirilebilir."
+      },
+      "app.electron-cache": {
+        "name": "Masaüstü uygulaması önbelleği",
+        "description": "Yaygın masaüstü uygulamalarına ait geçici görüntüleme verileri ve günlükler.",
+        "impact": "Hesaplar, oturumlar, veritabanları ve yerel belgeler korunur. Önce ilgili uygulamaları kapatın."
+      },
+      "app.douyin-live-updater-cache": {
+        "name": "Douyin Live Companion güncelleme önbelleği",
+        "description": "Douyin Live Companion tarafından indirilen eski yükleyici paketleri.",
+        "impact": "Uygulama ve canlı yayın içeriği korunur. Güncelleme paketleri gerektiğinde yeniden indirilir."
+      },
+      "app.wechat-diagnostic-cache": {
+        "name": "WeChat günlükleri ve geçici önbelleği",
+        "description": "Weixin ve WeChat tarafından oluşturulan tanılama günlükleri ve küçük geçici görüntüleme verileri.",
+        "impact": "Mesajlar, hesaplar, eklentiler ve kullanıcı dosyaları korunur. Temizlemeden önce WeChat'i kapatın."
+      },
+      "browser.chrome-cache": {
+        "name": "Chrome önbelleği",
+        "description": "Chrome tarafından kaydedilen geçici web sitesi ve başlangıç dosyaları.",
+        "impact": "Parolalar, çerezler, geçmiş, uzantılar ve yer imleri korunur. Önce tarayıcıyı kapatın."
+      },
+      "browser.edge-cache": {
+        "name": "Edge önbelleği",
+        "description": "Edge tarafından kaydedilen geçici web sitesi ve başlangıç dosyaları.",
+        "impact": "Parolalar, çerezler, geçmiş, uzantılar ve yer imleri korunur. Önce tarayıcıyı kapatın."
+      },
+      "browser.edge-offline-cache": {
+        "name": "Edge çevrimdışı önbelleği",
+        "description": "Daha hızlı veya çevrimdışı kullanım için Edge tarafından kaydedilen web sitesi verileri.",
+        "impact": "Parolalar, geçmiş ve yer imleri korunur. Bazı siteler çevrimdışı içeriği yeniden indirebilir."
+      },
+      "browser.chrome-offline-cache": {
+        "name": "Chrome çevrimdışı önbelleği",
+        "description": "Daha hızlı veya çevrimdışı kullanım için Chrome tarafından kaydedilen web sitesi verileri.",
+        "impact": "Parolalar, geçmiş ve yer imleri korunur. Bazı siteler çevrimdışı içeriği yeniden indirebilir."
+      },
+      "browser.brave-cache": {
+        "name": "Brave önbelleği",
+        "description": "Brave tarafından kaydedilen geçici web sitesi ve başlangıç dosyaları.",
+        "impact": "Parolalar, çerezler, geçmiş, uzantılar ve yer imleri korunur. Önce tarayıcıyı kapatın."
+      },
+      "browser.arc-cache": {
+        "name": "Arc önbelleği",
+        "description": "Arc tarafından kaydedilen geçici web sitesi ve başlangıç dosyaları.",
+        "impact": "Spaces, parolalar, çerezler, geçmiş, uzantılar ve yer imleri korunur. Önce tarayıcıyı kapatın."
+      },
+      "browser.vivaldi-cache": {
+        "name": "Vivaldi önbelleği",
+        "description": "Vivaldi tarafından kaydedilen geçici web sitesi ve başlangıç dosyaları.",
+        "impact": "Parolalar, çerezler, geçmiş, uzantılar ve yer imleri korunur. Önce tarayıcıyı kapatın."
+      },
+      "browser.chromium-cache": {
+        "name": "Chromium önbelleği",
+        "description": "Chromium tarafından kaydedilen geçici web sitesi ve başlangıç dosyaları.",
+        "impact": "Parolalar, çerezler, geçmiş, uzantılar ve yer imleri korunur. Önce tarayıcıyı kapatın."
+      },
+      "browser.firefox-cache": {
+        "name": "Firefox önbelleği",
+        "description": "Firefox tarafından kaydedilen geçici web sitesi ve başlangıç dosyaları.",
+        "impact": "Parolalar, çerezler, geçmiş, uzantılar ve yer imleri korunur. Önce tarayıcıyı kapatın."
+      },
+      "browser.opera-cache": {
+        "name": "Opera önbelleği",
+        "description": "Opera tarafından kaydedilen geçici web sitesi ve başlangıç dosyaları.",
+        "impact": "Parolalar, çerezler, geçmiş, uzantılar ve yer imleri korunur. Önce tarayıcıyı kapatın."
+      },
+      "dev.xcode-derived-data": {
+        "name": "Xcode Derived Data",
+        "description": "Xcode DerivedData, indeksler ve ara derleme çıktıları.",
+        "impact": "Kaynak kod korunur. Bir sonraki derleme ve indeksleme işlemi daha uzun sürebilir."
+      },
+      "dev.xcode-auxiliary-cache": {
+        "name": "Xcode dokümantasyon ve aygıt günlükleri",
+        "description": "On dört günden eski Xcode dokümantasyon indeksleri ve iOS veya watchOS aygıt günlükleri.",
+        "impact": "Kaynak kod ve arşivler korunur. Dokümantasyon indeksleri daha sonra yeniden oluşturulabilir."
+      },
+      "special.xcode-device-support": {
+        "name": "Xcode DeviceSupport",
+        "description": "Xcode tarafından fiziksel aygıtlarda hata ayıklama için hazırlanan sistem destek dosyaları.",
+        "impact": "Eşleşen sistem sürümünde hata ayıklama yapılırken Xcode desteği yeniden hazırlamak zorunda kalır."
+      },
+      "special.xcode-simulator-runtime": {
+        "name": "Simülatör çalışma zamanları",
+        "description": "Xcode tarafından yüklenen iOS, watchOS, tvOS ve visionOS simülatör çalışma zamanları.",
+        "impact": "Kaldırılan sistem sürümlerine ait simülatörler, çalışma zamanı Xcode üzerinden yeniden indirilene kadar çalışmaz."
+      },
+      "special.xcode-archives": {
+        "name": "Xcode uygulama arşivleri",
+        "description": "Dağıtım, dışa aktarma ve çökme sembolleştirmesi için kullanılan Xcode Archives.",
+        "impact": "Yalnızca inceleme amacıyla gösterilir ve hiçbir zaman temizleme seçimine eklenmez. Artık gerekmediğinden emin olduktan sonra arşivleri Xcode Organizer üzerinden yönetin."
+      },
+      "special.additional-user-caches": {
+        "name": "Ek kullanıcı önbellekleri",
+        "description": "Ayrı olarak listelenmeyen diğer uygulama önbellekleri.",
+        "impact": "Varsayılan olarak seçilmez. Kullanımda olan veya güvenli şekilde kontrol edilemeyen önbellekler atlanır. Uygulamalar bunları daha sonra yeniden oluşturabilir."
+      },
+      "dev.npm-cache": {
+        "name": "npm indirme önbelleği",
+        "description": "npm tarafından kaydedilen indirilmiş paketler.",
+        "impact": "Projeler ve yüklü bağımlılıklar korunur. Paketlerin yeniden indirilmesi gerekebilir."
+      },
+      "dev.npx-cache": {
+        "name": "npx geçici araçları",
+        "description": "npx tarafından geçici olarak indirilen ve çalıştırılan paketler.",
+        "impact": "Proje bağımlılıkları korunur. npx araçları yeniden indirebilir."
+      },
+      "dev.node-gyp-cache": {
+        "name": "node-gyp derleme önbelleği",
+        "description": "Yerel Node.js modüllerini derlemek için kullanılan başlık dosyaları ve geçici derleme önbelleği.",
+        "impact": "Kaynak kod korunur. Gerekli başlık dosyaları yeniden indirilebilir."
+      },
+      "dev.pnpm-cache": {
+        "name": "pnpm store önbelleği",
+        "description": "pnpm tarafından kaydedilen indirilmiş paketler.",
+        "impact": "Projeler ve yüklü bağımlılıklar korunur. Paketlerin yeniden indirilmesi gerekebilir."
+      },
+      "dev.yarn-cache": {
+        "name": "Yarn indirme önbelleği",
+        "description": "Yarn tarafından kaydedilen indirilmiş paketler.",
+        "impact": "Projeler ve yüklü bağımlılıklar korunur. Paketlerin yeniden indirilmesi gerekebilir."
+      },
+      "dev.pip-cache": {
+        "name": "pip indirme önbelleği",
+        "description": "pip tarafından kaydedilen indirilmiş paketler.",
+        "impact": "Projeler ve yüklü bağımlılıklar korunur. Paketlerin yeniden indirilmesi gerekebilir."
+      },
+      "dev.python-cache": {
+        "name": "Python paket önbelleği",
+        "description": "Python geliştirme araçları tarafından kaydedilen indirilmiş paketler ve analiz verileri.",
+        "impact": "Projeler ve yüklü bağımlılıklar korunur. Paketlerin yeniden indirilmesi gerekebilir."
+      },
+      "dev.python-tooling-cache": {
+        "name": "Python araç önbelleği",
+        "description": "Poetry ve pyenv-win tarafından kaydedilen paket ve yükleyici önbelleği.",
+        "impact": "Sanal ortamlar ve yüklü yorumlayıcılar korunur. Bağımlılıkların yeniden indirilmesi gerekebilir."
+      },
+      "dev.uv-cache": {
+        "name": "uv önbelleği",
+        "description": "uv tarafından kaydedilen indirilmiş ve derlenmiş paketler.",
+        "impact": "Projeler, sanal ortamlar ve yönetilen Python kurulumları korunur. Paketler yeniden indirilebilir veya derlenebilir."
+      },
+      "dev.dart-analysis-cache": {
+        "name": "Dart analiz önbelleği",
+        "description": "Dart ve Flutter araçları tarafından oluşturulan önbelleğe alınmış analiz sonuçları.",
+        "impact": "Projeler ve SDK'lar korunur. Düzenleyicilerin ve analiz araçlarının indekslerini yeniden oluşturması gerekebilir."
+      },
+      "dev.node-tooling-cache": {
+        "name": "Node.js araç önbelleği",
+        "description": "Corepack, nvm, Bun, node-gyp ve Electron tarafından indirilen araç zinciri önbelleği.",
+        "impact": "Proje bağımlılıkları korunur. Çalışma zamanları veya yerel derleme kaynakları yeniden indirilebilir."
+      },
+      "dev.cargo-cache": {
+        "name": "Cargo paket önbelleği",
+        "description": "Cargo tarafından kaydedilen indirilmiş paketler.",
+        "impact": "Projeler ve yüklü bağımlılıklar korunur. Paketlerin yeniden indirilmesi gerekebilir."
+      },
+      "dev.cargo-extracted-sources": {
+        "name": "Cargo çıkarılmış kaynak önbelleği",
+        "description": "Cargo tarafından yerel derlemeler için arşivlerden çıkarılan crate kaynak ağaçları.",
+        "impact": "Projeler ve indirilmiş crate arşivleri korunur. Cargo kaynakları yeniden çıkarabilir veya indirebilir."
+      },
+      "dev.go-cache": {
+        "name": "Go derleme önbelleği",
+        "description": "Yerel Go derleme çıktısı ve indirilen modül önbelleği.",
+        "impact": "Kaynak kod korunur. Sonraki derlemelerde kod yeniden derlenebilir veya modüller yeniden indirilebilir."
+      },
+      "dev.go-module-cache": {
+        "name": "Go modül önbelleği",
+        "description": "Go modülleri tarafından kaydedilen indirilmiş paketler.",
+        "impact": "Projeler ve yüklü bağımlılıklar korunur. Paketlerin yeniden indirilmesi gerekebilir."
+      },
+      "dev.homebrew-cache": {
+        "name": "Homebrew indirme önbelleği",
+        "description": "Homebrew tarafından kaydedilen indirilmiş paketler.",
+        "impact": "Projeler ve yüklü bağımlılıklar korunur. Paketlerin yeniden indirilmesi gerekebilir."
+      },
+      "dev.cocoapods-cache": {
+        "name": "CocoaPods önbelleği",
+        "description": "CocoaPods tarafından kaydedilen indirilmiş paketler.",
+        "impact": "Projeler ve yüklü bağımlılıklar korunur. Paketlerin yeniden indirilmesi gerekebilir."
+      },
+      "dev.swiftpm-cache": {
+        "name": "Swift Package Manager önbelleği",
+        "description": "Swift Package Manager tarafından kaydedilen indirilmiş paketler.",
+        "impact": "Projeler ve yüklü bağımlılıklar korunur. Paketlerin yeniden indirilmesi gerekebilir."
+      },
+      "dev.vscode-cache": {
+        "name": "Visual Studio Code önbelleği",
+        "description": "Visual Studio Code'a ait geçici arama, görüntüleme ve günlük verileri.",
+        "impact": "Projeler, ayarlar ve uzantılar korunur. Önce ilgili uygulamaları kapatın."
+      },
+      "dev.editor-cache": {
+        "name": "Kod düzenleyici önbelleği",
+        "description": "Kod düzenleyicilere ait geçici arama, görüntüleme ve günlük verileri.",
+        "impact": "Projeler, ayarlar ve uzantılar korunur. Önce ilgili uygulamaları kapatın."
+      },
+      "dev.browser-automation-cache": {
+        "name": "Tarayıcı otomasyonu önbelleği",
+        "description": "Playwright, Puppeteer, Cypress ve Selenium tarafından indirilen tarayıcı çalışma zamanları.",
+        "impact": "Test araçlarının tarayıcıları yeniden indirmesi gerekir ve çevrimdışıyken kullanılamayabilir."
+      },
+      "dev.visual-studio-cache": {
+        "name": "Visual Studio önbelleği",
+        "description": "Visual Studio'ya ait geçici arama, görüntüleme ve günlük verileri.",
+        "impact": "Projeler, ayarlar ve uzantılar korunur. Önce ilgili uygulamaları kapatın."
+      },
+      "dev.jetbrains-cache": {
+        "name": "JetBrains IDE önbelleği",
+        "description": "JetBrains IDE'leri ve Android Studio'ya ait geçici arama, görüntüleme ve günlük verileri.",
+        "impact": "Projeler, ayarlar ve eklentiler korunur. Önce ilgili uygulamaları kapatın."
+      },
+      "dev.android-cache": {
+        "name": "Android SDK önbelleği",
+        "description": "Android SDK Manager tarafından oluşturulan geçici indirme ve çıkarma önbelleği.",
+        "impact": "Yüklü SDK'lar, emülatörler ve projeler korunur. Bileşenlerin yeniden indirilmesi gerekebilir."
+      },
+      "dev.android-user-cache": {
+        "name": "Android kullanıcı önbelleği",
+        "description": "Android geliştirme araçları tarafından oluşturulan yeniden oluşturulabilir kullanıcı önbelleği.",
+        "impact": "Projeler, SDK'lar ve emülatörler korunur. Geliştirme araçları gerekli verileri yeniden oluşturur."
+      },
+      "dev.package-manager-cache": {
+        "name": "Paket yöneticisi önbelleği",
+        "description": "Composer, Deno ve vcpkg tarafından kaydedilen indirilmiş paketler.",
+        "impact": "Projeler ve yüklü bağımlılıklar korunur. Paketlerin yeniden indirilmesi gerekebilir."
+      },
+      "dev.nuget-cache": {
+        "name": "NuGet paket ve istek önbelleği",
+        "description": "NuGet tarafından kaydedilen indirilmiş paketler ve HTTP yanıtları.",
+        "impact": "Projeler ve yüklü bağımlılıklar korunur. Paketlerin yeniden indirilmesi gerekebilir."
+      },
+      "dev.qclaw-compile-cache": {
+        "name": "QClaw derleme önbelleği",
+        "description": "QClaw'ın Node.js çalışma zamanı tarafından oluşturulan derlenmiş modül önbelleği.",
+        "impact": "Çalışma alanları, bellek, eklentiler ve ayarlar korunur. Önce QClaw'ı kapatın; önbellek yeniden oluşturulurken başlangıç daha yavaş olabilir."
+      },
+      "dev.maven-cache": {
+        "name": "Maven paket önbelleği",
+        "description": "Maven yerel deposundaki indirilmiş ve yerel olarak yüklenmiş yapıtlar.",
+        "impact": "Projeler ve Maven ayarları korunur. Yalnızca yerelde bulunan yapıtların yeniden derlenmesi veya yüklenmesi gerekir."
+      },
+      "dev.gradle-cache": {
+        "name": "Gradle önbelleği",
+        "description": "Gradle tarafından kaydedilen indirilmiş paketler.",
+        "impact": "Projeler ve yüklü bağımlılıklar korunur. Paketlerin yeniden indirilmesi gerekebilir."
+      },
+      "dev.user-tool-cache": {
+        "name": "Geliştirici aracı önbelleği",
+        "description": "Komut satırı geliştirici araçları tarafından oluşturulan yeniden oluşturulabilir önbellek.",
+        "impact": "Projeler ve yüklü araçlar korunur. Destek verilerinin yeniden indirilmesi gerekebilir."
+      },
+      "dev.build-accelerator-cache": {
+        "name": "Derleme hızlandırıcı önbelleği",
+        "description": "Derleme hızlandırma araçları tarafından oluşturulan yerel derleme yapıtları.",
+        "impact": "Kaynak kod korunur. Sonraki derlemelerde daha önce önbelleğe alınmış içerik yeniden derlenebilir."
+      },
+      "dev.sccache-cache": {
+        "name": "sccache derleme önbelleği",
+        "description": "Rust, C/C++ ve diğer derlemeler için sccache tarafından önbelleğe alınan yeniden oluşturulabilir derleyici yapıtları.",
+        "impact": "Kaynak kod ve araç ayarları korunur. Sonraki derlemelerde önbelleğe alınmış içerik yeniden derlenebilir."
+      },
+      "dev.jvm-tooling-cache": {
+        "name": "JVM araç önbelleği",
+        "description": "JVM geliştirme araçları tarafından oluşturulan indeksler, indirmeler ve geçici veriler.",
+        "impact": "Projeler ve JDK kurulumları korunur. Araç verileri yeniden oluşturulabilir veya indirilebilir."
+      },
+      "ai.huggingface-xet-cache": {
+        "name": "Hugging Face indirme önbelleği",
+        "description": "Hugging Face indirme ve yüklemelerini hızlandırmak için kullanılan geçici dosyalar.",
+        "impact": "Modeller, veri kümeleri ve tamamlanmamış yüklemeler korunur. Gelecekteki aktarımlar bu dosyaları yeniden indirebilir."
+      },
+      "special.ai-model-hugging-face": {
+        "name": "Hugging Face yerel modelleri",
+        "description": "Hugging Face Hub tarafından indirilen model ağırlıkları ve snapshot'lar.",
+        "impact": "Yalnızca açıkça seçtiğiniz modeller kaldırılır. Uygulamaların kullanmadan önce bunları yeniden indirmesi gerekir."
+      },
+      "special.ai-model-whisper": {
+        "name": "Whisper konuşma modelleri",
+        "description": "OpenAI Whisper tarafından indirilen konuşma tanıma model ağırlıkları.",
+        "impact": "Yalnızca açıkça seçtiğiniz modeller kaldırılır. Transkripsiyon sırasında gerektiğinde yeniden indirilir."
+      },
+      "special.ai-model-pytorch": {
+        "name": "PyTorch Hub modelleri",
+        "description": "PyTorch Hub tarafından indirilen model checkpoint ve ağırlık dosyaları.",
+        "impact": "Yalnızca açıkça seçtiğiniz checkpoint'ler kaldırılır. Uygulamalar sonraki çalıştırmada bunları yeniden indirebilir."
+      },
+      "special.ai-cache-pytorch-hub-repositories": {
+        "name": "PyTorch Hub depo önbelleği",
+        "description": "Önceden eğitilmiş modeller yüklenirken PyTorch Hub tarafından indirilen model tanım depoları.",
+        "impact": "Yalnızca açıkça seçtiğiniz depo önbellekleri kaldırılır. Checkpoint'ler korunur ve ilgili model kodunun yeniden indirilmesi gerekir."
+      },
+      "special.ai-model-modelscope": {
+        "name": "ModelScope yerel modelleri",
+        "description": "ModelScope SDK, FunASR, Qwen ve ilgili framework'ler tarafından indirilen model depoları.",
+        "impact": "Yalnızca seçili modeller kaldırılır. Veri kümeleri ve eğitim çıktıları korunur; modellerin yeniden indirilmesi gerekir."
+      },
+      "special.ai-model-keras": {
+        "name": "Keras önceden eğitilmiş modelleri",
+        "description": "Keras Applications tarafından otomatik olarak indirilen önceden eğitilmiş ağırlıklar.",
+        "impact": "Yalnızca seçili ağırlıklar kaldırılır. Keras veri kümeleri korunur ve ağırlıkların yeniden indirilmesi gerekir."
+      },
+      "special.ai-model-openai-clip": {
+        "name": "OpenAI CLIP görsel modelleri",
+        "description": "OpenAI CLIP tarafından otomatik olarak indirilen görsel-metin model ağırlıkları.",
+        "impact": "Yalnızca seçili modeller kaldırılır. CLIP'in bir sonraki kullanımdan önce bunları yeniden indirmesi gerekir."
+      },
+      "special.ai-model-tensorflow-hub": {
+        "name": "TensorFlow Hub modelleri",
+        "description": "TensorFlow Hub tarafından yerel olarak indirilen ve çıkarılan model modülleri.",
+        "impact": "Yalnızca seçili modüller kaldırılır. Uygulamaların sonraki çalıştırmada bunları yeniden indirip çıkarması gerekir."
+      },
+      "special.ai-model-lm-studio": {
+        "name": "LM Studio yerel modelleri",
+        "description": "LM Studio tarafından saklanan büyük dil modelleri ve kuantize edilmiş ağırlıklar.",
+        "impact": "Önce LM Studio'yu kapatın. Yalnızca seçili modeller kaldırılır ve yeniden indirilmeleri gerekir."
+      },
+      "special.ai-model-ollama": {
+        "name": "Ollama yerel model kitaplığı",
+        "description": "İndirilmiş Ollama modellerini oluşturan dosyalar.",
+        "impact": "Ollama dosyaları modeller arasında paylaştığı için seçili kitaplık bütün olarak kaldırılır. Önce Ollama'yı kapatın. Modellerin yeniden indirilmesi gerekir."
+      },
+      "special.ai-model-coqui-tts": {
+        "name": "Coqui TTS konuşma modelleri",
+        "description": "Coqui TTS tarafından indirilen metinden konuşmaya ve vocoder modelleri.",
+        "impact": "Yalnızca açıkça seçtiğiniz modeller kaldırılır. Konuşma sentezi sırasında gerektiğinde yeniden indirilir."
+      },
+      "special.ai-model-gpt4all": {
+        "name": "GPT4All yerel modelleri",
+        "description": "GPT4All'ın varsayılan indirme dizininde saklanan GGUF dil modelleri.",
+        "impact": "Önce GPT4All'ı kapatın. Yalnızca seçili modeller kaldırılır; sohbetler ve LocalDocs korunur."
+      },
+      "special.ai-model-jan": {
+        "name": "Jan yerel modelleri",
+        "description": "Jan veri klasörü içinde yönetilen yerel modeller.",
+        "impact": "Önce Jan'ı kapatın. Yalnızca seçili modeller kaldırılır; konuşmalar, asistanlar, ayarlar ve günlükler korunur."
+      },
+      "project.rust-build-artifacts": {
+        "name": "Rust derleme artıkları",
+        "description": "Cargo target çıktıları ve çapraz derleme önbelleği.",
+        "impact": "Kaynak kod ve Cargo yapılandırması korunur. Bir sonraki derlemede target'lar yeniden derlenir."
+      },
+      "project.node-build-artifacts": {
+        "name": "Node.js derleme artıkları",
+        "description": "Node.js projelerindeki bağımlılık klasörleri ve framework derleme önbellekleri.",
+        "impact": "Kaynak kod ve lock dosyaları korunur. Bağımlılıkların ve önbelleklerin yeniden oluşturulması gerekir."
+      },
+      "project.react-native-build-artifacts": {
+        "name": "React Native derleme artıkları",
+        "description": "React Native projelerindeki Android, iOS, Expo ve Metro önbellekleri.",
+        "impact": "Proje kaynak kodu korunur. Mobil derlemeler bu önbellekleri yeniden oluşturur."
+      },
+      "project.python-build-artifacts": {
+        "name": "Python derleme artıkları",
+        "description": "Python projelerindeki test, tip kontrolü ve bytecode önbellekleri.",
+        "impact": "Kaynak kod ve sanal ortamlar korunur. Araçlar önbelleklerini yeniden oluşturur."
+      },
+      "project.maven-build-artifacts": {
+        "name": "Maven derleme artıkları",
+        "description": "Maven projelerindeki target klasörleri altında bulunan derlenmiş çıktılar.",
+        "impact": "Kaynak kod ve pom.xml korunur. Bir sonraki derlemede proje yeniden derlenir."
+      },
+      "project.gradle-build-artifacts": {
+        "name": "Gradle derleme artıkları",
+        "description": "Gradle derleme çıktıları ve proje içi önbellek.",
+        "impact": "Kaynak kod ve derleme betikleri korunur. Bir sonraki derleme çıktıları yeniden oluşturur."
+      },
+      "project.sbt-build-artifacts": {
+        "name": "SBT derleme artıkları",
+        "description": "SBT target klasörleri altındaki derlenmiş çıktılar.",
+        "impact": "Scala kaynak kodu ve derleme tanımları korunur. Bir sonraki derlemede target'lar yeniden derlenir."
+      },
+      "project.dotnet-build-artifacts": {
+        "name": ".NET derleme artıkları",
+        "description": ".NET projelerindeki derlenmiş bin ve obj klasörleri.",
+        "impact": "Proje dosyaları ve kaynak kod korunur. Bir sonraki derlemede proje yeniden derlenir."
+      },
+      "project.swift-build-artifacts": {
+        "name": "Swift derleme artıkları",
+        "description": "Swift Package Manager tarafından oluşturulan .build klasörü.",
+        "impact": "Package.swift ve kaynak kod korunur. Bağımlılıklar ve target'lar yeniden derlenir."
+      },
+      "project.flutter-build-artifacts": {
+        "name": "Flutter derleme artıkları",
+        "description": "Flutter ve Dart projelerindeki derleme çıktıları ve araç önbellekleri.",
+        "impact": "Proje kaynak kodu korunur. Flutter kaldırılan klasörleri yeniden oluşturur."
+      },
+      "project.cmake-build-artifacts": {
+        "name": "CMake derleme artıkları",
+        "description": "CMake projelerinde yaygın olarak kullanılan kaynak ağacı dışı derleme klasörleri.",
+        "impact": "CMakeLists.txt ve kaynak kod korunur. Projenin yeniden yapılandırılması ve derlenmesi gerekir."
+      },
+      "project.zig-build-artifacts": {
+        "name": "Zig derleme artıkları",
+        "description": "Zig projelerindeki yerel derleme önbellekleri.",
+        "impact": "build.zig ve kaynak kod korunur. Bir sonraki derlemede target'lar yeniden derlenir."
+      },
+      "project.godot-build-artifacts": {
+        "name": "Godot derleme artıkları",
+        "description": "Godot tarafından oluşturulan içe aktarılmış veriler ve düzenleyici önbelleği.",
+        "impact": "Proje varlıkları ve ayarları korunur. Godot kaynakları yeniden içe aktarır."
+      },
+      "project.elixir-build-artifacts": {
+        "name": "Elixir derleme artıkları",
+        "description": "Mix çıktıları ve dil sunucusu önbellekleri.",
+        "impact": "Elixir kaynak kodu ve mix.exs korunur. Araçlar önbelleklerini yeniden oluşturur."
+      },
+      "project.terraform-build-artifacts": {
+        "name": "Terraform çalışma dizini",
+        "description": "Terraform proje çalışma klasörlerine indirilen provider ve modüller.",
+        "impact": "Yapılandırma, state ve lock dosyaları korunur. Başlatma işlemi bağımlılıkları yeniden indirebilir."
+      },
+      "project.unity-build-artifacts": {
+        "name": "Unity derleme artıkları",
+        "description": "Unity Library, Temp, Obj ve tanılama klasörleri.",
+        "impact": "Assets ve ProjectSettings korunur. Bir projenin yeniden içe aktarılması zaman alabilir."
+      },
+      "project.unreal-build-artifacts": {
+        "name": "Unreal derleme artıkları",
+        "description": "Unreal projelerindeki Binaries, ara çıktılar ve derived-data önbelleği.",
+        "impact": "Proje içeriği ve yapılandırması korunur. Unreal çıktıları yeniden oluşturur."
+      },
+      "project.cocoapods-build-artifacts": {
+        "name": "CocoaPods proje bağımlılıkları",
+        "description": "Proje Podfile'ından yüklenen Pods klasörü.",
+        "impact": "Kaynak kod, Podfile ve lock dosyası korunur. Bağımlılıkların yeniden yüklenmesi gerekir."
+      },
+      "project.haskell-build-artifacts": {
+        "name": "Haskell derleme artıkları",
+        "description": "Yerel Stack ve Cabal derleme klasörleri.",
+        "impact": "Haskell kaynak kodu ve proje yapılandırması korunur. Bir sonraki derlemede target'lar yeniden derlenir."
+      },
+      "project.composer-build-artifacts": {
+        "name": "Composer proje bağımlılıkları",
+        "description": "PHP Composer tarafından yüklenen bağımlılıklar.",
+        "impact": "Kaynak dosyalar, composer.json ve lock dosyaları korunur. Bağımlılıkların yeniden yüklenmesi gerekir."
+      },
+      "project.jupyter-build-artifacts": {
+        "name": "Jupyter notebook checkpoint'leri",
+        "description": "Jupyter notebook dosyalarının yanında otomatik olarak oluşturulan checkpoint klasörleri.",
+        "impact": "Notebook dosyaları korunur. Düzenlemeye devam ettikçe Jupyter checkpoint'leri yeniden oluşturur."
+      },
+      "project.pixi-build-artifacts": {
+        "name": "Pixi proje ortamı",
+        "description": "Bir Pixi projesi için oluşturulan yerel ortam.",
+        "impact": "Kaynak dosyalar, pixi.toml ve lock dosyaları korunur. Ortamın yeniden oluşturulması gerekir."
+      },
+      "special.docker-build-cache": {
+        "name": "Docker derleme önbelleği",
+        "description": "Docker'ın kullanılmıyor ve herhangi bir image ile paylaşılmıyor olarak bildirdiği derleme önbelleği.",
+        "impact": "Image'lar, konteynerler, ağlar ve volume'ler korunur. Sonraki derlemelerde önbellek yeniden indirilebilir veya oluşturulabilir."
+      },
+      "special.conda-cache": {
+        "name": "Conda indirme önbelleği",
+        "description": "Conda tarafından bildirilen indirilmiş paketler ve geçici veriler.",
+        "impact": "Ortamlar ve yüklü paketler korunur. Conda bu dosyaları yeniden indirebilir."
+      },
+      "special.codex-archived-sessions": {
+        "name": "Eski Codex arşivlenmiş oturumları",
+        "description": "30 gündür değiştirilmemiş Codex konuşma arşivleri.",
+        "impact": "Yalnızca seçili arşivlenmiş oturumlar kalıcı olarak kaldırılır. Yeniden açılamaz veya geri getirilemez."
+      },
+      "special.rust-toolchains": {
+        "name": "Ek Rust toolchain'leri",
+        "description": "Varsayılan, aktif, override veya algılanmış proje yapılandırması tarafından gerektirilmeyen yüklü Rust sürümleri.",
+        "impact": "Yalnızca seçili sürümler rustup üzerinden kaldırılır. Bunlara hâlâ ihtiyaç duyan projelerin sürümleri yeniden indirmesi gerekir."
+      },
+      "special.windows-recycle-bin": {
+        "name": "Geri Dönüşüm Kutusu",
+        "description": "Mevcut hesabın Windows Geri Dönüşüm Kutusu'ndaki tüm öğeler.",
+        "impact": "Geri Dönüşüm Kutusu boşaltıldıktan sonra dosya ve klasörler geri yüklenemez. Bu öğe varsayılan olarak hiçbir zaman seçilmez."
+      },
+      "special.windows-system-logs": {
+        "name": "Windows günlük dosyaları",
+        "description": "Windows dizinindeki Panther, Logs ve System32\\LogFiles altında bulunan üç günden eski kurulum, yükseltme ve tanılama günlükleri.",
+        "impact": "Yalnızca sabit Windows günlük konumları ve desteklenen günlük türleri dahil edilir. Kullanımda olan veya hesabınızın erişemediği dosyalar atlanır."
+      },
+      "special.windows-internet-cache": {
+        "name": "Geçici internet dosyaları",
+        "description": "Windows'un kaldırılabilir olarak bildirdiği geçici internet verileri.",
+        "impact": "Kaydedilmiş parolalar ve tarama geçmişi korunur. Bazı sayfalar yeniden yüklenebilir."
+      },
+      "special.windows-delivery-optimization": {
+        "name": "Teslim İyileştirme dosyaları",
+        "description": "Windows'un artık ihtiyaç duymadığı güncelleme dağıtım önbelleği.",
+        "impact": "Yüklü güncellemeler korunur. Windows güncelleme verilerini yeniden indirebilir."
+      },
+      "special.windows-defender-cache": {
+        "name": "Microsoft Defender önbelleği",
+        "description": "Windows'un kaldırılabilir olarak bildirdiği geçici Defender verileri.",
+        "impact": "Koruma ayarları, karantina ve mevcut güvenlik tanımları korunur."
+      },
+      "special.windows-update-cleanup": {
+        "name": "Windows Update temizliği",
+        "description": "Windows'un kaldırılabilir olarak bildirdiği, yerini daha yeni sürümlerin aldığı güncelleme dosyaları.",
+        "impact": "Yüklü güncellemeler etkin kalır. Eski güncelleme dosyalarının kaldırılması geri alma seçeneklerini sınırlayabilir."
+      },
+      "special.macos-universal-binaries": {
+        "name": "Universal binary'ler",
+        "description": "Uyumlu Mac uygulamalarında bulunan ek Intel veya Apple silicon kodları.",
+        "impact": "Bu Mac'in ihtiyaç duyduğu kod korunur ve her uygulama temizlik öncesinde ve sonrasında kontrol edilir. Çalışan veya güvenli şekilde değiştirilemeyen uygulamalar atlanır. Her iki işlemci mimarisine yönelik desteği geri yüklemek için uygulamayı yeniden yükleyin veya güncelleyin."
+      }
+    },
+    "actionMessages": {
+      "blocked": "İlgili uygulamaları kapatıp tekrar deneyin",
+      "previewed": "Kontroller tamamlandı. Hiçbir dosya silinmedi",
+      "completed": "Temizlik tamamlandı",
+      "partial": "Kullanımda olan veya izni bulunmayan dosyalar güvenli şekilde atlandı",
+      "failed": "Temizlik tamamlanamadı. Başka hiçbir dosya kaldırılmadı"
+    },
+    "actionReasons": {
+      "runningProcesses": "{processes} uygulamalarını kapatıp tekrar deneyin",
+      "itemsSkipped": "Kullanımda olan veya izni bulunmayan dosyalar güvenli şekilde atlandı",
+      "requiredToolUnavailable": "Bu temizlik için gerekli uygulama veya araç kullanılamıyor. Hiçbir şey değiştirilmedi",
+      "preflightFailed": "Seçili dosyalar güvenli şekilde kontrol edilemedi. Hiçbir şey değiştirilmedi",
+      "executionFailed": "Temizlik tamamlanamadı. Başka hiçbir dosya kaldırılmadı",
+      "verificationFailed": "Temizlik tamamlandı ancak MangoDisk sonucu doğrulayamadı. Tekrar tarayın",
+      "cleanerUnavailable": "Bu temizlik seçeneği şu anda kullanılamıyor. Hiçbir şey değiştirilmedi"
+    }
+  }
+}
