@@ -27,14 +27,17 @@ import type { FileCategoryId } from '@/lib/models/file-category';
 import { DuplicateFileSelectionUtils } from '@/lib/utils/duplicate-file-selection';
 import { DuplicateFileGroupUtils } from '@/lib/utils/duplicate-file-group';
 import { ByteSizeService } from '@/lib/services/byte-size-service';
+import { AiAdvisorService } from '@/lib/services/ai-advisor-service';
 import { FormatUtils } from '@/lib/utils/format';
 import { PathUtils } from '@/lib/utils/path';
 import { useStorageScopeStore } from '@/stores/storage-scope-store';
+import { useAppStore } from '@/stores/app-store';
 
 import MdDuplicateFileGroups from './components/md-duplicate-file-groups.vue';
 import MdDuplicateSmartSelectButton from './components/md-duplicate-smart-select-button.vue';
 
 const { t } = useI18n({ useScope: 'global' });
+const appStore = useAppStore();
 
 const props = defineProps<{
   disk: DiskInfo | null;
@@ -71,9 +74,25 @@ const selectedScopePath = ref(
 );
 const activeCategory = ref<FileCategoryId>(FILE_CATEGORY_IDS.all);
 const selectedPaths = ref<string[]>([]);
+const aiAnalyzing = ref(false);
+const aiRecommendedPaths = ref<string[]>([]);
 const confirmOpen = ref(false);
 const pendingDeleteEntries = ref<DuplicateFileEntry[]>([]);
 const deleteRequested = ref(false);
+let aiAbortController: AbortController | null = null;
+let aiStaggerTimer: ReturnType<typeof setTimeout> | null = null;
+
+function abortAiAnalysis() {
+  if (aiStaggerTimer !== null) {
+    clearTimeout(aiStaggerTimer);
+    aiStaggerTimer = null;
+  }
+  if (aiAbortController) {
+    aiAbortController.abort();
+    aiAbortController = null;
+  }
+  aiAnalyzing.value = false;
+}
 
 const groups = computed(() => props.result?.groups ?? []);
 const categoryOptions = computed(() => {
@@ -131,6 +150,7 @@ watch(groups, nextGroups => {
   // Retain only selections that still exist in the current result.
   const existing = new Set(nextGroups.flatMap(group => group.entries.map(entry => entry.path)));
   selectedPaths.value = selectedPaths.value.filter(path => existing.has(path));
+  aiRecommendedPaths.value = aiRecommendedPaths.value.filter(path => existing.has(path));
 });
 
 watch(
@@ -160,6 +180,8 @@ watch(
 
 function start() {
   if (props.busy || props.deleting || !canStart.value) return;
+  abortAiAnalysis();
+  aiRecommendedPaths.value = [];
   selectedPaths.value = [];
   pendingDeleteEntries.value = [];
   emit('find', selectedScopePath.value);
@@ -185,6 +207,8 @@ function removeScopeFolder(path: string) {
 function updateMinimum(value: unknown) {
   const minimumBytes = Number(value);
   if (minimumBytes === props.minimumBytes || !minimumOptions.some(option => option.bytes === minimumBytes)) return;
+  abortAiAnalysis();
+  aiRecommendedPaths.value = [];
   emit('updateMinimum', minimumBytes);
 }
 
@@ -193,8 +217,10 @@ function applySmartSelection(rule = props.keeperRule) {
 }
 
 function toggleSmartSelection() {
+  abortAiAnalysis();
   if (selectedPaths.value.length) {
     selectedPaths.value = [];
+    aiRecommendedPaths.value = [];
     return;
   }
   applySmartSelection();
@@ -202,12 +228,72 @@ function toggleSmartSelection() {
 
 function selectKeeperRule(value: DuplicateKeeperRuleId) {
   if (!Object.values(DUPLICATE_KEEPER_RULE_IDS).includes(value)) return;
+  abortAiAnalysis();
+  aiRecommendedPaths.value = [];
   emit('updateKeeperRule', value);
   applySmartSelection(value);
 }
 
+async function runAiSmartSelect() {
+  if (props.busy || props.deleting || !groups.value.length || !props.resultComplete) return;
+  abortAiAnalysis();
+
+  aiAnalyzing.value = true;
+  aiRecommendedPaths.value = [];
+  selectedPaths.value = [];
+
+  const controller = new AbortController();
+  aiAbortController = controller;
+
+  try {
+    const config = {
+      apiKey: appStore.settings.aiApiKey,
+      baseUrl: appStore.settings.aiApiBaseUrl,
+      model: appStore.settings.aiModel,
+    };
+    const recommended = await AiAdvisorService.analyzeDuplicateFiles(groups.value, config, controller.signal);
+    if (controller.signal.aborted) return;
+
+    aiRecommendedPaths.value = recommended;
+    if (!recommended.length) {
+      selectedPaths.value = [];
+      aiAnalyzing.value = false;
+      aiAbortController = null;
+      return;
+    }
+
+    // Smooth staggered selection animation (50ms interval)
+    const pathsToSelect = [...recommended];
+    let index = 0;
+    const batchSize = Math.max(1, Math.floor(pathsToSelect.length / 20));
+
+    const processBatch = () => {
+      if (controller.signal.aborted) return;
+      const nextBatch = pathsToSelect.slice(index, index + batchSize);
+      index += batchSize;
+      selectedPaths.value = [...new Set([...selectedPaths.value, ...nextBatch])];
+
+      if (index < pathsToSelect.length) {
+        aiStaggerTimer = setTimeout(processBatch, 50);
+      } else {
+        aiAnalyzing.value = false;
+        aiAbortController = null;
+        aiStaggerTimer = null;
+      }
+    };
+
+    processBatch();
+  } catch (error: unknown) {
+    if (controller.signal.aborted) return;
+    aiAnalyzing.value = false;
+    aiAbortController = null;
+    emit('error', error);
+  }
+}
+
 function requestDelete(entries: DuplicateFileEntry[]) {
   if (props.busy || props.deleting || !entries.length) return;
+  abortAiAnalysis();
   pendingDeleteEntries.value = entries;
   confirmOpen.value = true;
 }
@@ -280,7 +366,7 @@ function confirmDelete() {
         :space-value="ByteSizeService.bytes(selectedBytes)"
         :action-label="t('duplicateFiles.batchDelete')"
         :disabled="!selectedEntries.length"
-        :busy="deleting"
+        :busy="deleting || aiAnalyzing"
         @action="requestDelete(selectedEntries)"
       >
         <template #action-icon><MdIcon :name="ICON_NAMES.trash" :size="16" /></template>
@@ -304,9 +390,11 @@ function confirmDelete() {
             <MdDuplicateSmartSelectButton
               :keeper-rule="keeperRule"
               :selected-count="selectedPaths.length"
+              :analyzing="aiAnalyzing"
               :disabled="!groups.length || busy || deleting || !resultComplete"
               @toggle="toggleSmartSelection"
               @select-rule="selectKeeperRule"
+              @ai-select="runAiSmartSelect"
             />
           </template>
         </MdResultSummary>
@@ -328,6 +416,7 @@ function confirmDelete() {
           <MdDuplicateFileGroups
             v-show="filteredGroups.length > 0"
             v-model:selected-paths="selectedPaths"
+            :ai-recommended-paths="aiRecommendedPaths"
             :scan-id="result.scanId"
             :category="activeCategory"
             :groups="filteredGroups"

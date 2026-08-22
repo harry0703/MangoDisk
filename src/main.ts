@@ -1,3 +1,6 @@
+import { setupBrowserDevMock } from './lib/utils/dev-mock';
+setupBrowserDevMock();
+
 import { createPinia } from 'pinia';
 import { createApp } from 'vue';
 
