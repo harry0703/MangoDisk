@@ -69,6 +69,13 @@
   gap: 2px;
 }
 
+.application-name-line {
+  display: inline-flex;
+  min-width: 0;
+  align-items: center;
+  gap: 6px;
+}
+
 .application-identity strong,
 .application-identity small {
   overflow: hidden;
@@ -78,6 +85,19 @@
 
 .application-identity strong {
   font-size: 13px;
+}
+
+.ai-badge {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 3px;
+  border-radius: var(--radius-sm);
+  padding: 1px 6px;
+  font-size: var(--font-content-meta);
+  font-weight: 500;
+  line-height: 1.3;
+  @apply border border-primary/20 bg-primary/10 text-primary;
 }
 
 .application-identity small {

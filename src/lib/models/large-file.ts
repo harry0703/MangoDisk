@@ -38,3 +38,5 @@ export interface LargeFilesResult {
   cacheReused: boolean;
   entries: LargeFileEntry[];
 }
+
+export type LargeFilesSelectionMode = 'smart' | 'all' | 'none' | 'manual';

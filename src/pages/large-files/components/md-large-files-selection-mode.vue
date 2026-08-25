@@ -3,15 +3,12 @@ import { useI18n } from 'vue-i18n';
 
 import MdIcon from '@/components/icons/md-icon.vue';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import type { CleanupSelectionMode } from '@/lib/utils/cleanup-rule-selection';
+import type { LargeFilesSelectionMode } from '@/lib/models/large-file';
 import { ICON_NAMES } from '@/lib/models/ui';
-import { ByteSizeService } from '@/lib/services/byte-size-service';
 
 defineProps<{
   busy: boolean;
-  mode: CleanupSelectionMode;
-  recommendedBytes: number;
-  totalBytes: number;
+  mode: LargeFilesSelectionMode;
   analyzing?: boolean;
 }>();
 
@@ -24,16 +21,16 @@ const { t } = useI18n({ useScope: 'global' });
 
 <template>
   <div class="selection-mode">
-    <span>{{ t('cleanup.selectionMode.label') }}</span>
+    <span>{{ t('largeFiles.selectionMode.label') }}</span>
     <Select :model-value="mode" :disabled="busy" @update:model-value="emit('change', $event)">
-      <SelectTrigger :aria-label="t('cleanup.selectionMode.label')">
+      <SelectTrigger :aria-label="t('largeFiles.selectionMode.label')">
         <SelectValue>
           <span v-if="analyzing && mode === 'smart'" class="selection-mode-analyzing">
             <MdIcon class="icon-spin" :name="ICON_NAMES.refresh" :size="13" />
             <span>{{ t('largeFiles.selectionMode.analyzing') }}</span>
           </span>
           <template v-else>
-            {{ t(`cleanup.selectionMode.${mode}`) }}
+            {{ t(`largeFiles.selectionMode.${mode}`) }}
           </template>
         </SelectValue>
       </SelectTrigger>
@@ -41,15 +38,15 @@ const { t } = useI18n({ useScope: 'global' });
         <SelectItem value="smart">
           <span class="selection-mode-item-smart">
             <MdIcon :name="ICON_NAMES.smartSelect" :size="14" class="text-primary" />
-            <span>{{ t('cleanup.selectionMode.smart') }} · {{ ByteSizeService.bytes(recommendedBytes) }}</span>
+            <span>{{ t('largeFiles.selectionMode.smart') }}</span>
           </span>
         </SelectItem>
         <SelectItem value="all">
-          {{ t('cleanup.selectionMode.all') }} · {{ ByteSizeService.bytes(totalBytes) }}
+          {{ t('largeFiles.selectionMode.all') }}
         </SelectItem>
-        <SelectItem value="none">{{ t('cleanup.selectionMode.none') }}</SelectItem>
+        <SelectItem value="none">{{ t('largeFiles.selectionMode.none') }}</SelectItem>
         <SelectItem v-if="mode === 'manual'" value="manual" disabled>
-          {{ t('cleanup.selectionMode.manual') }}
+          {{ t('largeFiles.selectionMode.manual') }}
         </SelectItem>
       </SelectContent>
     </Select>

@@ -24,12 +24,18 @@ import { RenderBatchUtils } from '@/lib/utils/render-batch';
 
 const { locale, t } = useI18n({ useScope: 'global' });
 
-const props = defineProps<{
-  entries: LargeFileEntry[];
-  selectedPaths: string[];
-  openDisabled: boolean;
-  deleteDisabled: boolean;
-}>();
+const props = withDefaults(
+  defineProps<{
+    entries: LargeFileEntry[];
+    selectedPaths: string[];
+    aiRecommendedPaths?: string[];
+    openDisabled: boolean;
+    deleteDisabled: boolean;
+  }>(),
+  {
+    aiRecommendedPaths: () => [],
+  }
+);
 const emit = defineEmits<{
   openEntry: [entry: LargeFileEntry];
   reveal: [path: string];
@@ -47,6 +53,7 @@ const remainingCount = computed(() =>
   RenderBatchUtils.remainingCount(sortedEntries.value.length, visibleEntries.value.length)
 );
 const selectedPathSet = computed(() => new Set(props.selectedPaths));
+const aiRecommendedPathSet = computed(() => new Set(props.aiRecommendedPaths));
 const selection = computed(() => LargeFileEntryUtils.selectionState(sortedEntries.value, selectedPathSet.value));
 
 watch(
@@ -159,6 +166,10 @@ function loadMore() {
         <div class="file-name">
           <MdNativeFileIcon :path="entry.path" :name="entry.name" compact />
           <strong class="md-result-primary"><MdMiddleEllipsis :text="entry.name" /></strong>
+          <span v-if="aiRecommendedPathSet.has(entry.path)" class="ai-badge" :title="t('largeFiles.aiAdvisorBadge')">
+            <MdIcon :name="ICON_NAMES.smartSelect" :size="11" />
+            <span>{{ t('largeFiles.aiAdvisorBadge') }}</span>
+          </span>
           <div class="file-name-actions">
             <MdIconAction variant="ghost" :label="t('common.showInFileManager')" @click="emit('reveal', entry.path)">
               <MdIcon :name="ICON_NAMES.folder" :size="16" />
@@ -273,6 +284,19 @@ function loadMore() {
 .file-name strong,
 .file-size {
   font-size: var(--font-content-primary);
+}
+
+.ai-badge {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 3px;
+  border-radius: var(--radius-sm);
+  padding: 1px 6px;
+  font-size: var(--font-content-meta);
+  font-weight: 500;
+  line-height: 1.3;
+  @apply border border-primary/20 bg-primary/10 text-primary;
 }
 
 .location-button {

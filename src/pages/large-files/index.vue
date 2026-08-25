@@ -23,16 +23,19 @@ import { ICON_NAMES } from '@/lib/models/ui';
 import type { DiskInfo } from '@/lib/models/disk';
 import type { TraversalProgress } from '@/lib/models/progress';
 import type { FileCategoryId } from '@/lib/models/file-category';
-import type { LargeFileEntry, LargeFilesResult } from '@/lib/models/large-file';
+import type { LargeFileEntry, LargeFilesResult, LargeFilesSelectionMode } from '@/lib/models/large-file';
 import { DiskUtils } from '@/lib/utils/disk';
 import { FileTypeUtils } from '@/lib/utils/file-type';
 import { ByteSizeService } from '@/lib/services/byte-size-service';
+import { AiAdvisorService } from '@/lib/services/ai-advisor-service';
 import { FormatUtils } from '@/lib/utils/format';
 import { LargeFileEntryUtils } from '@/lib/utils/large-file-entry';
 import { PathUtils } from '@/lib/utils/path';
 import { useStorageScopeStore } from '@/stores/storage-scope-store';
+import { useAppStore } from '@/stores/app-store';
 
 import MdLargeFileList from './components/md-large-file-list.vue';
+import MdLargeFilesSelectionMode from './components/md-large-files-selection-mode.vue';
 
 const { t } = useI18n({ useScope: 'global' });
 
@@ -58,6 +61,7 @@ const emit = defineEmits<{
 }>();
 
 const storageScopeStore = useStorageScopeStore();
+const appStore = useAppStore();
 const scopeId = STORAGE_SCOPE_IDS.largeFiles;
 const minimumOptions = ByteSizeService.presetOptions(LARGE_FILE_MINIMUM_PRESETS);
 const selectedScopePath = ref(
@@ -65,9 +69,14 @@ const selectedScopePath = ref(
 );
 const activeCategory = ref<FileCategoryId>(FILE_CATEGORY_IDS.all);
 const selectedPaths = ref<string[]>([]);
+const selectionMode = ref<LargeFilesSelectionMode>('none');
+const aiAnalyzing = ref(false);
+const aiRecommendedPaths = ref<string[]>([]);
 const pendingDelete = ref<LargeFileEntry[]>([]);
 const confirmOpen = ref(false);
 const deleteRequested = ref(false);
+let aiAbortController: AbortController | null = null;
+let aiStaggerTimer: ReturnType<typeof setTimeout> | null = null;
 
 const activeDisk = computed(() =>
   DiskUtils.findForPath(
@@ -138,6 +147,8 @@ watch(
 watch(minimumEntries, entries => {
   const existingPaths = new Set(entries.map(entry => entry.path));
   selectedPaths.value = selectedPaths.value.filter(path => existingPaths.has(path));
+  aiRecommendedPaths.value = aiRecommendedPaths.value.filter(path => existingPaths.has(path));
+  syncSelectionMode(selectedPaths.value);
 });
 watch(
   () => props.deleting,
@@ -148,8 +159,130 @@ watch(
     pendingDelete.value = [];
   }
 );
+
+function abortAiAnalysis() {
+  if (aiStaggerTimer !== null) {
+    clearTimeout(aiStaggerTimer);
+    aiStaggerTimer = null;
+  }
+  if (aiAbortController) {
+    aiAbortController.abort();
+    aiAbortController = null;
+  }
+  aiAnalyzing.value = false;
+}
+
+function syncSelectionMode(paths: string[]) {
+  const count = paths.length;
+  const total = minimumEntries.value.length;
+  if (count === 0) {
+    selectionMode.value = 'none';
+    return;
+  }
+  if (total > 0 && count === total) {
+    selectionMode.value = 'all';
+    return;
+  }
+  if (
+    aiRecommendedPaths.value.length > 0 &&
+    count === aiRecommendedPaths.value.length &&
+    aiRecommendedPaths.value.every(path => paths.includes(path))
+  ) {
+    selectionMode.value = 'smart';
+    return;
+  }
+  selectionMode.value = 'manual';
+}
+
+function updateSelectedPaths(paths: string[]) {
+  if (aiAnalyzing.value) {
+    abortAiAnalysis();
+  }
+  selectedPaths.value = paths;
+  syncSelectionMode(paths);
+}
+
+async function handleSelectionModeChange(value: unknown) {
+  if (!['smart', 'all', 'none'].includes(String(value))) return;
+  const mode = String(value) as LargeFilesSelectionMode;
+
+  abortAiAnalysis();
+
+  if (mode === 'none') {
+    selectionMode.value = 'none';
+    aiRecommendedPaths.value = [];
+    selectedPaths.value = [];
+    return;
+  }
+
+  if (mode === 'all') {
+    selectionMode.value = 'all';
+    aiRecommendedPaths.value = [];
+    selectedPaths.value = minimumEntries.value.map(entry => entry.path);
+    return;
+  }
+
+  if (mode === 'smart') {
+    selectionMode.value = 'smart';
+    aiAnalyzing.value = true;
+    aiRecommendedPaths.value = [];
+    selectedPaths.value = [];
+
+    const controller = new AbortController();
+    aiAbortController = controller;
+
+    try {
+      const config = {
+        apiKey: appStore.settings.aiApiKey,
+        baseUrl: appStore.settings.aiApiBaseUrl,
+        model: appStore.settings.aiModel
+      };
+      const recommended = await AiAdvisorService.analyzeLargeFiles(minimumEntries.value, config, controller.signal);
+      if (controller.signal.aborted) return;
+
+      aiRecommendedPaths.value = recommended;
+      if (!recommended.length) {
+        selectedPaths.value = [];
+        aiAnalyzing.value = false;
+        aiAbortController = null;
+        return;
+      }
+
+      // Smooth staggered selection animation (50ms interval)
+      const pathsToSelect = [...recommended];
+      let index = 0;
+      const batchSize = Math.max(1, Math.floor(pathsToSelect.length / 20));
+
+      const processBatch = () => {
+        if (controller.signal.aborted) return;
+        const nextBatch = pathsToSelect.slice(index, index + batchSize);
+        index += batchSize;
+        selectedPaths.value = [...new Set([...selectedPaths.value, ...nextBatch])];
+
+        if (index < pathsToSelect.length) {
+          aiStaggerTimer = setTimeout(processBatch, 50);
+        } else {
+          aiAnalyzing.value = false;
+          aiAbortController = null;
+          aiStaggerTimer = null;
+        }
+      };
+
+      processBatch();
+    } catch (error: unknown) {
+      if (controller.signal.aborted) return;
+      aiAnalyzing.value = false;
+      aiAbortController = null;
+      emit('error', error);
+    }
+  }
+}
+
 function start(refresh = false) {
   if (props.busy || props.deleting || !selectedScopePath.value) return;
+  abortAiAnalysis();
+  aiRecommendedPaths.value = [];
+  selectionMode.value = 'none';
   emit('find', selectedScopePath.value, refresh);
 }
 
@@ -163,6 +296,7 @@ function updateMinimum(value: unknown) {
   // need rows that were omitted from the published result, so request them
   // immediately after persisting the new preference. Core normally serves
   // this from the existing 50 MB in-memory scan result without traversing the disk.
+  abortAiAnalysis();
   emit('updateMinimum', minimumBytes);
   if (props.result && minimumBytes < props.result.minimumBytes && selectedScopePath.value) {
     emit('find', selectedScopePath.value, false);
@@ -260,9 +394,17 @@ function confirmDelete() {
         :space-value="ByteSizeService.bytes(selectedBytes)"
         :action-label="t('largeFiles.batchDelete')"
         :disabled="!selectedEntries.length"
-        :busy="deleting"
+        :busy="deleting || aiAnalyzing"
         @action="requestDelete(selectedEntries)"
       >
+        <template #options>
+          <MdLargeFilesSelectionMode
+            :busy="busy || deleting"
+            :mode="selectionMode"
+            :analyzing="aiAnalyzing"
+            @change="handleSelectionModeChange"
+          />
+        </template>
         <template #action-icon><MdIcon :name="ICON_NAMES.trash" :size="16" /></template>
       </MdSelectionActionBar>
     </template>
@@ -319,10 +461,12 @@ function confirmDelete() {
         <template v-if="result">
           <MdLargeFileList
             v-show="filteredEntries.length > 0"
-            v-model:selected-paths="selectedPaths"
+            :selected-paths="selectedPaths"
+            :ai-recommended-paths="aiRecommendedPaths"
             :entries="filteredEntries"
             :open-disabled="busy || deleting"
             :delete-disabled="busy || deleting"
+            @update:selected-paths="updateSelectedPaths"
             @open-entry="emit('openEntry', result.scanId, $event.path)"
             @reveal="emit('reveal', $event)"
             @delete="requestDelete([$event])"

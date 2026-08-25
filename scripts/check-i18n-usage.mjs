@@ -67,6 +67,7 @@ const dynamicKeyGroups = {
   ],
   'cleanup.selectionState': ['all', 'partial', 'none'],
   'cleanup.selectionMode': ['label', 'smart', 'all', 'none', 'manual'],
+  'largeFiles.selectionMode': ['label', 'smart', 'all', 'none', 'manual', 'analyzing'],
   'applicationLeftovers.sources': [
     'sandboxContainer',
     'applicationSupport',

@@ -59,7 +59,11 @@
       "skip": "今はしない",
       "openSettings": "システム設定を開く"
     },
-    "filters": { "all": "すべて", "enabled": "有効", "disabled": "無効" },
+    "filters": {
+      "all": "すべて",
+      "enabled": "有効",
+      "disabled": "無効"
+    },
     "sourceKinds": {
       "registryRun": "レジストリ起動",
       "startupFolder": "スタートアップフォルダー",
@@ -397,7 +401,16 @@
     "deleteSafetyNote": "変更されたファイルまたは利用できなくなったファイルは自動的にスキップされます",
     "deleteCompleted": "大容量ファイルのクリーンアップが完了しました",
     "deleteCompletedWithWarnings": "大容量ファイルのクリーンアップが警告付きで完了しました",
-    "deleteCompletedDescription": "{count} ファイルを削除し、{size} を解放しました。{failed} ファイルは削除できませんでした | {count} ファイルを削除し、{size} を解放しました。{failed} ファイルは削除できませんでした"
+    "deleteCompletedDescription": "{count} ファイルを削除し、{size} を解放しました。{failed} ファイルは削除できませんでした | {count} ファイルを削除し、{size} を解放しました。{failed} ファイルは削除できませんでした",
+    "selectionMode": {
+      "label": "選択",
+      "smart": "スマート選択",
+      "all": "すべて選択",
+      "none": "すべて解除",
+      "manual": "手動選択",
+      "analyzing": "AI 分析中…"
+    },
+    "aiAdvisorBadge": "AI 推奨"
   },
   "fileCategories": {
     "all": "すべて",
@@ -427,6 +440,8 @@
     "summaryReclaimableScanning": "現在の解放可能容量",
     "minimumSize": "最小ファイル",
     "smartSelect": "スマート選択",
+    "aiSelect": "AI 推奨",
+    "aiAdvisorBadge": "AI 推奨",
     "smartSelectMenuLabel": "スマート選択方法",
     "smartSelectSafetyHint": "各グループに少なくとも 1 つのファイルを残します。方法を変更すると選択内容が再生成されます",
     "keeperRuleLabels": {
@@ -765,7 +780,22 @@
     "websiteAction": "公式ウェブサイト",
     "repositoryAction": "GitHub",
     "licenseAction": "GPL-3.0 ライセンス",
-    "versionValue": "バージョン {version}"
+    "versionValue": "バージョン {version}",
+    "aiSection": "AI 設定",
+    "aiBaseUrlTitle": "API Base URL",
+    "aiBaseUrlDescription": "カスタム AI サービスのエンドポイント",
+    "aiBaseUrlPlaceholder": "例: https://api.openai.com/v1",
+    "aiApiKeyTitle": "API Key",
+    "aiApiKeyDescription": "カスタム API キー (ローカルにのみ保存され、直接接続)",
+    "aiApiKeyPlaceholder": "sk-xxx",
+    "aiModelTitle": "モデル名",
+    "aiModelDescription": "カスタム AI モデル名",
+    "aiConfigTitle": "AI アドバイザー設定",
+    "aiConfigDescription": "カスタム API Key、Base URL、モデルの設定",
+    "aiConfigAction": "設定",
+    "aiDialogTitle": "AI アドバイザー設定",
+    "aiDialogDescription": "カスタムモデルのエンドポイントとキーを設定します。空白の場合はデフォルト設定を使用します",
+    "aiSaveAction": "完了"
   },
   "updates": {
     "availableTitle": "MangoDisk {version} が利用可能です",
