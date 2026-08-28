@@ -78,6 +78,14 @@ Optimize settings that affect performance, privacy, and everyday usability in on
 
 > **Activity**
 
+**Restoring macOS defaults**
+
+System Optimization changes macOS preferences in place. To undo every change at once and return all affected settings to their factory defaults without toggling them individually in the app, run the bundled script. It backs up all affected preference domains to `~/Desktop` first, so any domain can be rolled back:
+
+```sh
+./scripts/restore-macos-defaults.sh
+```
+
 ### 8. Operation History
 
 See what each cleanup or system change did and how it turned out, making it easy to verify changes and investigate failed items.
