@@ -42,14 +42,20 @@ type CleanupNavigationItem =
   | { kind: 'leftovers'; id: typeof LEFTOVER_VIEW_ID };
 
 const { locale, t } = useI18n({ useScope: 'global' });
-const props = defineProps<{
-  busy: boolean;
-  leftovers: ApplicationLeftoverScanResult | null;
-  rules: PresentedScanRuleResult[];
-  selectedLeftoverIds: string[];
-  selectedRuleIds: string[];
-  sourceSelections: CleanupSourceSelection[];
-}>();
+const props = withDefaults(
+  defineProps<{
+    busy: boolean;
+    leftovers: ApplicationLeftoverScanResult | null;
+    rules: PresentedScanRuleResult[];
+    selectedLeftoverIds: string[];
+    selectedRuleIds: string[];
+    sourceSelections: CleanupSourceSelection[];
+    aiRecommendedRuleIds?: string[];
+  }>(),
+  {
+    aiRecommendedRuleIds: () => [],
+  }
+);
 const emit = defineEmits<{
   open: [path: string];
   selectLeftoverGroup: [candidateIds: string[], selected: boolean];
@@ -65,6 +71,7 @@ const visibleSourceCounts = ref<Record<string, number>>({});
 const visibleLeftoverCounts = ref<Record<string, number>>({});
 const applicationIcons = ref<ReadonlyMap<string, string>>(new Map());
 const detailList = ref<InstanceType<typeof MdResultTable> | null>(null);
+const aiRecommendedRuleIdSet = computed(() => new Set(props.aiRecommendedRuleIds));
 let iconRequestVersion = 0;
 
 const categories = computed(() =>
@@ -577,6 +584,14 @@ watch(
                 <span class="rule-main">
                   <span class="rule-title">
                     <strong class="md-result-primary">{{ row.rule.name }}</strong>
+                    <span
+                      v-if="aiRecommendedRuleIdSet.has(row.rule.ruleId)"
+                      class="ai-badge"
+                      :title="t('largeFiles.aiAdvisorBadge')"
+                    >
+                      <MdIcon :name="ICON_NAMES.smartSelect" :size="11" />
+                      <span>{{ t('largeFiles.aiAdvisorBadge') }}</span>
+                    </span>
                     <em v-if="activeCategory.id !== 'userCache' && row.rule.risk === 'safe'" class="safe">
                       {{ t('common.safe') }}
                     </em>

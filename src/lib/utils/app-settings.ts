@@ -29,22 +29,37 @@ export class AppSettingsUtils {
       largeFileMinimumBytes: ByteSizePresetUtils.bytes(DEFAULT_LARGE_FILE_MINIMUM_PRESET, unitBase),
       duplicateFileMinimumBytes: ByteSizePresetUtils.bytes(DEFAULT_DUPLICATE_FILE_MINIMUM_PRESET, unitBase),
       duplicateKeeperRule: DEFAULT_DUPLICATE_KEEPER_RULE,
+      aiApiKey: '',
+      aiApiBaseUrl: '',
+      aiModel: '',
     };
   }
 
   static parse(value: unknown, unitBase: ByteUnitBase = BYTE_UNIT_BASES.binary): AppSettings {
+    const rawSettings = typeof value === 'object' && value !== null ? { ...(value as Record<string, unknown>) } : {};
+    
+    // Backwards compatibility for versions before AI Advisor
+    if (rawSettings.language && !rawSettings.aiApiKey) {
+      rawSettings.aiApiKey = '';
+      rawSettings.aiApiBaseUrl = '';
+      rawSettings.aiModel = '';
+    }
+
     if (
-      !AppSettingsUtils.hasExactKeys(value, [
+      !AppSettingsUtils.hasExactKeys(rawSettings, [
         'language',
         'theme',
         'largeFileMinimumBytes',
         'duplicateFileMinimumBytes',
         'duplicateKeeperRule',
+        'aiApiKey',
+        'aiApiBaseUrl',
+        'aiModel',
       ])
     ) {
       throw new Error('Invalid app settings document');
     }
-    const settings = value;
+    const settings = rawSettings as unknown as AppSettings;
     const largeFileMinimumBytes = AppSettingsUtils.normalizePresetBytes(
       settings.largeFileMinimumBytes,
       LARGE_FILE_MINIMUM_PRESETS,

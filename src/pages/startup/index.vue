@@ -32,8 +32,10 @@ import { ClipboardService } from '@/lib/services/clipboard-service';
 import { MacOsPermissionService } from '@/lib/services/macos-permission-service';
 import { MacOsSystemSettingsService } from '@/lib/services/macos-system-settings-service';
 import { OperatingSystemService } from '@/lib/services/operating-system-service';
+import { AiAdvisorService } from '@/lib/services/ai-advisor-service';
 import { FormatUtils } from '@/lib/utils/format';
 import { RenderBatchUtils } from '@/lib/utils/render-batch';
+import { useAppStore } from '@/stores/app-store';
 
 import MdStartupRow from './components/md-startup-row.vue';
 import { startupGroupIconUrl } from './startup-brand-icon';
@@ -80,9 +82,103 @@ const emit = defineEmits<{
 }>();
 
 const { locale, t } = useI18n({ useScope: 'global' });
+const appStore = useAppStore();
 const query = ref('');
 const stateFilter = ref<StartupStateFilter>('all');
 const expandedGroupId = ref<string | null>(null);
+const aiAnalyzing = ref(false);
+const aiRecommendedIds = ref<string[]>([]);
+let aiAbortController: AbortController | null = null;
+let aiStaggerTimer: ReturnType<typeof setTimeout> | null = null;
+
+const aiRecommendedSet = computed(() => new Set(aiRecommendedIds.value));
+
+function isGroupAiRecommended(group: StartupOwnerGroup): boolean {
+  return aiRecommendedSet.value.has(group.groupId) || group.itemIds.some(id => aiRecommendedSet.value.has(id));
+}
+
+function abortAiAnalysis() {
+  if (aiStaggerTimer !== null) {
+    clearTimeout(aiStaggerTimer);
+    aiStaggerTimer = null;
+  }
+  if (aiAbortController) {
+    aiAbortController.abort();
+    aiAbortController = null;
+  }
+  aiAnalyzing.value = false;
+}
+
+async function startAiAdvisor() {
+  if (aiAnalyzing.value) {
+    abortAiAnalysis();
+    return;
+  }
+
+  abortAiAnalysis();
+  aiAnalyzing.value = true;
+  aiRecommendedIds.value = [];
+
+  const controller = new AbortController();
+  aiAbortController = controller;
+
+  try {
+    const config = {
+      apiKey: appStore.settings.aiApiKey,
+      baseUrl: appStore.settings.aiApiBaseUrl,
+      model: appStore.settings.aiModel,
+    };
+
+    const startupPayload = defaultGroups.value.map(group => ({
+      ...group,
+      id: group.groupId,
+      name: group.name,
+    }));
+    const recommended = await AiAdvisorService.analyzeStartupItems(startupPayload, config, controller.signal);
+    if (controller.signal.aborted) return;
+
+    const resolvedIds = recommended.map(id => {
+      if (defaultGroups.value.some(g => g.groupId === id)) return id;
+      const num = Number(id);
+      if (!isNaN(num) && startupPayload[num]) return startupPayload[num].groupId;
+      return id;
+    });
+
+    if (!resolvedIds.length) {
+      aiAnalyzing.value = false;
+      aiAbortController = null;
+      return;
+    }
+
+    // Smooth staggered animation (50ms interval)
+    const idsToAdd = [...resolvedIds];
+    let index = 0;
+    const batchSize = Math.max(1, Math.floor(idsToAdd.length / 10));
+
+    const processBatch = () => {
+      if (controller.signal.aborted) return;
+      const nextBatch = idsToAdd.slice(index, index + batchSize);
+      index += batchSize;
+
+      aiRecommendedIds.value = [...new Set([...aiRecommendedIds.value, ...nextBatch])];
+
+      if (index < idsToAdd.length) {
+        aiStaggerTimer = setTimeout(processBatch, 50);
+      } else {
+        aiAnalyzing.value = false;
+        aiAbortController = null;
+        aiStaggerTimer = null;
+      }
+    };
+
+    processBatch();
+  } catch (error: unknown) {
+    if (controller.signal.aborted) return;
+    aiAnalyzing.value = false;
+    aiAbortController = null;
+    emit('error', error);
+  }
+}
 const changeOpen = ref(false);
 const permissionPromptOpen = ref(false);
 const permissionPromptShown = ref(false);
@@ -136,6 +232,8 @@ watch(
 watch([() => props.catalog?.scanId, query, stateFilter], () => {
   // Startup catalogs can still contain thousands of hidden system entries.
   // Reset progressive rendering after each visible result change to keep scrolling responsive.
+  abortAiAnalysis();
+  aiRecommendedIds.value = [];
   visibleCount.value = STARTUP_RENDER_BATCH_SIZE;
 });
 
@@ -343,6 +441,7 @@ async function copyStartupValue(request: { actionKey: string; value: string }) {
 
 onBeforeUnmount(() => {
   if (copyFeedbackTimer) clearTimeout(copyFeedbackTimer);
+  abortAiAnalysis();
 });
 
 function updateChangeOpen(open: boolean) {
@@ -362,10 +461,26 @@ function updateChangeOpen(open: boolean) {
 <template>
   <MdPageShell class="@container/startup" content-mode="workspace" :title="t('startup.title')">
     <template v-if="catalog && !scanning" #actions>
-      <Button variant="outline" type="button" :disabled="changeBusy" @click="emit('scan')">
-        <MdIcon :name="ICON_NAMES.refresh" :size="16" />
-        {{ t('startup.rescan') }}
-      </Button>
+      <div class="header-actions">
+        <Button
+          variant="outline"
+          type="button"
+          :disabled="changeBusy"
+          @click="startAiAdvisor"
+        >
+          <MdIcon
+            :class="{ 'icon-spin': aiAnalyzing }"
+            :name="aiAnalyzing ? ICON_NAMES.refresh : ICON_NAMES.smartSelect"
+            :size="15"
+            class="text-primary"
+          />
+          {{ aiAnalyzing ? t('largeFiles.selectionMode.analyzing') : t('largeFiles.selectionMode.smart') }}
+        </Button>
+        <Button variant="outline" type="button" :disabled="changeBusy || aiAnalyzing" @click="emit('scan')">
+          <MdIcon :name="ICON_NAMES.refresh" :size="16" />
+          {{ t('startup.rescan') }}
+        </Button>
+      </div>
     </template>
 
     <MdOperationWorkspace v-if="scanning">
@@ -480,6 +595,8 @@ function updateChangeOpen(open: boolean) {
           :busy="changeBusy"
           :changing="isChanging(group)"
           :copied-action-key="copiedActionKey"
+          :ai-recommended="isGroupAiRecommended(group)"
+          :ai-recommended-item-ids="aiRecommendedIds"
           @toggle-expanded="expandedGroupId = expandedGroupId === group.groupId ? null : group.groupId"
           @toggle-group="requestGroupChange(group)"
           @toggle-artifact="requestArtifactChange"
@@ -616,6 +733,14 @@ function updateChangeOpen(open: boolean) {
 
 <style scoped>
 @reference "@assets/main.css";
+
+.header-actions {
+  display: flex;
+  min-width: 0;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
 
 .summary-permission {
   display: flex;

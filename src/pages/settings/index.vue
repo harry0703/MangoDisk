@@ -6,6 +6,10 @@ import MdPageShell from '@/components/custom/md-page-shell.vue';
 import MdIcon from '@/components/icons/md-icon.vue';
 import MdIconMangodisk from '@/components/icons/md-icon-mangodisk.vue';
 import { Card } from '@/components/ui/card';
+import MdDialogContent from '@/components/custom/md-dialog-content.vue';
+import { Button } from '@/components/ui/button';
+import { Dialog, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { APP_UPDATE_STATUS_IDS } from '@/lib/models/app-update';
 import { PROJECT_LINKS } from '@/lib/models/application-shell';
@@ -35,6 +39,7 @@ const emit = defineEmits<{
   save: [settings: AppSettings];
 }>();
 const form = reactive<AppSettings>({ ...props.settings });
+const aiDialogOpen = ref(false);
 const aboutRow = ref<HTMLElement | null>(null);
 const isMacOs = MacOsPermissionService.isMacOs();
 const permissionObservation = ref(MacOsPermissionService.defaultObservation());
@@ -222,6 +227,30 @@ function updateTheme(value: unknown) {
       </Card>
     </section>
 
+
+    <section class="settings-section">
+      <h2>{{ t('settings.aiSection') }}</h2>
+      <Card class="settings-list">
+        <button
+          class="setting-row action-row grid-cols-[40px_minmax(0,1fr)] @2xl/settings:grid-cols-[42px_minmax(0,1fr)_auto]"
+          type="button"
+          @click="aiDialogOpen = true"
+        >
+          <span class="section-icon"><MdIcon :name="ICON_NAMES.aiTools" /></span>
+          <span class="setting-copy">
+            <strong>{{ t('settings.aiConfigTitle') }}</strong>
+            <small class="whitespace-normal @2xl/settings:whitespace-nowrap">{{
+              t('settings.aiConfigDescription')
+            }}</small>
+          </span>
+          <span class="row-action col-start-2 @2xl/settings:col-auto">
+            {{ t('settings.aiConfigAction') }}
+            <MdIcon :name="ICON_NAMES.chevronRight" :size="16" />
+          </span>
+        </button>
+      </Card>
+    </section>
+
     <section class="settings-section">
       <h2>{{ t('settings.supportSection') }}</h2>
       <Card class="settings-list">
@@ -309,6 +338,60 @@ function updateTheme(value: unknown) {
         </button>
       </Card>
     </section>
+
+    <Dialog v-model:open="aiDialogOpen">
+      <MdDialogContent class="max-w-[480px] gap-0 p-0 overflow-hidden">
+        <DialogHeader class="px-6 pt-6 pb-4 pr-12 bg-muted/30 border-b border-border/40">
+          <DialogTitle class="text-base">{{ t('settings.aiDialogTitle') }}</DialogTitle>
+          <DialogDescription class="text-sm mt-1">{{ t('settings.aiDialogDescription') }}</DialogDescription>
+        </DialogHeader>
+
+        <div class="px-6 py-6 space-y-5">
+          <div class="space-y-1.5">
+            <label class="text-[13px] font-semibold text-foreground tracking-tight block">
+              {{ t('settings.aiBaseUrlTitle') }}
+            </label>
+            <p class="text-[12px] text-muted-foreground leading-snug">{{ t('settings.aiBaseUrlDescription') }}</p>
+            <Input
+              v-model="form.aiApiBaseUrl"
+              :placeholder="t('settings.aiBaseUrlPlaceholder')"
+              @blur="save"
+              class="mt-2"
+            />
+          </div>
+
+          <div class="space-y-1.5">
+            <label class="text-[13px] font-semibold text-foreground tracking-tight block">
+              {{ t('settings.aiApiKeyTitle') }}
+            </label>
+            <p class="text-[12px] text-muted-foreground leading-snug">{{ t('settings.aiApiKeyDescription') }}</p>
+            <Input
+              type="password"
+              v-model="form.aiApiKey"
+              :placeholder="t('settings.aiApiKeyPlaceholder')"
+              @blur="save"
+              class="mt-2"
+            />
+          </div>
+
+          <div class="space-y-1.5">
+            <label class="text-[13px] font-semibold text-foreground tracking-tight block">
+              {{ t('settings.aiModelTitle') }}
+            </label>
+            <p class="text-[12px] text-muted-foreground leading-snug">{{ t('settings.aiModelDescription') }}</p>
+            <Input
+              v-model="form.aiModel"
+              @blur="save"
+              class="mt-2"
+            />
+          </div>
+        </div>
+
+        <DialogFooter class="px-6 py-4 bg-muted/30 border-t border-border/40 sm:justify-end">
+          <Button @click="aiDialogOpen = false; save()">{{ t('settings.aiSaveAction') }}</Button>
+        </DialogFooter>
+      </MdDialogContent>
+    </Dialog>
   </MdPageShell>
 </template>
 

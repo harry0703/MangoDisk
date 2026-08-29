@@ -1353,7 +1353,7 @@
     },
     "selectionMode": {
       "label": "选择方式",
-      "smart": "智能推荐",
+      "smart": "AI 建议",
       "all": "选择全部",
       "none": "暂不选择",
       "manual": "手动选择"
@@ -1465,7 +1465,16 @@
     "deleteSafetyNote": "文件发生变化或无法访问时会自动跳过",
     "deleteCompleted": "大文件清理完成",
     "deleteCompletedWithWarnings": "大文件清理已完成，部分项目未删除",
-    "deleteCompletedDescription": "已删除 {count} 个文件，释放 {size}，{failed} 个失败"
+    "deleteCompletedDescription": "已删除 {count} 个文件，释放 {size}，{failed} 个失败",
+    "selectionMode": {
+      "label": "选择方式",
+      "smart": "AI 建议",
+      "all": "选择全部",
+      "none": "暂不选择",
+      "manual": "手动选择",
+      "analyzing": "AI 分析中…"
+    },
+    "aiAdvisorBadge": "AI 推荐"
   },
   "fileCategories": {
     "all": "全部",
@@ -1495,6 +1504,8 @@
     "summaryReclaimableScanning": "已发现可释放",
     "minimumSize": "最小文件",
     "smartSelect": "智能选择",
+    "aiSelect": "AI 建议",
+    "aiAdvisorBadge": "AI 推荐",
     "smartSelectMenuLabel": "智能选择方式",
     "smartSelectSafetyHint": "每组至少保留 1 个文件；切换方式会重新生成选择",
     "keeperRuleLabels": {
@@ -1852,7 +1863,22 @@
     "websiteAction": "官方网站",
     "repositoryAction": "GitHub",
     "licenseAction": "GPL-3.0 许可证",
-    "versionValue": "版本 {version}"
+    "versionValue": "版本 {version}",
+    "aiSection": "AI 设置",
+    "aiBaseUrlTitle": "API Base URL",
+    "aiBaseUrlDescription": "自定义 AI 服务接口地址",
+    "aiBaseUrlPlaceholder": "例如：https://api.openai.com/v1",
+    "aiApiKeyTitle": "API Key",
+    "aiApiKeyDescription": "自定义 AI 服务密钥 (仅存储于本地，直连不经过中转)",
+    "aiApiKeyPlaceholder": "sk-xxx",
+    "aiModelTitle": "模型名称",
+    "aiModelDescription": "自定义 AI 模型名称",
+    "aiConfigTitle": "AI 建议配置",
+    "aiConfigDescription": "配置自定义 API Key、Base URL 及模型",
+    "aiConfigAction": "配置",
+    "aiDialogTitle": "AI 建议配置",
+    "aiDialogDescription": "设置自定义模型接口与凭证，留空则使用内置默认配置",
+    "aiSaveAction": "完成"
   },
   "updates": {
     "availableTitle": "MangoDisk {version} 可用",
