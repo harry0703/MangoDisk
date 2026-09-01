@@ -1,0 +1,3109 @@
+{
+  "navigation": {
+    "system-optimization": "Otimização do Sistema",
+    "system-maintenance": "Manutenção do Sistema",
+    "cleanup": "Limpeza Profunda",
+    "analysis": "Análise de Espaço no Disco",
+    "large-files": "Limpeza de Arquivos Grandes",
+    "duplicate-files": "Limpeza de Duplicatas",
+    "application-uninstall": "Desinstalador de Apps",
+    "startup": "Itens de Inicialização",
+    "history": "Histórico de Operações",
+    "settings": "Configurações"
+  },
+  "navigationGroups": {
+    "storage": "Armazenamento",
+    "system": "Ferramentas do Sistema"
+  },
+  "systemMaintenance": {
+    "title": "Manutenção do Sistema",
+    "scanning": "Verificando tarefas de manutenção",
+    "scanningDescription": "A verificação lê o status dos componentes sem alterar o sistema",
+    "scanFailedTitle": "A verificação de manutenção não pôde ser concluída",
+    "scanFailedDescription": "Nenhum conteúdo do sistema foi alterado. Tente verificar novamente; se o problema continuar, revise os logs em Configurações",
+    "authorizationPrompt": "O MangoDisk precisa de permissão de administrador para executar esta tarefa de manutenção",
+    "rescan": "Verificar Novamente",
+    "filterCategory": "Filtrar categorias de manutenção",
+    "executeOne": "Executar",
+    "executingOne": "Executando",
+    "retryOne": "Tentar novamente",
+    "completedOne": "Concluído",
+    "systemProcessing": "Processando sistema",
+    "refreshRequired": "Verificar novamente",
+    "cancelQueued": "Cancelar na fila",
+    "cancelExecution": "Parar",
+    "progress": {
+      "step": "Etapa {current}/{total}",
+      "elapsedSeconds": "{seconds}s decorridos",
+      "elapsedMinutesSeconds": "{minutes}m {seconds}s decorridos",
+      "phases": {
+        "preparing": "Preparando",
+        "waitingForAuthorization": "Aguardando aprovação do administrador",
+        "repairingComponentImage": "Reparando componentes do Windows (DISM)",
+        "checkingSystemFiles": "Verificando arquivos do sistema (SFC)",
+        "checkingStartupDisk": "Verificando o disco de inicialização",
+        "checkingSystemDisk": "Verificando a unidade do sistema Windows",
+        "rebuildingSearchIndex": "Reconstruindo o índice de pesquisa",
+        "refreshingShellCaches": "Atualizando caches da interface",
+        "restartingFinder": "Reiniciando o Finder",
+        "restartingAudioService": "Reiniciando o serviço de áudio",
+        "restartingServices": "Reiniciando serviços do sistema",
+        "repairingPrintQueue": "Reparando a fila de impressão",
+        "synchronizingTime": "Sincronizando o horário do sistema",
+        "rebuildingPerformanceCounters": "Reconstruindo contadores de desempenho",
+        "resettingStoreCache": "Redefinindo o cache da Store",
+        "refreshingNetwork": "Atualizando caches de rede",
+        "rebuildingAppAssociations": "Reconstruindo associações de aplicativos",
+        "repairingPermissions": "Reparando permissões da pasta do usuário",
+        "restoringDefaults": "Restaurando padrões do sistema",
+        "verifying": "Verificando resultados"
+      }
+    },
+    "categories": {
+      "all": "Todos",
+      "recommended": "Sugeridos",
+      "systemRepair": "Reparo do Sistema",
+      "searchAndInterface": "Pesquisa & Interface",
+      "network": "Rede"
+    },
+    "statuses": {
+      "healthy": "Saudável",
+      "recommended": "Sugeridos",
+      "available": "Executar quando necessário",
+      "unavailable": "Indisponível",
+      "requiresElevation": "Aprovação do administrador necessária"
+    },
+    "diagnostics": {
+      "accessDenied": "Permissão necessária",
+      "applicationRunning": "Um aplicativo relacionado está em execução",
+      "checkFailed": "Falha na verificação de status",
+      "componentUnavailable": "Componente do sistema indisponível",
+      "toolUnavailable": "Ferramenta do sistema indisponível",
+      "unsupportedVersion": "Não suportado neste sistema"
+    },
+    "empty": {
+      "title": "Nenhuma tarefa de manutenção nesta categoria",
+      "description": "Escolha outra categoria para ver mais tarefas"
+    },
+    "feedback": {
+      "cancelled": "{name} foi cancelado",
+      "cancelledMayHaveChanged": "{name} parou, mas algumas alterações podem ter sido aplicadas. Verifique novamente",
+      "completed": "{name} concluído",
+      "started": "{name} está sendo executado pelo sistema",
+      "restartRequired": "{name} concluído. Reinicie seu sistema para aplicar as alterações",
+      "mayHaveChanged": "{name} não foi finalizado corretamente. Algumas alterações podem ter sido aplicadas; verifique novamente",
+      "failures": {
+        "permissionDenied": "Permissão de administrador é necessária para rodar {name}",
+        "unsupported": "{name} não é suportado neste sistema",
+        "verificationFailed": "{name} foi executado, mas o MangoDisk não conseguiu verificar o resultado final",
+        "platformFailure": "{name} falhou. Verifique o status da tarefa e tente novamente",
+        "userCancelled": "{name} foi cancelado"
+      }
+    },
+    "confirmation": {
+      "title": "Executar essa tarefa de manutenção?",
+      "description": "Essa tarefa pode levar algum tempo ou reiniciar brevemente componentes do sistema relacionados. O MangoDisk vai verificar o resultado quando terminar",
+      "confirm": "Executar"
+    },
+    "items": {
+      "macos_maintenance_spotlight-index": {
+        "name": "Reconstruir o índice de pesquisa do Spotlight",
+        "description": "Reindexar arquivos quando o Spotlight estiver lento, não encontrar arquivos ou retornar resultados incompletos"
+      },
+      "macos_maintenance_launch-services": {
+        "name": "Reparar o 'Abrir com' e associações de arquivos",
+        "description": "Remover entradas duplicadas ou desatualizadas do 'Abrir com' e atualizar associações de arquivos"
+      },
+      "macos_maintenance_quicklook-cache": {
+        "name": "Atualizar pré-visualizações de arquivos do Quick Look",
+        "description": "Atualizar pré-visualizações em cache quando pressionar a Barra de Espaço mostrar conteúdo em branco, desatualizado ou incorreto"
+      },
+      "macos_maintenance_icon-cache": {
+        "name": "Reconstruir cache de ícones do Finder",
+        "description": "Regenerar ícones em cache quando arquivos ou aplicativos aparecem em branco, incorretos ou desatualizados"
+      },
+      "macos_maintenance_finder-service": {
+        "name": "Reiniciar o Finder",
+        "description": "Reinicie o Finder quando ele estiver lento, janelas pararem de responder ou itens da área de trabalho não forem atualizados"
+      },
+      "macos_maintenance_audio-service": {
+        "name": "Reiniciar o serviço de áudio",
+        "description": "Reinicie o áudio do macOS quando o som parar, os dispositivos desaparecerem ou o áudio ficar sem resposta"
+      },
+      "macos_maintenance_user-permissions": {
+        "name": "Reparar permissões da pasta pessoal",
+        "description": "Restaurar acesso quando a Área de Trabalho, Documentos ou outras pastas pessoais não puderem ser abertas ou alteradas"
+      },
+      "macos_maintenance_legacy-overrides": {
+        "name": "Restaurar configurações alteradas por otimizadores antigos",
+        "description": "Retornar App Nap, verificação de imagens de disco e opções relacionadas aos padrões do macOS"
+      },
+      "macos_maintenance_startup-disk": {
+        "name": "Verificar o sistema de arquivos do disco de inicialização",
+        "description": "Use uma ferramenta embutida do macOS para verificar erros no sistema de arquivos sem alterar o conteúdo do disco"
+      },
+      "macos_maintenance_dns-cache": {
+        "name": "Atualizar cache de DNS",
+        "description": "Remover registros de DNS desatualizados que podem bloquear sites ou serviços de rede"
+      },
+      "windows_maintenance_system-integrity": {
+        "name": "Reparar arquivos do sistema do Windows",
+        "description": "Use ferramentas embutidas do Windows para encontrar e reparar componentes do sistema danificados e arquivos protegidos"
+      },
+      "windows_maintenance_search-index": {
+        "name": "Reconstruir o índice de pesquisa do Windows",
+        "description": "Re-indexar arquivos quando a Pesquisa do Windows não encontra arquivos, mostra resultados incorretos ou para de responder"
+      },
+      "windows_maintenance_explorer-cache": {
+        "name": "Reconstruir caches de ícones e miniaturas",
+        "description": "Corrigir ícones em branco ou incorretos e miniaturas quebradas no Explorador de Arquivos"
+      },
+      "windows_maintenance_update-components": {
+        "name": "Reiniciar serviços do Windows Update",
+        "description": "Reinicie os serviços do sistema necessários para o Windows Update e verifique imediatamente se há atualizações"
+      },
+      "windows_maintenance_print-queue": {
+        "name": "Reparar a fila de impressão",
+        "description": "Remover trabalhos de impressão travados ou que não podem ser cancelados, e depois reiniciar o serviço de impressão"
+      },
+      "windows_maintenance_performance-counters": {
+        "name": "Reparar dados de desempenho do sistema",
+        "description": "Reconstruir contadores de desempenho quando o Gerenciador de Tarefas ou ferramentas de monitoramento mostrarem dados faltando ou incorretos"
+      },
+      "windows_maintenance_system-disk": {
+        "name": "Verificar a unidade do sistema Windows",
+        "description": "Procurar erros no sistema de arquivos sem interromper o trabalho ou agendar uma reparação no reinício"
+      },
+      "windows_maintenance_audio-service": {
+        "name": "Reiniciar o serviço de áudio",
+        "description": "Reiniciar o áudio do Windows quando o som parar, os dispositivos desaparecerem ou o áudio parar de responder"
+      },
+      "windows_maintenance_store-cache": {
+        "name": "Redefinir o cache da Microsoft Store",
+        "description": "Limpar o cache da Store quando ela não abrir, os downloads travarem ou as páginas não carregarem"
+      },
+      "windows_maintenance_dns-cache": {
+        "name": "Atualizar o cache de DNS",
+        "description": "Remover registros DNS desatualizados que podem bloquear sites ou serviços de rede"
+      },
+      "windows_maintenance_time-sync": {
+        "name": "Sincronizar hora do sistema",
+        "description": "Sincronizar com o servidor de horário para resolver erros de login ou certificado relacionados ao relógio"
+      }
+    }
+  },
+  "systemOptimization": {
+    "title": "Otimização do sistema",
+    "scanning": "Verificando configurações do sistema",
+    "scanningDescription": "A verificação apenas lê configurações suportadas e nunca altera o sistema",
+    "scanFailedTitle": "Não foi possível verificar a otimização do sistema",
+    "scanFailedDescription": "Nenhuma configuração do sistema foi alterada. Tente a verificação novamente; tarefas existentes podem continuar em outras páginas",
+    "applyChanges": "Aplicar {count} alterações",
+    "pendingSummary": "Alterações pendentes",
+    "noChanges": "Nenhuma alteração para aplicar",
+    "optimizing": "Otimização em andamento…",
+    "checking": "Verificando configurações…",
+    "rescan": "Verificar novamente",
+    "restorePrevious": "Restaurar configurações anteriores",
+    "filterCategory": "Categorias de otimização de filtros",
+    "pendingEmpty": {
+      "title": "Nenhuma alteração pendente",
+      "description": "Escolha um preset ou ajuste os interruptores para coletar mudanças aqui"
+    },
+    "categories": {
+      "pending": "Pendente",
+      "all": "Todos",
+      "performance": "Desempenho",
+      "productivity": "Produtividade",
+      "privacy": "Privacidade e Distrações",
+      "storage": "Armazenamento",
+      "gaming": "Jogos",
+      "appearance": "Aparência"
+    },
+    "modes": {
+      "label": "Perfil de otimização",
+      "unchanged": {
+        "name": "Manter configurações atuais"
+      },
+      "smart": {
+        "name": "Recomendado pelo Smart"
+      },
+      "performance": {
+        "name": "Desempenho"
+      },
+      "privacy": {
+        "name": "Privacidade"
+      },
+      "manual": {
+        "name": "Personalizado"
+      }
+    },
+    "statuses": {
+      "pendingEnable": "Será ativado",
+      "pendingDisable": "Será desativado",
+      "authorizationRequired": "É necessária autorização de administrador para aplicar as alterações selecionadas",
+      "requiresRestart": "Entrará em vigor após reabrir o componente do sistema relacionado ou entrar novamente",
+      "caution": "Cuidado",
+      "highImpact": "Alto impacto",
+      "riskDescriptions": {
+        "caution": "Essa configuração tem um claro trade-off; certifique-se de que atende às suas necessidades",
+        "high": "Essa configuração pode reduzir segurança, recuperação ou proteção de atualização"
+      }
+    },
+    "riskDialog": {
+      "title": "Confirmar configurações de alto impacto",
+      "description": "Essas configurações podem reduzir a segurança do sistema, recuperação ou proteção de atualização. Continue apenas se você entender o impacto",
+      "note": "O Smart recommended never seleciona essas configurações automaticamente; apenas os itens que você ativar manualmente serão aplicados",
+      "confirm": "Continuar assim mesmo"
+    },
+    "feedback": {
+      "nothingToApply": "Os itens selecionados já estão no estado solicitado",
+      "alreadyOptimized": "Não há alterações de configuração pendentes",
+      "draftNotice": "As alterações entram em vigor após você clicar em Aplicar Alterações na parte inferior",
+      "completed": "{count} alterações de configuração do sistema aplicadas",
+      "completedRestart": "Aplicadas {count} alterações; algumas exigem reabrir componentes do sistema relacionados ou fazer login novamente",
+      "cancelled": "A autorização de administrador foi cancelada após {changed} alterações serem concluídas",
+      "cancelledRestart": "A autorização de administrador foi cancelada; algumas das {changed} alterações concluídas exigem reabrir componentes do sistema relacionados ou fazer login novamente",
+      "partial": "{changed} itens concluídos; {failed} não puderam ser aplicados",
+      "partialRestart": "{changed} itens concluídos; {failed} não puderam ser aplicados. Algumas alterações exigem reabrir componentes do sistema relacionados ou fazer login novamente"
+    },
+    "items": {
+      "macos_finder_show-file-extensions": {
+        "name": "Mostrar todas as extensões de arquivos",
+        "description": "Identificar tipos reais de arquivos e reduzir erros"
+      },
+      "macos_finder_show-path-bar": {
+        "name": "Mostrar barra de caminho no Finder",
+        "description": "Exibir a hierarquia completa de pastas na parte inferior do Finder"
+      },
+      "macos_finder_show-status-bar": {
+        "name": "Mostrar barra de status do Finder",
+        "description": "Exibir contagem de itens e espaço disponível no disco"
+      },
+      "macos_finder_show-hidden-files": {
+        "name": "Mostrar arquivos ocultos",
+        "description": "Visualizar itens ocultos diretamente no Finder"
+      },
+      "macos_finder_show-posix-path": {
+        "name": "Mostrar caminhos completos nos títulos do Finder",
+        "description": "Exibir o caminho completo da pasta atual no título da janela"
+      },
+      "macos_finder_disable-animations": {
+        "name": "Reduzir animações do Finder",
+        "description": "Reduzir animações de janelas para operações de arquivo mais rápidas"
+      },
+      "macos_finder_keep-folders-on-top": {
+        "name": "Manter pastas no topo",
+        "description": "Colocar pastas antes dos arquivos ao ordenar por nome"
+      },
+      "macos_finder_search-current-folder": {
+        "name": "Pesquisar na pasta atual por padrão",
+        "description": "Limitar novas pesquisas do Finder à localização atual"
+      },
+      "macos_finder_disable-extension-warning": {
+        "name": "Ignorar avisos de mudança de extensão",
+        "description": "Não perguntar novamente ao renomear a extensão de um arquivo"
+      },
+      "macos_panels_expand-save": {
+        "name": "Expandir painéis de salvamento de arquivos",
+        "description": "Mostrar o seletor completo de pastas ao salvar arquivos"
+      },
+      "macos_panels_expand-print": {
+        "name": "Expandir painéis de impressão",
+        "description": "Mostrar opções completas de impressão imediatamente"
+      },
+      "macos_desktop_prevent-network-ds-store": {
+        "name": "Evitar .DS_Store em unidades de rede",
+        "description": "Reduzir arquivos de metadados do macOS em pastas compartilhadas"
+      },
+      "macos_desktop_prevent-usb-ds-store": {
+        "name": "Evitar .DS_Store em drives USB",
+        "description": "Reduzir arquivos de metadados do macOS em drives removíveis"
+      },
+      "macos_dock_auto-hide": {
+        "name": "Ocultar o Dock automaticamente",
+        "description": "Mostrar o Dock quando necessário e recuperar espaço na área de trabalho"
+      },
+      "macos_dock_minimize-to-application": {
+        "name": "Minimizar janelas em ícones de apps",
+        "description": "Evitar adicionar miniaturas separadas de janelas ao Dock"
+      },
+      "macos_dock_use-scale-effect": {
+        "name": "Usar o efeito de minimização em escala",
+        "description": "Substituir o efeito Genie por uma animação simples de escala"
+      },
+      "macos_mission-control_keep-space-order": {
+        "name": "Manter os Spaces em ordem",
+        "description": "Evitar reorganização automática da área de trabalho baseada no uso recente"
+      },
+      "macos_dock_hide-recent-apps": {
+        "name": "Ocultar apps recentes no Dock",
+        "description": "Não mostrar apps abertos recentemente no final do Dock"
+      },
+      "macos_screenshots_disable-shadow": {
+        "name": "Remover sombras da janela de captura de tela",
+        "description": "Criar capturas de janela mais justas que geralmente são menores"
+      },
+      "macos_screenshots_use-png": {
+        "name": "Usar PNG para capturas de tela",
+        "description": "Preservar qualidade sem perda e transparência"
+      },
+      "macos_screenshots_disable-thumbnail": {
+        "name": "Desativar miniatura flutuante da captura de tela",
+        "description": "Salvar capturas de tela imediatamente sem esperar pela pré-visualização"
+      },
+      "macos_keyboard_full-navigation": {
+        "name": "Ativar navegação completa pelo teclado",
+        "description": "Usar Tab para mover entre mais controles da interface"
+      },
+      "macos_keyboard_fast-key-repeat": {
+        "name": "Repetição de tecla mais rápida",
+        "description": "Repetir caracteres mais rápido enquanto segura uma tecla"
+      },
+      "macos_keyboard_short-repeat-delay": {
+        "name": "Atraso de repetição de tecla mais curto",
+        "description": "Começar a repetir caracteres mais cedo depois de segurar uma tecla"
+      },
+      "macos_text_disable-auto-correct": {
+        "name": "Desativar correção automática",
+        "description": "Evite que o sistema reescreva o texto digitado"
+      },
+      "macos_text_disable-smart-quotes": {
+        "name": "Desative as aspas inteligentes",
+        "description": "Mantenha aspas retas enquanto digita"
+      },
+      "macos_text_disable-smart-dashes": {
+        "name": "Desative os travessões inteligentes",
+        "description": "Não substitua automaticamente hífens consecutivos"
+      },
+      "macos_text_disable-auto-capitalization": {
+        "name": "Desative a capitalização automática",
+        "description": "Evite alterações automáticas na capitalização de frases em inglês"
+      },
+      "macos_text_disable-period-substitution": {
+        "name": "Desative pontos com dupla espaço",
+        "description": "Não insira um ponto após digitar dois espaços"
+      },
+      "windows_explorer_show-file-extensions": {
+        "name": "Mostrar extensões de arquivos",
+        "description": "Identificar tipos reais de arquivos e reduzir erros"
+      },
+      "windows_explorer_show-hidden-files": {
+        "name": "Mostrar arquivos ocultos",
+        "description": "Exibir itens ocultos comuns no Explorador de Arquivos"
+      },
+      "windows_explorer_launch-this-pc": {
+        "name": "Abrir o Explorador de Arquivos em Este Computador",
+        "description": "Iniciar novas janelas com unidades e locais comuns"
+      },
+      "windows_explorer_compact-mode": {
+        "name": "Use espaçamento compacto de arquivos",
+        "description": "Coloque mais arquivos na mesma janela do Explorer"
+      },
+      "windows_explorer_show-full-path": {
+        "name": "Mostre caminhos completos na barra de título",
+        "description": "Identifique a localização da pasta atual de forma mais clara"
+      },
+      "windows_explorer_show-item-checkboxes": {
+        "name": "Mostre caixas de seleção de itens",
+        "description": "Selecione múltiplos arquivos com caixas de seleção visíveis"
+      },
+      "windows_explorer_hide-recent-files": {
+        "name": "Oculte arquivos recentes",
+        "description": "Não mostre arquivos abertos recentemente na Página Inicial do Explorer"
+      },
+      "windows_explorer_hide-frequent-folders": {
+        "name": "Oculte pastas frequentes",
+        "description": "Não mostre pastas visitadas com frequência na Página Inicial do Explorer"
+      },
+      "windows_taskbar_show-seconds": {
+        "name": "Mostre segundos no relógio da barra de tarefas",
+        "description": "Adicione segundos ao relógio do sistema"
+      },
+      "windows_taskbar_hide-task-view": {
+        "name": "Oculte o botão de Visualização de Tarefas",
+        "description": "Remova um botão da barra de tarefas que você talvez não use"
+      },
+      "windows_taskbar_hide-widgets": {
+        "name": "Desative os Widgets do Windows",
+        "description": "Remova a entrada da barra de tarefas e impeça o painel de Widgets de abrir"
+      },
+      "windows_taskbar_disable-widgets-board": {
+        "name": "Desative os Widgets do Windows",
+        "description": "Remova a entrada e desative o painel de Widgets nas versões mais recentes do Windows 11"
+      },
+      "windows_taskbar_enable-end-task": {
+        "name": "Permitir finalizar tarefas pela barra de tarefas",
+        "description": "Finalizar um processo diretamente pelo menu de contexto do ícone do app"
+      },
+      "windows_taskbar_hide-search": {
+        "name": "Ocultar a pesquisa da barra de tarefas",
+        "description": "Liberar espaço na barra de tarefas mantendo a pesquisa do menu Iniciar disponível"
+      },
+      "windows_taskbar_align-left": {
+        "name": "Alinhar os ícones da barra de tarefas à esquerda",
+        "description": "Mover o menu Iniciar e os ícones dos aplicativos para a esquerda"
+      },
+      "windows_taskbar_disable-animations": {
+        "name": "Desativar animações da barra de tarefas",
+        "description": "Reduzir as transições da barra de tarefas para feedback mais imediato"
+      },
+      "windows_desktop_prefer-performance-effects": {
+        "name": "Reduzir os efeitos visuais do Windows",
+        "description": "Desligar algumas animações e transparências para reduzir o uso de processamento gráfico"
+      },
+      "windows_personalization_dark-apps": {
+        "name": "Usar o modo escuro nos aplicativos",
+        "description": "Use superfícies escuras em aplicativos compatíveis"
+      },
+      "windows_personalization_dark-system": {
+        "name": "Use o modo escuro no Windows",
+        "description": "Use uma barra de tarefas e interface do sistema escuras"
+      },
+      "windows_gaming_enable-game-mode": {
+        "name": "Ative o Modo Jogo",
+        "description": "Priorize os recursos do sistema enquanto um jogo estiver rodando"
+      },
+      "windows_gaming_disable-capture": {
+        "name": "Desative a captura de jogos em segundo plano",
+        "description": "Reduza a sobrecarga de captura quando a gravação não for necessária"
+      },
+      "windows_gaming_optimize-windowed-games": {
+        "name": "Otimize jogos em janela",
+        "description": "Ative um modo de apresentação de menor latência para jogos compatíveis"
+      },
+      "windows_performance_disable-background-store-apps": {
+        "name": "Limite aplicativos da Loja em segundo plano",
+        "description": "Reduza o uso de CPU e memória por aplicativos da Loja que não estão em uso"
+      },
+      "windows_privacy_disable-advertising-id": {
+        "name": "Desative o ID de publicidade",
+        "description": "Evite que aplicativos usem um ID para anúncios personalizados"
+      },
+      "windows_privacy_disable-tailored-experiences": {
+        "name": "Desative a personalização de dados de diagnóstico",
+        "description": "Não use dados de diagnóstico para dicas e recomendações personalizadas"
+      },
+      "windows_privacy_disable-activity-publishing": {
+        "name": "Pare de compartilhar atividades com outros dispositivos",
+        "description": "Não publique o histórico de atividades deste usuário em outros dispositivos"
+      },
+      "windows_privacy_disable-activity-upload": {
+        "name": "Pare de enviar histórico de atividades",
+        "description": "Não envie o histórico de atividades deste usuário para a nuvem"
+      },
+      "windows_content_disable-silent-app-installs": {
+        "name": "Bloqueie instalações automáticas de aplicativos sugeridos",
+        "description": "Evite que o Windows adicione apps sugeridos para o usuário atual em segundo plano"
+      },
+      "windows_content_disable-suggestions": {
+        "name": "Desative sugestões do sistema",
+        "description": "Reduza sugestões promocionais no Iniciar e no Windows"
+      },
+      "windows_content_disable-lock-screen-tips": {
+        "name": "Desative dicas na tela de bloqueio",
+        "description": "Reduza dicas e recomendações na tela de bloqueio"
+      },
+      "windows_content_disable-welcome-experience": {
+        "name": "Desative a experiência de boas-vindas pós-atualização",
+        "description": "Pule páginas de promoção de recursos após atualizações ou login"
+      },
+      "windows_content_disable-usage-tips": {
+        "name": "Desativar dicas de uso",
+        "description": "Reduzir dicas e recomendações exibidas ao usar o Windows"
+      },
+      "windows_content_disable-notification-suggestions": {
+        "name": "Desativar sugestões de notificações",
+        "description": "Não mostrar recomendações do sistema na Central de Notificações"
+      },
+      "windows_content_disable-device-setup-suggestions": {
+        "name": "Desativar sugestões de configuração de dispositivo",
+        "description": "Parar solicitações para terminar a configuração ou habilitar serviços adicionais"
+      },
+      "windows_search_disable-web-suggestions": {
+        "name": "Desativar sugestões da web no Iniciar",
+        "description": "Reduzir resultados e sugestões da web nas pesquisas do menu Iniciar"
+      },
+      "windows_storage_enable-storage-sense": {
+        "name": "Ativar Sensor de Armazenamento",
+        "description": "Deixar o Windows remover arquivos temporários automaticamente para liberar espaço"
+      },
+      "windows_desktop_reduce-menu-delay": {
+        "name": "Reduzir atraso ao abrir menus",
+        "description": "Abrir submenus mais rápido quando o ponteiro passar sobre eles"
+      },
+      "windows_explorer_enable-auto-suggest": {
+        "name": "Ativar sugestões de caminhos e comandos",
+        "description": "Mostrar sugestões correspondentes na barra de endereços do Explorer e na caixa de diálogo Executar"
+      },
+      "windows_explorer_disable-aero-shake": {
+        "name": "Desativar minimizar janelas ao sacudir",
+        "description": "Evitar minimizar outras janelas acidentalmente ao arrastar uma janela"
+      },
+      "windows_explorer_show-operation-details": {
+        "name": "Expandir detalhes das operações de arquivos",
+        "description": "Mostrar velocidade e tempo restante ao copiar ou mover arquivos"
+      },
+      "windows_explorer_hide-sync-notifications": {
+        "name": "Desativar promoções de sincronização do Explorer",
+        "description": "Ocultar recomendações de serviços em nuvem no Explorer"
+      },
+      "windows_explorer_classic-context-menu": {
+        "name": "Usar o menu de contexto clássico",
+        "description": "Mostrar o menu de contexto completo diretamente no Windows 11"
+      },
+      "windows_explorer_remove-cast-to-device": {
+        "name": "Remover \"Transmitir para dispositivo\"",
+        "description": "Ocultar a entrada antiga de transmissão de mídia nos menus de contexto de arquivos"
+      },
+      "windows_taskbar_show-all-tray-icons": {
+        "name": "Mostrar todos os ícones na bandeja",
+        "description": "Manter ícones de aplicativos visíveis na área de notificação"
+      },
+      "windows_taskbar_hide-weather": {
+        "name": "Ocultar o clima na barra de tarefas",
+        "description": "Remover a entrada de clima e notícias no Windows 10"
+      },
+      "windows_taskbar_hide-search-policy": {
+        "name": "Esconder a pesquisa da barra de tarefas",
+        "description": "Esconder a entrada de pesquisa da barra de tarefas no Windows 11 24H2 e posteriores"
+      },
+      "windows_taskbar_hide-chat": {
+        "name": "Esconder o botão de chat da barra de tarefas",
+        "description": "Remover atalhos de chat ou reunião não utilizados"
+      },
+      "windows_taskbar_hide-copilot": {
+        "name": "Esconder o Copilot da barra de tarefas",
+        "description": "Remover a entrada do Copilot da barra de tarefas"
+      },
+      "windows_windowing_disable-snap-assist": {
+        "name": "Desativar sugestões do Snap Assist",
+        "description": "Não mostrar layouts de snap ao arrastar ou passar o mouse sobre janelas"
+      },
+      "windows_gaming_disable-game-dvr": {
+        "name": "Desativar o Game DVR",
+        "description": "Reduzir atividades de captura em segundo plano quando a gravação não é necessária"
+      },
+      "windows_privacy_disable-input-personalization": {
+        "name": "Desativar personalização de digitação",
+        "description": "Não usar o conteúdo digitado para treinar entrada personalizada"
+      },
+      "windows_privacy_disable-ink-personalization": {
+        "name": "Desativar personalização de escrita manual",
+        "description": "Não use escrita manual para treinar o reconhecimento personalizado"
+      },
+      "windows_privacy_disable-feedback-requests": {
+        "name": "Reduza as solicitações de feedback do Windows",
+        "description": "Reduza pesquisas de experiência e pedidos de feedback mostrados pelo Windows"
+      },
+      "windows_privacy_disable-nearby-sharing": {
+        "name": "Desative o Compartilhamento por Perto",
+        "description": "Desative a descoberta e o compartilhamento próximos quando não forem necessários"
+      },
+      "windows_privacy_disable-cross-device-experiences": {
+        "name": "Desative experiências entre dispositivos",
+        "description": "Evite que aplicativos continuem atividades em outros dispositivos"
+      },
+      "windows_privacy_disable-language-list-sharing": {
+        "name": "Pare de compartilhar a lista de idiomas",
+        "description": "Não envie idiomas preferidos para sites para personalização"
+      },
+      "windows_clipboard_disable-history": {
+        "name": "Desative o histórico da área de transferência",
+        "description": "Não mantenha vários itens copiados no Windows"
+      },
+      "windows_content_disable-spotlight": {
+        "name": "Desative o Windows Spotlight na tela de bloqueio",
+        "description": "Pare de alternar imagens e conteúdos recomendados na tela de bloqueio"
+      },
+      "windows_content_disable-phone-link-suggestions": {
+        "name": "Desativar sugestões do Phone Link",
+        "description": "Reduzir solicitações para conectar um celular ao Windows"
+      },
+      "windows_content_disable-service-suggestions": {
+        "name": "Desativar sugestões de serviços da Microsoft",
+        "description": "Ocultar notificações do sistema que promovem serviços da Microsoft"
+      },
+      "windows_content_disable-preinstalled-app-suggestions": {
+        "name": "Desativar sugestões de aplicativos pré-instalados",
+        "description": "Reduzir aplicativos recomendados preparados para o usuário atual"
+      },
+      "windows_edge_disable-sidebar": {
+        "name": "Desativar a barra lateral do Edge",
+        "description": "Ocultar a barra lateral e a entrada Discover no Microsoft Edge"
+      },
+      "windows_edge_disable-personalization": {
+        "name": "Desativar personalização do Edge",
+        "description": "Não usar dados de navegação para personalizar serviços da Microsoft"
+      },
+      "windows_edge_disable-recommendations": {
+        "name": "Desativar recomendações do Edge",
+        "description": "Reduzir promoções de recursos e experiências recomendadas no Edge"
+      },
+      "windows_edge_disable-web-widget": {
+        "name": "Desativar widgets da web do Edge",
+        "description": "Impedir que o Edge forneça notícias e widgets de pesquisa na área de trabalho"
+      },
+      "windows_office_disable-optional-telemetry": {
+        "name": "Desativar diagnósticos opcionais do Office",
+        "description": "Não enviar dados de diagnóstico opcionais do cliente dos aplicativos Microsoft 365"
+      },
+      "windows_firefox_disable-telemetry": {
+        "name": "Desativar telemetria do Firefox",
+        "description": "Impedir que o Firefox envie telemetria e retenha arquivos locais de telemetria"
+      },
+      "windows_ai_disable-recall-snapshots": {
+        "name": "Desativar snapshots do Recall",
+        "description": "Impedir que o Recall salve e analise registros da atividade na tela"
+      },
+      "windows_ai_disable-copilot": {
+        "name": "Desativar Windows Copilot",
+        "description": "Desativar o acesso ao Copilot do sistema quando não estiver em uso"
+      },
+      "windows_typing_disable-autocorrect": {
+        "name": "Desativar autocorreção de digitação",
+        "description": "Impedir que o Windows altere automaticamente palavras digitadas"
+      },
+      "windows_typing_disable-spellcheck": {
+        "name": "Desativar verificação ortográfica de digitação",
+        "description": "Não marcar problemas de ortografia nas áreas de entrada do Windows"
+      },
+      "windows_typing_disable-text-prediction": {
+        "name": "Desativar previsão de texto",
+        "description": "Não mostrar sugestões de texto previstas enquanto digita"
+      },
+      "windows_typing_disable-double-space-period": {
+        "name": "Desativar ponto com duplo espaço",
+        "description": "Não inserir um ponto ao pressionar Espaço duas vezes"
+      },
+      "windows_accessibility_disable-sticky-keys-shortcut": {
+        "name": "Desativar o atalho das Teclas de Aderência",
+        "description": "Evitar abrir Teclas de Aderência após pressionar Shift repetidamente"
+      },
+      "windows_accessibility_disable-filter-keys-shortcut": {
+        "name": "Desativar o atalho das Teclas de Filtro",
+        "description": "Evitar ativar Teclas de Filtro após segurar Shift"
+      },
+      "windows_accessibility_disable-toggle-keys-shortcut": {
+        "name": "Desativar o atalho das Teclas de Alternância",
+        "description": "Evitar ativar Teclas de Alternância após segurar Num Lock"
+      },
+      "windows_desktop_reduce-hover-delay": {
+        "name": "Reduzir o tempo de espera do ponteiro",
+        "description": "Fazer controles do sistema que usam o ponteiro responderem mais rápido"
+      },
+      "windows_performance_reduce-crash-dump": {
+        "name": "Usar dumps de erros menores",
+        "description": "Salvar espaço em disco com minidumps, em troca de menos detalhes de diagnóstico"
+      },
+      "windows_privacy_disable-remote-assistance": {
+        "name": "Desativar Assistência Remota",
+        "description": "Impedir que outras pessoas se conectem pelo Assistente Remoto do Windows"
+      },
+      "windows_performance_reduce-service-shutdown-timeout": {
+        "name": "Reduzir o tempo de espera do serviço durante o desligamento",
+        "description": "Esperar menos pelos serviços em segundo plano durante o desligamento; serviços não respondendo podem ser encerrados mais rapidamente"
+      },
+      "windows_performance_disable-network-throttling": {
+        "name": "Remover limites de largura de banda para multimídia na rede",
+        "description": "Reduzir limites do Windows para tráfego de rede multimídia; o resultado depende da rede e do app"
+      },
+      "windows_performance_remove-reserved-bandwidth": {
+        "name": "Definir largura de banda reservável do QoS como zero",
+        "description": "Afeta apenas tráfego do sistema ou de apps que usam QoS e geralmente não melhora a velocidade geral da internet"
+      },
+      "windows_performance_multimedia-responsiveness": {
+        "name": "Aumentar prioridade para jogos e multimídia",
+        "description": "Reservar menos tempo de CPU para tarefas em segundo plano, o que pode afetar outros processos em segundo plano"
+      },
+      "windows_performance_multimedia-no-lazy-mode": {
+        "name": "Agendar tarefas multimídia de forma mais agressiva",
+        "description": "Reduzir o agendamento diferido para tarefas multimídia, o que pode aumentar o uso da CPU e o consumo de energia"
+      },
+      "windows_performance_multimedia-always-on": {
+        "name": "Manter o agendador multimídia ativo",
+        "description": "Manter o agendamento de tarefas multimídia ativo, o que pode aumentar o uso de recursos enquanto estiver ocioso"
+      },
+      "windows_gaming_enable-hardware-gpu-scheduling": {
+        "name": "Ativar o agendamento da GPU com aceleração de hardware",
+        "description": "Mover mais agendamento para a GPU; resultados dependem do driver de vídeo e exigem reinício"
+      },
+      "windows_compatibility_disable-camera-frame-server": {
+        "name": "Usar o modo de compatibilidade de câmera antiga",
+        "description": "Pode corrigir visualizações em alguns aplicativos de câmera antigos, mas pode afetar o acesso simultâneo à câmera por vários apps"
+      },
+      "windows_services_print-spooler-manual": {
+        "name": "Definir o serviço de impressão para iniciar manualmente",
+        "description": "Impedir que o serviço fique rodando continuamente; ele pode precisar ser iniciado antes de imprimir ou usar uma impressora virtual"
+      },
+      "windows_services_disable-sysmain": {
+        "name": "Desativar o pré-carregamento do SysMain",
+        "description": "Reduzir o pré-carregamento em segundo plano e a atividade do disco, mas os lançamentos de aplicativos a frio podem ser mais lentos"
+      },
+      "windows_services_disable-compatibility-assistant": {
+        "name": "Desativar o Assistente de Compatibilidade de Programas",
+        "description": "Parar a detecção de compatibilidade e os avisos para aplicativos mais antigos"
+      },
+      "windows_services_disable-search-indexing": {
+        "name": "Desativar a indexação de pesquisa do Windows",
+        "description": "Reduzir a indexação em segundo plano, mas tornar as buscas de arquivos e e-mails muito mais lentas"
+      },
+      "windows_services_disable-diagnostic-tracking": {
+        "name": "Desativar o rastreamento de diagnóstico",
+        "description": "Reduzir a coleta de dados de diagnóstico do Windows e algumas capacidades de solução de problemas"
+      },
+      "windows_services_disable-error-reporting": {
+        "name": "Desativar o Relatório de Erros do Windows",
+        "description": "Parar de coletar e enviar relatórios de falhas, reduzindo os diagnósticos disponíveis"
+      },
+      "windows_services_disable-sensors": {
+        "name": "Desativar serviços de sensores",
+        "description": "Desligar sensores de localização e orientação; recursos de dispositivos conversíveis podem ser afetados"
+      },
+      "windows_services_disable-insider": {
+        "name": "Desativar o serviço Windows Insider",
+        "description": "Desative o suporte ao Insider quando as versões pré-visualizadas não forem usadas"
+      },
+      "windows_services_disable-xbox-auth": {
+        "name": "Desative a autenticação do Xbox Live",
+        "description": "Reduzir os serviços em segundo plano do Xbox; O Game Pass e o login do Xbox podem parar de funcionar"
+      },
+      "windows_services_disable-fax": {
+        "name": "Desative o serviço de fax",
+        "description": "Impedir que o serviço inicie quando o Windows Fax não for usado"
+      },
+      "windows_services_disable-media-player-sharing": {
+        "name": "Desative o compartilhamento do player de mídia",
+        "description": "Pare o serviço em segundo plano quando o compartilhamento de mídia da rede local não for usado"
+      },
+      "windows_security_disable-system-restore": {
+        "name": "Desativar a Restauração do Sistema",
+        "description": "Prevenir novos pontos de restauração; A Restauração do Sistema não pode ser usada após uma falha"
+      },
+      "windows_security_disable-defender": {
+        "name": "Desativar política antivírus do Microsoft Defender",
+        "description": "Reduzir substancialmente a proteção contra malware; selecionar apenas com outra solução de segurança"
+      },
+      "windows_security_disable-smartscreen": {
+        "name": "Desative o SmartScreen do Windows",
+        "description": "Pare de verificar a reputação de aplicativos desconhecidos e downloads, reduzindo a proteção contra arquivos maliciosos"
+      },
+      "windows_network_disable-smb1": {
+        "name": "Desative o SMB 1.0",
+        "description": "Desligue o protocolo de compartilhamento legado; dispositivos NAS mais antigos podem parar de se conectar"
+      },
+      "windows_network_disable-smb2": {
+        "name": "Desative o SMB 2/3",
+        "description": "Interrompe o compartilhamento de arquivos e impressoras do Windows moderno; use apenas quando o SMB não for necessário"
+      },
+      "windows_security_disable-vbs": {
+        "name": "Desative a segurança baseada em virtualização",
+        "description": "Pode melhorar o desempenho de alguns jogos, mas reduz o isolamento de credenciais e do kernel"
+      },
+      "windows_storage_disable-ntfs-last-access": {
+        "name": "Desative as atualizações de último acesso do NTFS",
+        "description": "Reduz gravações de metadados; softwares que dependem de tempos de acesso podem ser afetados"
+      },
+      "windows_update_notify-before-download": {
+        "name": "Notifique antes de baixar atualizações do Windows",
+        "description": "Exige ação antes dos downloads; atualizações de segurança devem ser feitas manualmente"
+      },
+      "windows_update_disable-peer-sharing": {
+        "name": "Desligue o compartilhamento de atualizações entre dispositivos",
+        "description": "Baixar dos servidores de atualização sem trocar atualizações do Windows com outros PCs"
+      },
+      "windows_update_disable-preview-builds": {
+        "name": "Desativar versões de pré-visualização do Windows",
+        "description": "Ficar no canal de lançamento público em vez de receber versões Insider"
+      },
+      "windows_update_prevent-restart-when-logged-on": {
+        "name": "Não reiniciar automaticamente enquanto estiver conectado",
+        "description": "Evitar que atualizações agendadas reiniciem o PC enquanto um usuário estiver conectado"
+      },
+      "windows_update_disable-automatic-updates": {
+        "name": "Desativar atualizações automáticas do Windows",
+        "description": "Buscar atualizações apenas após uma verificação manual, o que pode atrasar correções de segurança importantes"
+      },
+      "windows_privacy_limit-diagnostic-data": {
+        "name": "Limitar dados de diagnóstico do Windows",
+        "description": "Enviar apenas os dados de diagnóstico necessários para segurança, atualizações e confiabilidade"
+      },
+      "windows_update_exclude-driver-updates": {
+        "name": "Excluir drivers do Windows Update",
+        "description": "Evitar substituição automática de drivers e gerenciar drivers manualmente"
+      },
+      "windows_update_disable-store-auto-updates": {
+        "name": "Desativar atualizações automáticas da Microsoft Store",
+        "description": "Exigir instalação manual de atualizações de apps e correções de segurança"
+      },
+      "windows_cloud_disable-onedrive-sync": {
+        "name": "Desativar a política de sincronização de arquivos do OneDrive",
+        "description": "Bloquear a sincronização do OneDrive sem desinstalar o cliente ou excluir arquivos existentes"
+      },
+      "windows_search_disable-cortana-policy": {
+        "name": "Desativar a política do Cortana",
+        "description": "Desativar o Cortana; alguns recursos de pesquisa em versões mais antigas do Windows podem ser afetados"
+      },
+      "windows_input_disable-windows-ink": {
+        "name": "Desativar o Windows Ink Workspace",
+        "description": "Reduzir recursos da caneta; não recomendado para usuários de stylus e escrita manual"
+      },
+      "windows_clipboard_disable-cross-device-policy": {
+        "name": "Desativar a política de área de transferência entre dispositivos",
+        "description": "Impedir que o conteúdo da área de transferência sincronize entre dispositivos da conta Microsoft"
+      },
+      "windows_filesystem_enable-long-paths": {
+        "name": "Habilitar caminhos longos Win32",
+        "description": "Permitir que aplicativos compatíveis acessem caminhos com mais de 260 caracteres"
+      },
+      "windows_setup_bypass-hardware-checks": {
+        "name": "Permitir contornar as verificações de hardware do Windows 11",
+        "description": "Permitir atualizações em CPUs ou hardware TPM não suportados, podendo perder suporte oficial"
+      },
+      "windows_time_use-utc-hardware-clock": {
+        "name": "Usar UTC para o relógio de hardware",
+        "description": "Útil para dual boot com Windows e Linux; geralmente desnecessário em sistemas apenas com Windows"
+      },
+      "windows_power_disable-modern-standby": {
+        "name": "Desativar Modern Standby",
+        "description": "Tentar usar suspensão legada; dispositivos sem suporte podem não entrar em suspensão corretamente"
+      },
+      "windows_power_disable-hibernation": {
+        "name": "Desativar hibernação",
+        "description": "Reduzir uso de disco relacionado à hibernação, mas hibernação e Inicialização Rápida podem não estar disponíveis"
+      },
+      "windows_recovery_enable-registry-backups": {
+        "name": "Ativar backups periódicos do registro",
+        "description": "Permitir que o Windows crie backups do registro usando uma pequena quantidade de espaço no disco do sistema"
+      },
+      "windows_login_enable-verbose-status": {
+        "name": "Mostrar status detalhado de login",
+        "description": "Exibir etapas do sistema durante login e desligamento para ajudar a diagnosticar atrasos"
+      },
+      "macos_finder_show-hard-drives-on-desktop": {
+        "name": "Mostrar unidades internas na área de trabalho",
+        "description": "Abrir as unidades internas do Mac diretamente da área de trabalho"
+      },
+      "macos_finder_show-external-drives-on-desktop": {
+        "name": "Mostrar unidades externas na área de trabalho",
+        "description": "Adicionar um ícone na área de trabalho quando uma unidade externa estiver conectada"
+      },
+      "macos_finder_show-removable-media-on-desktop": {
+        "name": "Mostrar mídias removíveis na área de trabalho",
+        "description": "Mostrar drives USB, discos e outros dispositivos removíveis na área de trabalho"
+      },
+      "macos_dock_disable-launch-animation": {
+        "name": "Desativar animações de inicialização do Dock",
+        "description": "Reduzir animações de ícones saltando ao abrir aplicativos"
+      },
+      "macos_dock_show-only-open-apps": {
+        "name": "Mostrar apenas apps abertos no Dock",
+        "description": "Ocultar apps fixados que não estão em execução para um Dock mais simples"
+      },
+      "macos_dock_dim-hidden-apps": {
+        "name": "Escurecer ícones de apps escondidos",
+        "description": "Usar ícones translúcidos para diferenciar aplicativos atualmente escondidos"
+      },
+      "macos_mission-control_group-windows-by-app": {
+        "name": "Agrupar janelas do Mission Control por app",
+        "description": "Mantenha janelas do mesmo aplicativo juntas no Mission Control"
+      },
+      "macos_keyboard_disable-press-and-hold": {
+        "name": "Repetir teclas quando mantidas pressionadas",
+        "description": "Substitua o painel de caracteres acentuados por entrada contínua de letras"
+      },
+      "macos_documents_save-locally": {
+        "name": "Salvar novos documentos localmente",
+        "description": "Preferir o Mac em vez do iCloud ao salvar um novo documento"
+      },
+      "macos_printing_quit-after-finish": {
+        "name": "Fechar a fila de impressão quando terminar",
+        "description": "Fechar automaticamente a fila de impressão quando não houver trabalhos"
+      },
+      "macos_finder_default-list-view": {
+        "name": "Usar a visualização de lista por padrão no Finder",
+        "description": "Usar layout de lista para pastas sem preferência de visualização salva"
+      },
+      "macos_finder_folders-first-on-desktop": {
+        "name": "Manter pastas da área de trabalho no topo",
+        "description": "Mostrar pastas antes de arquivos ao organizar a área de trabalho"
+      },
+      "macos_finder_enable-quit-menu": {
+        "name": "Mostrar o menu Encerrar Finder",
+        "description": "Permitir que o Finder seja totalmente encerrado e reaberto quando necessário"
+      },
+      "macos_finder_remove-old-trash-items": {
+        "name": "Remover itens antigos da Lixeira automaticamente",
+        "description": "Excluir itens após 30 dias na Lixeira; eles não poderão ser restaurados depois"
+      },
+      "macos_dock_remove-auto-hide-delay": {
+        "name": "Remover o atraso de ocultação automática do Dock",
+        "description": "Mostrar o Dock imediatamente quando o ponteiro chegar a ele"
+      },
+      "macos_dock_enable-magnification": {
+        "name": "Ativar aumento de ícones do Dock",
+        "description": "Aumentar ícones de aplicativos próximos à medida que o ponteiro se move sobre o Dock"
+      },
+      "macos_window_disable-animations": {
+        "name": "Reduzir animações de janelas",
+        "description": "Desativar algumas animações de abertura e fechamento para uma resposta mais imediata"
+      },
+      "macos_window_close-app-windows": {
+        "name": "Fechar janelas ao sair de aplicativos",
+        "description": "Não reabrir janelas mantidas na próxima vez que o aplicativo iniciar"
+      },
+      "macos_window_double-click-titlebar-minimize": {
+        "name": "Minimizar com duplo clique na barra de título",
+        "description": "Minimizar uma janela em vez de ampliá-la quando sua barra de título for clicada duas vezes"
+      },
+      "macos_keyboard_use-standard-function-keys": {
+        "name": "Use F1–F12 como teclas de função padrão",
+        "description": "Segure Fn para controlar brilho e volume em vez disso"
+      },
+      "macos_safari_show-full-url": {
+        "name": "Mostrar endereços completos de sites no Safari",
+        "description": "Sempre mostrar o endereço completo da página atual"
+      },
+      "macos_safari_disable-safe-download-auto-open": {
+        "name": "Parar a abertura automática de downloads no Safari",
+        "description": "Não abrir automaticamente arquivos que o macOS considera seguros após o download"
+      },
+      "macos_safari_show-status-bar": {
+        "name": "Mostrar a barra de status do Safari",
+        "description": "Exibir o destino de um link na parte inferior da janela ao passar o mouse"
+      },
+      "macos_safari_enable-develop-menu": {
+        "name": "Ativar o menu Desenvolver do Safari",
+        "description": "Mostrar ferramentas para inspecionar páginas, depurar e controlar caches"
+      },
+      "macos_textedit_plain-text-default": {
+        "name": "Usar texto simples por padrão no TextEdit",
+        "description": "Criar novos documentos do TextEdit sem formatação rica"
+      },
+      "macos_photos_disable-auto-open": {
+        "name": "Não abrir o Fotos quando dispositivos se conectarem",
+        "description": "Não abra aplicativos de fotos quando uma câmera, iPhone ou cartão de memória for conectado"
+      },
+      "macos_privacy_disable-personalized-ads": {
+        "name": "Desative anúncios personalizados da Apple",
+        "description": "Não permita que a Apple personalize anúncios com base nas informações da conta e uso"
+      },
+      "macos_sharing_disable-airdrop": {
+        "name": "Desative o recebimento pelo AirDrop",
+        "description": "Pare de descobrir e receber conteúdo enviado de dispositivos próximos"
+      },
+      "macos_activity-monitor_show-all-processes": {
+        "name": "Mostre todos os processos no Monitor de Atividade",
+        "description": "Exiba por padrão processos executados pelo usuário atual e pelo sistema"
+      },
+      "macos_app-store_enable-auto-updates": {
+        "name": "Atualize aplicativos da App Store automaticamente",
+        "description": "Permita que a App Store instale atualizações disponíveis para aplicativos já instalados"
+      },
+      "windows_explorer_show-status-bar": {
+        "name": "Mostre a barra de status do Explorador de Arquivos",
+        "description": "Exiba a contagem de itens e informações dos arquivos selecionados na parte inferior"
+      },
+      "windows_explorer_separate-process": {
+        "name": "Execute janelas de pastas em um processo separado",
+        "description": "Limite o impacto de uma janela travar com um pequeno custo de memória"
+      },
+      "windows_explorer_restore-folders-at-login": {
+        "name": "Restaurar janelas de pastas após o login",
+        "description": "Reabrir janelas do Explorador de Arquivos que estavam abertas antes de sair"
+      },
+      "windows_explorer_disable-sharing-wizard": {
+        "name": "Usar configurações avançadas de compartilhamento",
+        "description": "Desativar o assistente de compartilhamento simplificado e gerenciar compartilhamento através de permissões avançadas"
+      },
+      "windows_taskbar_hide-badges": {
+        "name": "Ocultar ícones de aplicativos na barra de tarefas",
+        "description": "Não mostrar contagens de não lidos ou marcas de alerta nos ícones de aplicativos"
+      },
+      "windows_taskbar_disable-flashing": {
+        "name": "Desativar o piscar da barra de tarefas",
+        "description": "Não piscar ícones da barra de tarefas quando um aplicativo solicitar atenção"
+      },
+      "windows_taskbar_hide-window-sharing": {
+        "name": "Ocultar compartilhamento de janelas na barra de tarefas",
+        "description": "Não oferecer compartilhamento direto de janelas da barra de tarefas durante chamadas"
+      },
+      "windows_taskbar_show-desktop-corner": {
+        "name": "Ativar o canto Mostrar a Área de Trabalho na barra de tarefas",
+        "description": "Clique no canto mais à direita da barra de tarefas para mostrar a área de trabalho rapidamente"
+      },
+      "windows_personalization_disable-transparency": {
+        "name": "Desative os efeitos de transparência",
+        "description": "Reduza a renderização translúcida no Iniciar, na barra de tarefas e nas superfícies do sistema"
+      },
+      "windows_search_disable-highlights": {
+        "name": "Desative os destaques da pesquisa",
+        "description": "Remova conteúdos em alta e sugestões da Pesquisa do Windows"
+      },
+      "windows_start_disable-recommendations": {
+        "name": "Desative as recomendações do menu Iniciar",
+        "description": "Reduza dicas, atalhos e sugestões de aplicativos no Iniciar"
+      },
+      "windows_start_disable-account-notifications": {
+        "name": "Desative as notificações de conta no Iniciar",
+        "description": "Oculte sugestões de conta da Microsoft e de sincronização no Iniciar"
+      },
+      "macos_finder_warn-before-empty-trash": {
+        "name": "Confirme antes de esvaziar a Lixeira",
+        "description": "Reduza a chance de deletar arquivos permanentemente por engano"
+      },
+      "macos_dock_enable-spring-loading": {
+        "name": "Abra os alvos enquanto arrasta",
+        "description": "Expanda pastas ou aplicativos do Dock automaticamente ao arrastar sobre eles"
+      },
+      "macos_dock_scroll-to-expose": {
+        "name": "Role os ícones do Dock para mostrar as janelas",
+        "description": "Role para cima em um ícone de aplicativo para ver todas as suas janelas"
+      },
+      "macos_dock_fast-auto-hide-animation": {
+        "name": "Acelere o ocultamento automático do Dock",
+        "description": "Reduza o atraso da animação ao mostrar ou ocultar o Dock"
+      },
+      "macos_safari_disable-search-suggestions": {
+        "name": "Desative as sugestões de pesquisa do Safari",
+        "description": "Envie menos conteúdo digitado para os serviços de sugestão de pesquisa"
+      },
+      "macos_safari_disable-top-hit-preload": {
+        "name": "Desative o pré-carregamento do Top Hit do Safari",
+        "description": "Não carregue o primeiro resultado da pesquisa antes de confirmá-lo"
+      },
+      "macos_text_disable-text-completion": {
+        "name": "Desative a conclusão de texto",
+        "description": "Evite que o sistema complete o texto enquanto você digita"
+      },
+      "macos_text_disable-inline-predictions": {
+        "name": "Desative as previsões em linha",
+        "description": "Não mostre o texto previsto após o cursor"
+      },
+      "macos_sound_disable-volume-feedback": {
+        "name": "Desative os sons de feedback de volume",
+        "description": "Não reproduza um som ao ajustar o volume"
+      },
+      "macos_time-machine_hide-new-disk-prompts": {
+        "name": "Ocultar novos avisos de backup de disco",
+        "description": "Não sugerir o uso de discos recém-conectados com o Time Machine"
+      },
+      "macos_security_require-password-after-sleep": {
+        "name": "Exigir senha ao acordar",
+        "description": "Exigir autenticação ao sair do modo de descanso ou do protetor de tela"
+      },
+      "macos_security_lock-immediately-after-sleep": {
+        "name": "Exigir senha imediatamente após acordar",
+        "description": "Não permitir um período de tolerância sem senha após o repouso ou o protetor de tela"
+      },
+      "windows_explorer_confirm-file-delete": {
+        "name": "Confirmar antes de excluir arquivos",
+        "description": "Mostrar uma confirmação antes de excluir arquivos ou movê-los para a Lixeira"
+      },
+      "windows_explorer_use-manual-default-printer": {
+        "name": "Manter a impressora padrão selecionada",
+        "description": "Impedir que o Windows altere com base na impressora mais usada recentemente"
+      },
+      "windows_taskbar_show-on-all-displays": {
+        "name": "Mostrar a barra de tarefas em todas as telas",
+        "description": "Manter a barra de tarefas disponível em todas as telas em configurações de múltiplos monitores"
+      },
+      "windows_gaming_disable-game-bar-controller": {
+        "name": "Não abra a Barra de Jogos com o controle",
+        "description": "Evite que botões do controle abram a Barra de Jogos acidentalmente"
+      },
+      "windows_gaming_disable-game-bar-tips": {
+        "name": "Desative dicas da Barra de Jogos",
+        "description": "Oculte recursos da Barra de Jogos e sugestões de gravação"
+      },
+      "windows_gaming_disable-dynamic-lighting": {
+        "name": "Desative a Iluminação Dinâmica do Windows",
+        "description": "Reduza o controle de iluminação e a atividade em segundo plano quando o RGB não for necessário"
+      },
+      "windows_gaming_disable-app-lighting-control": {
+        "name": "Impeça aplicativos de controlar a Iluminação Dinâmica",
+        "description": "Evite que aplicativos em primeiro plano assumam a iluminação do dispositivo"
+      },
+      "windows_start_hide-recently-added-apps": {
+        "name": "Oculte aplicativos recentemente adicionados",
+        "description": "Não destaque aplicativos recém-instalados no Início"
+      },
+      "windows_start_hide-most-used-apps": {
+        "name": "Oculte aplicativos mais usados",
+        "description": "Não exponha padrões de uso de aplicativos no Início"
+      },
+      "windows_start_hide-recent-items": {
+        "name": "Oculte itens recentemente abertos",
+        "description": "Não mostre arquivos recentes no Início ou em listas de atalho"
+      },
+      "windows_edge_limit-diagnostic-data": {
+        "name": "Enviar apenas diagnósticos necessários do Edge",
+        "description": "Não enviar dados opcionais de uso do navegador e diagnóstico de sites"
+      },
+      "windows_security_disable-autorun": {
+        "name": "Desativar AutoPlay para todas as unidades",
+        "description": "Impedir que programas rodem automaticamente quando mídia for inserida"
+      },
+      "windows_network_disable-llmnr": {
+        "name": "Desativar resolução de nomes locais LLMNR",
+        "description": "Desabilitar resolução de nomes multicast local para reduzir riscos de falsificação e exposição de credenciais"
+      },
+      "windows_update_enable-microsoft-product-updates": {
+        "name": "Atualizar outros produtos Microsoft",
+        "description": "Obter atualizações do Office e outros produtos pelo Windows Update"
+      },
+      "windows_update_enable-restart-notifications": {
+        "name": "Avisar quando as atualizações precisarem de reinício",
+        "description": "Mostrar um lembrete claro quando for necessário reiniciar para concluir a atualização"
+      }
+    }
+  },
+  "applicationClose": {
+    "title": "Fechar aplicativos em execução (opcional)",
+    "selectAll": "Selecionar tudo",
+    "clearAll": "Limpar tudo",
+    "processCount": "{count} processo relacionado | {count} processos relacionados",
+    "closing": "Aguardando os apps selecionados fecharem…",
+    "closeSelectedAndContinue": "Fechar {count} app e continuar | Fechar {count} apps e continuar",
+    "skipAndContinue": "Pular e continuar",
+    "normalCloseFailed": "Alguns apps ainda estão rodando depois de esperar",
+    "forceWarning": "Forçar encerramento pode descartar documentos ou edições não salvas. Confirme que seu trabalho está salvo antes de continuar",
+    "forceAndContinue": "Forçar encerramento e continuar"
+  },
+  "startup": {
+    "title": "Itens de Inicialização",
+    "scan": "Escanear Itens de Inicialização",
+    "rescan": "Escanear Novamente",
+    "scanning": "Procurando itens de inicialização",
+    "scanningDescription": "Procurando apps e serviços que iniciam automaticamente. Esta verificação não mudará nenhuma configuração",
+    "cancelling": "Cancelando…",
+    "emptyTitle": "Gerenciar apps que iniciam automaticamente",
+    "emptyDescription": "Veja o que inicia automaticamente e ligue ou desligue os itens conforme necessário",
+    "noMatchesTitle": "Nenhum item de inicialização correspondente",
+    "noMatchesDescription": "Tente uma pesquisa ou filtro diferente",
+    "searchPlaceholderCompact": "Pesquisar programas ou fabricantes",
+    "filterLabel": "Filtrar itens de inicialização por estado",
+    "itemCount": "{count} itens",
+    "remainingResults": "{count} resultados a mais",
+    "valueSeparator": ",",
+    "viewDetails": "Ver detalhes de inicialização de {name}",
+    "showLocation": "Mostrar na pasta",
+    "showNamedLocation": "Mostrar {name} na pasta",
+    "copyToClipboard": "Copiar para a área de transferência",
+    "copyConfiguration": "Copiar a configuração de inicialização de {name}",
+    "copyCommand": "Copiar o que {name} executa",
+    "copiedToClipboard": "Copiado para a área de transferência",
+    "noManageableTitle": "Nenhum item de inicialização gerenciável",
+    "noManageableDescription": "Nenhum programa que possa ser ligado ou desligado foi encontrado",
+    "summary": {
+      "programs": "{count} apps iniciam automaticamente",
+      "permissionRequired": "Alguns itens de inicialização estão ocultos—Acesso Total ao Disco é necessário",
+      "openPrivacySettings": "Abrir configurações de Acesso Total ao Disco",
+      "enabled": "Ativado"
+    },
+    "permission": {
+      "title": "Alguns itens de inicialização não estão visíveis",
+      "description": "Ative o Acesso Total ao Disco para escanear mais itens de inicialização",
+      "instructions": "Permita o MangoDisk nas Configurações do Sistema, depois volte e escaneie novamente",
+      "skip": "Agora não",
+      "openSettings": "Abrir Configurações do Sistema"
+    },
+    "filters": {
+      "all": "Todos",
+      "enabled": "Ativado",
+      "disabled": "Desativado"
+    },
+    "sourceKinds": {
+      "registryRun": "Inicialização do registro",
+      "startupFolder": "Pasta de inicialização",
+      "scheduledTask": "Tarefa agendada",
+      "service": "Serviço do sistema",
+      "packagedStartupTask": "Tarefa de aplicativo da loja",
+      "launchAgent": "Item em segundo plano do usuário",
+      "launchDaemon": "Item em segundo plano do sistema",
+      "loginItem": "Aplicativo aberto no login",
+      "backgroundTask": "Item de login em segundo plano",
+      "embeddedItem": "Item de inicialização fornecido pelo app",
+      "advancedAutoRun": "Autorun avançado"
+    },
+    "configuredStates": {
+      "mixed": "Parcialmente habilitado",
+      "enabled": "Habilitado",
+      "disabled": "Desabilitado",
+      "removed": "Removido",
+      "unknown": "Estado desconhecido",
+      "notApplicable": "Não aplicável"
+    },
+    "runtimeStates": {
+      "running": "Executando",
+      "stopped": "Parado",
+      "loaded": "Carregado",
+      "unloaded": "Não carregado",
+      "unknown": "Desconhecido"
+    },
+    "trustStates": {
+      "system": "Componente do sistema",
+      "verified": "Assinatura válida",
+      "invalid": "Assinatura inválida",
+      "unsigned": "Não assinado",
+      "unknown": "Desconhecido"
+    },
+    "scopes": {
+      "currentUser": "Usuário atual",
+      "user": "Usuário",
+      "allUsers": "Todos os usuários",
+      "machine": "Máquina",
+      "system": "Sistema"
+    },
+    "diagnostics": {
+      "accessDenied": "Acesso negado",
+      "invalidData": "Dados de configuração inválidos",
+      "missingIdentity": "Identidade do programa está faltando",
+      "missingTarget": "Arquivo de destino está faltando",
+      "stateUnavailable": "O estado atual está indisponível",
+      "unsupportedFormat": "Este formato de configuração não é suportado"
+    },
+    "change": {
+      "title": "Confirmar alterações",
+      "checking": "Verificando itens de inicialização…",
+      "descriptions": {
+        "enabled": "Ativar {count} itens de inicialização",
+        "disabled": "Desativar {count} itens de inicialização",
+        "removed": "Remover {count} itens de inicialização restantes"
+      },
+      "batchName": "{count} itens de inicialização",
+      "enableNamedGroup": "Ativar {name}",
+      "disableNamedGroup": "Desativar {name}",
+      "futureOnly": "Desligar a inicialização automática não interrompe programas ou serviços que já estão em execução",
+      "requiresElevation": "Permissão de administrador necessária",
+      "authorizationPromptMacos": "O MangoDisk precisa de permissão de administrador para alterar as configurações de inicialização",
+      "confirm": "Confirmar",
+      "applying": "Aplicando…",
+      "refreshFailedResult": "A operação terminou, mas a lista não pôde ser atualizada. Escanear novamente",
+      "enableSuccessResult": "Ativou a inicialização automática para “{name}”",
+      "disableSuccessResult": "Desativou a inicialização automática para “{name}”",
+      "batchEnableSuccessResult": "Ativou {count} itens de inicialização",
+      "batchDisableSuccessResult": "Desativou {count} itens de inicialização",
+      "partialEnableResult": "Ativou {changed} itens para “{name}”; {failed} falharam",
+      "partialDisableResult": "Desativou {changed} itens para “{name}”; {failed} falharam",
+      "batchPartialEnableResult": "Ativou {changed} itens de inicialização; {failed} falharam",
+      "batchPartialDisableResult": "Desativou {changed} itens de inicialização; {failed} falharam",
+      "warnings": {
+        "affectsOtherTriggers": "Esta tarefa agendada também tem gatilhos que não são de inicialização; desativá-la afeta toda a tarefa",
+        "itemCurrentlyRunning": "O item está em execução; esta alteração não irá pará-lo"
+      },
+      "skipReasons": {
+        "alreadyInDesiredState": "Já está no estado solicitado",
+        "catalogExpired": "A sessão de verificação expirou; verifique novamente",
+        "itemChanged": "A configuração do sistema mudou após a verificação",
+        "itemMissing": "O item não existe mais",
+        "stateUnknown": "O estado configurado não pode ser verificado",
+        "unsupportedCapability": "Esta fonte é somente leitura ou gerenciada pelo sistema",
+        "requiresElevation": "É necessário acesso de administrador",
+        "targetUnavailable": "O programa está faltando ou sua configuração de inicialização é inválida"
+      }
+    },
+    "cleanup": {
+      "action": "Remover restos",
+      "title": "Remover itens de inicialização restantes",
+      "guidance": "Somente as configurações de inicialização obsoletas serão removidas; outros arquivos do programa não serão deletados",
+      "confirm": "Remover",
+      "successResult": "Itens de inicialização restantes de “{name}” removidos",
+      "partialResult": "{changed} itens de “{name}” removidos; {failed} falharam"
+    },
+    "detail": {
+      "timing": "Quando ele inicia",
+      "versionValue": "Versão {version}",
+      "systemManaged": "Este item é gerenciado pelo sistema. Alterações devem ser feitas em Itens de Login & Extensões nas Configurações do Sistema",
+      "viewOnly": "Este item pode ser visualizado, mas não pode ser alterado diretamente no MangoDisk",
+      "openLoginItemsSettings": "Abrir Configurações de Itens de Login",
+      "source": "Tipo de inicialização",
+      "startTiming": {
+        "boot": "Executa após o computador iniciar",
+        "userLogon": "Executa após você entrar",
+        "background": "Continua rodando em segundo plano",
+        "automatic": "Executa automaticamente quando necessário"
+      },
+      "configuration": "Configuração de inicialização",
+      "command": "Executando",
+      "runtime": "Estado atual de execução",
+      "trust": "Assinatura digital",
+      "modified": "Configuração modificada",
+      "diagnostics": "Precisa de atenção"
+    }
+  },
+  "common": {
+    "cancel": "Cancelar",
+    "close": "Fechar",
+    "open": "Abrir",
+    "showInFileManager": "Mostrar no Gerenciador de Arquivos",
+    "deletePermanently": "Excluir Permanentemente",
+    "minimize": "Minimizar",
+    "maximize": "Maximizar",
+    "restore": "Restaurar",
+    "expandSidebar": "Expandir barra lateral",
+    "collapseSidebar": "Recolher barra lateral",
+    "safe": "Baixo risco",
+    "operationFailed": "Operação falhou",
+    "loadMore": "Mostrar mais",
+    "filterFileCategory": "Filtrar por tipo de arquivo",
+    "estimatedRelease": "Espaço estimado para liberar",
+    "limitedResults": "Mostrando os maiores resultados; algumas correspondências não estão listadas",
+    "fileCount": "{count} arquivo | {count} arquivos",
+    "itemCount": "{count} item | {count} itens",
+    "locationCount": "{count} local | {count} locais"
+  },
+  "errors": {
+    "operationBusy": "Para evitar deixar seu disco lento, espere a tarefa atual terminar ou cancele e tente novamente",
+    "invalidInput": "Solicitação inválida. Revise os itens selecionados e tente novamente",
+    "operationCancelled": "Operação cancelada",
+    "operationFailed": "A operação não pôde ser concluída. Tente novamente",
+    "permissionDenied": "O MangoDisk não tem permissão para completar esta operação",
+    "persistenceFailed": "O MangoDisk não conseguiu salvar os dados da operação. Tente novamente",
+    "taskJoinFailed": "Uma tarefa em segundo plano parou inesperadamente. Tente novamente"
+  },
+  "errorTitles": {
+    "invalidInput": "Revise sua seleção",
+    "operationBusy": "Outra tarefa de disco está em execução",
+    "operationCancelled": "Operação cancelada",
+    "operationFailed": "Falha na operação",
+    "permissionDenied": "Permissão necessária",
+    "persistenceFailed": "Não foi possível salvar os dados",
+    "taskJoinFailed": "Tarefa em segundo plano parada"
+  },
+  "errorReasons": {
+    "folderSelectionLimitExceeded": {
+      "title": "Muitas pastas selecionadas",
+      "message": "Selecione até 64 pastas por vez e tente novamente"
+    },
+    "folderUnavailable": {
+      "title": "As pastas selecionadas estão indisponíveis",
+      "message": "Alguns itens selecionados não são pastas acessíveis. Verifique permissões, conexões de pastas compartilhadas ou destinos de links e selecione as pastas novamente"
+    },
+    "resourceBusy": {
+      "title": "O item está em uso",
+      "message": "Este item está aberto no Explorador de Arquivos ou em outro aplicativo. Feche a janela ou o aplicativo relacionado e tente novamente"
+    },
+    "accessDeniedOrBusy": {
+      "title": "Não foi possível acessar o item",
+      "message": "O sistema negou o acesso. O item pode estar em uso ou exigir permissões maiores; feche os aplicativos relacionados e tente novamente"
+    },
+    "itemChanged": {
+      "title": "O item acabou de mudar",
+      "message": "Este item mudou enquanto a exclusão estava sendo preparada. O MangoDisk parou para evitar apagar conteúdos errados; analise novamente"
+    },
+    "scanResourcesReleasing": {
+      "title": "A varredura anterior está terminando",
+      "message": "O sistema está liberando recursos da varredura de disco anterior. Tente novamente em um momento"
+    }
+  },
+  "folderPicker": {
+    "commonFolders": "Pastas Comuns",
+    "standardFolders": {
+      "downloads": "Downloads",
+      "documents": "Documentos",
+      "pictures": "Imagens",
+      "videos": "Vídeos",
+      "music": "Músicas"
+    }
+  },
+  "scanScope": {
+    "label": "Escopo da análise",
+    "chooseFolder": "Escolher pasta…",
+    "removeFolder": "Remover {name} do histórico"
+  },
+  "overview": {
+    "startScan": "Iniciar verificação",
+    "rescan": "Verificar novamente"
+  },
+  "cleanup": {
+    "title": "Limpeza profunda",
+    "diskUsageSummary": "{available} disponível",
+    "diskUsageDetails": "{name}: {used} usado, {available} disponível, {total} no total",
+    "selected": "Selecionado",
+    "totalSize": "{size} no total",
+    "selectAll": "Selecionar tudo",
+    "selectRule": "Selecionar item de limpeza: {name}",
+    "privilegedScan": {
+      "required": "Não marcado",
+      "sizePending": "Acesso de administrador necessário",
+      "action": "Verificação de admin",
+      "checking": "Verificando…"
+    },
+    "categoryItemCount": "{count} item | {count} itens",
+    "categoryTitles": {
+      "custom": "Limpeza personalizada",
+      "system": "Caches do sistema",
+      "userCache": "Arquivos de cache do usuário",
+      "application": "Caches de aplicativos",
+      "browser": "Dados do navegador",
+      "development": "Ferramentas de desenvolvedor",
+      "project": "Artefatos de compilação do projeto",
+      "xcode": "Dados do Xcode",
+      "applicationOptimization": "Otimização de aplicativos",
+      "ai": "Modelos de IA e caches",
+      "container": "Caches de contêineres"
+    },
+    "categoryDescriptions": {
+      "custom": "Arquivos encontrados usando suas pastas e condições correspondentes",
+      "system": "Arquivos temporários, dados de diagnóstico e caches do sistema",
+      "userCache": "Caches de aplicativos e ferramentas de desenvolvimento na sua pasta de usuário",
+      "application": "Caches e conteúdo temporário produzido por aplicativos",
+      "browser": "Dados temporários de sites criados pelos navegadores",
+      "development": "Downloads temporários, índices e caches de ferramentas de desenvolvimento",
+      "project": "Dependências e resultados de build que os projetos podem recriar",
+      "xcode": "Suporte a dispositivos, arquivos e dados de desenvolvimento produzidos pelo Xcode",
+      "applicationOptimization": "Remove código de aplicativos para arquiteturas de processador que este Mac não usa, reduzindo o uso de armazenamento sem afetar o funcionamento normal deste Mac",
+      "ai": "Modelos de IA baixados e arquivos de transferência temporários",
+      "container": "Cache de build não usado de ferramentas de container"
+    },
+    "selectSource": "Selecionar local de limpeza: {path}",
+    "selectionState": {
+      "all": "Todos os subitens selecionados",
+      "partial": "Alguns subitens selecionados",
+      "none": "Não selecionado"
+    },
+    "selectionMode": {
+      "label": "Seleção",
+      "smart": "Recomendação inteligente",
+      "all": "Selecionar tudo",
+      "none": "Desmarcar tudo",
+      "manual": "Seleção manual"
+    },
+    "estimated": "Dados estimados para limpeza",
+    "selectedSummary": "Itens selecionados",
+    "requiresClose": "Apps para fechar",
+    "clean": "Limpar",
+    "scanFirst": "Encontrar itens que podem ser limpos",
+    "emptyDescription": "Escanear caches do sistema e apps, logs e arquivos temporários para encontrar dados que podem ser limpos",
+    "planDialogTitle": "Confirmar limpeza",
+    "adjustSelection": "Voltar à seleção",
+    "execute": "Iniciar limpeza",
+    "actualReleased": "Dados removidos",
+    "resultDescription": "Reveja os itens de limpeza, quantidades de dados e resultados",
+    "cancelledResultDescription": "Itens concluídos permanecem limpos; itens ainda não iniciados foram ignorados",
+    "previewCompleted": "Verificação completa",
+    "previewPassed": "Verificações concluídas. Nenhum arquivo foi excluído",
+    "completed": "Limpeza concluída",
+    "completedWithWarnings": "Limpeza concluída com avisos",
+    "completedDescription": "{count} item processado e {size} removido; {failed} ignorado ou falhou | {count} itens processados e {size} removidos; {failed} ignorados ou falharam",
+    "cancelled": "Limpeza cancelada",
+    "processedItems": "Itens processados",
+    "failedItems": "Ignorados ou falharam",
+    "cleanableFound": "Itens que podem ser limpos",
+    "summaryCount": "Encontrado {count} item que pode ser limpo | Encontrados {count} itens que podem ser limpos",
+    "summarySpace": "Dados estimados que podem ser limpos",
+    "emptyCleanTitle": "Seu computador está limpo",
+    "emptyCleanDescription": "Nenhum item que possa ser limpo foi encontrado — continue assim",
+    "selectedItemCount": "{count} item selecionado | {count} itens selecionados",
+    "appsToCloseCount": "{count} app para fechar | {count} apps para fechar",
+    "closeAppsBeforeCleanup": "Salve seu trabalho primeiro. Os apps selecionados serão fechados antes da limpeza; itens ainda em uso serão ignorados",
+    "requiresCloseProcesses": "Apps para fechar: {processes}",
+    "applicationComponentCount": "Nenhum item disponível para otimizar | {count} item disponível para otimizar | {count} itens disponíveis para otimizar",
+    "sourceRequiresClose": "Feche o app antes da limpeza",
+    "sourceAccessLimited": "Não pôde ser lido completamente e foi excluído",
+    "sourceFiles": "{count} arquivos",
+    "sourceModified": "Última modificação {time}",
+    "aggregateOnlyDetails": "Apenas o escopo de limpeza, a contagem de itens e o tamanho total estão disponíveis; arquivos individuais não podem ser listados",
+    "scanMode": {
+      "label": "Escolha o tipo de verificação",
+      "standard": "Verificação Padrão",
+      "standardDescription": "Confira itens de limpeza e projetos de desenvolvimento para o usuário atual",
+      "selectVolumes": "Escolher Discos",
+      "selectVolumesDescription": "Encontre mais projetos de desenvolvimento em outros discos",
+      "custom": "Limpeza Personalizada",
+      "customDescription": "Encontre arquivos que podem ser limpos usando suas pastas e condições correspondentes",
+      "volumeDialogTitle": "Escolher discos para pesquisar",
+      "volumeDialogDescription": "O disco do sistema é sempre verificado. Selecione outros discos para encontrar projetos de desenvolvimento e arquivos de build",
+      "systemVolume": "Sistema · Sempre verificado",
+      "volumeCapacity": "{available} livre / {total}",
+      "noVolumes": "Nenhum disco disponível",
+      "selectedVolumeCount": "{count} disco selecionado | {count} discos selecionados",
+      "startSelectedScan": "Iniciar Verificação"
+    },
+    "customCleanup": {
+      "title": "Limpeza Personalizada",
+      "description": "Escolha pastas e condições de arquivos. Os resultados da verificação permanecem não selecionados até você escolher o que limpar",
+      "addRule": "Adicionar Regra",
+      "copyRule": "Duplicar regra",
+      "ruleCopyName": "{name} Cópia",
+      "untitledRule": "Regra sem título {index}",
+      "directoryCount": "{count} pasta | {count} pastas",
+      "ruleName": "Nome da regra",
+      "ruleNamePlaceholder": "Por exemplo: Arquivos de log antigos",
+      "ruleNameRequired": "Digite um nome para a regra",
+      "directories": "Pastas para escanear",
+      "chooseDirectories": "Escolher pastas",
+      "dropDirectories": "ou arraste pastas aqui",
+      "directoriesRequired": "Escolha pelo menos uma pasta para escanear",
+      "removeDirectory": "Remover pasta",
+      "patterns": "Nomes de arquivos",
+      "patternsPlaceholder": "Por exemplo: *.log, *.tmp",
+      "patternsHint": "Use * ou ? nos nomes de arquivos. Separe vários padrões com vírgulas",
+      "patternsRequired": "Digite pelo menos um padrão de nome de arquivo",
+      "patternsInvalid": "Verificar o formato do curinga",
+      "viewPatternExamples": "Ver exemplos",
+      "patternExamplesTitle": "Exemplos de curingas para nomes de arquivos",
+      "patternExampleExtension": "corresponde a todos os arquivos .log",
+      "patternExampleCharacter": "? corresponde a um único caractere",
+      "patternExampleMultiple": "corresponde a qualquer um dos tipos de arquivo",
+      "minimumSize": "Tamanho mínimo (MB)",
+      "maximumSize": "Tamanho máximo (MB)",
+      "sizeRangeInvalid": "Não pode ser menor que o mínimo",
+      "noLimit": "Sem limite",
+      "modifiedTime": "Data de modificação do arquivo",
+      "modifiedAny": "A qualquer momento",
+      "modifiedOlder": "Não modificado por pelo menos",
+      "modifiedNewer": "Modificado nos últimos",
+      "modifiedTimeInvalid": "Digite 1–3650 dias",
+      "days": "Dias",
+      "includeSubdirectories": "Incluir subpastas",
+      "includeSubdirectoriesDescription": "Desative para inspecionar apenas arquivos diretamente dentro de cada pasta selecionada",
+      "removeEmptyDirectories": "Remover pastas vazias",
+      "removeEmptyDirectoriesDescription": "Após a limpeza, remova subpastas vazias dentro das pastas selecionadas. As pastas selecionadas são mantidas",
+      "removeRule": "Excluir esta regra",
+      "empty": "Ainda não há regras personalizadas",
+      "includeStandardRules": "Também executar uma verificação padrão",
+      "save": "Salvar",
+      "saveAndScan": "Salvar e verificar"
+    }
+  },
+  "analysis": {
+    "title": "Análise de Espaço em Disco",
+    "pathLabel": "Localização atual",
+    "start": "Iniciar Análise",
+    "analyzing": "Escaneando pastas…",
+    "rescan": "Analisar Novamente",
+    "result": "Pasta atual",
+    "treemap": "Mapa de Árvore",
+    "treemapRemainder": "Item menor · {count} | Itens menores · {count}",
+    "treemapRemainderHint": "{count} item menor usa {size} no total. Detalhes completos estão disponíveis na lista | {count} itens menores usam {size} no total. Detalhes completos estão disponíveis na lista",
+    "details": "Lista",
+    "back": "Voltar",
+    "forward": "Avançar",
+    "home": "Retornar à raiz da análise",
+    "localDisk": "Disco local",
+    "name": "Nome",
+    "size": "Tamanho",
+    "fileCount": "Arquivos",
+    "modified": "Última modificação",
+    "sortAscending": "Ordenar crescente",
+    "sortDescending": "Ordenar decrescente",
+    "sortColumn": "{column}: {direction}",
+    "deleteTitle": "Excluir este item permanentemente?",
+    "deleteDescription": "O arquivo ou pasta será excluído imediatamente e não poderá ser recuperado",
+    "deleteAction": "Excluir permanentemente",
+    "emptyTitle": "Veja o que está usando o espaço do disco",
+    "emptyDescription": "Analise como arquivos e pastas usam espaço na localização selecionada",
+    "folderFileSummary": "{folders} pasta · {files} arquivo | {folders} pastas · {files} arquivos",
+    "folderSpaceSummary": "{folders} pasta · {size} | {folders} pastas · {size}"
+  },
+  "largeFiles": {
+    "title": "Limpeza de arquivos grandes",
+    "start": "Iniciar verificação",
+    "rescan": "Verificar novamente",
+    "emptyTitle": "Localizar arquivos grandes",
+    "emptyDescription": "Verificar a localização selecionada para arquivos de pelo menos {size}",
+    "fileName": "Nome do arquivo",
+    "location": "Caminho",
+    "size": "Tamanho",
+    "minimumSize": "Tamanho mínimo",
+    "modified": "Modificado",
+    "noResults": "Nenhum arquivo grande correspondente neste escopo",
+    "noResultsDescription": "Reduza o limite de tamanho, mude os tipos de arquivo ou escolha outro escopo de verificação",
+    "summaryCount": "Encontrado {count} arquivo com pelo menos {size} | Encontrados {count} arquivos com pelo menos {size}",
+    "summarySpace": "usando",
+    "scanning": "Procurando por arquivos grandes...",
+    "scanHint": "Verifica informações de arquivos pelo disco e ignora pastas protegidas",
+    "deleteConfirmTitle": "Excluir este arquivo permanentemente?",
+    "deleteConfirmDescription": "Isso não pode ser desfeito",
+    "deleteConfirmAction": "Excluir Permanentemente",
+    "selected": "Selecionado",
+    "selectAll": "Selecionar todos os resultados",
+    "batchDelete": "Excluir Permanentemente",
+    "batchDeleteTitle": "Excluir permanentemente os arquivos grandes selecionados?",
+    "batchDeleteDescription": "Os arquivos selecionados não podem ser recuperados",
+    "deleteSafetyNote": "Arquivos que foram alterados ou ficaram indisponíveis são ignorados automaticamente",
+    "deleteCompleted": "Limpeza de arquivos grandes concluída",
+    "deleteCompletedWithWarnings": "Limpeza de arquivos grandes concluída com avisos",
+    "deleteCompletedDescription": "{count} arquivo deletado e {size} liberado; {failed} falharam | {count} arquivos deletados e {size} liberado; {failed} falharam"
+  },
+  "fileCategories": {
+    "all": "Todos",
+    "video": "Vídeo",
+    "audio": "Áudio",
+    "document": "Documentos",
+    "archive": "Arquivos compactados",
+    "image": "Imagens",
+    "aiModel": "Modelos de IA",
+    "other": "Outros"
+  },
+  "duplicateFiles": {
+    "title": "Limpeza de Arquivos Duplicados",
+    "start": "Iniciar Escaneamento",
+    "rescan": "Escanear Novamente",
+    "emptyTitle": "Encontrar arquivos duplicados",
+    "emptyDescription": "Escanear o local selecionado para arquivos de pelo menos {size} e encontrar cópias com conteúdo idêntico",
+    "scanning": "Procurando arquivos duplicados…",
+    "validatingCandidates": "Verificando possíveis correspondências…",
+    "comparingContents": "Comparando conteúdos dos arquivos…",
+    "discoveredLogicalData": "Dados lógicos encontrados",
+    "verifiedContentData": "Dados do conteúdo lidos",
+    "scanHint": "Arquivos são comparados pelo conteúdo. Arquivos grandes são lidos completamente apenas quando necessário",
+    "deleteCompleted": "Limpeza de duplicatas concluída",
+    "deleteCompletedWithWarnings": "Limpeza de duplicatas concluída com avisos",
+    "deleteCompletedDescription": "{count} duplicata(s) deletada(s) e {size} liberado(s); {failed} falhou | {count} duplicata(s) deletada(s) e {size} liberado(s); {failed} falhou",
+    "summaryCount": "{count} grupo(s) de duplicatas encontrado(s) | {count} grupos de duplicatas encontrados",
+    "summaryReclaimable": "pode ser recuperado até",
+    "summaryReclaimableScanning": "pode ser recuperado até agora",
+    "minimumSize": "Arquivo mínimo",
+    "smartSelect": "Seleção inteligente",
+    "smartSelectMenuLabel": "Método de seleção inteligente",
+    "smartSelectSafetyHint": "Pelo menos um arquivo permanece em cada grupo. Mudar o método regenera a seleção",
+    "keeperRuleLabels": {
+      "shortestPath": "Manter o arquivo com o caminho mais curto",
+      "shortestName": "Manter o arquivo com o nome mais curto",
+      "oldestModified": "Mantenha o arquivo modificado mais antigo",
+      "newestModified": "Mantenha o arquivo modificado mais recentemente"
+    },
+    "clearSelection": "Limpar seleção",
+    "selected": "Selecionado",
+    "noResults": "Nenhum arquivo duplicado corresponde às condições atuais",
+    "noResultsDescription": "Mude os tipos de arquivo, diminua o tamanho mínimo do arquivo ou escolha outro local e escaneie novamente",
+    "selectGroup": "Selecionar {count} cópia | Selecionar {count} cópias",
+    "selectGroupHint": "Mantenha um arquivo e selecione as outras cópias usando sua configuração atual",
+    "clearGroupSelectionHint": "Limpar as cópias selecionadas neste grupo",
+    "groupSelectionApplied": "{count} selecionado",
+    "batchDelete": "Excluir permanentemente",
+    "deleteSingleTitle": "Excluir permanentemente esta cópia?",
+    "deleteSingleDescription": "Isso não pode ser desfeito",
+    "deleteTitle": "Excluir permanentemente as cópias duplicadas selecionadas?",
+    "deleteDescription": "As cópias selecionadas não poderão ser recuperadas",
+    "deleteSafetyNote": "Pelo menos um arquivo permanece em cada grupo. Arquivos alterados ou indisponíveis são ignorados automaticamente",
+    "copyCount": "{count} cópia | {count} cópias",
+    "groupCount": "{count} grupo duplicado | {count} grupos duplicados",
+    "groupSummary": "{count} cópia · {size} cada · até {reclaimable} recuperáveis | {count} cópias · {size} cada · até {reclaimable} recuperáveis",
+    "directoryGroupSummary": "{count} pasta idêntica · {files} em cada · até {reclaimable} recuperáveis | {count} pastas idênticas · {files} em cada · até {reclaimable} recuperáveis"
+  },
+  "applicationLeftovers": {
+    "categoryTitle": "Restos de apps",
+    "scanning": "Verificando dados deixados por apps removidos…",
+    "scanHint": "Apenas dados claramente ligados a um app que não está mais instalado são mostrados. A verificação não altera nada",
+    "accessLimitedDescription": "Permita que o MangoDisk acesse os dados de outros apps em Ajustes do Sistema → Privacidade & Segurança, e depois verifique novamente",
+    "incompleteDescription": "Para evitar erros, nenhum resíduo é mostrado. Tente novamente mais tarde",
+    "emptyTitle": "Nenhum resíduo de aplicativo verificado encontrado",
+    "emptyDescription": "Nenhum dado de app que pudesse ser identificado com segurança como resíduo foi encontrado",
+    "planSummary": "{locations} locais de resíduos de {applications} apps",
+    "planImpact": "Os resíduos dos apps selecionados são deletados permanentemente e não podem ser recuperados",
+    "selectCandidate": "Selecione dados de resíduo para {name}",
+    "selectLocation": "Selecione {name}",
+    "locationCount": "{count} local de resíduo | {count} locais de resíduo",
+    "executionSummary": "{count} itens deletados e {size} liberados; {failed} ignorados",
+    "sources": {
+      "sandboxContainer": "Dados privados do app",
+      "applicationSupport": "Arquivos de suporte do app",
+      "preferences": "Preferências",
+      "logs": "Logs do aplicativo",
+      "savedState": "Dados de janelas salvos",
+      "webData": "Dados de sites e rede",
+      "applicationScripts": "Scripts do app"
+    }
+  },
+  "applicationUninstall": {
+    "title": "Desinstalador do app",
+    "startScan": "Iniciar verificação",
+    "rescan": "Verificar novamente",
+    "scanning": "Verificando apps instalados…",
+    "readingApplicationCatalog": "Lendo apps instalados",
+    "checkingProcesses": "Verificando aplicativos em execução",
+    "validatingApplications": "Checando por mudanças",
+    "inspectingApplication": "Verificando detalhes do app",
+    "currentScanStage": "Etapa atual",
+    "currentApplicationSource": "Fonte atual",
+    "currentApplication": "Verificando aplicativo",
+    "checkedApplications": "Apps verificados",
+    "scannedApplicationData": "Dados lógicos verificados",
+    "scanHint": "Verifica apps instalados e arquivos relacionados sem alterar nada",
+    "searchPlaceholder": "Pesquisar apps ou desenvolvedores",
+    "all": "Todos",
+    "ready": "Pronto",
+    "running": "Em execução",
+    "unavailable": "Indisponível",
+    "applicationName": "Nome do aplicativo",
+    "status": "Status",
+    "applicationSize": "Tamanho estimado",
+    "applicationSizeUnavailable": "Desconhecido",
+    "applicationSizeEstimateHint": "Estimativa a partir dos catálogos do sistema e tamanhos lógicos de arquivos; compressão, clones e arquivos compartilhados podem alterar a diferença real de espaço",
+    "windowsAppPackageSizeHint": "Arquivos compartilhados não estão incluídos nesta estimativa",
+    "lastUsed": "Último uso",
+    "lastUsedUnavailable": "Nenhum registro de uso",
+    "installedOrUpdated": "Instalado ou atualizado",
+    "installDateUnavailable": "Data indisponível",
+    "sortByName": "Ordenar por nome do aplicativo",
+    "sortByStatus": "Ordenar por status do aplicativo",
+    "sortBySize": "Ordenar por tamanho do aplicativo",
+    "sortByDate": "Ordenar por data",
+    "summary": "{count} app encontrado | {count} apps encontrados",
+    "summarySpace": "estimativa total",
+    "selectVisible": "Selecionar resultados atuais",
+    "selectApplication": "Selecionar {name}",
+    "selectComponent": "Selecionar {component} para {application}",
+    "showApplicationLocation": "Mostrar {application} na pasta",
+    "showComponentLocation": "Mostrar {component} na pasta",
+    "emptyTitle": "Sem aplicações de correspondência",
+    "emptyDescription": "Limpe a busca ou escaneie novamente os aplicativos instalados",
+    "incompleteTitle": "Os aplicativos instalados não podiam ser lidos completamente",
+    "incompleteDescription": "Para evitar erros, desinstalar não está disponível. Tente novamente mais tarde",
+    "viewOnlyTitle": "A desinstalação não está disponível neste sistema",
+    "viewOnlyDescription": "Você pode revisar os aplicativos instalados, mas o MangoDisk não pode desinstalá-los aqui",
+    "applicationRunning": "Fechar o aplicativo",
+    "closeBeforeUninstallTitle": "Feche os aplicativos antes de desinstalar",
+    "closeBeforeUninstallDescription": "Esses aplicativos estão rodando. Selecione os aplicativos MangoDisk deve fechar normalmente; aplicativos não selecionados serão pulados nesta desinstalação",
+    "requiresElevation": "Necessidade de administração",
+    "requiresElevationDescriptionMacos": "O macOS solicitará aprovação do administrador quando este app for desinstalado. Cancelar a aprovação deixará o app instalado",
+    "authorizationPromptMacos": "O MangoDisk precisa de permissão de administrador para desinstalar este aplicativo",
+    "readyForReview": "Pronto",
+    "viewOnly": "Desinstalação indisponível",
+    "orphanedRegistration": "Arquivos do aplicativo ausentes",
+    "version": "Versão {version}",
+    "showLocation": "Mostrar na pasta",
+    "uninstallApplication": "Desinstalar {application}",
+    "expandApplicationDetails": "Expandir detalhes de {application}",
+    "collapseApplicationDetails": "Recolher detalhes de {application}",
+    "preflightFailed": "O aplicativo mudou. Atualize a lista e tente novamente",
+    "batchPreflightFailedSummary": "Alguns aplicativos mudaram. Atualize a lista e tente novamente",
+    "selectedApplicationsLabel": "Aplicativos selecionados",
+    "selectedSizeLabel": "Dados estimados para remover",
+    "clearSelection": "Limpar seleção",
+    "uninstallSelected": "Desinstalar selecionados",
+    "uninstallEntryUnavailableDescription": "O Windows não forneceu uma opção de desinstalação funcional para este aplicativo",
+    "orphanedRegistrationDescription": "O Windows ainda lista este aplicativo, mas seus arquivos e o desinstalador estão ausentes",
+    "possibleRelatedLocations": "Possivelmente dados de usuário relacionados",
+    "possibleRelatedLocationsDescription": "Essas pastas podem pertencer a mais de um aplicativo. Elas são mostradas apenas para revisão e não serão removidas",
+    "showPossibleRelatedLocation": "Mostrar uma pasta possivelmente relacionada a {application}",
+    "confirmBatchTitle": "Deseja desinstalar os {count} apps selecionados?",
+    "confirmBatchDescription": "Os apps selecionados e os dados temporários serão excluídos permanentemente e não poderão ser recuperados",
+    "confirmBatchWithDataDescription": "Os apps selecionados e os dados relacionados confirmados serão excluídos permanentemente e não poderão ser recuperados. Isso pode incluir configurações ou arquivos locais",
+    "confirmNativeBatchTitle": "Deseja desinstalar os {count} apps selecionados?",
+    "confirmNativeBatchDescription": "O Windows desinstalará cada aplicativo selecionado. Você pode ver janelas de confirmação ou progresso adicionais",
+    "preparingBatchSummary": "Verificando os apps selecionados",
+    "confirmBatchSummary": "{count} pronto para desinstalar",
+    "validatingBatch": "Validando os aplicativos selecionados",
+    "finalizingBatch": "Finalizando resultados da desinstalação",
+    "uninstallingApplicationTitle": "Desinstalando {name}",
+    "executionProgressDescription": "Concluídos {completed} de {total} apps",
+    "cancellingBatch": "Parando desinstalação do aplicativo…",
+    "cancellingBatchDescription": "A etapa atual do sistema de desinstalação ainda pode ser concluída; nenhum outro app será iniciado",
+    "executionProgressValue": "{completed} / {total}",
+    "uninstallItemList": "Progresso da desinstalação do aplicativo",
+    "uninstallItemPending": "Aguardando para desinstalar",
+    "uninstallItemActive": "Desinstalando",
+    "uninstallItemInteractive": "Complete os passos na janela de desinstalação do aplicativo",
+    "uninstallItemCompleted": "Desinstalação concluída",
+    "uninstallItemCancelled": "Ignorado antes de começar",
+    "uninstallItemFailed": "Não concluído",
+    "uninstallItemStatus": {
+      "pending": "Aguardando",
+      "active": "Desinstalando",
+      "completed": "Concluído",
+      "cancelled": "Ignorado",
+      "failed": "Incompleto"
+    },
+    "cancelExecutionAction": "Cancelar desinstalação",
+    "cancellingAction": "Cancelando…",
+    "cancelExecutionConfirmTitle": "Parar a desinstalação deste aplicativo?",
+    "cancelExecutionConfirmDescription": "Aplicativos que não foram iniciados não serão desinstalados. Aplicativos já removidos não podem ser restaurados, e a janela de desinstalação do sistema atual ainda pode continuar",
+    "stopExecutionAction": "Parar desinstalação",
+    "executionCancelledTitle": "Desinstalação do aplicativo parada",
+    "executionCancelledDescription": "{completed} apps desinstalados; o MangoDisk não conseguiu confirmar {cancelled} outros",
+    "unknownApplication": "Aplicativo desconhecido",
+    "confirmBatchAction": "Confirmar desinstalação",
+    "cancelledTitle": "Desinstalação cancelada",
+    "cancelledDescription": "Nenhum aplicativo foi desinstalado",
+    "completed": "Desinstalação do aplicativo concluída",
+    "completedWithWarnings": "A desinstalação não foi concluída completamente",
+    "batchExecutionSummary": "{count} apps desinstalados e {size} liberados; {failed} não foram concluídos",
+    "batchExecutionEstimateSummary": "{count} apps desinstalados. Espaço estimado: {size}. {failed} não foram concluídos",
+    "restartRequired": "O Windows informa que é necessário reiniciar para concluir a alteração",
+    "componentKinds": {
+      "applicationBinary": "Aplicativo",
+      "nativeInstaller": "Desinstalador do Windows",
+      "windowsAppPackage": "Pacote da Microsoft Store",
+      "windowsMsiPackage": "Pacote do Windows Installer",
+      "windowsScoopPackage": "Pacote do Scoop",
+      "windowsChocolateyPackage": "Pacote do Chocolatey",
+      "windowsRegisteredUninstaller": "Desinstalador registrado",
+      "cache": "Cache do aplicativo",
+      "applicationSupport": "Arquivos de suporte do app",
+      "preferences": "Preferências",
+      "logs": "Logs do aplicativo",
+      "savedState": "Dados salvos da janela",
+      "sandboxContainer": "Dados privados do app",
+      "webData": "Dados de sites e rede"
+    },
+    "executionModes": {
+      "silent": "Geralmente não requer nenhuma ação adicional",
+      "interactive": "Pode exibir uma janela de desinstalação",
+      "externalClient": "Usa o gerenciador de pacotes para desinstalar"
+    },
+    "componentRisks": {
+      "required": "Necessário para desinstalar",
+      "rebuildable": "Pode ser recriado",
+      "userData": "Pode conter dados do usuário"
+    },
+    "initialTitle": "Gerenciar aplicativos instalados",
+    "initialDescription": "Revisar o armazenamento de apps e remover arquivos relacionados durante a desinstalação"
+  },
+  "history": {
+    "title": "Histórico de operações",
+    "clear": "Limpar histórico",
+    "clearConfirmTitle": "Limpar todo o histórico de operações?",
+    "clearConfirmDescription": "Todos os registros de operações serão removidos permanentemente. Isso não pode ser desfeito, mas nenhum arquivo será excluído",
+    "clearConfirmAction": "Limpar histórico",
+    "emptyTitle": "Nenhum histórico de operações ainda",
+    "emptyDescription": "Operações de limpeza e gerenciamento de sistema concluídas aparecerão aqui",
+    "categories": {
+      "deepCleanup": "Limpeza profunda",
+      "largeFileCleanup": "Limpeza de arquivos grandes",
+      "duplicateFileCleanup": "Limpeza de arquivos duplicados",
+      "applicationUninstall": "Desinstalador de apps",
+      "startupManagement": "Gerenciamento de inicialização",
+      "systemOptimization": "Otimização do sistema"
+    },
+    "operation": "Operação",
+    "planned": "Planejado",
+    "expected": "Esperado",
+    "estimated": "Estimado",
+    "actual": "Real",
+    "notCounted": "Não incluído no espaço limpo",
+    "resultSpace": "Resultado",
+    "statusWarnings": "Alguns itens pulados",
+    "detailTitle": "Detalhes da operação",
+    "detailDescription": "Revise os itens, mudanças de espaço e resultados desta operação",
+    "cleanupItems": "Itens de limpeza",
+    "uninstalledApplications": "Aplicativos desinstalados",
+    "affectedItems": "Itens processados",
+    "affectedApplications": "Apps desinstalados",
+    "failedItems": "Pulados ou falhou",
+    "failedApplications": "Apps incompletos",
+    "deleted": "Deletado permanentemente",
+    "deleteFailed": "Não foi possível deletar",
+    "moreItemsOmitted": "{count} item mais não expandido | {count} itens mais não expandidos",
+    "duration": "Duração",
+    "recordSummary": "{items} item de limpeza · {files} processados | {items} itens de limpeza · {files} processados",
+    "uninstallRecordSummary": "{items} app selecionado · {files} desinstalado | {items} apps selecionados · {files} desinstalados",
+    "startupRecordSummary": "{selected} selecionado · {changed} alterado",
+    "systemOptimizationRecordSummary": "{selected} selecionado · {changed} alterado",
+    "selectedItems": "Itens selecionados",
+    "changedItems": "Itens alterados",
+    "startupItems": "Itens de inicialização",
+    "systemSettings": "Configurações do sistema",
+    "systemOptimizationApplied": "Otimização aplicada",
+    "systemOptimizationChangeFailed": "Falha na alteração",
+    "systemOptimizationRestored": "Valor anterior restaurado",
+    "systemOptimizationStatuses": {
+      "changed": "Alterado e verificado",
+      "unchanged": "Nenhuma alteração necessária",
+      "failed": "Falha na alteração"
+    },
+    "systemOptimizationFailureReasons": {
+      "settingChanged": "A configuração foi alterada após a confirmação e não foi substituída",
+      "permissionDenied": "Permissão negada",
+      "userCancelled": "A operação foi cancelada",
+      "unsupported": "Esta configuração não é mais suportada",
+      "verificationFailed": "O valor resultante não pôde ser verificado",
+      "platformFailure": "A operação do sistema falhou"
+    },
+    "startupStatuses": {
+      "changed": "Alterado com sucesso",
+      "unchanged": "Nenhuma alteração era necessária",
+      "failed": "Falha na alteração"
+    },
+    "startupFailureReasons": {
+      "itemChanged": "A configuração do sistema mudou antes da operação",
+      "permissionDenied": "Permissão negada",
+      "userCancelled": "Autorização cancelada",
+      "unsupported": "Esta fonte não suporta a operação",
+      "verificationFailed": "O estado resultante não pôde ser verificado",
+      "platformFailure": "A operação do sistema falhou"
+    },
+    "applicationLeftoverStatuses": {
+      "previewed": "Verificações concluídas; nenhum arquivo foi deletado",
+      "completed": "Deletado permanentemente",
+      "cancelled": "Cancelado antes do processamento",
+      "failed": "Não processado"
+    },
+    "applicationLeftoverReasons": {
+      "candidateChanged": "Conteúdos alterados após a confirmação e foram ignorados",
+      "ownerReappeared": "A lista de apps relacionados ou instalados mudou, então o item foi pulado",
+      "applicationRunning": "Um aplicativo relacionado ainda está em execução",
+      "permanentDeleteFailed": "Não foi possível deletar o item permanentemente"
+    },
+    "applicationUninstallStatuses": {
+      "previewed": "Verificações concluídas; nenhum arquivo foi deletado",
+      "completed": "Desinstalação concluída",
+      "cancelled": "Cancelado antes de iniciar a desinstalação",
+      "failed": "Não processado"
+    },
+    "applicationUninstallReasons": {
+      "applicationUnavailable": "O aplicativo não está disponível",
+      "applicationRunning": "O aplicativo ainda está em execução",
+      "processStateUnavailable": "Não foi possível verificar o estado do aplicativo em execução",
+      "catalogChanged": "Apps instalados mudaram; reveja-os novamente",
+      "componentUnavailable": "Um item selecionado para desinstalação não está disponível",
+      "componentChanged": "Um item selecionado para desinstalação mudou após a revisão",
+      "unsupportedExecutor": "A desinstalação não está disponível neste sistema",
+      "executionAborted": "Uma ação anterior falhou, então os conteúdos restantes não foram deletados",
+      "externalUninstallerContinuing": "A janela de desinstalação do sistema ainda está aberta; seu resultado não foi confirmado",
+      "permanentDeleteFailed": "Não foi possível deletar o item permanentemente",
+      "recoveryRequired": "A desinstalação não terminou corretamente; inspecione ou restaure o aplicativo antes de tentar novamente",
+      "nativeInstallerFailed": "O Windows Installer não conseguiu completar a desinstalação",
+      "verificationFailed": "O MangoDisk não conseguiu confirmar o resultado"
+    }
+  },
+  "settings": {
+    "title": "Configurações",
+    "generalSection": "Geral",
+    "macosPermissionsSection": "Permissões do macOS",
+    "supportSection": "Suporte",
+    "aboutSection": "Sobre",
+    "languageTitle": "Idioma",
+    "languageDescription": "Escolha o idioma usado pelo MangoDisk",
+    "languageNames": {
+      "zhCN": "Chinês simplificado",
+      "zhTW": "Chinês tradicional",
+      "jaJP": "Japonês",
+      "enUS": "Inglês"
+    },
+    "themeTitle": "Tema",
+    "themeDescription": "Use um tema claro, escuro ou do sistema",
+    "themeLight": "Claro",
+    "themeDark": "Escuro",
+    "themeSystem": "Seguir o sistema",
+    "fullDiskAccessTitle": "Acesso completo ao disco",
+    "fullDiskAccessDescription": "Permite que o MangoDisk escaneie dados protegidos do sistema e de apps para resultados de limpeza mais completos",
+    "openPrivacySettings": "Configurações do sistema",
+    "permissionStatus": {
+      "notChecked": "Não verificado",
+      "available": "Acesso confirmado",
+      "limited": "Acesso limitado"
+    },
+    "feedbackTitle": "Feedback",
+    "feedbackDescription": "Envie um problema ou sugestão com capturas de tela opcionais e registros de diagnóstico",
+    "feedbackAction": "Enviar feedback",
+    "feedbackDialog": {
+      "title": "Enviar feedback",
+      "description": "Seu feedback ajuda a tornar o MangoDisk melhor. Nós lemos cada envio",
+      "categoryLabel": "Tipo de feedback",
+      "categories": {
+        "issue": "Problema",
+        "suggestion": "Sugestão",
+        "other": "Outro"
+      },
+      "contentLabel": "Problema ou sugestão",
+      "contentPlaceholder": "Conte para nós o que aconteceu, o que você estava fazendo e o que esperava. Você também pode colar uma captura de tela aqui…",
+      "emailLabel": "Email de contato (opcional)",
+      "emailPlaceholder": "Vamos enviar um email se houver alguma atualização",
+      "attachmentsLabel": "Capturas de tela e anexos (opcional)",
+      "chooseAttachments": "Adicionar anexos",
+      "addAttachments": "Clique para adicionar anexos ou arraste arquivos aqui",
+      "attachmentHint": "Imagens, PDFs, arquivos de texto e arquivos ZIP; até {count} arquivos, 10 MB cada",
+      "removeAttachment": "Remover anexo {name}",
+      "includeLogs": "Incluir logs de diagnóstico",
+      "githubAction": "Relatar no GitHub em vez disso",
+      "submit": "Enviar Feedback",
+      "submitting": "Enviando…",
+      "successTitle": "Feedback enviado",
+      "successDescription": "Obrigado pelo seu feedback. Vamos usá-lo para melhorar o MangoDisk",
+      "referenceId": "Referência: {id}",
+      "copyReference": "Copiar referência do feedback",
+      "referenceCopied": "Referência de feedback copiada",
+      "errors": {
+        "contentTooShort": "Digite pelo menos 10 caracteres",
+        "contentTooLong": "Máximo de 5.000 caracteres",
+        "invalidEmail": "Digite um endereço de e-mail válido",
+        "tooManyAttachments": "Você pode anexar até 5 arquivos",
+        "unsupportedAttachment": "Escolha uma imagem, PDF, arquivo de texto ou ZIP",
+        "attachmentTooLarge": "Cada anexo deve ter 10 MB ou menos",
+        "attachmentFailed": "Não foi possível ler o anexo. Remova-o e tente novamente",
+        "submitFailed": "Não foi possível enviar o feedback. Tente novamente mais tarde; seu conteúdo e anexos estão salvos"
+      }
+    },
+    "diagnosticLogsTitle": "Logs de Diagnóstico",
+    "diagnosticLogsDescription": "Veja os logs de execução do MangoDisk para solução de problemas",
+    "openLogFolderAction": "Abrir Pasta",
+    "softwareUpdateTitle": "Atualizações de Software",
+    "updateCheckAction": "Verificar Atualizações",
+    "updateChecking": "Verificando…",
+    "updateVersionAvailable": "Versão {version} disponível",
+    "updateDownloading": "Baixando…",
+    "updateDownloadingProgress": "Baixando · {percent}%",
+    "updateReadyToInstall": "Pronto para instalar",
+    "updateInstalling": "Instalando…",
+    "updateRestartRequired": "Reinício necessário",
+    "updateRestarting": "Reiniciando…",
+    "updateUpToDate": "Atualizado",
+    "updateUpToDateWithVersion": "Versão {version} · Atualizado",
+    "updateRetry": "Tentar novamente",
+    "updateCheckFailedTitle": "Não foi possível verificar atualizações",
+    "updateCheckUnknownError": "O serviço de atualização retornou um erro desconhecido",
+    "versionUnknown": "Carregando…",
+    "aboutTitle": "Sobre o MangoDisk",
+    "aboutDescription": "Uma ferramenta de código aberto, leve e segura, multiplataforma, para limpeza de disco e análise de armazenamento",
+    "projectLinksLabel": "Links do projeto",
+    "websiteAction": "Site oficial",
+    "repositoryAction": "GitHub",
+    "licenseAction": "Licença GPL-3.0",
+    "versionValue": "Versão {version}"
+  },
+  "updates": {
+    "availableTitle": "MangoDisk {version} está disponível",
+    "currentVersionDescription": "Versão atual {version}",
+    "checkDescription": "Verificar se há uma versão mais recente",
+    "checkingDescription": "Conectando ao serviço de atualização…",
+    "upToDateDescription": "MangoDisk {version} está atualizado",
+    "releaseNotes": "Novidades",
+    "noReleaseNotes": "Esta atualização inclui melhorias e correções",
+    "downloadUpdate": "Baixar Atualização",
+    "downloadPortable": "Baixar Versão Portátil",
+    "portableDescription": "Esta edição portátil precisa ser atualizada manualmente. Baixe o novo arquivo, feche o MangoDisk e substitua o executável atual",
+    "continueInBackground": "Continuar em Segundo Plano",
+    "downloadedTitle": "MangoDisk {version} está pronto",
+    "installedTitle": "MangoDisk {version} está instalado",
+    "downloadComplete": "Download concluído · O MangoDisk será reiniciado após a instalação",
+    "installAndRestart": "Instalar e Reiniciar",
+    "restartRequired": "Instalação concluída · Reinicie o MangoDisk para finalizar a atualização",
+    "restartNow": "Reiniciar Agora",
+    "restarting": "Reiniciando o MangoDisk…",
+    "notNow": "Agora não",
+    "later": "Mais tarde",
+    "retry": "Tentar novamente",
+    "downloading": "Baixando atualização…",
+    "downloadProgress": "Baixado {downloaded} de {total}",
+    "installing": "Instalando atualização…",
+    "downloadFailed": "Falha no download",
+    "manualDownloadFailed": "Não foi possível abrir o download",
+    "installFailed": "Falha na instalação",
+    "restartFailed": "Não foi possível reiniciar o MangoDisk",
+    "navigationNotice": "Uma nova versão está disponível"
+  },
+  "loading": {
+    "starting": "Lendo informações do disco…",
+    "scanning": "Analisando conteúdo reaproveitável…",
+    "cancelling": "Cancelando verificação…",
+    "processing": "Processando",
+    "currentStage": "Analisando",
+    "currentDirectory": "Verificando",
+    "preparingDirectory": "Preparando pastas…",
+    "currentAnalysisDirectory": "Item atual",
+    "preparingAnalysisDirectory": "Preparando análise…",
+    "checkedItems": "arquivos verificados",
+    "accessibleRuleProgress": "{completed} de {total} verificações concluídas, {checked} arquivos verificados, {bytes} verificados",
+    "checkedChecks": "Progresso da verificação",
+    "traversedData": "Dados verificados",
+    "elapsed": "Tempo decorrido",
+    "cancelHint": "A verificação apenas lê informações dos arquivos; cancelar não muda nada",
+    "cleaning": "Limpando itens selecionados…",
+    "cleaningCurrentItem": "Limpando {name}",
+    "cleaningApplicationLeftovers": "Limpando dados de aplicação selecionados…",
+    "cancelCleanupAction": "Cancelar limpeza",
+    "cancelCleanupConfirmTitle": "Parar esta limpeza?",
+    "cancelCleanupConfirmDescription": "Itens que não começaram não serão limpos. Itens concluídos não podem ser restaurados, e a etapa atual do sistema ainda pode terminar",
+    "stopCleanupAction": "Parar limpeza",
+    "cancellingCleanupAction": "Cancelando…",
+    "cancellingCleanup": "Parando limpeza…",
+    "cancellingCleanupHint": "A etapa atual do sistema pode terminar; itens que ainda não começaram não serão limpos",
+    "previewing": "Verificando itens selecionados…",
+    "previewingCurrentItem": "Verificando {name}",
+    "validating": "Validando itens selecionados…",
+    "finalizing": "Finalizando resultados da limpeza…",
+    "cleaningSafetyHint": "Limpando sua seleção; conteúdo alterado ou em uso é ignorado para evitar exclusão acidental",
+    "windowsPreviousInstallationsCleanupHint": "Confirme o prompt do sistema do Windows, e mantenha o MangoDisk aberto enquanto o Windows termina a limpeza",
+    "previewingSafetyHint": "Revisando os itens selecionados sem deletar ou alterar nada",
+    "elapsedSeconds": "{count} seg | {count} seg",
+    "cleanupItemList": "Progresso do item de limpeza",
+    "cleanupItemWaiting": "Aguardando para ser limpo",
+    "cleanupItemValidating": "Verificando o escopo atual da limpeza",
+    "cleanupItemSystemProcessing": "O sistema está processando este item",
+    "windowsPreviousInstallationsCleanupWaiting": "Aguardando confirmação do Windows ou limpeza",
+    "cleanupItemCompleted": "{count} processados, {size} liberados",
+    "cleanupItemChecked": "Verificação completa; nenhum conteúdo foi alterado",
+    "cleanupItemPartial": "{count} processados e {size} liberados; algum conteúdo foi pulado",
+    "cleanupItemSkipped": "Este item não foi processado; veja o resultado para detalhes",
+    "cleanupItemDone": "Concluído",
+    "cleanupItemSkippedLabel": "Pulado",
+    "cleanupItemActive": "Processando",
+    "cleanupItemPending": "Aguardando",
+    "ruleProgress": "Progresso do item",
+    "ruleProgressValue": "{completed} / {total}",
+    "cleanupProgressSummary": "{completed} de {total} concluído",
+    "processedItems": "Processado",
+    "releasedSpace": "Espaço liberado",
+    "checkedData": "Dados verificados",
+    "stepMayTakeMinutes": "Pode levar alguns minutos"
+  },
+  "cleanupRules": {
+    "categories": {
+      "ai": "Modelos de IA e caches",
+      "custom": "Limpeza personalizada",
+      "system": "Sistema",
+      "browser": "Navegadores",
+      "container": "Containers",
+      "dev": "Ferramentas de desenvolvedor",
+      "app": "Aplicativos"
+    },
+    "entries": {
+      "system.user-temp": {
+        "name": "Arquivos temporários antigos",
+        "description": "Arquivos temporários de trabalho criados pelo sistema operacional e aplicativos.",
+        "impact": "Arquivos em uso são ignorados. Os aplicativos recriam o conteúdo temporário quando necessário."
+      },
+      "system.darwin-user-cache": {
+        "name": "Cache do sistema inativa",
+        "description": "Arquivos de cache do sistema por usuário não atualizados há mais de sete dias.",
+        "impact": "Configurações e arquivos pessoais são mantidos. O macOS recria os dados de cache quando necessário."
+      },
+      "system.old-diagnostic-logs": {
+        "name": "Logs de diagnóstico antigos",
+        "description": "Logs de aplicativos e relatórios de falhas de nível de usuário com mais de sete dias.",
+        "impact": "Logs recentes permanecem disponíveis, mas diagnósticos históricos removidos não podem ser usados depois."
+      },
+      "system.quicklook-cache": {
+        "name": "Cache do Quick Look",
+        "description": "Miniaturas e pré-visualizações temporárias geradas pelo Quick Look.",
+        "impact": "Os arquivos originais são mantidos. A primeira nova pré-visualização pode levar um tempo para ser gerada."
+      },
+      "system.help-cache": {
+        "name": "Cache de Ajuda do Sistema",
+        "description": "Conteúdo baixado e dados de pesquisa usados pelo Ajuda do macOS.",
+        "impact": "As configurações de ajuda são mantidas. O conteúdo da ajuda pode ser carregado novamente na próxima vez que for aberto."
+      },
+      "system.geo-services-cache": {
+        "name": "Cache de Mapas e localização",
+        "description": "Dados geográficos em cache armazenados pelos Mapas e serviços de localização.",
+        "impact": "As permissões de localização não foram alteradas. Os dados do mapa podem ser baixados novamente."
+      },
+      "system.apple-media-cache": {
+        "name": "Cache de serviços de mídia da Apple",
+        "description": "Dados temporários usados pela App Store, Música e outros serviços de mídia da Apple.",
+        "impact": "Compras e bibliotecas de mídia são mantidas. O conteúdo pode ser carregado novamente na próxima visita."
+      },
+      "system.parsecd-cache": {
+        "name": "Cache de sugestões do sistema",
+        "description": "Índices temporários gerados pelo serviço de sugestões do macOS.",
+        "impact": "Arquivos pessoais são mantidos. O macOS reconstrói os índices de sugestões conforme necessário."
+      },
+      "system.apple-intelligence-cache": {
+        "name": "Cache da Apple Intelligence",
+        "description": "Dados temporários gerados pelos serviços locais da Apple Intelligence.",
+        "impact": "Modelos e conteúdo pessoal são mantidos. Alguns caches podem ser regenerados na inicialização."
+      },
+      "system.thumbnail-cache": {
+        "name": "Cache de miniaturas e ícones",
+        "description": "Bancos de dados de miniaturas e ícones gerados pelo Windows File Explorer.",
+        "impact": "O Windows regenera visualizações e ícones à medida que as pastas são abertas novamente."
+      },
+      "system.directx-shader-cache": {
+        "name": "Cache de shaders do DirectX",
+        "description": "Cache de shaders compilados do DirectX gerados por drivers de vídeo e aplicativos.",
+        "impact": "Dados de jogos e aplicativos são mantidos. Aplicativos gráficos podem recompilar shaders rapidamente."
+      },
+      "system.crash-dumps": {
+        "name": "Relatórios de falhas",
+        "description": "Arquivos de despejo de diagnóstico criados quando os aplicativos travam.",
+        "impact": "Despejos removidos não podem mais ser usados para investigar falhas anteriores."
+      },
+      "system.error-reports": {
+        "name": "Relatórios de erro do Windows",
+        "description": "Relatórios de diagnóstico de usuário e sistema gerados pelo Windows Error Reporting.",
+        "impact": "O Windows continua funcionando, mas os relatórios removidos não estão mais disponíveis para solução de problemas."
+      },
+      "system.stale-partial-downloads": {
+        "name": "Downloads incompletos antigos",
+        "description": "Arquivos incompletos do navegador e do gerenciador de downloads que não foram alterados por mais de sete dias.",
+        "impact": "Downloads removidos não podem ser retomados. Tarefas recentes e arquivos concluídos são mantidos."
+      },
+      "app.slack-cache": {
+        "name": "Cache do Slack",
+        "description": "Cache de resposta web, scripts e gráficos gerado pelo Slack que pode ser reconstruído.",
+        "impact": "Espaços de trabalho, mensagens e estado de login são mantidos. Feche o Slack antes de limpar."
+      },
+      "app.lark-renderer-cache": {
+        "name": "Cache de renderização do Lark",
+        "description": "Respostas web reconstruíveis, código, GPU, shader e cache do Service Worker gerados pelo Lark.",
+        "impact": "Contas, mensagens, downloads, espaços de trabalho, armazenamento do navegador e estado de login são mantidos. Feche o Lark antes de limpar."
+      },
+      "app.wechat-cache": {
+        "name": "Cache do aplicativo WeChat",
+        "description": "Cache de respostas web, código, GPU, shader e Service Worker reconstruíveis gerados pelo WeChat.",
+        "impact": "Contas, conversas, arquivos, armazenamento de mini-programas, dados do navegador e estado de login são mantidos. Feche o WeChat antes de limpar."
+      },
+      "app.wecom-cache": {
+        "name": "Cache do aplicativo WeCom",
+        "description": "Cache de respostas reconstruíveis de web CEF, código, GPU, shader, componentes e Service Worker gerados pelo WeCom.",
+        "impact": "Perfis, mensagens, e-mails, documentos, downloads, dados do navegador e estado de login são mantidos. Feche o WeCom antes de limpar."
+      },
+      "app.qq-cache": {
+        "name": "Cache do aplicativo QQ",
+        "description": "Cache de web, código, GPU, shader e renderização de partição gerado pelo QQ, que pode ser reconstruído.",
+        "impact": "Contas, mensagens, arquivos, pacotes, dados do navegador e estado de login são mantidos. Feche o QQ antes de limpar."
+      },
+      "app.qq-update-cache": {
+        "name": "Atualizações baixadas do QQ",
+        "description": "Arquivos de atualização antigos retidos após o QQ extrair seus pacotes de atualização rápida.",
+        "impact": "Versões ativas e pendentes, contas, mensagens, arquivos e estado de login são mantidos. Atualizações removidas podem precisar ser baixadas novamente."
+      },
+      "app.ollama-update-cache": {
+        "name": "Atualizações baixadas pelo Ollama",
+        "description": "Arquivos de atualização antigos do macOS baixados pelo Ollama.",
+        "impact": "Modelos, manifests, configurações, contas e o app instalado são mantidos. Atualizações removidas podem precisar ser baixadas novamente."
+      },
+      "app.parallels-windows-image-cache": {
+        "name": "Imagens do Windows do Parallels",
+        "description": "Imagens antigas de instalação do Windows ESD baixadas pelo Parallels Desktop.",
+        "impact": "Máquinas virtuais, snapshots, configuração e arquivos de usuário são mantidos. Uma imagem de instalador removida pode precisar ser baixada novamente."
+      },
+      "app.ynote-cache": {
+        "name": "Cache do YNote",
+        "description": "Interface reconstruível, log de diagnóstico e dados de atualização baixados gerados pelo YNote.",
+        "impact": "Notas, anexos, backups, configurações, armazenamento do navegador e estado de login são mantidos. Feche o YNote antes de limpar."
+      },
+      "app.qqlive-rendering-cache": {
+        "name": "Cache da interface do QQLive",
+        "description": "Dados temporários de imagem, ícone, web, código, GPU e shader gerados pela interface do QQLive para desktop.",
+        "impact": "Componentes de runtime, pacotes offline, estado da conta, configurações e armazenamento do navegador são mantidos. Feche o QQLive antes de limpar."
+      },
+      "app.flashvoice-cache": {
+        "name": "Cache do FlashVoice",
+        "description": "Conteúdo, código, gráficos, componentes e cache de diagnóstico do WebKit ou WebView2 que podem ser reconstruídos, gerados pelo FlashVoice.",
+        "impact": "Modelos de voz, gravações, transcrições, configurações e arquivos do aplicativo são mantidos. Feche o FlashVoice antes de limpar."
+      },
+      "app.utools-rendering-cache": {
+        "name": "Cache de renderização do uTools",
+        "description": "Cache de web, código, GPU, shader, partição e diagnóstico que podem ser reconstruídos, gerados pelo uTools.",
+        "impact": "Histórico da área de transferência, plugins, bancos de dados, configurações e armazenamento do navegador são mantidos. Feche o uTools antes de limpar."
+      },
+      "app.baidu-netdisk-rendering-cache": {
+        "name": "Cache de renderização do BaiduNetdisk",
+        "description": "Cache de web, código, GPU e shader que podem ser reconstruídos, gerados pela interface do BaiduNetdisk.",
+        "impact": "Arquivos na nuvem, banco de dados de conta e transferência, estado de sincronização, configurações e armazenamento do navegador são mantidos. Feche o BaiduNetdisk antes de limpar."
+      },
+      "app.manus-rendering-cache": {
+        "name": "Cache de renderização do Manus",
+        "description": "Cache de web, código, GPU, shader e dicionário gerado pelo Manus que pode ser reconstruído.",
+        "impact": "Tarefas, arquivos locais, credenciais, configurações, cookies e armazenamento do navegador são mantidos. Feche o Manus antes de limpar."
+      },
+      "app.manus-update-cache": {
+        "name": "Atualização baixada do Manus",
+        "description": "Pacotes de atualização de desktop baixados e metadados de atualização pendente em cache pelo Manus.",
+        "impact": "Tarefas, arquivos locais, credenciais, configurações e o aplicativo instalado são mantidos. A atualização pode precisar ser baixada novamente."
+      },
+      "app.workbuddy-rendering-cache": {
+        "name": "Cache de renderização do WorkBuddy",
+        "description": "Cache de web, código, GPU, shader e partição gerado pelo WorkBuddy que pode ser reconstruído.",
+        "impact": "Tarefas, projetos, artefatos, bancos de dados, habilidades, conectores, tempos de execução, configurações e estado do navegador são mantidos. Feche o WorkBuddy antes de limpar."
+      },
+      "app.clash-verge-diagnostic-cache": {
+        "name": "Logs de diagnóstico do Clash Verge",
+        "description": "Dados de log de diagnóstico gerados pelo Clash Verge.",
+        "impact": "Perfis, configuração de proxy, componentes de tempo de execução, dados GeoIP e armazenamento do navegador são mantidos. Feche o Clash Verge antes de limpar."
+      },
+      "app.youdao-translation-cache": {
+        "name": "Cache de tradução do Youdao",
+        "description": "Dados temporários de tradução, imagem, WebKit e falhas gerados pelo Youdao Dictionary.",
+        "impact": "Dicionários, histórico, documentos, preferências e estado da conta são mantidos. Feche o Youdao Dictionary antes de limpar."
+      },
+      "app.gitmind-rendering-cache": {
+        "name": "Cache de renderização do GitMind",
+        "description": "Conteúdo, código, GPU, shader, componente e cache de diagnóstico reconstruível do Electron e WebView2 gerados pelo GitMind.",
+        "impact": "Mapas mentais, credenciais, histórico, configurações, armazenamento do navegador e pacotes de atualização são mantidos. Feche o GitMind antes de limpar."
+      },
+      "app.whatsapp-rendering-cache": {
+        "name": "Cache de renderização do WhatsApp",
+        "description": "Conteúdo, código, GPU, shader, componente, dicionário e cache de resposta do WebView2 que podem ser reconstruídos, gerados pelo WhatsApp.",
+        "impact": "Contas, mensagens, credenciais, configurações, histórico, estado da rede e armazenamento do navegador são mantidos. Feche o WhatsApp antes de limpar."
+      },
+      "app.electron-updater-cache": {
+        "name": "Cache de atualização de aplicativo Electron",
+        "description": "Instaladores de atualização baixados mantidos pelo GoWhisper, WeFlow e GitMind.",
+        "impact": "Aplicativos e seus dados são mantidos. Pacotes de atualização removidos podem ser baixados novamente; feche os aplicativos afetados primeiro."
+      },
+      "app.lobsterai-update-cache": {
+        "name": "Cache de atualização do LobsterAI",
+        "description": "Imagens de disco de atualização automática baixadas mantidas pelo LobsterAI.",
+        "impact": "Habilidades, integrações, bases de dados locais e configurações são mantidas. Uma atualização removida pode ser baixada novamente."
+      },
+      "app.qwenwork-cache": {
+        "name": "Cache de renderização do QwenWork",
+        "description": "Cache da web, código, GPU, partição e diagnóstico, que podem ser reconstruídos, gerados pelo QwenWork.",
+        "impact": "Contas, conversas, espaços de trabalho, arquivos gerados e memória de consciência são mantidos. Feche o QwenWork primeiro."
+      },
+      "app.zenaion-cache": {
+        "name": "Cache do ZenAion",
+        "description": "Cache de metadados, log, web, código, GPU, shader e componentes, que podem ser reconstruídos, gerados pelo ZenAion.",
+        "impact": "Identidade, contas, memória, habilidades, estado do agente, configurações e armazenamento do navegador são mantidos. Feche o ZenAion e seu host de agente primeiro."
+      },
+      "app.xmind-rendering-cache": {
+        "name": "Cache de renderização do Xmind",
+        "description": "Cache da web, código, GPU, shader e relatórios de falhas, que podem ser reconstruídos, gerados pelo Xmind.",
+        "impact": "Mapas mentais, cache de recuperação de documentos, configurações, cookies e estado de login são mantidos. Feche o Xmind primeiro."
+      },
+      "app.dingtalk-content-cache": {
+        "name": "Cache de conteúdo do DingTalk",
+        "description": "Mini apps em cache, imagens temporárias, cartões, temas e recursos web classificados como descartáveis pelo DingTalk.",
+        "impact": "Conversas, bancos de dados, arquivos baixados, configurações e contas são mantidos. O conteúdo em cache pode ser baixado novamente após o DingTalk reiniciar."
+      },
+      "app.tencent-meeting-cache": {
+        "name": "Cache do Tencent Meeting",
+        "description": "Cache de resposta de rede, código web, gráficos, shaders e logs de diagnóstico gerados pelo Tencent Meeting que podem ser reconstruídos.",
+        "impact": "Contas, reuniões, gravações, downloads, modelos, recursos dinâmicos, bancos de dados, preferências, HSTS e armazenamento do navegador são mantidos. Feche o Tencent Meeting antes de limpar."
+      },
+      "app.tencent-lemon-cache": {
+        "name": "Cache do Tencent Lemon",
+        "description": "Cache de rede reconstruível e de configuração remota gerada pelo Tencent Lemon, seu monitor de status e atualizador.",
+        "impact": "Histórico de limpeza, bancos de dados de varredura, configurações, estado do monitor, dados HTTP, logs e configuração de inicialização são mantidos. Feche o Tencent Lemon e seu monitor antes de limpar."
+      },
+      "app.thunder-cache": {
+        "name": "Cache do aplicativo Thunder",
+        "description": "Cache de resposta de rede, arquivo temporário, diagnóstico e rede do sistema, reconstruível, gerado pelo Thunder.",
+        "impact": "Tarefas de download, arquivos baixados, bancos de dados de nuvem, contas, uploads, preferências e armazenamento do navegador são mantidos. Feche o Thunder antes de limpar."
+      },
+      "app.sogou-input-cache": {
+        "name": "Cache do Sogou Input",
+        "description": "Cache de resposta web e de código gerado pela interface do Sogou Input.",
+        "impact": "Dicionários de usuário, personalização, backups, configurações, modelos, componentes, atualizações e armazenamento do navegador são mantidos. Feche os processos relacionados ao Sogou Input antes de limpar."
+      },
+      "app.wps-cache": {
+        "name": "Cache do aplicativo WPS Office",
+        "description": "Aplicativo reconstruível, cache de rede do sistema e de arquivos temporários gerados pelo WPS Office.",
+        "impact": "Documentos, dados de recuperação, templates, arquivos na nuvem, contas, preferências e armazenamento do navegador são mantidos. Feche o WPS Office antes de limpar."
+      },
+      "app.wps-rendering-cache": {
+        "name": "Cache de renderização do WPS Office",
+        "description": "Cache de respostas de rede e código reconstruível gerado pelas interfaces web do WPS Office.",
+        "impact": "Documentos, dados de recuperação, arquivos na nuvem, contas, cookies, bancos de dados e estado persistente do navegador são mantidos. Feche o WPS Office antes de limpar."
+      },
+      "app.wps-diagnostic-cache": {
+        "name": "Logs de diagnóstico do WPS Office",
+        "description": "Aplicativo, renderizador, serviço em nuvem, área de trabalho e diagnósticos de falhas gerados pelo WPS Office.",
+        "impact": "Documentos, dados de recuperação, modelos, arquivos na nuvem, contas e configurações são mantidos. Logs removidos não podem ser usados para solucionar problemas depois."
+      },
+      "app.wechat-rendering-cache": {
+        "name": "Cache de renderização do Weixin",
+        "description": "Cache de web, código, GPU e shaders que pode ser reconstruído, gerado pelos perfis de renderização do Weixin e WeChat.",
+        "impact": "Contas, mensagens, arquivos, histórico, cookies e estado de login são mantidos. Feche o Weixin ou WeChat primeiro."
+      },
+      "app.qq-rendering-cache": {
+        "name": "Cache de renderização do QQ",
+        "description": "Dados temporários de web, código, gráficos, logs e relatórios de falhas gerados pelo QQ para Windows.",
+        "impact": "Contas, mensagens, arquivos, configurações, armazenamento do navegador e suporte do atualizador são mantidos. Feche o QQ antes de limpar."
+      },
+      "app.wecom-diagnostic-cache": {
+        "name": "Logs de diagnóstico do WeCom",
+        "description": "Logs criptografados de diagnóstico, rede, chamadas, framework e instalação gerados pelo WeCom.",
+        "impact": "Contas, mensagens, applets, configurações e dados do aplicativo são mantidos. Feche o WeCom antes de limpar."
+      },
+      "app.discord-cache": {
+        "name": "Cache do Discord",
+        "description": "Cache de resposta web, scripts e gráficos recompilável gerado pelo Discord.",
+        "impact": "Contas, conversas e estado de login são mantidos. Feche o Discord antes de limpar."
+      },
+      "app.signal-cache": {
+        "name": "Cache do Signal",
+        "description": "Cache recompilável de código, gráficos, dicionário, log e relatórios de falhas gerado pelo Signal Desktop.",
+        "impact": "Contas, mensagens, anexos, bancos de dados criptografados, configurações e estado de login são mantidos. Feche o Signal antes de limpar."
+      },
+      "app.postman-cache": {
+        "name": "Cache de renderização do Postman",
+        "description": "Cache de renderização web, script, GPU e de partição reconstruível gerado pelo Postman.",
+        "impact": "Workspaces, requisições, ambientes, cookies e estado de login são mantidos. Feche o Postman antes de limpar."
+      },
+      "app.notion-cache": {
+        "name": "Cache de renderização do Notion",
+        "description": "Cache de renderização web, script, GPU, dicionário, log e de partição reconstruível gerado pelo Notion.",
+        "impact": "Páginas, conteúdo offline, contas, cookies, bancos de dados, configurações e estado de login são mantidos. Feche o Notion antes de limpar."
+      },
+      "app.netease-cloud-music-cache": {
+        "name": "Cache do NetEase Cloud Music",
+        "description": "Cache de web, script, GPU e log de diagnóstico reconstruível gerado pelo NetEase Cloud Music.",
+        "impact": "Downloads de músicas, cache de áudio, dados da biblioteca, playlists, contas, cookies e configurações são mantidos. Feche o NetEase Cloud Music antes de limpar."
+      },
+      "app.zoom-cache": {
+        "name": "Cache do Zoom",
+        "description": "Arquivos temporários salvos pelo Zoom.",
+        "impact": "Gravações, arquivos de chat e configurações são mantidos. Feche o Zoom antes de limpar."
+      },
+      "app.teams-cache": {
+        "name": "Cache do Microsoft Teams",
+        "description": "Cache de web e gráficos reconstruível usado pelo Microsoft Teams novo e clássico.",
+        "impact": "Conversas, contas e arquivos baixados são mantidos. Feche o Teams antes de limpar."
+      },
+      "app.chatgpt-cache": {
+        "name": "Cache do ChatGPT",
+        "description": "Dados de renderização e diagnóstico reconstruíveis salvos pelo app de desktop do ChatGPT e Codex.",
+        "impact": "Conversas, projetos, credenciais, estado do navegador e estado de login são mantidos. Feche o ChatGPT antes de limpar."
+      },
+      "app.claude-cache": {
+        "name": "Cache do Claude",
+        "description": "Cache de web, código, GPU, shader, dicionário e partição reconstruível gerado pelo Claude Desktop.",
+        "impact": "Sessões, credenciais, trabalho do agente local, configuração, armazenamento do navegador, registros e extensões são mantidos. Feche o Claude antes de limpar."
+      },
+      "app.lm-studio-cache": {
+        "name": "Cache do LM Studio",
+        "description": "Conteúdo reconstruível gerado no diretório de cache padrão do macOS pelo LM Studio.",
+        "impact": "Modelos, chats e diretórios de dados antigos são mantidos. Feche o LM Studio antes de limpar."
+      },
+      "app.figma-cache": {
+        "name": "Cache do Figma",
+        "description": "Cache reconstruível de web, scripts e gráficos gerado pelo aplicativo desktop do Figma.",
+        "impact": "Rascunhos locais e arquivos de design são mantidos. Feche o Figma antes de limpar."
+      },
+      "app.adobe-media-cache": {
+        "name": "Cache de mídia da Adobe",
+        "description": "Cache de análise e pré-visualização de mídia gerado pelos aplicativos criativos da Adobe.",
+        "impact": "Mídia de projetos e predefinições são mantidos. A mídia pode ser analisada novamente quando os projetos forem reabertos."
+      },
+      "app.office-cache": {
+        "name": "Cache do Microsoft Office",
+        "description": "Cache padrão de aplicativos gerado pelo Word, Excel e PowerPoint.",
+        "impact": "Documentos, dados de AutoRecuperação e conteúdo na nuvem são mantidos. Feche os apps do Office antes de limpar."
+      },
+      "app.media-cache": {
+        "name": "Cache de aplicativos de mídia",
+        "description": "Cache padrão do sistema gerado por aplicativos de música, podcast e vídeo.",
+        "impact": "Bibliotecas, conteúdo offline e arquivos de mídia são mantidos. Feche os aplicativos relacionados antes de limpar."
+      },
+      "app.media-analysis-cache": {
+        "name": "Cache de análise de mídia",
+        "description": "Cache e arquivos temporários gerados por serviços de análise de fotos e mídias em sandbox.",
+        "impact": "Fotos e vídeos são mantidos. Análises em segundo plano podem recriar alguns dados."
+      },
+      "app.core-device-cache": {
+        "name": "Cache de suporte a dispositivos Apple",
+        "description": "Cache local gerado pelos serviços de conexão com dispositivos Apple.",
+        "impact": "Os backups do dispositivo são mantidos. O cache pode ser reconstruído quando um dispositivo se reconecta."
+      },
+      "app.wallpaper-agent-cache": {
+        "name": "Cache de papel de parede",
+        "description": "Cache de tempo de execução gerado pelo serviço de papel de parede em sandbox.",
+        "impact": "Arquivos de papel de parede, configurações e capas de visualização são mantidos."
+      },
+      "app.google-updater-cache": {
+        "name": "Cache do atualizador do Google",
+        "description": "Atualizações de extensões baixadas e arquivos de instalação temporários do Atualizador do Google.",
+        "impact": "Os aplicativos não são desinstalados. O conteúdo da atualização pode ser baixado novamente."
+      },
+      "app.electron-cache": {
+        "name": "Cache de aplicativos de desktop",
+        "description": "Dados de exibição temporários e logs de aplicativos comuns de desktop.",
+        "impact": "Contas, sessões, bancos de dados e documentos locais são mantidos. Feche os aplicativos relacionados primeiro."
+      },
+      "app.telegram-temporary-cache": {
+        "name": "Arquivos temporários do Telegram",
+        "description": "Imagens temporárias de notificação, ícones da bandeja, exportações de calendário e dumps de falha criados pelo Telegram Desktop.",
+        "impact": "O Telegram precisa estar completamente fechado. Contas, chats, mídias baixadas, configurações e recursos de emoji são mantidos."
+      },
+      "app.vlc-cache": {
+        "name": "Arte e cache de falhas do VLC",
+        "description": "Capas em cache e dumps de falha criados pelo media player VLC.",
+        "impact": "O VLC precisa estar fechado. Preferências, playlists, dados da biblioteca de mídia e arquivos de mídia são mantidos; a arte pode ser extraída ou baixada novamente."
+      },
+      "app.ea-rendering-cache": {
+        "name": "Cache de renderização do app EA",
+        "description": "Caches temporários do navegador e compilação QML usados pela interface do app EA.",
+        "impact": "O app EA precisa estar fechado. Contas, jogos instalados, downloads, estado offline e armazenamento do navegador são mantidos; o cache da interface será reconstruído."
+      },
+      "app.steam-rendering-cache": {
+        "name": "Cache de renderização do Steam",
+        "description": "Dados temporários da web, código, GPU e shaders usados pela interface Chromium do Steam.",
+        "impact": "O Steam precisa estar totalmente fechado. Contas, cookies, histórico, configurações, jogos instalados, downloads e caches de shaders de jogos são mantidos; o conteúdo da interface pode ser baixado ou compilado novamente."
+      },
+      "app.battlenet-cache": {
+        "name": "Cache do Battle.net",
+        "description": "Conteúdo do launcher baixado, arquivos temporários da Blizzard e caches de renderização usados pelo Battle.net.",
+        "impact": "O Battle.net e seu Agent devem estar fechados. Contas, sessões do navegador, configurações do launcher, jogos instalados, downloads e estado dos patches são mantidos; o conteúdo da interface pode ser baixado novamente."
+      },
+      "app.spotify-rendering-cache": {
+        "name": "Cache de renderização do Spotify",
+        "description": "Dados temporários da web, código, GPU e shaders gerados pela interface de desktop do Spotify.",
+        "impact": "O Spotify precisa estar fechado. Contas, histórico, configurações, armazenamento de mídia transmitida, downloads offline e arquivos do aplicativo são mantidos; o conteúdo da interface pode ser baixado ou recompilado novamente."
+      },
+      "app.dropbox-rendering-cache": {
+        "name": "Cache da interface do Dropbox",
+        "description": "Dados temporários de web, código, GPU e shader gerados pela interface desktop do Dropbox.",
+        "impact": "O Dropbox precisa estar fechado. Contas, arquivos sincronizados, armazenamento do navegador, sessões, configurações e cache de recuperação de sincronização do Dropbox são mantidos; o conteúdo da interface pode ser reconstruído."
+      },
+      "app.game-launcher-cache": {
+        "name": "Cache do lançador de jogos",
+        "description": "Cache descartável de loja e web gerado pelos lançadores de jogos suportados.",
+        "impact": "O lançador relacionado precisa estar fechado. Contas, jogos instalados, downloads, manifestos, estado de patches e pacotes de instalação são mantidos; o conteúdo da loja pode ser baixado novamente."
+      },
+      "container.docker-desktop-rendering-cache": {
+        "name": "Cache da interface do Docker Desktop",
+        "description": "Dados temporários de web, código, GPU e shaders gerados pelo painel do Docker Desktop.",
+        "impact": "O Docker Desktop precisa estar fechado. Imagens, containers, volumes, cache de build, configurações, projetos, diagnósticos, logs e discos da VM são mantidos; o conteúdo do painel pode ser reconstruído."
+      },
+      "container.docker-desktop-diagnostic-cache": {
+        "name": "Logs antigos do Docker Desktop",
+        "description": "Logs de diagnóstico do host e da máquina virtual com mais de sete dias.",
+        "impact": "Feche o Docker Desktop primeiro. Imagens, containers, volumes, cache de build, configurações, projetos, discos da VM e diagnósticos recentes são mantidos."
+      },
+      "app.douyin-live-updater-cache": {
+        "name": "Cache de atualização do Douyin Live Companion",
+        "description": "Pacotes antigos de instalação baixados pelo Douyin Live Companion.",
+        "impact": "O app e o conteúdo de transmissões ao vivo são mantidos. Pacotes de atualização são baixados novamente quando necessário."
+      },
+      "app.wechat-diagnostic-cache": {
+        "name": "Logs e cache temporário do WeChat",
+        "description": "Logs de diagnóstico e pequenos dados temporários de exibição gerados pelo Weixin e WeChat.",
+        "impact": "Mensagens, contas, plug-ins e arquivos do usuário são mantidos. Feche o WeChat antes de limpar."
+      },
+      "browser.chrome-cache": {
+        "name": "Cache do Chrome",
+        "description": "Dados temporários de web, código, GPU e shader gerados pelo Chrome.",
+        "impact": "Senhas, cookies, histórico, extensões e favoritos são mantidos. Feche o navegador primeiro."
+      },
+      "browser.uc-cache": {
+        "name": "Cache do UC Browser",
+        "description": "Dados temporários de web, código, GPU, shader e pacotes de componentes baixados salvos pelo UC Browser.",
+        "impact": "Senhas, cookies, histórico, extensões, favoritos, downloads e sessões são mantidos. Feche o UC Browser primeiro; os dados do cache são reconstruídos ou baixados novamente conforme necessário."
+      },
+      "browser.360-speed-cache": {
+        "name": "Cache do 360 Extreme Browser",
+        "description": "Dados temporários da web, código, GPU, shader e pacotes de componentes baixados salvos pelo 360 Extreme Browser.",
+        "impact": "Senhas, cookies, histórico, extensões, favoritos, downloads e sessões são mantidos. Feche o 360 Extreme Browser primeiro; os dados do cache são reconstruídos ou baixados novamente conforme necessário."
+      },
+      "browser.sogou-cache": {
+        "name": "Cache do Sogou Explorer",
+        "description": "Dados temporários da web, código, GPU, Dawn e shader salvos pelo Sogou Explorer.",
+        "impact": "Senhas, cookies, histórico, extensões, favoritos, downloads e sessões são mantidos. Feche o Sogou Explorer primeiro; os dados do cache são reconstruídos conforme necessário."
+      },
+      "browser.360-safe-cache": {
+        "name": "Cache do 360 Safe Browser",
+        "description": "Dados temporários da web, código, GPU, Dawn e shader salvos pelo 360 Safe Browser.",
+        "impact": "Senhas, cookies, histórico, extensões, favoritos, downloads e sessões são mantidos. Feche primeiro o 360 Safe Browser; os dados do cache serão reconstruídos conforme necessário."
+      },
+      "browser.2345-cache": {
+        "name": "Cache do navegador 2345",
+        "description": "Dados temporários da web, código, GPU, Dawn e shader salvos pelo navegador 2345.",
+        "impact": "Senhas, cookies, histórico, extensões, favoritos, downloads e sessões são mantidos. Feche primeiro o navegador 2345; os dados do cache serão reconstruídos conforme necessário."
+      },
+      "browser.edge-cache": {
+        "name": "Cache do Edge",
+        "description": "Arquivos temporários de sites e de inicialização salvos pelo Edge.",
+        "impact": "Senhas, cookies, histórico, extensões e favoritos são mantidos. Feche primeiro o navegador."
+      },
+      "browser.edge-offline-cache": {
+        "name": "Cache offline do Edge",
+        "description": "Dados de sites salvos pelo Edge para uso mais rápido ou offline.",
+        "impact": "Senhas, histórico e favoritos são mantidos. Alguns sites podem baixar conteúdos offline novamente."
+      },
+      "browser.chrome-offline-cache": {
+        "name": "Cache offline do Chrome",
+        "description": "Dados de sites salvos pelo Chrome para uso mais rápido ou offline.",
+        "impact": "Senhas, histórico e favoritos são mantidos. Alguns sites podem baixar conteúdos offline novamente."
+      },
+      "browser.brave-cache": {
+        "name": "Cache do Brave",
+        "description": "Arquivos temporários de sites e de inicialização salvos pelo Brave.",
+        "impact": "Senhas, cookies, histórico, extensões e favoritos são mantidos. Feche o navegador primeiro."
+      },
+      "browser.arc-cache": {
+        "name": "Cache do Arc",
+        "description": "Arquivos temporários de sites e de inicialização salvos pelo Arc.",
+        "impact": "Espaços, senhas, cookies, histórico, extensões e favoritos são mantidos. Feche o navegador primeiro."
+      },
+      "browser.vivaldi-cache": {
+        "name": "Cache do Vivaldi",
+        "description": "Arquivos temporários de sites e de inicialização salvos pelo Vivaldi.",
+        "impact": "Senhas, cookies, histórico, extensões e favoritos são mantidos. Feche o navegador primeiro."
+      },
+      "browser.chromium-cache": {
+        "name": "Cache do Chromium",
+        "description": "Arquivos temporários de sites e de inicialização salvos pelo Chromium.",
+        "impact": "Senhas, cookies, histórico, extensões e favoritos são mantidos. Feche o navegador primeiro."
+      },
+      "browser.firefox-cache": {
+        "name": "Cache do Firefox",
+        "description": "Arquivos temporários de sites e de inicialização salvos pelo Firefox.",
+        "impact": "Senhas, cookies, histórico, extensões e favoritos são mantidos. Feche o navegador primeiro."
+      },
+      "browser.opera-cache": {
+        "name": "Cache do Opera",
+        "description": "Arquivos temporários de sites e de inicialização salvos pelo Opera.",
+        "impact": "Senhas, cookies, histórico, extensões e favoritos são mantidos. Feche o navegador primeiro."
+      },
+      "dev.xcode-derived-data": {
+        "name": "Dados derivados do Xcode",
+        "description": "DerivedData do Xcode, índices e saída intermediária de build.",
+        "impact": "O código-fonte é mantido. A próxima compilação e passagem de indexação podem demorar mais."
+      },
+      "dev.xcode-auxiliary-cache": {
+        "name": "Documentação do Xcode e logs de dispositivos",
+        "description": "Índices de documentação do Xcode e logs de dispositivos iOS ou watchOS com mais de quatorze dias.",
+        "impact": "O código-fonte e os arquivos arquivados são mantidos. Os índices de documentação podem ser regenerados depois."
+      },
+      "special.xcode-device-support": {
+        "name": "DeviceSupport do Xcode",
+        "description": "Arquivos de suporte do sistema preparados pelo Xcode para depuração em dispositivos físicos.",
+        "impact": "O Xcode precisa preparar o suporte novamente ao depurar a versão do sistema correspondente."
+      },
+      "special.xcode-simulator-runtime": {
+        "name": "Runtimes do simulador",
+        "description": "Runtimes de simulador do iOS, watchOS, tvOS e visionOS instalados pelo Xcode.",
+        "impact": "Simuladores de versões de sistema removidas deixam de funcionar até que o runtime seja baixado novamente no Xcode."
+      },
+      "special.xcode-archives": {
+        "name": "Arquivos arquivados do aplicativo Xcode",
+        "description": "Arquivos do Xcode usados para distribuição, exportação e simbologia de falhas.",
+        "impact": "Exibido apenas para revisão e nunca adicionado à limpeza. Gerencie os arquivos no Organizador do Xcode após confirmar que não são mais necessários."
+      },
+      "special.additional-user-caches": {
+        "name": "Caches adicionais do usuário",
+        "description": "Outros caches de aplicativos que não estão listados separadamente.",
+        "impact": "Não selecionado por padrão. Caches em uso ou que não podem ser verificados com segurança são ignorados. Os aplicativos podem recriá-los depois."
+      },
+      "dev.npm-cache": {
+        "name": "Cache de download do npm",
+        "description": "Pacotes baixados salvos pelo npm.",
+        "impact": "Projetos e dependências instaladas são mantidos. Os pacotes podem ser baixados novamente."
+      },
+      "dev.npx-cache": {
+        "name": "Ferramentas temporárias do npx",
+        "description": "Pacotes temporariamente baixados e executados pelo npx.",
+        "impact": "Dependências do projeto são mantidas. O npx pode baixar as ferramentas novamente."
+      },
+      "dev.node-gyp-cache": {
+        "name": "cache de compilação do node-gyp",
+        "description": "Headers e cache de compilação temporário usados para compilar módulos nativos do Node.js.",
+        "impact": "O código-fonte é mantido. Headers necessários podem ser baixados novamente."
+      },
+      "dev.pnpm-cache": {
+        "name": "cache de armazenamento do pnpm",
+        "description": "Pacotes baixados salvos pelo pnpm.",
+        "impact": "Projetos e dependências instaladas são mantidos. Pacotes podem ser baixados novamente."
+      },
+      "dev.yarn-cache": {
+        "name": "cache de download do Yarn",
+        "description": "Pacotes baixados salvos pelo Yarn.",
+        "impact": "Projetos e dependências instaladas são mantidos. Pacotes podem ser baixados novamente."
+      },
+      "dev.pip-cache": {
+        "name": "cache de download do pip",
+        "description": "Pacotes baixados salvos pelo pip.",
+        "impact": "Projetos e dependências instaladas são mantidos. Pacotes podem ser baixados novamente."
+      },
+      "dev.python-cache": {
+        "name": "cache de pacotes do Python",
+        "description": "Pacotes baixados e dados de análise salvos pelas ferramentas de desenvolvimento Python.",
+        "impact": "Projetos e dependências instaladas são mantidos. Pacotes podem ser baixados novamente."
+      },
+      "dev.pyinstaller-cache": {
+        "name": "Cache binário do PyInstaller",
+        "description": "Cópias binárias processadas salvas pelo PyInstaller para builds futuros.",
+        "impact": "Projetos, arquivos spec e saída de build são mantidos. Builds futuros podem precisar processar binários novamente."
+      },
+      "dev.python-tooling-cache": {
+        "name": "Cache de ferramentas Python",
+        "description": "Cache de pacotes e instaladores salvos pelo Poetry e pyenv-win.",
+        "impact": "Ambientes virtuais e intérpretes instalados são mantidos. Dependências podem ser baixadas novamente."
+      },
+      "dev.uv-cache": {
+        "name": "Cache uv",
+        "description": "Pacotes baixados e construídos salvos pelo uv.",
+        "impact": "Projetos, ambientes virtuais e instalações gerenciadas do Python são mantidos. Pacotes podem ser baixados ou reconstruídos."
+      },
+      "dev.dart-analysis-cache": {
+        "name": "Cache de análise do Dart",
+        "description": "Resultados de análise em cache gerados pelas ferramentas Dart e Flutter.",
+        "impact": "Projetos e SDKs são mantidos. Editores e ferramentas de análise podem precisar reconstruir seus índices."
+      },
+      "dev.node-tooling-cache": {
+        "name": "Cache de ferramentas do Node.js",
+        "description": "Cache da cadeia de ferramentas baixado pelo Corepack, nvm, Bun, node-gyp e Electron.",
+        "impact": "Dependências do projeto são mantidas. Runtimes ou recursos nativos de compilação podem ser baixados novamente."
+      },
+      "dev.cargo-cache": {
+        "name": "Cache de pacotes do Cargo",
+        "description": "Pacotes baixados salvos pelo Cargo.",
+        "impact": "Projetos e dependências instaladas são mantidos. Pacotes podem ser baixados novamente."
+      },
+      "dev.cargo-extracted-sources": {
+        "name": "Cache de código-fonte extraído pelo Cargo",
+        "description": "Arquivos-fonte de crates extraídos pelo Cargo para builds locais.",
+        "impact": "Projetos e arquivos de crates baixados são mantidos. O Cargo pode extrair ou baixar os fontes novamente."
+      },
+      "dev.go-cache": {
+        "name": "Cache de build do Go",
+        "description": "Saída de build local do Go e cache de módulos baixados.",
+        "impact": "O código-fonte é mantido. Builds futuros podem recompilar o código ou baixar módulos."
+      },
+      "dev.go-module-cache": {
+        "name": "Cache de módulos do Go",
+        "description": "Pacotes baixados salvos pelos módulos do Go.",
+        "impact": "Projetos e dependências instaladas são mantidos. Pacotes podem ser baixados novamente."
+      },
+      "dev.homebrew-cache": {
+        "name": "Cache de download do Homebrew",
+        "description": "Pacotes baixados salvos pelo Homebrew.",
+        "impact": "Projetos e dependências instaladas são mantidos. Pacotes podem ser baixados novamente."
+      },
+      "dev.cocoapods-cache": {
+        "name": "Cache do CocoaPods",
+        "description": "Pacotes baixados salvos pelo CocoaPods.",
+        "impact": "Projetos e dependências instaladas são mantidos. Pacotes podem ser baixados novamente."
+      },
+      "dev.swiftpm-cache": {
+        "name": "Cache do Swift Package Manager",
+        "description": "Pacotes baixados salvos pelo Swift Package Manager.",
+        "impact": "Projetos e dependências instaladas são mantidos. Pacotes podem ser baixados novamente."
+      },
+      "dev.vscode-cache": {
+        "name": "Cache do Visual Studio Code",
+        "description": "Dados temporários de exibição e código compilado, pacotes de extensão baixados e relatórios de falhas do Visual Studio Code.",
+        "impact": "Projetos, configurações, extensões instaladas, estado do workspace, contas e backups são mantidos. Feche o Visual Studio Code primeiro; alguns dados podem ser reconstruídos ou baixados novamente."
+      },
+      "dev.editor-cache": {
+        "name": "Cache do editor de código",
+        "description": "Dados temporários de busca, exibição e logs dos editores de código.",
+        "impact": "Projetos, configurações e extensões são mantidos. Feche os aplicativos relacionados primeiro."
+      },
+      "dev.qoder-rendering-cache": {
+        "name": "Cache de renderização do Qoder",
+        "description": "Código gerado, pacote de extensão, web, GPU, shader e cache de diagnóstico das edições do Qoder.",
+        "impact": "Projetos, configurações, extensões, backups, estado do espaço de trabalho e estado de login são mantidos. Feche ambas as edições do Qoder primeiro."
+      },
+      "dev.browser-automation-cache": {
+        "name": "Cache de automação do navegador",
+        "description": "Runtimes de navegador baixados pelo Playwright, Puppeteer, Cypress e Selenium.",
+        "impact": "As ferramentas de teste precisam baixar os navegadores novamente e podem ficar indisponíveis enquanto estiverem offline."
+      },
+      "dev.visual-studio-cache": {
+        "name": "Cache do Visual Studio",
+        "description": "Dados temporários de pesquisa, exibição e log do Visual Studio.",
+        "impact": "Projetos, configurações e extensões são mantidos. Feche os aplicativos relacionados primeiro."
+      },
+      "dev.jetbrains-cache": {
+        "name": "Cache do IDE da JetBrains",
+        "description": "Dados temporários de busca, exibição e logs das IDEs da JetBrains e do Android Studio.",
+        "impact": "Projetos, configurações e extensões são mantidos. Feche os aplicativos relacionados primeiro."
+      },
+      "dev.android-cache": {
+        "name": "Cache do SDK Android",
+        "description": "Cache temporário de downloads e extração criado pelo Gerenciador de SDK Android.",
+        "impact": "SDKs, emuladores e projetos instalados são mantidos. Componentes podem ser baixados novamente."
+      },
+      "dev.android-user-cache": {
+        "name": "Cache de usuário Android",
+        "description": "Cache de usuário recriável gerado pelas ferramentas de desenvolvimento Android.",
+        "impact": "Projetos, SDKs e emuladores são mantidos. As ferramentas de desenvolvimento recriam os dados necessários."
+      },
+      "dev.package-manager-cache": {
+        "name": "Cache do gerenciador de pacotes",
+        "description": "Pacotes baixados salvos pelo Composer, Deno e vcpkg.",
+        "impact": "Os projetos e dependências instaladas são mantidos. Os pacotes podem ser baixados novamente."
+      },
+      "dev.nuget-cache": {
+        "name": "Cache de pacote e requisição do NuGet",
+        "description": "Pacotes baixados e respostas HTTP salvas pelo NuGet.",
+        "impact": "Os projetos e dependências instaladas são mantidos. Os pacotes podem ser baixados novamente."
+      },
+      "dev.qclaw-compile-cache": {
+        "name": "Cache de compilação do QClaw",
+        "description": "Cache de módulo compilado gerado pelo runtime Node.js do QClaw.",
+        "impact": "Workspaces, memória, plugins e configurações são mantidos. Feche o QClaw primeiro; o início pode ser mais lento enquanto o cache é reconstruído."
+      },
+      "dev.maven-cache": {
+        "name": "Cache de pacote Maven",
+        "description": "Artefatos baixados e instalados localmente no repositório local do Maven.",
+        "impact": "Os projetos e configurações do Maven são mantidos. Artefatos apenas locais precisam ser reconstruídos ou instalados novamente."
+      },
+      "dev.gradle-cache": {
+        "name": "Cache do Gradle",
+        "description": "Dependências baixadas, distribuições Wrapper, caches de build e arquivos temporários salvos pelo Gradle.",
+        "impact": "Projetos, configurações do Gradle e JDKs instalados são mantidos. Feche o Gradle e o Java primeiro; dados de suporte podem ser baixados ou gerados novamente."
+      },
+      "dev.user-tool-cache": {
+        "name": "Cache de ferramenta de desenvolvedor",
+        "description": "Cache reconstruível gerado por ferramentas de desenvolvedor de linha de comando.",
+        "impact": "Projetos e ferramentas instaladas são mantidos. Dados de suporte podem ser baixados novamente."
+      },
+      "dev.build-accelerator-cache": {
+        "name": "Cache de acelerador de build",
+        "description": "Artefatos de compilação local gerados por ferramentas de aceleração de build.",
+        "impact": "O código-fonte é mantido. Builds posteriores podem recompilar trabalhos previamente armazenados em cache."
+      },
+      "dev.sccache-cache": {
+        "name": "Cache de compilação do sccache",
+        "description": "Artefatos de compilador reconstruíveis armazenados em cache pelo sccache para Rust, C/C++ e outras builds.",
+        "impact": "O código-fonte e as configurações das ferramentas são mantidos. Versões futuras podem recompilar trabalhos em cache."
+      },
+      "dev.jvm-tooling-cache": {
+        "name": "Cache de ferramentas JVM",
+        "description": "Índices, downloads e dados temporários gerados pelas ferramentas de desenvolvimento JVM.",
+        "impact": "Projetos e instalações do JDK são mantidos. Os dados das ferramentas podem ser reconstruídos ou baixados novamente."
+      },
+      "ai.huggingface-xet-cache": {
+        "name": "Cache de downloads do Hugging Face",
+        "description": "Arquivos temporários usados para acelerar downloads e uploads do Hugging Face.",
+        "impact": "Modelos, conjuntos de dados e uploads incompletos são mantidos. Transfers futuros podem baixar esses arquivos novamente."
+      },
+      "special.ai-model-hugging-face": {
+        "name": "Modelos locais do Hugging Face",
+        "description": "Pesos de modelo e snapshots baixados pelo Hugging Face Hub.",
+        "impact": "Somente os modelos que você selecionar explicitamente serão removidos. Os apps precisam baixá-los novamente antes de usar."
+      },
+      "special.ai-model-whisper": {
+        "name": "Modelos de fala Whisper",
+        "description": "Pesos do modelo de reconhecimento de fala baixados pelo OpenAI Whisper.",
+        "impact": "Apenas os modelos que você selecionar explicitamente são removidos. A transcrição os baixa novamente quando necessário."
+      },
+      "special.ai-model-pytorch": {
+        "name": "Modelos do PyTorch Hub",
+        "description": "Checkpoints de modelo e arquivos de peso baixados pelo PyTorch Hub.",
+        "impact": "Apenas os checkpoints que você selecionar explicitamente são removidos. Os apps podem baixá-los novamente na próxima execução."
+      },
+      "special.ai-cache-pytorch-hub-repositories": {
+        "name": "Cache de repositório do PyTorch Hub",
+        "description": "Repositórios de definição de modelo baixados pelo PyTorch Hub ao carregar modelos pré-treinados.",
+        "impact": "Apenas caches de repositório que você selecionar explicitamente são removidos. Os checkpoints são mantidos, e o código do modelo relacionado precisa ser baixado novamente."
+      },
+      "special.ai-model-modelscope": {
+        "name": "Modelos locais do ModelScope",
+        "description": "Repositórios de modelos baixados pelo ModelScope SDK, FunASR, Qwen e frameworks relacionados.",
+        "impact": "Apenas modelos selecionados são removidos. Conjuntos de dados e saídas de treinamento são mantidos, e os modelos precisam ser baixados novamente."
+      },
+      "special.ai-model-keras": {
+        "name": "Modelos pré-treinados do Keras",
+        "description": "Pesos pré-treinados baixados automaticamente pelo Keras Applications.",
+        "impact": "Apenas pesos selecionados são removidos. Conjuntos de dados do Keras são mantidos, e os pesos precisam ser baixados novamente."
+      },
+      "special.ai-model-openai-clip": {
+        "name": "Modelos de visão CLIP da OpenAI",
+        "description": "Pesos de modelos de imagem-texto baixados automaticamente pelo OpenAI CLIP.",
+        "impact": "Apenas modelos selecionados são removidos. O CLIP precisa baixá-los novamente antes do próximo uso."
+      },
+      "special.ai-model-tensorflow-hub": {
+        "name": "Modelos do TensorFlow Hub",
+        "description": "Módulos de modelos baixados e extraídos localmente pelo TensorFlow Hub.",
+        "impact": "Apenas módulos selecionados são removidos. Os aplicativos devem baixá-los e extraí-los novamente na próxima execução."
+      },
+      "special.ai-model-lm-studio": {
+        "name": "Modelos locais do LM Studio",
+        "description": "Modelos de linguagem grande e pesos quantizados armazenados pelo LM Studio.",
+        "impact": "Feche o LM Studio primeiro. Apenas os modelos selecionados são removidos, e eles devem ser baixados novamente."
+      },
+      "special.ai-model-ollama": {
+        "name": "Biblioteca de modelos locais do Ollama",
+        "description": "Arquivos que compõem os modelos baixados do Ollama.",
+        "impact": "O Ollama compartilha arquivos entre modelos, então a biblioteca selecionada é removida como um todo. Feche o Ollama primeiro. Os modelos devem ser baixados novamente."
+      },
+      "special.ai-model-coqui-tts": {
+        "name": "Modelos de fala do Coqui TTS",
+        "description": "Modelos de texto para fala e vocoder baixados pelo Coqui TTS.",
+        "impact": "Apenas os modelos que você selecionar explicitamente são removidos. A síntese de fala os baixa novamente quando necessário."
+      },
+      "special.ai-model-gpt4all": {
+        "name": "Modelos locais GPT4All",
+        "description": "Modelos de linguagem GGUF salvos no diretório de download padrão do GPT4All.",
+        "impact": "Feche o GPT4All primeiro. Apenas os modelos selecionados são removidos; conversas e LocalDocs são mantidos."
+      },
+      "special.ai-model-jan": {
+        "name": "Modelos locais Jan",
+        "description": "Modelos locais gerenciados dentro da pasta de dados do Jan.",
+        "impact": "Feche o Jan primeiro. Apenas os modelos selecionados são removidos; conversas, assistentes, configurações e logs são mantidos."
+      },
+      "project.rust-build-artifacts": {
+        "name": "Artefatos de build Rust",
+        "description": "Output do Cargo e cache de cross-compilação.",
+        "impact": "O código-fonte e a configuração do Cargo são mantidos. A próxima build recompila os targets."
+      },
+      "project.node-build-artifacts": {
+        "name": "Artefatos de build Node.js",
+        "description": "Pastas de dependências e caches de build de frameworks em projetos Node.js.",
+        "impact": "Os arquivos de origem e de bloqueio são mantidos. Dependências e caches precisam ser restaurados."
+      },
+      "project.react-native-build-artifacts": {
+        "name": "Artefatos de build do React Native",
+        "description": "Caches de Android, iOS, Expo e Metro em projetos React Native.",
+        "impact": "O código-fonte do projeto é mantido. Builds móveis regeneram esses caches."
+      },
+      "project.python-build-artifacts": {
+        "name": "Artefatos de build em Python",
+        "description": "Caches de teste, verificação de tipo e bytecode em projetos Python.",
+        "impact": "O código-fonte e os ambientes virtuais são mantidos. As ferramentas regeneram seus caches."
+      },
+      "project.maven-build-artifacts": {
+        "name": "Artefatos de build do Maven",
+        "description": "Saída compilada nas pastas alvo do projeto Maven.",
+        "impact": "O código-fonte e o pom.xml são mantidos. A próxima build recompila o projeto."
+      },
+      "project.gradle-build-artifacts": {
+        "name": "Artefatos de build do Gradle",
+        "description": "Saída de build do Gradle e cache local do projeto.",
+        "impact": "Os arquivos de origem e scripts de build são mantidos. A próxima compilação gera novamente a saída."
+      },
+      "project.sbt-build-artifacts": {
+        "name": "Artefatos de build do SBT",
+        "description": "Saída compilada nas pastas de destino do SBT.",
+        "impact": "O código-fonte Scala e definições de build são mantidos. A próxima compilação recompila os alvos."
+      },
+      "project.dotnet-build-artifacts": {
+        "name": "Artefatos de build do .NET",
+        "description": "Pastas bin e obj compiladas em projetos .NET.",
+        "impact": "Arquivos do projeto e código-fonte são mantidos. A próxima compilação recompila o projeto."
+      },
+      "project.swift-build-artifacts": {
+        "name": "Artefatos de build do Swift",
+        "description": "A pasta .build gerada pelo Swift Package Manager.",
+        "impact": "O Package.swift e o código-fonte são mantidos. Dependências e alvos são reconstruídos."
+      },
+      "project.flutter-build-artifacts": {
+        "name": "Artefatos de build do Flutter",
+        "description": "Saída de build e caches de ferramentas em projetos Flutter e Dart.",
+        "impact": "O código fonte do projeto é mantido. O Flutter regenera as pastas removidas."
+      },
+      "project.cmake-build-artifacts": {
+        "name": "Artefatos de build do CMake",
+        "description": "Pastas comuns de build fora da raiz em projetos CMake.",
+        "impact": "CMakeLists.txt e o código fonte são mantidos. O projeto precisa ser configurado e compilado novamente."
+      },
+      "project.zig-build-artifacts": {
+        "name": "Artefatos de build do Zig",
+        "description": "Caches de compilação local em projetos Zig.",
+        "impact": "build.zig e o código fonte são mantidos. A próxima compilação recompila os alvos."
+      },
+      "project.godot-build-artifacts": {
+        "name": "Artefatos de build do Godot",
+        "description": "Dados importados e cache do editor gerados pelo Godot.",
+        "impact": "Os assets e configurações do projeto são mantidos. O Godot importa os recursos novamente."
+      },
+      "project.elixir-build-artifacts": {
+        "name": "Artefatos de build do Elixir",
+        "description": "Saída do Mix e caches do serviço de linguagem.",
+        "impact": "O código fonte do Elixir e o mix.exs são mantidos. As ferramentas regeneram seus caches."
+      },
+      "project.terraform-build-artifacts": {
+        "name": "Diretório de trabalho do Terraform",
+        "description": "Providers e módulos baixados nas pastas de trabalho do projeto Terraform.",
+        "impact": "Arquivos de configuração, estado e lockfiles são mantidos. A inicialização pode baixar dependências novamente."
+      },
+      "project.unity-build-artifacts": {
+        "name": "Artefatos de build da Unity",
+        "description": "Pastas Library, Temp, Obj e de diagnóstico da Unity.",
+        "impact": "Assets e ProjectSettings são mantidos. Reimportar um projeto pode levar tempo."
+      },
+      "project.unreal-build-artifacts": {
+        "name": "Artefatos de build do Unreal",
+        "description": "Binaries, output intermediário e cache de dados derivados nos projetos Unreal.",
+        "impact": "Conteúdo e configuração do projeto são mantidos. Unreal regenera o output."
+      },
+      "project.cocoapods-build-artifacts": {
+        "name": "Dependências de projeto CocoaPods",
+        "description": "A pasta Pods instalada a partir de um Podfile do projeto.",
+        "impact": "Fonte, Podfile e arquivo de bloqueio são mantidos. Dependências precisam ser instaladas novamente."
+      },
+      "project.haskell-build-artifacts": {
+        "name": "Artefatos de build do Haskell",
+        "description": "Pastas de build locais do Stack e Cabal.",
+        "impact": "Código-fonte e configuração do projeto Haskell são mantidos. O próximo build recompila os alvos."
+      },
+      "project.composer-build-artifacts": {
+        "name": "Dependências do projeto Composer",
+        "description": "Dependências instaladas pelo PHP Composer.",
+        "impact": "Arquivos-fonte, composer.json e arquivos de bloqueio são mantidos. Dependências precisam ser instaladas novamente."
+      },
+      "project.jupyter-build-artifacts": {
+        "name": "Checkpoints do Jupyter notebook",
+        "description": "Pastas de checkpoints automáticos geradas ao lado dos Jupyter notebooks.",
+        "impact": "Notebooks são mantidos. Jupyter recria checkpoints conforme você continua editando."
+      },
+      "project.pixi-build-artifacts": {
+        "name": "Ambiente do projeto Pixi",
+        "description": "O ambiente local criado para um projeto Pixi.",
+        "impact": "Arquivos de origem, pixi.toml e arquivos de bloqueio são mantidos. O ambiente precisa ser restaurado."
+      },
+      "special.docker-build-cache": {
+        "name": "Cache de build do Docker",
+        "description": "Cache de build que o Docker relata como não usado e não compartilhado com uma imagem.",
+        "impact": "Imagens, contêineres, redes e volumes são mantidos. Builds posteriores podem baixar ou regenerar o cache."
+      },
+      "special.conda-cache": {
+        "name": "Cache de download do Conda",
+        "description": "Pacotes baixados e dados temporários relatados pelo Conda.",
+        "impact": "Ambientes e pacotes instalados são mantidos. O Conda pode baixar esses arquivos novamente."
+      },
+      "special.codex-archived-sessions": {
+        "name": "Sessões arquivadas antigas do Codex",
+        "description": "Arquivos de conversas do Codex não modificados há 30 dias.",
+        "impact": "Somente sessões arquivadas selecionadas são removidas permanentemente. Elas não podem ser reabertas ou recuperadas."
+      },
+      "special.rust-toolchains": {
+        "name": "Toolchains adicionais do Rust",
+        "description": "Versões do Rust instaladas que não são necessárias pela configuração padrão, ativa, de substituição ou descoberta do projeto.",
+        "impact": "Apenas as versões selecionadas são desinstaladas pelo rustup. Projetos que ainda precisarem delas devem baixá-las novamente."
+      },
+      "special.dropbox-cache": {
+        "name": "Cache temporário do Dropbox",
+        "description": "Arquivos temporários de upload, download e recuperação encontrados nas localizações da conta do Dropbox.",
+        "impact": "O Dropbox deve estar totalmente fechado. Arquivos sincronizados e configurações da conta são mantidos; arquivos temporários podem ser recriados."
+      },
+      "special.windows-recycle-bin": {
+        "name": "Lixeira",
+        "description": "Todos os itens na Lixeira do Windows da conta atual.",
+        "impact": "Arquivos e pastas não podem ser restaurados da Lixeira depois que ela é esvaziada. Este item nunca é selecionado por padrão."
+      },
+      "special.windows-system-logs": {
+        "name": "Arquivos de log do Windows",
+        "description": "Logs de instalação, atualização e diagnóstico com mais de três dias em Panther, Logs e System32LogFiles no diretório do Windows.",
+        "impact": "Apenas locais e tipos de logs do Windows fixos estão incluídos. Arquivos em uso ou indisponíveis para sua conta são ignorados."
+      },
+      "special.windows-internet-cache": {
+        "name": "Arquivos temporários da internet",
+        "description": "Dados temporários da internet que o Windows considera removíveis.",
+        "impact": "Senhas salvas e histórico de navegação são mantidos. Algumas páginas podem ser carregadas novamente."
+      },
+      "special.windows-delivery-optimization": {
+        "name": "Arquivos do Delivery Optimization",
+        "description": "Cache de entrega de atualização que o Windows não precisa mais.",
+        "impact": "Atualizações instaladas são mantidas. O Windows pode baixar os dados da atualização novamente."
+      },
+      "special.windows-defender-cache": {
+        "name": "Cache do Microsoft Defender",
+        "description": "Dados temporários do Defender que o Windows considera removíveis.",
+        "impact": "As configurações de proteção, quarentena e definições de segurança atuais são mantidas."
+      },
+      "special.windows-update-cleanup": {
+        "name": "Limpeza do Windows Update",
+        "description": "Arquivos de atualização substituídos que o Windows indica como removíveis.",
+        "impact": "As atualizações instaladas permanecem ativas. Remover arquivos de atualização antigos pode limitar as opções de reversão."
+      },
+      "special.windows-previous-installations": {
+        "name": "Instalação anterior do Windows",
+        "description": "Os dados do Windows.old mantidos após atualizar para uma versão mais recente do Windows.",
+        "impact": "A limpeza remove permanentemente a instalação anterior e impede o retorno à versão anterior do Windows."
+      },
+      "special.macos-universal-binaries": {
+        "name": "Binaries universais",
+        "description": "Código extra da Intel ou Apple Silicon incluído em apps compatíveis com Mac.",
+        "impact": "Mantém o código necessário para este Mac e verifica cada aplicativo antes e depois da limpeza. Aplicativos que estão em execução ou que não podem ser alterados com segurança são ignorados. Reinstale ou atualize um aplicativo para restaurar o suporte para ambos os tipos de processador."
+      }
+    },
+    "actionMessages": {
+      "blocked": "Feche os aplicativos relacionados e tente novamente",
+      "previewed": "Verificação concluída. Nenhum arquivo foi excluído",
+      "completed": "Limpeza concluída",
+      "partial": "Arquivos em uso ou sem permissão foram ignorados com segurança",
+      "failed": "Não foi possível concluir a limpeza. Nenhum outro arquivo foi removido"
+    },
+    "actionReasons": {
+      "runningProcesses": "Feche {processes} e tente novamente",
+      "itemsSkipped": "Arquivos em uso ou sem permissão foram ignorados com segurança",
+      "requiredToolUnavailable": "O aplicativo ou ferramenta necessário para esta limpeza não está disponível. Nada foi alterado",
+      "preflightFailed": "Os arquivos selecionados não puderam ser verificados com segurança. Nada foi alterado",
+      "executionFailed": "A limpeza não terminou. Nenhum outro arquivo foi removido",
+      "verificationFailed": "A limpeza terminou, mas o MangoDisk não conseguiu confirmar o resultado. Execute a verificação novamente",
+      "cleanerUnavailable": "Esta opção de limpeza está indisponível no momento. Nada foi alterado"
+    }
+  }
+}
