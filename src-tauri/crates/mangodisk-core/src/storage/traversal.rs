@@ -915,6 +915,16 @@ impl<'a> LargeFileStreamValidation<'a> {
             // skipped count.
             return Ok(());
         }
+        if !sink.insert_large_file_candidate(
+            path.clone(),
+            IndexedFile {
+                bytes: usage.allocated_bytes,
+                logical_bytes: usage.logical_bytes,
+                modified_at_ms: modified_ms(&metadata),
+            },
+        ) {
+            return Ok(());
+        }
         self.progress.visit_file(
             traversal_stage(ScanPurpose::LargeFiles),
             &path,
@@ -926,14 +936,6 @@ impl<'a> LargeFileStreamValidation<'a> {
             .logical_bytes
             .saturating_add(usage.logical_bytes);
         self.aggregate.file_count += 1;
-        sink.push_large_file(
-            path,
-            IndexedFile {
-                bytes: usage.allocated_bytes,
-                logical_bytes: usage.logical_bytes,
-                modified_at_ms: modified_ms(&metadata),
-            },
-        )?;
         self.valid_count += 1;
         Ok(())
     }

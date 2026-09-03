@@ -1,4 +1,7 @@
-use std::{collections::HashMap, path::PathBuf};
+use std::{
+    collections::{hash_map::Entry, HashMap},
+    path::PathBuf,
+};
 
 use mangodisk_platform::FilesystemChangeToken;
 
@@ -50,6 +53,20 @@ impl IndexRecordSink {
             return Err("the in-memory index received a duplicate large-file record".to_string());
         }
         Ok(())
+    }
+
+    /// Inserts a validated record from an advisory candidate source.
+    ///
+    /// Native filesystem indexes may repeat a path, so candidate ingestion is idempotent while
+    /// authoritative traversal streams keep their strict duplicate checks.
+    pub(super) fn insert_large_file_candidate(&mut self, path: PathBuf, file: IndexedFile) -> bool {
+        match self.files.entry(path) {
+            Entry::Vacant(entry) => {
+                entry.insert(file);
+                true
+            }
+            Entry::Occupied(_) => false,
+        }
     }
 
     pub(super) fn finish(self) -> Result<CompletedIndexSink, String> {

@@ -126,6 +126,49 @@ fn native_large_file_candidate_below_physical_threshold_is_not_skipped() {
     assert_eq!(validation.aggregate.skipped_count, 0);
 }
 
+#[test]
+fn duplicate_native_large_file_candidate_is_idempotent() {
+    let unique = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .unwrap_or_default()
+        .as_nanos();
+    let root = std::env::temp_dir().join(format!(
+        "MangoDisk-Duplicate-Large-Candidate-{}-{unique}",
+        std::process::id()
+    ));
+    let _sandbox_cleanup = DirectoryCleanup(root.clone());
+    fs::create_dir_all(&root).expect("create the duplicate candidate fixture");
+    let path = root.join("candidate.bin");
+    fs::write(&path, [1_u8, 2, 3, 4]).expect("write the duplicate candidate fixture");
+    let metadata = fs::metadata(&path).expect("read the duplicate candidate metadata");
+    let usage = current_platform().file_space_usage(&path, &metadata);
+    let progress = Arc::new(ProgressTracker::new(0, |_| {}, 0));
+    let cancelled = AtomicBool::new(false);
+    let mut validation = LargeFileStreamValidation::new(&root, 0, now_ms(), &progress, &cancelled)
+        .expect("prepare native large-file validation");
+    let mut sink = IndexRecordSink::memory(None);
+
+    validation
+        .consume(path.clone(), &mut sink)
+        .expect("accept the first native candidate");
+    validation
+        .consume(path, &mut sink)
+        .expect("ignore a duplicate native candidate");
+
+    assert_eq!(validation.valid_count, 1);
+    assert_eq!(validation.aggregate.bytes, usage.allocated_bytes);
+    assert_eq!(validation.aggregate.logical_bytes, usage.logical_bytes);
+    assert_eq!(validation.aggregate.file_count, 1);
+    assert_eq!(validation.aggregate.skipped_count, 0);
+    assert_eq!(
+        sink.finish()
+            .expect("finish the deduplicated candidate index")
+            .files
+            .len(),
+        1
+    );
+}
+
 #[cfg(target_os = "macos")]
 #[test]
 fn analysis_filesystem_boundary_keeps_firmlinks_and_rejects_mounts() {
