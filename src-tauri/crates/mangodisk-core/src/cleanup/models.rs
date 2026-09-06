@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{filesystem::DiskInfo, history::OperationRecord, ApplicationCloseMode};
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
 pub enum RiskLevel {
     Safe,
@@ -194,7 +194,7 @@ mod cleanup_category_tests {
 }
 
 /// Distinguishes an inspected clean rule from a rule that could not be inspected.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub enum ScanItemStatus {
     Found,
@@ -212,7 +212,7 @@ pub enum ScanItemStatus {
     RequiresElevation,
 }
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct CleanupSourceDetail {
     pub path: String,
@@ -243,7 +243,7 @@ pub struct CleanupApplicationIcon {
     pub icon_path: String,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub enum CleanupSourceBlockReason {
     RequiresClose,

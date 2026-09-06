@@ -2,6 +2,7 @@
 import { computed, nextTick, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 
+import MdAiAction from '@/components/custom/md-ai-action.vue';
 import MdApplicationIcon from '@/components/custom/md-application-icon.vue';
 import MdResultCategoryItem from '@/components/custom/md-result-category-item.vue';
 import MdResultMasterDetail from '@/components/custom/md-result-master-detail.vue';
@@ -36,6 +37,7 @@ const props = defineProps<{
 const emit = defineEmits<{
   'update:selectedTokens': [tokens: string[]];
   'show-details': [item: PrivacyItem];
+  explain: [item: PrivacyItem];
 }>();
 
 const { t } = useI18n({ useScope: 'global' });
@@ -390,7 +392,7 @@ watch(activeCategoryId, async () => {
                     v-for="item in profile.items"
                     :key="item.token"
                     layout="item"
-                    class="privacy-item"
+                    class="privacy-item md-ai-hover-row"
                     :data-selected="selected.has(item.token)"
                   >
                     <MdResultCheckbox
@@ -399,13 +401,14 @@ watch(activeCategoryId, async () => {
                       :aria-label="t('privacy.toggleItem', { item: t(`privacy.kinds.${item.kind}`) })"
                       @update:checked="toggleItem(item.token)"
                     />
-                    <button
-                      class="privacy-item-details"
-                      type="button"
-                      :disabled="item.itemCount === 0"
-                      :aria-label="t('privacy.details.open', { item: t(`privacy.kinds.${item.kind}`) })"
-                      @click="emit('show-details', item)"
-                    >
+                    <div class="privacy-item-details">
+                      <button
+                        class="privacy-item-disclosure"
+                        type="button"
+                        :disabled="item.itemCount === 0"
+                        :aria-label="t('privacy.details.open', { item: t(`privacy.kinds.${item.kind}`) })"
+                        @click="emit('show-details', item)"
+                      />
                       <MdResultItemContent
                         :title="t(`privacy.kinds.${item.kind}`)"
                         :description="itemDescription(item, false)"
@@ -415,9 +418,15 @@ watch(activeCategoryId, async () => {
                         :value-detail="item.itemCount > 0 ? ByteSizeService.bytes(item.estimatedBytes) : undefined"
                       >
                         <template #icon><MdIcon :name="kindIcons[item.kind]" :size="20" /></template>
+                        <template #actions
+                          ><MdAiAction
+                            :name="t(`privacy.kinds.${item.kind}`)"
+                            :disabled="busy"
+                            @explain="emit('explain', item)"
+                        /></template>
                       </MdResultItemContent>
                       <MdIcon class="privacy-detail-chevron" :name="ICON_NAMES.chevronRight" :size="16" />
-                    </button>
+                    </div>
                   </MdResultTableRow>
                 </MdResultTableHierarchy>
               </section>
@@ -426,7 +435,7 @@ watch(activeCategoryId, async () => {
                 v-for="item in group.hasProfiles ? [] : group.items"
                 :key="item.token"
                 layout="item"
-                class="privacy-item"
+                class="privacy-item md-ai-hover-row"
                 :data-selected="selected.has(item.token)"
               >
                 <MdResultCheckbox
@@ -435,13 +444,14 @@ watch(activeCategoryId, async () => {
                   :aria-label="t('privacy.toggleItem', { item: t(`privacy.kinds.${item.kind}`) })"
                   @update:checked="toggleItem(item.token)"
                 />
-                <button
-                  class="privacy-item-details"
-                  type="button"
-                  :disabled="item.itemCount === 0"
-                  :aria-label="t('privacy.details.open', { item: t(`privacy.kinds.${item.kind}`) })"
-                  @click="emit('show-details', item)"
-                >
+                <div class="privacy-item-details">
+                  <button
+                    class="privacy-item-disclosure"
+                    type="button"
+                    :disabled="item.itemCount === 0"
+                    :aria-label="t('privacy.details.open', { item: t(`privacy.kinds.${item.kind}`) })"
+                    @click="emit('show-details', item)"
+                  />
                   <MdResultItemContent
                     :title="t(`privacy.kinds.${item.kind}`)"
                     :description="itemDescription(item, false)"
@@ -451,9 +461,15 @@ watch(activeCategoryId, async () => {
                     :value-detail="item.itemCount > 0 ? ByteSizeService.bytes(item.estimatedBytes) : undefined"
                   >
                     <template #icon><MdIcon :name="kindIcons[item.kind]" :size="20" /></template>
+                    <template #actions
+                      ><MdAiAction
+                        :name="t(`privacy.kinds.${item.kind}`)"
+                        :disabled="busy"
+                        @explain="emit('explain', item)"
+                    /></template>
                   </MdResultItemContent>
                   <MdIcon class="privacy-detail-chevron" :name="ICON_NAMES.chevronRight" :size="16" />
-                </button>
+                </div>
               </MdResultTableRow>
             </MdResultTableHierarchy>
           </section>
@@ -464,7 +480,7 @@ watch(activeCategoryId, async () => {
             v-for="item in activeCategory.items"
             :key="item.token"
             layout="item"
-            class="privacy-item"
+            class="privacy-item md-ai-hover-row"
             :data-selected="selected.has(item.token)"
           >
             <MdResultCheckbox
@@ -473,13 +489,14 @@ watch(activeCategoryId, async () => {
               :aria-label="t('privacy.toggleItem', { item: t(`privacy.kinds.${item.kind}`) })"
               @update:checked="toggleItem(item.token)"
             />
-            <button
-              class="privacy-item-details"
-              type="button"
-              :disabled="item.itemCount === 0"
-              :aria-label="t('privacy.details.open', { item: t(`privacy.kinds.${item.kind}`) })"
-              @click="emit('show-details', item)"
-            >
+            <div class="privacy-item-details">
+              <button
+                class="privacy-item-disclosure"
+                type="button"
+                :disabled="item.itemCount === 0"
+                :aria-label="t('privacy.details.open', { item: t(`privacy.kinds.${item.kind}`) })"
+                @click="emit('show-details', item)"
+              />
               <MdResultItemContent
                 :title="t(`privacy.kinds.${item.kind}`)"
                 :description="itemDescription(item, true)"
@@ -489,9 +506,15 @@ watch(activeCategoryId, async () => {
                 :value-detail="item.itemCount > 0 ? ByteSizeService.bytes(item.estimatedBytes) : undefined"
               >
                 <template #icon><MdIcon :name="kindIcons[item.kind]" :size="20" /></template>
+                <template #actions
+                  ><MdAiAction
+                    :name="t(`privacy.kinds.${item.kind}`)"
+                    :disabled="busy"
+                    @explain="emit('explain', item)"
+                /></template>
               </MdResultItemContent>
               <MdIcon class="privacy-detail-chevron" :name="ICON_NAMES.chevronRight" :size="16" />
-            </button>
+            </div>
           </MdResultTableRow>
         </div>
       </MdResultTable>

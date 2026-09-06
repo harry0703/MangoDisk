@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 pub const STARTUP_CATALOG_SCHEMA_VERSION: u32 = 3;
 pub const STARTUP_CHANGE_PLAN_SCHEMA_VERSION: u32 = 2;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub enum StartupSourceKind {
     RegistryRun,
@@ -29,7 +29,7 @@ pub enum StartupScope {
     System,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub enum StartupTrigger {
     Boot,
@@ -42,7 +42,7 @@ pub enum StartupTrigger {
     Unknown,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub enum StartupConfiguredState {
     Enabled,
@@ -51,7 +51,7 @@ pub enum StartupConfiguredState {
     NotApplicable,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub enum StartupRuntimeState {
     Running,
@@ -61,7 +61,7 @@ pub enum StartupRuntimeState {
     Unknown,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub enum StartupControlCapability {
     Toggleable,
@@ -72,7 +72,7 @@ pub enum StartupControlCapability {
     ViewOnly,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub enum StartupTrustState {
     System,
@@ -115,7 +115,7 @@ pub enum StartupTargetKind {
     Unknown,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub enum StartupDiagnosticCode {
     AccessDenied,

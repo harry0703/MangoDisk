@@ -93,7 +93,7 @@
   gap: 2px;
 }
 
-.startup-row-line:is(:hover, :has(:focus-visible)) .startup-actions {
+.startup-row-line:is(:hover, :focus-within) .startup-actions {
   opacity: 1;
   pointer-events: auto;
 }
@@ -103,8 +103,12 @@
   padding-right: 34px;
 }
 
-.startup-row-line:has(.startup-actions.has-cleanup.has-location) .startup-identity {
+.startup-row-line:has(.startup-actions.has-cleanup) .startup-identity,
+.startup-row-line:has(.startup-actions.has-location) .startup-identity {
   padding-right: 68px;
+}
+.startup-row-line:has(.startup-actions.has-cleanup.has-location) .startup-identity {
+  padding-right: 102px;
 }
 
 .startup-item-count,
@@ -254,7 +258,7 @@
   display: grid;
   min-width: 0;
   min-height: var(--layout-result-child-row-height);
-  grid-template-columns: 34px minmax(0, 1fr) 30px minmax(52px, auto);
+  grid-template-columns: 34px minmax(0, 1fr) 62px minmax(52px, auto);
   align-items: center;
   gap: 10px;
   padding-block: 2px;
@@ -288,12 +292,15 @@
 }
 
 .startup-native-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 2px;
   opacity: 0;
   pointer-events: none;
   transition: opacity 0.14s ease;
 }
 
-.startup-native-row:is(:hover, :has(:focus-visible)) .startup-native-actions {
+.startup-native-row:is(:hover, :focus-within) .startup-native-actions {
   opacity: 1;
   pointer-events: auto;
 }
@@ -366,7 +373,7 @@
   transition: opacity 0.14s ease;
 }
 
-.startup-detail-row:is(:hover, :has(:focus-visible)) .startup-target-actions {
+.startup-detail-row:is(:hover, :focus-within) .startup-target-actions {
   opacity: 1;
   pointer-events: auto;
 }
@@ -421,5 +428,13 @@
   .startup-detail-row {
     grid-template-columns: 82px minmax(0, 1fr);
     gap: 10px;
+  }
+}
+
+@media (hover: none) {
+  .startup-actions,
+  .startup-native-actions {
+    opacity: 1;
+    pointer-events: auto;
   }
 }

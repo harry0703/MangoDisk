@@ -1,3 +1,4 @@
+pub mod ai;
 mod applications;
 mod cleanup;
 mod filesystem;

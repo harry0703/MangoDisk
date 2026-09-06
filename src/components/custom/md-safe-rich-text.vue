@@ -1,18 +1,24 @@
 <script setup lang="ts">
 import DOMPurify from 'dompurify';
 import { marked } from 'marked';
-import { computed } from 'vue';
+import { computed, onMounted } from 'vue';
 
 import { normalizeExternalUrl } from '@/lib/utils/external-url';
+import { LoggerService } from '@/lib/services/logger-service';
 
-const props = defineProps<{
-  content: string;
-}>();
+const props = withDefaults(
+  defineProps<{
+    content: string;
+    variant?: 'default' | 'answer';
+    allowLinks?: boolean;
+  }>(),
+  { variant: 'default', allowLinks: true }
+);
 const emit = defineEmits<{
   openLink: [url: string];
 }>();
 
-const SAFE_RELEASE_NOTE_TAGS = [
+const SAFE_FORMATTING_TAGS = [
   'a',
   'blockquote',
   'br',
@@ -41,21 +47,29 @@ const SAFE_RELEASE_NOTE_TAGS = [
 ];
 
 const html = computed(() => {
+  // Unsupported DOMs make DOMPurify return input unchanged. Fail closed to
+  // Vue text interpolation instead of trusting that compatibility fallback.
+  if (!DOMPurify.isSupported) return null;
   const rendered = marked.parse(props.content, {
     async: false,
     breaks: true,
     gfm: true,
   }) as string;
 
-  // Release notes arrive from the update endpoint and therefore remain
-  // untrusted even when the update artifact itself is signed. The explicit
-  // allowlist keeps useful formatting while excluding scripts, media,
-  // embedded documents, inline styles, and event handlers.
+  // Both release notes and model output are untrusted. Re-sanitize every
+  // partial stream: incomplete Markdown/HTML must never bypass this boundary.
+  // AI links remain readable labels, not navigable or executable actions.
   return DOMPurify.sanitize(rendered, {
-    ALLOWED_ATTR: ['href', 'title'],
-    ALLOWED_TAGS: SAFE_RELEASE_NOTE_TAGS,
+    ALLOWED_ATTR: props.allowLinks ? ['href', 'title'] : [],
+    ALLOWED_TAGS: props.allowLinks ? SAFE_FORMATTING_TAGS : SAFE_FORMATTING_TAGS.filter(tag => tag !== 'a'),
+    ALLOW_DATA_ATTR: false,
+    ALLOW_ARIA_ATTR: false,
     ALLOWED_URI_REGEXP: /^(?:(?:https?|mailto):)/iu,
   });
+});
+
+onMounted(() => {
+  if (!DOMPurify.isSupported) LoggerService.warn('rich_text', 'sanitizer_unavailable');
 });
 
 function openLink(event: MouseEvent) {
@@ -73,8 +87,11 @@ function openLink(event: MouseEvent) {
 </script>
 
 <template>
-  <!-- eslint-disable-next-line vue/no-v-html -- content is sanitized above with an explicit allowlist -->
-  <div class="md-safe-rich-text" @click="openLink" v-html="html" />
+  <div class="md-safe-rich-text" :class="{ 'md-safe-rich-text-answer': variant === 'answer' }" @click="openLink">
+    <div v-if="html === null" class="whitespace-pre-wrap">{{ content }}</div>
+    <!-- eslint-disable-next-line vue/no-v-html -- content is sanitized above with an explicit allowlist -->
+    <div v-else v-html="html" />
+  </div>
 </template>
 
 <style scoped>
@@ -185,5 +202,40 @@ function openLink(event: MouseEvent) {
   margin: 0.75em 0;
   border-top-width: 1px;
   @apply border-border;
+}
+
+/* The same renderer serves a compact answer without changing release-note typography. */
+.md-safe-rich-text-answer {
+  min-width: 0;
+  -webkit-user-select: text;
+  user-select: text;
+  cursor: text;
+  @apply text-sm text-foreground;
+  line-height: 1.85;
+}
+
+/* App chrome disables selection on every descendant, not just the root. */
+.md-safe-rich-text-answer :deep(*) {
+  -webkit-user-select: text;
+  user-select: text;
+  cursor: text;
+}
+
+.md-safe-rich-text-answer :deep(strong) {
+  font-weight: 600;
+}
+
+.md-safe-rich-text-answer :deep(li + li) {
+  margin-top: 0.4em;
+}
+
+.md-safe-rich-text-answer :deep(pre),
+.md-safe-rich-text-answer :deep(table) {
+  max-width: 100%;
+  overflow-x: auto;
+}
+
+.md-safe-rich-text-answer :deep(table) {
+  display: block;
 }
 </style>

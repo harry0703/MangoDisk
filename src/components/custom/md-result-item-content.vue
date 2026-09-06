@@ -13,6 +13,8 @@ withDefaults(
     expandable?: boolean;
     expanded?: boolean;
     valueTone?: 'default' | 'warning';
+    disclosureLabel?: string;
+    disclosureDisabled?: boolean;
   }>(),
   {
     description: undefined,
@@ -22,12 +24,28 @@ withDefaults(
     expandable: false,
     expanded: false,
     valueTone: 'default',
+    disclosureLabel: undefined,
+    disclosureDisabled: false,
   }
 );
+const emit = defineEmits<{ toggle: [] }>();
 </script>
 
 <template>
-  <span class="result-item-content" :class="{ expandable }">
+  <span
+    class="result-item-content"
+    :class="{ expandable, 'has-actions': $slots.actions, 'has-disclosure': disclosureLabel }"
+  >
+    <!-- A sibling hit target keeps inline actions out of a nested button. -->
+    <button
+      v-if="disclosureLabel"
+      type="button"
+      class="result-item-disclosure"
+      :aria-label="disclosureLabel"
+      :aria-expanded="expandable ? expanded : undefined"
+      :disabled="disclosureDisabled"
+      @click="emit('toggle')"
+    />
     <span class="result-item-icon"><slot name="icon" /></span>
     <span class="result-item-copy">
       <span class="result-item-title">
@@ -36,6 +54,7 @@ withDefaults(
       </span>
       <small v-if="description" class="result-item-description">{{ description }}</small>
     </span>
+    <span v-if="$slots.actions" class="result-item-actions"><slot name="actions" /></span>
     <span class="result-item-value" :class="valueTone">
       <strong class="md-result-primary">{{ value }}</strong>
       <small v-if="valueDetail">{{ valueDetail }}</small>
@@ -61,6 +80,41 @@ withDefaults(
 
 .result-item-content.expandable {
   grid-template-columns: 30px minmax(0, 1fr) auto 22px;
+}
+
+.result-item-content.has-actions {
+  grid-template-columns: 30px minmax(0, 1fr) auto auto;
+}
+
+.result-item-content.has-actions.expandable {
+  grid-template-columns: 30px minmax(0, 1fr) auto auto 22px;
+}
+
+.result-item-content.has-disclosure {
+  position: relative;
+}
+
+.has-disclosure .result-item-disclosure {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  border-radius: var(--radius);
+  cursor: pointer;
+}
+
+.result-item-disclosure:disabled {
+  cursor: default;
+}
+
+.result-item-disclosure:focus-visible {
+  @apply outline-none ring-2 ring-ring/35;
+}
+
+.result-item-actions {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  align-items: center;
 }
 
 .result-item-icon {

@@ -6,6 +6,7 @@ import MdPageShell from '@/components/custom/md-page-shell.vue';
 import MdStatusBadge from '@/components/custom/md-status-badge.vue';
 import MdIcon from '@/components/icons/md-icon.vue';
 import MdFeedbackDialog from '@/pages/settings/components/md-feedback-dialog.vue';
+import MdAiSettingsDialog from '@/components/custom/md-ai-settings-dialog.vue';
 import MdIconMangodisk from '@/components/icons/md-icon-mangodisk.vue';
 import { Card } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -22,9 +23,11 @@ import { FileManagerService } from '@/lib/services/file-manager-service';
 import { MacOsPermissionService } from '@/lib/services/macos-permission-service';
 import * as AppUpdateProgressUtils from '@/lib/utils/app-update-progress';
 import { useAppUpdateStore } from '@/stores/app-update-store';
+import { useAiStore } from '@/stores/ai-store';
 
 const { t } = useI18n({ useScope: 'global' });
 const appUpdateStore = useAppUpdateStore();
+const aiStore = useAiStore();
 
 const props = defineProps<{
   settings: AppSettings;
@@ -37,6 +40,7 @@ const emit = defineEmits<{
 const form = reactive<AppSettings>({ ...props.settings });
 const aboutRow = ref<HTMLElement | null>(null);
 const feedbackOpen = ref(false);
+const aiSettingsOpen = ref(false);
 const isMacOs = MacOsPermissionService.isMacOs();
 const permissionObservation = ref(MacOsPermissionService.defaultObservation());
 const languageLabel = computed(() => {
@@ -188,6 +192,26 @@ function updateTheme(value: unknown) {
       </Card>
     </section>
 
+    <section class="settings-section">
+      <h2>{{ t('ai.settingsTitle') }}</h2>
+      <Card class="settings-list">
+        <button
+          class="setting-row action-row grid-cols-[40px_minmax(0,1fr)] @2xl/settings:grid-cols-[42px_minmax(0,1fr)_auto]"
+          type="button"
+          @click="aiSettingsOpen = true"
+        >
+          <span class="section-icon"><MdIcon :name="ICON_NAMES.sparkles" /></span>
+          <span class="setting-copy"
+            ><strong>{{ t('ai.providerTitle') }}</strong
+            ><small class="whitespace-normal">{{ t('ai.settingsDescription') }}</small></span
+          >
+          <span class="row-action col-start-2 @2xl/settings:col-auto"
+            >{{ t('ai.configure') }}<MdIcon :name="ICON_NAMES.chevronRight" :size="16"
+          /></span>
+        </button>
+      </Card>
+    </section>
+
     <section v-if="isMacOs" class="settings-section">
       <h2>{{ t('settings.macosPermissionsSection') }}</h2>
       <Card class="settings-list">
@@ -303,6 +327,7 @@ function updateTheme(value: unknown) {
     </section>
 
     <MdFeedbackDialog v-model:open="feedbackOpen" @error="emit('error', $event)" />
+    <MdAiSettingsDialog v-model:open="aiSettingsOpen" @configured="aiStore.configurationChanged($event)" />
   </MdPageShell>
 </template>
 

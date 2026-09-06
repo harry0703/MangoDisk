@@ -70,6 +70,16 @@ function row(artifacts: StartupArtifact[] = [service], expanded = false) {
   });
 }
 describe('startup row source badges and service controls', () => {
+  it('explains a collapsed group without toggling, removing or expanding it', async () => {
+    const wrapper = row();
+    await wrapper.get('.md-ai-action').trigger('click');
+    expect(wrapper.emitted('explain')?.[0]).toEqual([group.name, [service]]);
+    expect(wrapper.emitted('toggleGroup')).toBeUndefined();
+    expect(wrapper.emitted('removeItems')).toBeUndefined();
+    expect(wrapper.emitted('toggleExpanded')).toBeUndefined();
+    wrapper.unmount();
+  });
+
   it('explains protected services without offering a switch or a system-tool detour', () => {
     const wrapper = row([{ ...service, controlCapability: 'systemManaged' }], true);
     expect(wrapper.find('[role="switch"]').exists()).toBe(false);

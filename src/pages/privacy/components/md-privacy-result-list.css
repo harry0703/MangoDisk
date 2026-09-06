@@ -57,6 +57,7 @@
 }
 
 .privacy-item-details {
+  position: relative;
   display: grid;
   width: 100%;
   min-width: 0;
@@ -66,12 +67,20 @@
   cursor: pointer;
 }
 
-.privacy-item-details:focus-visible {
+.privacy-item-disclosure:focus-visible {
   @apply outline-none ring-2 ring-inset ring-ring/45;
 }
 
-.privacy-item-details:disabled {
+.privacy-item-disclosure:disabled {
   cursor: default;
+}
+
+.privacy-item-disclosure {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  cursor: pointer;
+  border-radius: var(--radius);
 }
 
 .privacy-detail-chevron {
@@ -79,7 +88,7 @@
   opacity: 0.72;
 }
 
-.privacy-item-details:disabled .privacy-detail-chevron {
+.privacy-item-details:has(.privacy-item-disclosure:disabled) .privacy-detail-chevron {
   visibility: hidden;
 }
 

@@ -6,6 +6,8 @@ import { toast } from 'vue-sonner';
 import MdEmptyState from '@/components/custom/md-empty-state.vue';
 import MdOperationProgress from '@/components/custom/md-operation-progress.vue';
 import MdOperationWorkspace from '@/components/custom/md-operation-workspace.vue';
+import MdAiWorkspace from '@/layouts/components/md-ai-workspace.vue';
+import { useAiStore } from '@/stores/ai-store';
 import MdPageShell from '@/components/custom/md-page-shell.vue';
 import MdPermissionGuidance from '@/components/custom/md-permission-guidance.vue';
 import MdResultWorkspace from '@/components/custom/md-result-workspace.vue';
@@ -32,11 +34,14 @@ import {
 import { useAppStore } from '@/stores/app-store';
 import { usePrivacyStore } from '@/stores/privacy-store';
 
+import { OperatingSystemService } from '@/lib/services/operating-system-service';
+import { privacyAiContext } from './privacy-ai-context';
 import MdPrivacyResultList from './components/md-privacy-result-list.vue';
 import MdPrivacyDetailDialog from './components/md-privacy-detail-dialog.vue';
 import MdPrivacyResultDialog from './components/md-privacy-result-dialog.vue';
 import MdPrivacyPlanDialog from './components/md-privacy-plan-dialog.vue';
 
+const aiStore = useAiStore();
 const { t, locale } = useI18n({ useScope: 'global' });
 const store = usePrivacyStore();
 const confirmationOpen = ref(false);
@@ -193,6 +198,18 @@ function updateSelectionMode(value: unknown) {
   store.setSelection(mode === 'smart' ? recommendedTokens.value : mode === 'all' ? allActionableTokens.value : []);
 }
 
+function explainItem(item: PrivacyItem) {
+  void aiStore.show(
+    privacyAiContext(
+      item,
+      t(`privacy.kinds.${item.kind}`),
+      store.timeRange,
+      OperatingSystemService.isWindows() ? 'windows' : 'macos'
+    ),
+    locale.value
+  );
+}
+
 function showDetails(item: PrivacyItem) {
   detailItem.value = item;
   detailOpen.value = true;
@@ -252,10 +269,15 @@ async function openPrivacySettings(): Promise<boolean> {
     return false;
   }
 }
+watch(
+  () => [store.scanResult, busy.value, store.timeRange],
+  () => aiStore.dismissModule('privacy')
+);
 </script>
 
 <template>
   <MdPageShell class="privacy-page" content-mode="workspace" :title="t('privacy.title')">
+    <template #overlay><MdAiWorkspace module="privacy" /></template>
     <template #actions>
       <Select :key="locale" :model-value="store.timeRange" :disabled="busy" @update:model-value="updateTimeRange">
         <SelectTrigger class="time-range h-9" :aria-label="t('privacy.timeRangeLabel')">
@@ -339,6 +361,7 @@ async function openPrivacySettings(): Promise<boolean> {
           :source-icon-urls="sourceIconUrls"
           @update:selected-tokens="store.setSelection"
           @show-details="showDetails"
+          @explain="explainItem"
         />
       </div>
     </MdResultWorkspace>

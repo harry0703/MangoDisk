@@ -6,11 +6,15 @@ import { toast } from 'vue-sonner';
 import MdActionBarContainer from '@/components/custom/md-action-bar-container.vue';
 import MdCatalogList from '@/components/custom/md-catalog-list.vue';
 import MdCatalogListItem from '@/components/custom/md-catalog-list-item.vue';
+import MdAiAction from '@/components/custom/md-ai-action.vue';
+import { systemOptimizationAiContext } from './system-optimization-ai-context';
 import MdCategoryFilter from '@/components/custom/md-category-filter.vue';
 import MdEmptyState from '@/components/custom/md-empty-state.vue';
 import MdIconAction from '@/components/custom/md-icon-action.vue';
 import MdOperationProgress from '@/components/custom/md-operation-progress.vue';
 import MdOperationWorkspace from '@/components/custom/md-operation-workspace.vue';
+import MdAiWorkspace from '@/layouts/components/md-ai-workspace.vue';
+import { useAiStore } from '@/stores/ai-store';
 import MdPageShell from '@/components/custom/md-page-shell.vue';
 import MdResultFilterToolbar from '@/components/custom/md-result-filter-toolbar.vue';
 import MdResultWorkspace from '@/components/custom/md-result-workspace.vue';
@@ -33,7 +37,8 @@ import { useSystemSettingsStore } from '@/stores/system-settings-store';
 
 import MdSystemSettingRiskDialog from './components/md-system-setting-risk-dialog.vue';
 
-const { t } = useI18n({ useScope: 'global' });
+const { t, locale } = useI18n({ useScope: 'global' });
+const aiStore = useAiStore();
 const store = useSystemSettingsStore();
 const executionRequested = ref(false);
 type OptimizationCategoryFilter = 'pending' | 'all' | SystemSettingCategory;
@@ -166,6 +171,18 @@ function riskDescription(item: SystemSettingItem): string {
     : t('systemOptimization.statuses.riskDescriptions.caution');
 }
 
+function explainItem(item: SystemSettingItem) {
+  if (!store.catalog) return;
+  const context = systemOptimizationAiContext(
+    item,
+    itemMessage(item, 'name'),
+    itemMessage(item, 'description'),
+    store.catalog.platform,
+    pendingTarget(item) ?? null
+  );
+  void aiStore.show(context, locale.value);
+}
+
 function itemMessage(item: SystemSettingItem, field: 'description' | 'name'): string {
   return t(`systemOptimization.items.${item.settingId.replaceAll('.', '_')}.${field}`);
 }
@@ -239,10 +256,15 @@ function confirmHighRiskChanges() {
 onMounted(() => {
   if (!store.catalog) void store.scan();
 });
+watch(
+  () => [store.catalog, busy.value, store.desiredOptimizedIds.join(',')],
+  () => aiStore.dismissModule('systemOptimization')
+);
 </script>
 
 <template>
   <MdPageShell class="optimization-page" content-mode="workspace" :title="t('systemOptimization.title')">
+    <template #overlay><MdAiWorkspace module="systemOptimization" /></template>
     <template #actions>
       <Button v-if="recoveryAvailable" variant="outline" :disabled="busy" @click="restorePreviousSettings">
         <MdIcon :name="ICON_NAMES.history" :size="17" />
@@ -325,6 +347,7 @@ onMounted(() => {
           <MdCatalogListItem
             v-for="item in visibleItems"
             :key="item.settingId"
+            class="md-ai-hover-row"
             :title="itemMessage(item, 'name')"
             :description="itemMessage(item, 'description')"
           >
@@ -356,6 +379,7 @@ onMounted(() => {
               </Tooltip>
             </template>
             <template #actions>
+              <MdAiAction :name="itemMessage(item, 'name')" :disabled="busy" @explain="explainItem(item)" />
               <span v-if="pendingTarget(item)" class="item-pending">
                 <span class="item-pending-dot" aria-hidden="true" />
                 <span>

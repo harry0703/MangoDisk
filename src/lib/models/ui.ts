@@ -5,6 +5,8 @@ export const OPERATION_PROGRESS_CLOCK_INTERVAL_MS = 1000;
 export const OPERATION_PROGRESS_DELAY_MS = 500;
 
 export const ICON_NAMES = {
+  eye: 'eye',
+  eyeOff: 'eyeOff',
   sparkles: 'sparkles',
   cleanup: 'sparkles',
   deepCleanup: 'brushCleaning',

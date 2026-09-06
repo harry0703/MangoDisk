@@ -1,3 +1,4 @@
+pub(crate) mod ai;
 pub(crate) mod analysis;
 pub(crate) mod app_distribution;
 pub(crate) mod applications;

@@ -114,6 +114,19 @@ function mountBrowser(sourceIconUrls: Readonly<Record<string, string>> = {}) {
 }
 
 describe('privacy result list component', () => {
+  it('explains a row without selecting it or opening record details', async () => {
+    const wrapper = mountBrowser();
+    const row = wrapper
+      .findAll('.privacy-item')
+      .find(row => row.text().includes(i18n.global.t('privacy.kinds.browsingHistory')));
+    await row?.get('.md-ai-action').trigger('click');
+    expect(wrapper.emitted('explain')?.[0]?.[0]).toMatchObject({ token: 'history' });
+    expect(wrapper.emitted('show-details')).toBeUndefined();
+    expect(wrapper.emitted('update:selectedTokens')).toBeUndefined();
+    expect(wrapper.find('button button').exists()).toBe(false);
+    wrapper.unmount();
+  });
+
   it('keeps browser activity, account state, and system traces in separate navigation categories', async () => {
     const wrapper = mountBrowser();
 
@@ -271,7 +284,7 @@ describe('privacy result list component', () => {
     const wrapper = mountBrowser();
     const historyRow = wrapper.findAll('.privacy-item').find(row => row.text().includes('Browsing history'));
 
-    await historyRow?.get('.privacy-item-details').trigger('click');
+    await historyRow?.get('.privacy-item-disclosure').trigger('click');
 
     expect(wrapper.emitted('show-details')?.at(-1)?.[0]).toMatchObject({ token: 'history' });
     expect(wrapper.emitted('update:selectedTokens')).toBeUndefined();

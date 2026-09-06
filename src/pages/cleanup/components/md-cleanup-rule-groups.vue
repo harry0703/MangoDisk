@@ -35,6 +35,10 @@ import { applicationLeftoverGroupSelection, groupApplicationLeftovers } from '..
 import { hasCleanupRuleDetails, isAggregateOnlyCleanupRule } from '../cleanup-rule-details';
 import { cleanupGroupIcon, cleanupRuleIcon } from '../cleanup-rule-icon';
 import { buildCleanupResultCategories, type CleanupResultCategory } from '../cleanup-result-categories';
+import MdAiAction from '@/components/custom/md-ai-action.vue';
+import { OperatingSystemService } from '@/lib/services/operating-system-service';
+import { cleanupAiContext } from '../cleanup-ai-context';
+import { useAiStore } from '@/stores/ai-store';
 
 const LEFTOVER_VIEW_ID = 'application-leftovers';
 const CLEANUP_CHILD_INITIAL_RENDER_COUNT = 10;
@@ -46,6 +50,11 @@ type CleanupNavigationItem =
   | { kind: 'leftovers'; id: typeof LEFTOVER_VIEW_ID };
 
 const { locale, t } = useI18n({ useScope: 'global' });
+const aiStore = useAiStore();
+function explainRule(rule: PresentedScanRuleResult) {
+  const context = cleanupAiContext(rule, OperatingSystemService.isWindows() ? 'windows' : 'macos');
+  if (context) void aiStore.show(context, locale.value);
+}
 const props = withDefaults(
   defineProps<{
     busy: boolean;
@@ -375,7 +384,11 @@ watch(
       <MdResultTable ref="detailList" class="detail-list">
         <div class="detail-list-content">
           <article v-for="group in leftoverGroups" :key="group.applicationIdentifier" class="rule-card">
-            <MdResultTableRow layout="item" class="rule-summary" :data-selected="group.selection !== 'none'">
+            <MdResultTableRow
+              layout="item"
+              class="rule-summary md-ai-hover-row"
+              :data-selected="group.selection !== 'none'"
+            >
               <MdResultCheckbox
                 :checked="group.selection === 'all'"
                 :indeterminate="group.selection === 'partial'"
@@ -552,7 +565,7 @@ watch(
           >
             <MdResultTableRow
               layout="item"
-              class="rule-summary"
+              class="rule-summary md-ai-hover-row"
               :class="row.selection"
               :data-selected="row.selection !== 'none'"
             >
@@ -563,36 +576,34 @@ watch(
                 :aria-label="t('cleanup.selectRule', { name: row.rule.name })"
                 @update:checked="toggleRule(row.rule, $event)"
               />
-              <button
-                class="rule-disclosure"
-                type="button"
-                :disabled="!hasCleanupRuleDetails(row.rule)"
-                :aria-expanded="hasCleanupRuleDetails(row.rule) ? expandedRuleIds.has(row.rule.ruleId) : undefined"
-                @click="toggleRuleDetails(row.rule)"
+              <MdResultItemContent
+                :disclosure-label="row.rule.name"
+                :disclosure-disabled="!hasCleanupRuleDetails(row.rule)"
+                :title="row.rule.name"
+                :badge="activeCategory.id !== 'userCache' && row.rule.risk === 'safe' ? t('common.safe') : undefined"
+                badge-tone="positive"
+                :value="
+                  row.rule.status === 'requiresElevation'
+                    ? t('cleanup.privilegedScan.required')
+                    : ByteSizeService.bytes(row.selection === 'none' ? row.rule.bytes : row.selectedBytes)
+                "
+                :value-detail="ruleValueDetail(row.rule, row.selection, row.selectedBytes)"
+                :value-tone="row.rule.status === 'requiresElevation' ? 'warning' : 'default'"
+                :expandable="hasCleanupRuleDetails(row.rule)"
+                :expanded="expandedRuleIds.has(row.rule.ruleId)"
+                @toggle="toggleRuleDetails(row.rule)"
               >
-                <MdResultItemContent
-                  :title="row.rule.name"
-                  :badge="activeCategory.id !== 'userCache' && row.rule.risk === 'safe' ? t('common.safe') : undefined"
-                  badge-tone="positive"
-                  :value="
-                    row.rule.status === 'requiresElevation'
-                      ? t('cleanup.privilegedScan.required')
-                      : ByteSizeService.bytes(row.selection === 'none' ? row.rule.bytes : row.selectedBytes)
-                  "
-                  :value-detail="ruleValueDetail(row.rule, row.selection, row.selectedBytes)"
-                  :value-tone="row.rule.status === 'requiresElevation' ? 'warning' : 'default'"
-                  :expandable="hasCleanupRuleDetails(row.rule)"
-                  :expanded="expandedRuleIds.has(row.rule.ruleId)"
-                >
-                  <template #icon>
-                    <MdIcon
-                      :class="{ 'recoverable-rule-icon': row.rule.risk === 'recoverable' }"
-                      :name="cleanupRuleIcon(row.rule.ruleId, row.rule.group)"
-                      :size="20"
-                    />
-                  </template>
-                </MdResultItemContent>
-              </button>
+                <template #icon>
+                  <MdIcon
+                    :class="{ 'recoverable-rule-icon': row.rule.risk === 'recoverable' }"
+                    :name="cleanupRuleIcon(row.rule.ruleId, row.rule.group)"
+                    :size="20"
+                  />
+                </template>
+                <template v-if="row.rule.category !== 'custom'" #actions>
+                  <MdAiAction :name="row.rule.name" :disabled="busy" @explain="explainRule(row.rule)" />
+                </template>
+              </MdResultItemContent>
               <Button
                 v-if="row.rule.status === 'requiresElevation'"
                 class="privileged-scan-button"

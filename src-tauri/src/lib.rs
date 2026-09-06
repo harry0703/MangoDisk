@@ -148,6 +148,7 @@ pub fn run() {
     let builder = builder.plugin(tauri_plugin_prevent_default::init());
     builder
         .manage(ApplicationUninstallCatalogCache::default())
+        .manage(commands::ai::AiRuntime::default())
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_fs::init())
         .plugin(
@@ -174,6 +175,13 @@ pub fn run() {
                 .build(),
         )
         .invoke_handler(tauri::generate_handler![
+            commands::ai::ai_get_settings,
+            commands::ai::ai_get_configuration,
+            commands::ai::ai_save_settings,
+            commands::ai::ai_delete_settings,
+            commands::ai::ai_begin,
+            commands::ai::ai_cancel,
+            commands::ai::ai_explain,
             commands::app_distribution::get_app_distribution,
             commands::applications::prepare_application_uninstall_batch,
             commands::applications::execute_application_uninstall_batch,

@@ -11,6 +11,8 @@ import MdEmptyState from '@/components/custom/md-empty-state.vue';
 import MdLoadMoreButton from '@/components/custom/md-load-more-button.vue';
 import MdOperationProgress from '@/components/custom/md-operation-progress.vue';
 import MdOperationWorkspace from '@/components/custom/md-operation-workspace.vue';
+import MdAiWorkspace from '@/layouts/components/md-ai-workspace.vue';
+import { useAiStore } from '@/stores/ai-store';
 import MdPageShell from '@/components/custom/md-page-shell.vue';
 import MdPermissionGuidance from '@/components/custom/md-permission-guidance.vue';
 import MdResultFilterToolbar from '@/components/custom/md-result-filter-toolbar.vue';
@@ -44,6 +46,7 @@ import { WindowsStartupToolService, type WindowsStartupTool } from '@/lib/servic
 import * as FormatUtils from '@/lib/utils/format';
 import * as RenderBatchUtils from '@/lib/utils/render-batch';
 
+import { startupAiContext } from './startup-ai-context';
 import MdStartupRow from './components/md-startup-row.vue';
 import { startupGroupIconUrl } from './startup-brand-icon';
 import {
@@ -100,6 +103,7 @@ const emit = defineEmits<{
   error: [error: unknown];
 }>();
 
+const aiStore = useAiStore();
 const { locale, t } = useI18n({ useScope: 'global' });
 const query = ref('');
 const stateFilter = ref<StartupStateFilter>('all');
@@ -480,10 +484,15 @@ function updateChangeOpen(open: boolean) {
     completeActiveChange();
   }
 }
+watch(
+  () => [props.catalog, props.scanning, props.preparingChange, props.executingChange],
+  () => aiStore.dismissModule('startup')
+);
 </script>
 
 <template>
   <MdPageShell class="@container/startup" content-mode="workspace" :title="t('startup.title')">
+    <template #overlay><MdAiWorkspace module="startup" /></template>
     <template v-if="catalog && !scanning" #actions>
       <Button variant="outline" type="button" :disabled="changeQueueBusy" @click="emit('scan')">
         <MdIcon :name="ICON_NAMES.refresh" :size="16" />
@@ -604,6 +613,13 @@ function updateChangeOpen(open: boolean) {
           :busy="isGroupChangePending(group)"
           :changing="isChanging(group)"
           :copied-action-key="copiedActionKey"
+          @explain="
+            (name, artifacts) =>
+              aiStore.show(
+                startupAiContext(name, artifacts, t('startup.title'), isWindows ? 'windows' : 'macos'),
+                locale
+              )
+          "
           @toggle-expanded="expandedGroupId = expandedGroupId === group.groupId ? null : group.groupId"
           @toggle-group="requestGroupChange(group)"
           @toggle-artifact="requestArtifactChange"

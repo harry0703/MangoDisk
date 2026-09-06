@@ -99,18 +99,6 @@
   border-radius: 50%;
 }
 
-.rule-disclosure {
-  display: block;
-  width: 100%;
-  min-width: 0;
-  text-align: left;
-  cursor: pointer;
-}
-
-.rule-disclosure:disabled {
-  cursor: default;
-}
-
 .recoverable-rule-icon {
   @apply text-warning-foreground;
 }

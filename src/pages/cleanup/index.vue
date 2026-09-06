@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import MdEmptyState from '@/components/custom/md-empty-state.vue';
 import MdOperationWorkspace from '@/components/custom/md-operation-workspace.vue';
 import MdPageShell from '@/components/custom/md-page-shell.vue';
+import MdAiWorkspace from '@/layouts/components/md-ai-workspace.vue';
 import MdResultSummary from '@/components/custom/md-result-summary.vue';
 import MdResultWorkspace from '@/components/custom/md-result-workspace.vue';
 import type {
@@ -34,6 +35,7 @@ import { LoggerService } from '@/lib/services/logger-service';
 import * as FormatUtils from '@/lib/utils/format';
 import * as PathUtils from '@/lib/utils/path';
 import { useCustomCleanupStore } from '@/stores/custom-cleanup-store';
+import { useAiStore } from '@/stores/ai-store';
 
 import { groupApplicationLeftovers, recommendedApplicationLeftoverIds } from './application-leftover-groups';
 import { selectedCleanupCloseRequirement } from './cleanup-close-requirement';
@@ -60,6 +62,7 @@ const MdSelectionActionBar = defineAsyncComponent(loadSelectionActionBar);
 
 const { t } = useI18n({ useScope: 'global' });
 const customCleanupStore = useCustomCleanupStore();
+const aiStore = useAiStore();
 
 // Start the small preference read with the page instead of making the first
 // dialog interaction wait for storage initialization.
@@ -327,10 +330,17 @@ watch(
     selectedLeftoverIds.value = recommendedApplicationLeftoverIds(candidates ?? []);
   }
 );
+// A reply describes one scan snapshot. Native work can invalidate its sizes,
+// paths or capabilities; navigation and selection-only edits must preserve it.
+watch(
+  () => [props.scan, props.result, props.busy, scanning.value, props.closingApplications, props.privilegedScanRuleId],
+  () => aiStore.dismissModule('cleanup')
+);
 </script>
 
 <template>
   <MdPageShell class="@container/cleanup" content-mode="workspace" :title="t('cleanup.title')">
+    <template #overlay><MdAiWorkspace module="cleanup" /></template>
     <template #actions>
       <div class="scan-action">
         <MdSystemDiskUsage v-if="disk" :disk="disk" />

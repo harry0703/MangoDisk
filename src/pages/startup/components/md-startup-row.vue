@@ -2,6 +2,7 @@
 import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 
+import MdAiAction from '@/components/custom/md-ai-action.vue';
 import MdApplicationIcon from '@/components/custom/md-application-icon.vue';
 import MdIconAction from '@/components/custom/md-icon-action.vue';
 import MdStatusBadge from '@/components/custom/md-status-badge.vue';
@@ -49,6 +50,7 @@ const emit = defineEmits<{
   openSystemSettings: [];
   openWindowsTool: [tool: WindowsStartupTool];
   removeItems: [];
+  explain: [name: string, artifacts: StartupArtifact[]];
 }>();
 const { locale, t } = useI18n({ useScope: 'global' });
 
@@ -90,7 +92,7 @@ function localizedDiagnostics(artifact: StartupArtifact): string {
 
 <template>
   <article class="startup-result-row">
-    <MdResultTableRow class="startup-row-line" :data-expanded="expanded">
+    <MdResultTableRow class="startup-row-line md-ai-hover-row" :data-expanded="expanded">
       <div class="startup-main" @click="emit('toggleExpanded')">
         <button
           class="startup-disclosure"
@@ -106,10 +108,10 @@ function localizedDiagnostics(artifact: StartupArtifact): string {
         </button>
 
         <span
-          v-if="revealPath || removableItems.length"
-          class="startup-actions"
+          class="startup-actions has-ai"
           :class="{ 'has-cleanup': removableItems.length, 'has-location': revealPath }"
         >
+          <MdAiAction :name="group.name" :disabled="busy" @explain="emit('explain', group.name, artifacts)" />
           <MdIconAction
             v-if="removableItems.length"
             class="startup-cleanup-action"
@@ -247,7 +249,7 @@ function localizedDiagnostics(artifact: StartupArtifact): string {
         :class="{ 'is-grouped': hasMultipleArtifacts }"
       >
         <article v-for="artifact in artifacts" :key="artifact.itemId" class="startup-native-item">
-          <MdResultTableRow v-if="hasMultipleArtifacts" class="startup-native-row">
+          <MdResultTableRow v-if="hasMultipleArtifacts" class="startup-native-row md-ai-hover-row">
             <span class="startup-native-icon">
               <MdIcon :name="ICON_NAMES.startup" :size="16" />
             </span>
@@ -255,8 +257,14 @@ function localizedDiagnostics(artifact: StartupArtifact): string {
               <strong class="md-result-primary">{{ artifact.displayName }}</strong>
               <MdStatusBadge size="compact">{{ t(`startup.sourceKinds.${artifact.sourceKind}`) }}</MdStatusBadge>
             </span>
-            <span v-if="startupArtifactRevealPath(artifact)" class="startup-native-actions">
+            <span class="startup-native-actions">
+              <MdAiAction
+                :name="artifact.displayName"
+                :disabled="busy"
+                @explain="emit('explain', artifact.displayName, [artifact])"
+              />
               <MdIconAction
+                v-if="startupArtifactRevealPath(artifact)"
                 variant="ghost"
                 :label="t('startup.showLocation')"
                 :aria-label="t('startup.showNamedLocation', { name: artifact.displayName })"

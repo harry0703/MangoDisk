@@ -55,17 +55,20 @@ const windowDragRegion = OperatingSystemService.isMacOs() || isWindows ? '' : un
       </div>
       <div v-if="$slots.actions" class="md-page-actions"><slot name="actions" /></div>
     </header>
-    <div
-      class="md-page-content"
-      :class="[
-        `md-page-content--${contentMode}`,
-        {
-          'md-page-content--with-footer': $slots.footer,
-          'scrollbar-stable-end': contentMode === 'document',
-        },
-      ]"
-    >
-      <slot />
+    <div class="md-page-content-stage" :class="{ 'md-page-content-stage--with-footer': $slots.footer }">
+      <div
+        class="md-page-content"
+        :class="[
+          `md-page-content--${contentMode}`,
+          {
+            'scrollbar-stable-end': contentMode === 'document',
+          },
+        ]"
+      >
+        <slot />
+      </div>
+      <!-- Floating helpers share content bounds, never the page CTA footer. -->
+      <slot name="overlay" />
     </div>
     <footer v-if="$slots.footer" class="md-page-footer"><slot name="footer" /></footer>
   </section>
@@ -195,6 +198,24 @@ const windowDragRegion = OperatingSystemService.isMacOs() || isWindows ? '' : un
   overscroll-behavior: contain;
 }
 
+.md-page-content-stage {
+  /* Content and overlays share the same lower edge, including page spacing. */
+  --page-content-bottom-inset: 20px;
+  position: relative;
+  display: flex;
+  min-width: 0;
+  min-height: 0;
+  flex: 1;
+}
+
+.md-page-shell--workspace .md-page-content-stage {
+  --page-content-bottom-inset: 12px;
+}
+
+.md-page-shell--workspace .md-page-content-stage--with-footer {
+  --page-content-bottom-inset: 0px;
+}
+
 .md-page-content--document {
   /*
    * Keep document content aligned with the page header while extending only
@@ -203,17 +224,13 @@ const windowDragRegion = OperatingSystemService.isMacOs() || isWindows ? '' : un
    */
   margin-inline-end: calc(-1 * var(--layout-page-padding-inline));
   padding-inline-end: var(--layout-page-padding-inline);
-  padding-bottom: 20px;
+  padding-bottom: var(--page-content-bottom-inset);
 }
 
 .md-page-content--workspace {
   /* Reserve bottom spacing unless a page footer provides it. */
   overflow-y: hidden;
-  padding-bottom: 12px;
-}
-
-.md-page-content--workspace.md-page-content--with-footer {
-  padding-bottom: 0;
+  padding-bottom: var(--page-content-bottom-inset);
 }
 
 .md-page-footer {

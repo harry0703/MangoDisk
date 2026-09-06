@@ -9,6 +9,23 @@ import MdResultTableRow from './md-result-table-row.vue';
 const iconStub = { template: '<span class="icon-stub" />' };
 
 describe('result item content component', () => {
+  it('keeps inline actions before the value and separate from the disclosure button', async () => {
+    const wrapper = mount(MdResultItemContent, {
+      props: { title: 'Cache', value: '741 MB', disclosureLabel: 'Cache', expandable: true },
+      slots: { actions: '<button class="ai-fixture">AI</button>' },
+      global: { stubs: { MdIcon: iconStub } },
+    });
+    expect(wrapper.find('button button').exists()).toBe(false);
+    expect(
+      wrapper.get('.result-item-actions').element.nextElementSibling?.classList.contains('result-item-value')
+    ).toBe(true);
+    await wrapper.get('.ai-fixture').trigger('click');
+    expect(wrapper.emitted('toggle')).toBeUndefined();
+    await wrapper.get('.result-item-disclosure').trigger('click');
+    expect(wrapper.emitted('toggle')).toHaveLength(1);
+    await wrapper.setProps({ disclosureDisabled: true });
+    expect(wrapper.get('.result-item-disclosure').attributes('disabled')).toBeDefined();
+  });
   it('opts result rows into the shared cleanup item geometry', () => {
     const wrapper = mount(MdResultTableRow, {
       props: { layout: 'item' },

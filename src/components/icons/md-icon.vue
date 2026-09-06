@@ -22,6 +22,7 @@ import {
   Disc3,
   Download,
   Eye,
+  EyeOff,
   ExternalLink,
   File,
   FileArchive,
@@ -171,6 +172,8 @@ const simpleBrand = (icon: SimpleIcon): IconDefinition => ({
 
 const iconMap: Record<IconName, IconDefinition> = {
   sparkles: lucide(Sparkles),
+  eye: lucide(Eye),
+  eyeOff: lucide(EyeOff),
   rocket: lucide(Rocket),
   wrench: lucide(Wrench),
   brushCleaning: lucide(BrushCleaning),
