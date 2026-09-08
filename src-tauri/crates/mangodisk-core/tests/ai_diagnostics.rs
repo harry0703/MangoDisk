@@ -120,10 +120,14 @@ impl Server {
     fn config(&self) -> AiConfiguration {
         AiConfiguration {
             schema_version: 1,
+            mode: mangodisk_core::ai::AiServiceMode::Custom,
+            free_consent: false,
             endpoint: self.endpoint.clone(),
             model: "fixture".into(),
             api_key: "synthetic-secret".into(),
             reasoning: ReasoningMode::Default,
+            temperature: None,
+            max_tokens: None,
         }
     }
 }
@@ -308,10 +312,14 @@ fn configuration_io_diagnostics_identify_stage_without_paths() {
     configure_application_paths(paths).unwrap();
     std::fs::create_dir_all(&config_path).unwrap();
     let update = || AiConfigurationUpdate {
+        mode: mangodisk_core::ai::AiServiceMode::Custom,
+        free_consent: false,
         endpoint: "https://example.com/v1".into(),
         model: "fixture".into(),
         api_key: Some("synthetic-secret".into()),
         reasoning: ReasoningMode::Default,
+        temperature: None,
+        max_tokens: None,
     };
     assert!(matches!(
         AiConfiguration::save(update()),

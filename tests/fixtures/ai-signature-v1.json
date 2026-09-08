@@ -1,0 +1,59 @@
+[
+  {
+    "metadata": {
+      "installId": "019c0b3d-a9ef-7d11-89a3-d5ea10df4001",
+      "appVersion": "1.0.9",
+      "locale": "zh-CN",
+      "distribution": "installed",
+      "osVersion": "11",
+      "timezone": "Asia/Shanghai"
+    },
+    "keyId": "20260907",
+    "requestId": "019c0b3d-a9ef-7d11-89a3-d5ea10df4002",
+    "timestamp": "1788739200",
+    "nonce": "AAAAAAAAAAAAAAAAAAAAAA",
+    "origin": "https://mangodisk.app",
+    "method": "GET",
+    "path": "/api/v1/ai/quotas/current",
+    "body": "",
+    "signature": "CoFoRdhJtWYK1kppP4SlNMhbEb1Ics2kcMyR7zKbsdY"
+  },
+  {
+    "metadata": {
+      "installId": "019c0b3d-a9ef-7d11-89a3-d5ea10df4001",
+      "appVersion": "1.0.9",
+      "locale": "zh-CN",
+      "distribution": "installed",
+      "osVersion": "11",
+      "timezone": "Asia/Shanghai"
+    },
+    "keyId": "20260907",
+    "requestId": "019c0b3d-a9ef-7d11-89a3-d5ea10df4002",
+    "timestamp": "1788739200",
+    "nonce": "AAAAAAAAAAAAAAAAAAAAAA",
+    "origin": "https://mangodisk.app",
+    "method": "POST",
+    "path": "/api/v1/ai/explanations",
+    "body": "{\"context\":{\"title\":\"中文 😀\",\"path\":\"C:\\\\Program Files\\\\Fixture\",\"description\":\"a\\r\\nb\"}}",
+    "signature": "MuL1L3RWxuCarChaRBR9KFlmeNeWp-CkfNBTIi_2e2M"
+  },
+  {
+    "metadata": {
+      "installId": "019c0b3d-a9ef-7d11-89a3-d5ea10df4001",
+      "appVersion": "1.0.9",
+      "locale": "fr-FR",
+      "distribution": "installed",
+      "osVersion": "11",
+      "timezone": "Asia/Shanghai"
+    },
+    "keyId": "20260907",
+    "requestId": "019c0b3d-a9ef-7d11-89a3-d5ea10df4002",
+    "timestamp": "1788739200",
+    "nonce": "AAAAAAAAAAAAAAAAAAAAAA",
+    "origin": "https://mangodisk.app",
+    "method": "GET",
+    "path": "/api/v1/ai/quotas/current",
+    "body": "",
+    "signature": "dQY1qk0Ly9kYSEGkMFB6QcqGsUzNMvCH2sOGTYFlPjU"
+  }
+]

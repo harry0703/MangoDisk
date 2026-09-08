@@ -327,7 +327,12 @@ function updateTheme(value: unknown) {
     </section>
 
     <MdFeedbackDialog v-model:open="feedbackOpen" @error="emit('error', $event)" />
-    <MdAiSettingsDialog v-model:open="aiSettingsOpen" @configured="aiStore.configurationChanged($event)" />
+    <MdAiSettingsDialog
+      v-model:open="aiSettingsOpen"
+      :quota="aiStore.quota"
+      @refresh-quota="aiStore.refreshQuota"
+      @configured="aiStore.configurationChanged($event)"
+    />
   </MdPageShell>
 </template>
 

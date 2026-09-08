@@ -4,9 +4,16 @@ import { flushPromises } from '@vue/test-utils';
 import type { AiContext, AiDelta } from '@/lib/models/ai';
 import { useAiStore } from './ai-store';
 
-const mocks = vi.hoisted(() => ({ run: vi.fn(), cancel: vi.fn(), settings: vi.fn() }));
+const mocks = vi.hoisted(() => ({
+  run: vi.fn(),
+  cancel: vi.fn(),
+  settings: vi.fn(),
+  quota: vi.fn(),
+  configuration: vi.fn(),
+  save: vi.fn(),
+}));
 vi.mock('@/lib/services/ai-service', () => ({
-  AiService: { settings: mocks.settings },
+  AiService: { settings: mocks.settings, quota: mocks.quota, configuration: mocks.configuration, save: mocks.save },
   AiSession: class {
     run = mocks.run;
     cancel = mocks.cancel;
@@ -37,7 +44,10 @@ const context: AiContext = {
   },
 };
 const settings = {
-  schemaVersion: 1,
+  schemaVersion: 2,
+  mode: 'custom',
+  freeConsent: false,
+  freeAvailable: false,
   endpoint: 'https://example.com/v1',
   model: 'test',
   hasKey: true,
@@ -53,6 +63,144 @@ beforeEach(() => {
 });
 
 describe('AI explanations', () => {
+  it('does not send official requests when the build has no signing credentials', async () => {
+    mocks.settings.mockResolvedValue({ ...settings, mode: 'free', freeConsent: true });
+    await useAiStore().show(context, 'en-US');
+    expect(mocks.quota).not.toHaveBeenCalled();
+    expect(mocks.run).not.toHaveBeenCalled();
+  });
+
+  it('requires consent for free service and preserves custom credentials when consenting', async () => {
+    mocks.settings.mockResolvedValue({ ...settings, mode: 'free', freeAvailable: true });
+    mocks.configuration.mockResolvedValue({ ...settings, apiKey: 'synthetic-key' });
+    const store = useAiStore();
+    await store.show(context, 'en-US');
+    expect(mocks.run).not.toHaveBeenCalled();
+    mocks.settings.mockResolvedValue({ ...settings, mode: 'free', freeAvailable: true, freeConsent: true });
+    await Promise.all([store.acceptFree('cleanup'), store.acceptFree('startup')]);
+    expect(mocks.save).toHaveBeenCalledTimes(1);
+    expect(mocks.save).toHaveBeenCalledWith(
+      expect.objectContaining({ mode: 'free', freeConsent: true, apiKey: 'synthetic-key', endpoint: settings.endpoint })
+    );
+    expect(mocks.run).toHaveBeenCalledTimes(1);
+    expect(mocks.run.mock.calls[0]?.[3]).toBe('free');
+  });
+
+  it('deduplicates quota reads and refreshes again after a request completes', async () => {
+    let resolve!: (value: unknown) => void;
+    const snapshot = { remaining: 20 };
+    mocks.quota.mockImplementationOnce(
+      () =>
+        new Promise(done => {
+          resolve = done;
+        })
+    );
+    mocks.quota.mockResolvedValueOnce({ remaining: 19 });
+    const store = useAiStore();
+    const first = store.refreshQuota('en-US');
+    const second = store.refreshQuota('en-US');
+    const afterRequest = store.refreshQuota('en-US', true);
+    expect(mocks.quota).toHaveBeenCalledTimes(1);
+    resolve(snapshot);
+    await Promise.all([first, second, afterRequest]);
+    expect(mocks.quota).toHaveBeenCalledTimes(2);
+    expect(store.quota?.remaining).toBe(19);
+    await store.refreshQuota('en-US');
+    expect(mocks.quota).toHaveBeenCalledTimes(2);
+  });
+
+  it('retains quota on refresh failure and recovers from an initial failed read', async () => {
+    const store = useAiStore();
+    mocks.quota.mockRejectedValueOnce('connectionFailed');
+    await store.refreshQuota('en-US');
+    expect(store.quota).toBeNull();
+    expect(store.quotaError).toBe('connectionFailed');
+    mocks.quota.mockResolvedValueOnce({ remaining: 13, dailyLimit: 20 });
+    await store.refreshQuota('en-US');
+    expect(store.quota?.remaining).toBe(13);
+    expect(store.quotaError).toBeNull();
+    mocks.quota.mockRejectedValueOnce('connectionFailed');
+    await store.refreshQuota('en-US', true);
+    expect(store.quota?.remaining).toBe(13);
+    expect(store.quotaError).toBe('connectionFailed');
+  });
+
+  it('coalesces a burst of forced refreshes but reads again for a later completion', async () => {
+    const releases: Array<(value: unknown) => void> = [];
+    mocks.quota.mockImplementation(() => new Promise(resolve => releases.push(resolve)));
+    const store = useAiStore();
+    const initial = store.refreshQuota('en-US');
+    const burst = Array.from({ length: 5 }, () => store.refreshQuota('en-US', true));
+    expect(mocks.quota).toHaveBeenCalledTimes(1);
+    releases[0]!({ remaining: 20 });
+    await flushPromises();
+    expect(mocks.quota).toHaveBeenCalledTimes(2);
+    // Another completion after the second GET began needs a genuinely newer read.
+    const later = store.refreshQuota('en-US', true);
+    releases[1]!({ remaining: 19 });
+    await flushPromises();
+    expect(mocks.quota).toHaveBeenCalledTimes(3);
+    releases[2]!({ remaining: 18 });
+    await Promise.all([initial, ...burst, later]);
+    expect(store.quota?.remaining).toBe(18);
+    expect(store.quotaPending).toBeNull();
+  });
+
+  it('coalesces forced refreshes after a failed read and allows recovery', async () => {
+    let reject!: (reason: string) => void;
+    mocks.quota.mockImplementationOnce(
+      () =>
+        new Promise((_resolve, fail) => {
+          reject = fail;
+        })
+    );
+    mocks.quota.mockResolvedValue({ remaining: 17 });
+    const store = useAiStore();
+    const initial = store.refreshQuota('en-US');
+    const burst = Array.from({ length: 5 }, () => store.refreshQuota('en-US', true));
+    reject('connectionFailed');
+    await Promise.all([initial, ...burst]);
+    expect(mocks.quota).toHaveBeenCalledTimes(2);
+    expect(store.quota?.remaining).toBe(17);
+    expect(store.quotaError).toBeNull();
+  });
+
+  it('preserves installation quota and its in-flight refresh when saving configuration', async () => {
+    const store = useAiStore();
+    mocks.quota.mockResolvedValueOnce({ remaining: 13, dailyLimit: 20 });
+    await store.refreshQuota('en-US');
+    let resolve!: (value: unknown) => void;
+    mocks.quota.mockImplementationOnce(
+      () =>
+        new Promise(done => {
+          resolve = done;
+        })
+    );
+    const pending = store.refreshQuota('en-US', true);
+    await store.configurationChanged();
+    expect(store.quota?.remaining).toBe(13);
+    resolve({ remaining: 12, dailyLimit: 20 });
+    await pending;
+    expect(store.quota?.remaining).toBe(12);
+  });
+
+  it('avoids known service shutdown requests and resumes after availability returns', async () => {
+    const store = useAiStore();
+    const freeSettings = { ...settings, mode: 'free', freeConsent: true, freeAvailable: true };
+    mocks.settings.mockResolvedValue(freeSettings);
+    mocks.quota.mockResolvedValueOnce({ remaining: 20, unavailableReason: 'AI_SERVICE_DISABLED' });
+    await store.refreshQuota('en-US');
+    await store.show(context, 'en-US');
+    expect(mocks.run).not.toHaveBeenCalled();
+    expect(store.workspaces.cleanup.error).toBe('freeUnavailable');
+    mocks.quota.mockResolvedValue({ remaining: 20, unavailableReason: null });
+    await store.refreshQuota('en-US', true);
+    await store.generate('cleanup');
+    expect(mocks.run).toHaveBeenCalledTimes(1);
+    expect(store.workspaces.cleanup.status).toBe('completed');
+    expect(store.workspaces.cleanup.error).toBeNull();
+  });
+
   it.each(['reopen', 'a-b-a', 'stop-and-reopen'])('waits for delayed cancellation before %s', async action => {
     let fail!: (error: string) => void;
     let delta!: (value: AiDelta) => void;

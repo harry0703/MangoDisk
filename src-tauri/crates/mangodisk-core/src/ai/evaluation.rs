@@ -127,10 +127,14 @@ async fn evaluate_ai_corpus() {
     }
     let config = AiConfiguration {
         schema_version: 1,
+        mode: super::AiServiceMode::Custom,
+        free_consent: false,
         endpoint: std::env::var("MANGODISK_AI_TEST_ENDPOINT").expect("explicit endpoint"),
         model: std::env::var("MANGODISK_AI_TEST_MODEL").expect("explicit model"),
         api_key: std::env::var("ZENAI_AI_GATEWAY_API_KEY").expect("explicit credential"),
         reasoning: ReasoningMode::Default,
+        temperature: None,
+        max_tokens: None,
     };
     config.validate().unwrap();
     let mut file = fs::OpenOptions::new()

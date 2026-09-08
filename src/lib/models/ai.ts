@@ -5,8 +5,42 @@ import type { SystemSettingItem, SystemSettingTargetState } from './system-setti
 import type { SystemMaintenanceItem } from './system-maintenance';
 
 export type AiReasoningMode = 'default' | 'disabled';
+export type AiServiceMode = 'free' | 'custom';
+
+export interface AiClientMetadata {
+  installId: string;
+  appVersion: string;
+  locale: string;
+  distribution: string;
+  osVersion: string;
+  timezone: string;
+}
+
+export interface AiQuota {
+  available: boolean;
+  unavailableReason: string | null;
+  dailyLimit: number;
+  remaining: number;
+  cooldownSeconds: number;
+  nextAllowedAt: string;
+  resetAt: string;
+  serverTime: string;
+  activeRequests: number;
+  maxConcurrentRequests: number;
+  policyVersion: string;
+  promptVersion: string;
+}
 
 export const AI_ERROR_LABELS = {
+  freeUnavailable: 'ai.errors.freeUnavailable',
+  freeConsentRequired: 'ai.errors.freeConsentRequired',
+  freeDailyLimit: 'ai.errors.freeDailyLimit',
+  freeRateLimited: 'ai.errors.freeRateLimited',
+  freeConcurrent: 'ai.errors.freeConcurrent',
+  freeClockSkew: 'ai.errors.freeClockSkew',
+  freeSignatureInvalid: 'ai.errors.freeSignatureInvalid',
+  freeRequestExists: 'ai.errors.freeRequestExists',
+  freeArchiveUnavailable: 'ai.errors.freeArchiveUnavailable',
   invalidConfiguration: 'ai.errors.invalidConfiguration',
   invalidContext: 'ai.errors.invalidContext',
   notConfigured: 'ai.errors.notConfigured',
@@ -27,24 +61,39 @@ export const AI_ERROR_LABELS = {
 } as const;
 
 export interface AiSettings {
-  schemaVersion: 1;
+  schemaVersion: 2;
+  mode: AiServiceMode;
+  freeConsent: boolean;
+  freeAvailable: boolean;
   endpoint: string;
   model: string;
   hasKey: boolean;
   reasoning: AiReasoningMode;
+  temperature?: number | null;
+  maxTokens?: number | null;
 }
 
 export interface AiConfigurationUpdate {
+  mode: AiServiceMode;
+  freeConsent: boolean;
   endpoint: string;
   model: string;
   apiKey: string | null;
   reasoning: AiReasoningMode;
+  temperature?: number | null;
+  maxTokens?: number | null;
 }
 
 /** Secret-bearing data is scoped to the settings editor, never the AI store. */
 export interface AiConfiguration extends AiConfigurationUpdate {
-  schemaVersion: 1;
+  schemaVersion: 2;
   apiKey: string;
+}
+
+/** One fresh editor read; this secret-bearing snapshot must not be cached. */
+export interface AiEditorState {
+  configuration: AiConfiguration | null;
+  freeAvailable: boolean;
 }
 
 /** Descriptive metadata, including original startup locations; never executable actions. */
@@ -140,6 +189,15 @@ export interface AiUsage {
 }
 
 export const AI_ERROR_CODES = [
+  'freeUnavailable',
+  'freeConsentRequired',
+  'freeDailyLimit',
+  'freeRateLimited',
+  'freeConcurrent',
+  'freeClockSkew',
+  'freeSignatureInvalid',
+  'freeRequestExists',
+  'freeArchiveUnavailable',
   'invalidConfiguration',
   'invalidContext',
   'notConfigured',

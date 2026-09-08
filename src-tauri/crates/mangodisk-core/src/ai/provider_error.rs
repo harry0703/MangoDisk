@@ -37,6 +37,7 @@ pub(super) enum ProviderParameter {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(super) struct ProviderDiagnostic {
+    pub official_error: Option<super::AiError>,
     pub body: ErrorBody,
     pub code: ProviderCode,
     pub parameter: ProviderParameter,
@@ -45,6 +46,7 @@ pub(super) struct ProviderDiagnostic {
 impl ProviderDiagnostic {
     fn unreadable(body: ErrorBody) -> Self {
         Self {
+            official_error: None,
             body,
             code: ProviderCode::Unknown,
             parameter: ProviderParameter::Unknown,
@@ -76,6 +78,9 @@ impl ProviderDiagnostic {
             _ => ProviderParameter::Unknown,
         };
         Self {
+            official_error: error["code"]
+                .as_str()
+                .and_then(super::official_protocol::error_code),
             body: ErrorBody::Json,
             code,
             parameter,

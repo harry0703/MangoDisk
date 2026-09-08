@@ -16,6 +16,9 @@ reqwest = { version = "0.13.4", features = ["json"] }
 tokio = { version = "1", features = ["sync", "time", "macros"] }
 tempfile = "3"
 sha2 = "0.10"
+hmac = "0.12"
+base64 = "0.22"
+uuid = { version = "1", features = ["v4"] }
 toml = "0.9"
 chrono = { version = "0.4", default-features = false, features = ["clock"] }
 

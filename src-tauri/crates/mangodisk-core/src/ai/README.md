@@ -36,7 +36,8 @@ authorize cleanup. Existing native preflight and confirmation remain authoritati
   only the initiating panel may restart, never hidden panels automatically.
 - Each page owns a pure metadata projection. Version 2 of the transient context
   uses a tagged subject with domain-specific facts; older preview contexts are
-  rejected. Configuration remains schema 1 and needs no migration.
+  rejected. Configuration schema 2 adds the service mode and free-service consent.
+  Schema 1 remains custom with no implicit consent; saving migrates atomically.
   Startup explanations include original software names, descriptions, publishers,
   versions, signature status, executable paths and registration paths without
   redaction. Cleanup includes original source paths, source-level block reasons,
@@ -58,6 +59,39 @@ authorize cleanup. Existing native preflight and confirmation remain authoritati
 
 ## Provider contract
 
+New installations default to the official free service. Existing custom settings
+retain their provider and credentials. The first official explanation requires
+acknowledging that selected context and replies are retained for 30 days.
+Switching modes preserves custom credentials but never sends them to MangoDisk.
+The official adapter signs requests in Rust and uses the same stream decoder as
+custom providers.
+The signed official request includes `context` and the Core-generated
+`systemPrompt`, identical to the custom-provider instructions. The website uses
+its fallback only when that optional prompt is absent, null, empty or whitespace.
+The entire body, including the prompt, remains subject to the 128 KiB limit.
+Free quota is enforced by the server (initial policy: 20 daily,
+60 seconds between new requests), not by the client countdown. Cached answers do
+not consume quota. No account or automatic provider fallback is used.
+Settings and explanation footers share an installation-scoped quota snapshot.
+Concurrent forced refreshes share one newer read rather than fan out. A generation
+completed after that read started still requires a subsequent snapshot.
+Saving provider settings does not discard it. Reset timestamps are displayed in
+the user's local timezone. Service-wide rejection reasons are distinct from
+daily limits, cooldown and concurrent-request limits. A temporary outage keeps
+existing answers readable and offers settings without switching providers.
+Quota reads log request IDs, elapsed time, HTTP status and typed failure stages,
+never installation identifiers, credentials or response bodies.
+
+Official builds inject `MANGODISK_AI_KEY_ID` (for example `20260907`) and
+`MANGODISK_AI_SIGNING_KEY` (32 random bytes encoded as Base64) at Rust compile time.
+They must never be committed or bundled as frontend environment variables.
+Missing keys disable only the free service; open-source custom-provider builds
+remain functional. A compiled shared key is an abuse hurdle, not proof of an
+untampered client. Server quotas, replay protection and a global kill switch remain
+necessary. Debug builds alone may set `MANGODISK_AI_LOCAL_ORIGIN` to a loopback
+HTTP origin for local website integration; release builds always use HTTPS on
+`mangodisk.app`. Tests use synthetic keys and deterministic cross-language vectors.
+
 Configure a base URL ending at the API prefix (commonly `/v1`), a model, and a key.
 Requests use `POST /chat/completions` with `stream: true`. Both HTTP and HTTPS
 are accepted; HTTP does not encrypt the API key or request. Local loopback services
@@ -72,9 +106,11 @@ extensions; use the default mode if a provider rejects them. Cancellation aborts
 the local request but cannot guarantee that a provider stops billing immediately.
 New configurations default to provider-managed reasoning for compatibility.
 Existing saved reasoning preferences are preserved; disabling reasoning is opt-in.
-Requests omit both `max_tokens` and `max_completion_tokens` in every reasoning
-mode, including connection tests. The provider chooses its default completion
-budget; MangoDisk does not impose an output token cap.
+Advanced custom-provider settings accept optional temperature (0–2) and positive
+integer `max_tokens`. Blank values omit these fields, leaving the provider's
+defaults unchanged, including connection tests. `max_completion_tokens` is not
+sent. Schema 1/2 files without these additive fields retain provider defaults;
+switching to the official service preserves but does not send custom overrides.
 Length-limited output is a distinct error, never silently accepted or retried.
 Wire traffic is bounded at 4 MiB to accommodate repeated per-token gateway
 metadata. Visible text remains bounded at 32 KiB and individual SSE records at
@@ -117,6 +153,16 @@ They must not include keys, endpoints, prompts,
 response bodies, or private scan data.
 
 ## Validation
+
+Language tags are protocol inputs, not the desktop UI locale list. Both request
+paths and the website accept a maximum of 32 ASCII bytes: a 2–8 letter primary
+subtag followed by optional 1–8 alphanumeric subtags separated by hyphens. This
+bounded syntax check is not a full BCP 47 registry lookup. Preserve the original
+tag when signing; new UI languages must not require a Rust or server allowlist
+release. Shared signature vectors include a language absent from the UI catalog.
+Official error mapping lives in `official_protocol`, without dependencies on
+request construction or network IO. The frontend collects typed client metadata;
+only the update adapter projects it into HTTP headers.
 
 `tests/fixtures/ai-context-v2.json` contains five synthetic module contexts shared
 by frontend projection tests and Rust deserialization, prompt, and transport tests.

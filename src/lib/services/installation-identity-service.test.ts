@@ -55,6 +55,12 @@ describe('InstallationIdentityService', () => {
     expect(saveMock).not.toHaveBeenCalled();
   });
 
+  it('shares one persisted identity across simultaneous callers', async () => {
+    const ids = await Promise.all(Array.from({ length: 20 }, () => InstallationIdentityService.getOrCreateInstallId()));
+    expect(new Set(ids).size).toBe(1);
+    expect(saveMock).toHaveBeenCalledOnce();
+  });
+
   it('replaces malformed installation data instead of accepting it', async () => {
     values.set('identity', {
       schemaVersion: 1,

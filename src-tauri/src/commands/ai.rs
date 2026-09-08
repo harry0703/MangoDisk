@@ -85,7 +85,8 @@ impl AiRuntime {
 #[tauri::command]
 pub(crate) async fn ai_get_settings() -> Result<Option<AiSettings>, AiError> {
     let result = tauri::async_runtime::spawn_blocking(|| {
-        AiConfiguration::load().map(|value| value.map(|v| v.settings()))
+        AiConfiguration::load()
+            .map(|value| Some(value.unwrap_or_else(AiConfiguration::initial).settings()))
     })
     .await
     .map_err(|_| AiError::ConfigurationUnavailable)?;
@@ -96,16 +97,34 @@ pub(crate) async fn ai_get_settings() -> Result<Option<AiSettings>, AiError> {
 }
 
 #[tauri::command]
-pub(crate) async fn ai_get_configuration() -> Result<Option<AiConfiguration>, AiError> {
-    // Only the settings editor requests the secret; ordinary workspace state
-    // continues to receive the key-free AiSettings projection.
-    let result = tauri::async_runtime::spawn_blocking(AiConfiguration::load)
-        .await
-        .map_err(|_| AiError::ConfigurationUnavailable)?;
-    if let Err(reason) = &result {
-        log::warn!("ai_configuration_read_failed reason={reason:?}");
-    }
+pub(crate) async fn ai_get_configuration() -> Result<AiEditorState, AiError> {
+    let started = Instant::now();
+    // Read once for the editor rather than loading the same file through both
+    // configuration and public-settings commands. The capability is build-only.
+    let result = tauri::async_runtime::spawn_blocking(|| {
+        AiConfiguration::load().map(|configuration| AiEditorState {
+            configuration,
+            free_available: AiConfiguration::initial().settings().free_available,
+        })
+    })
+    .await
+    .map_err(|_| AiError::ConfigurationUnavailable)
+    .and_then(|result| result);
+    log::info!(
+        "ai_editor_configuration_loaded duration_ms={} success={} reason={:?}",
+        started.elapsed().as_millis(),
+        result.is_ok(),
+        result.as_ref().err()
+    );
     result
+}
+
+// This IPC snapshot is not persisted. Never derive Debug: it carries a secret.
+#[derive(serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+pub(crate) struct AiEditorState {
+    configuration: Option<AiConfiguration>,
+    free_available: bool,
 }
 
 #[tauri::command]
@@ -150,6 +169,8 @@ pub(crate) fn ai_cancel(id: String, state: State<'_, AiRuntime>) -> Result<(), A
 pub(crate) async fn ai_explain(
     id: String,
     request: AiRequest,
+    metadata: Option<mangodisk_core::ai::AiClientMetadata>,
+    expected_mode: mangodisk_core::ai::AiServiceMode,
     on_delta: Channel<AiDelta>,
     state: State<'_, AiRuntime>,
 ) -> Result<AiUsage, AiError> {
@@ -171,7 +192,21 @@ pub(crate) async fn ai_explain(
         let config = tauri::async_runtime::spawn_blocking(AiConfiguration::load)
             .await
             .map_err(|_| AiError::ConfigurationUnavailable)??
-            .ok_or(AiError::NotConfigured)?;
+            .unwrap_or_else(AiConfiguration::initial);
+        if config.mode != expected_mode {
+            return Err(AiError::InvalidConfiguration);
+        }
+        if config.mode == mangodisk_core::ai::AiServiceMode::Free {
+            return mangodisk_core::ai::official_explain(
+                config,
+                request,
+                metadata.ok_or(AiError::InvalidContext)?,
+                &id,
+                cancel,
+                |text| on_delta.send(text).is_ok(),
+            )
+            .await;
+        }
         explain(config, request, &id, cancel, |text| {
             on_delta.send(text).is_ok()
         })
@@ -187,10 +222,36 @@ pub(crate) async fn ai_explain(
     result
 }
 
+#[tauri::command]
+pub(crate) async fn ai_get_quota(
+    metadata: mangodisk_core::ai::AiClientMetadata,
+) -> Result<mangodisk_core::ai::AiQuota, AiError> {
+    mangodisk_core::ai::official_quota(metadata).await
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
     use std::time::Duration;
+
+    #[test]
+    fn editor_snapshot_uses_the_frontend_contract_without_changing_persisted_configuration() {
+        let state = AiEditorState {
+            configuration: None,
+            free_available: true,
+        };
+        assert_eq!(
+            serde_json::to_value(state).unwrap(),
+            serde_json::json!({"configuration": null, "freeAvailable": true})
+        );
+        let state = AiEditorState {
+            configuration: Some(AiConfiguration::initial()),
+            free_available: false,
+        };
+        let value = serde_json::to_value(state).unwrap();
+        assert_eq!(value["configuration"]["schemaVersion"], 2);
+        assert!(value["configuration"].get("freeAvailable").is_none());
+    }
 
     #[test]
     fn parallel_requests_cancel_and_finish_independently() {

@@ -18,10 +18,21 @@ interface InstallationIdentity {
  * random application data and is never derived from hardware or account data.
  */
 export class InstallationIdentityService {
-  static async getOrCreateInstallId(): Promise<string> {
+  private static pending: Promise<string> | null = null;
+
+  static getOrCreateInstallId(): Promise<string> {
+    // Update telemetry and AI panels can initialize concurrently. Share only
+    // the pending write, so a failed save can be retried normally.
+    this.pending ??= this.readOrCreate().finally(() => {
+      this.pending = null;
+    });
+    return this.pending;
+  }
+
+  private static async readOrCreate(): Promise<string> {
     const store = await load(INSTALLATION_STORE_FILE_NAME, { autoSave: false });
     const stored = await store.get<unknown>(INSTALLATION_IDENTITY_KEY);
-    if (this.isIdentity(stored)) return stored.installId;
+    if (this.isIdentity(stored)) return stored.installId.toLowerCase();
 
     const identity: InstallationIdentity = {
       schemaVersion: INSTALLATION_IDENTITY_SCHEMA_VERSION,

@@ -182,6 +182,7 @@ pub fn run() {
             commands::ai::ai_begin,
             commands::ai::ai_cancel,
             commands::ai::ai_explain,
+            commands::ai::ai_get_quota,
             commands::app_distribution::get_app_distribution,
             commands::applications::prepare_application_uninstall_batch,
             commands::applications::execute_application_uninstall_batch,

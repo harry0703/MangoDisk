@@ -1,9 +1,10 @@
 import { defineStore } from 'pinia';
 import { markRaw } from 'vue';
-import type { AiContext, AiErrorCode, AiSettings, AiSubject } from '@/lib/models/ai';
+import type { AiContext, AiErrorCode, AiSettings, AiSubject, AiQuota } from '@/lib/models/ai';
 import { AiService, AiSession } from '@/lib/services/ai-service';
 import { LoggerService } from '@/lib/services/logger-service';
 import { aiErrorCode } from '@/lib/utils/ai-error';
+import { isAiServiceUnavailable } from '@/lib/utils/ai-quota';
 
 type AiModule = AiSubject['module'];
 
@@ -38,12 +39,79 @@ export const useAiStore = defineStore('ai', {
       systemMaintenance: createWorkspace(),
     } satisfies Record<AiModule, ReturnType<typeof createWorkspace>>,
     changingConfiguration: false,
+    acceptingFree: false,
+    quota: null as AiQuota | null,
+    quotaError: null as AiErrorCode | null,
+    quotaReadAt: 0,
+    quotaRevision: 0,
+    quotaPending: null as Promise<void> | null,
     cache: {} as Record<string, { text: string; reasoning: string }>,
   }),
   getters: {
     open: state => Object.values(state.workspaces).some(workspace => workspace.open),
   },
   actions: {
+    async refreshQuota(language: string, force = false): Promise<void> {
+      const previous = this.quotaPending;
+      if (previous) {
+        const requiredRevision = this.quotaRevision + 1;
+        await previous;
+        if (!force) return;
+        // Concurrent callers awaiting the same snapshot share the first newer
+        // read. A request completed during that newer read still requires another.
+        if (this.quotaRevision >= requiredRevision) {
+          await this.quotaPending;
+          return;
+        }
+      }
+      // Panel navigation shares a short-lived snapshot. Completion forces a
+      // newer read, so an earlier in-flight GET cannot restore an old balance.
+      if (!force && this.quota && performance.now() - this.quotaReadAt < 15_000) return;
+      const revision = ++this.quotaRevision;
+      const pending = (async () => {
+        try {
+          const quota = await AiService.quota(language);
+          if (revision !== this.quotaRevision) return;
+          this.quota = quota;
+          this.quotaReadAt = performance.now();
+          this.quotaError = null;
+        } catch (cause) {
+          if (revision === this.quotaRevision) this.quotaError = aiErrorCode(cause);
+        }
+      })();
+      this.quotaPending = markRaw(pending);
+      try {
+        await pending;
+      } finally {
+        if (this.quotaPending === pending) this.quotaPending = null;
+      }
+    },
+    async acceptFree(module: AiModule) {
+      if (this.changingConfiguration || this.acceptingFree) return;
+      const workspace = this.workspaces[module];
+      if (workspace.loadingSettings) return;
+      this.acceptingFree = true;
+      workspace.loadingSettings = true;
+      try {
+        const existing = await AiService.configuration();
+        await AiService.save({
+          endpoint: existing?.endpoint ?? '',
+          model: existing?.model ?? '',
+          apiKey: existing?.apiKey ?? '',
+          reasoning: existing?.reasoning ?? 'default',
+          temperature: existing?.temperature ?? null,
+          maxTokens: existing?.maxTokens ?? null,
+          mode: 'free',
+          freeConsent: true,
+        });
+        await this.configurationChanged(null, module);
+      } catch (cause) {
+        workspace.error = aiErrorCode(cause);
+      } finally {
+        this.acceptingFree = false;
+        workspace.loadingSettings = false;
+      }
+    },
     async configurationChanged(testError: AiErrorCode | null = null, resumeModule?: AiModule) {
       if (this.changingConfiguration) return;
       this.changingConfiguration = true;
@@ -55,6 +123,8 @@ export const useAiStore = defineStore('ai', {
         await Promise.all(modules.map(module => this.stop(module)));
         await Promise.all(modules.map(module => this.workspaces[module].pending));
         this.cache = {};
+        // Quota belongs to the installation, not the provider configuration.
+        // Preserve its snapshot and pending read when saving or switching modes.
         let settings: AiSettings | null = null;
         let error = testError;
         try {
@@ -113,6 +183,7 @@ export const useAiStore = defineStore('ai', {
         if (version !== workspace.selectionVersion) return;
         workspace.settings = settings;
         workspace.loadingSettings = false;
+        if (settings?.mode === 'free' && settings.freeAvailable) void this.refreshQuota(language);
         if (workspace.open && settings && !workspace.text) await this.generate(module);
       } catch (error) {
         if (version === workspace.selectionVersion) {
@@ -134,6 +205,23 @@ export const useAiStore = defineStore('ai', {
       ) {
         return Promise.resolve();
       }
+      if (
+        workspace.settings.mode === 'free' &&
+        (!workspace.settings.freeAvailable || !workspace.settings.freeConsent)
+      ) {
+        return Promise.resolve();
+      }
+      // A recent service-wide rejection avoids dispatching another known-invalid
+      // request. Older snapshots never permanently prevent probing for recovery.
+      if (
+        workspace.settings.mode === 'free' &&
+        isAiServiceUnavailable(this.quota) &&
+        performance.now() - this.quotaReadAt < 15_000
+      ) {
+        workspace.status = 'failed';
+        workspace.error = 'freeUnavailable';
+        return Promise.resolve();
+      }
       const context = workspace.context;
       const key = JSON.stringify([workspace.language, context]);
       const session = markRaw(new AiSession());
@@ -145,11 +233,16 @@ export const useAiStore = defineStore('ai', {
       workspace.reasoning = '';
       ++workspace.responseVersion;
       const pending = session
-        .run(context, workspace.language, delta => {
-          if (workspace.session !== session || workspace.cancelling) return;
-          if (delta.kind === 'reasoning') workspace.reasoning += delta.text;
-          else workspace.text += delta.text;
-        })
+        .run(
+          context,
+          workspace.language,
+          delta => {
+            if (workspace.session !== session || workspace.cancelling) return;
+            if (delta.kind === 'reasoning') workspace.reasoning += delta.text;
+            else workspace.text += delta.text;
+          },
+          workspace.settings.mode
+        )
         .then(() => {
           if (workspace.cancelling) {
             workspace.status = 'cancelled';
@@ -170,6 +263,8 @@ export const useAiStore = defineStore('ai', {
           workspace.session = null;
           workspace.pending = null;
           workspace.cancelling = false;
+          if (workspace.settings?.mode === 'free' && workspace.settings.freeAvailable)
+            void this.refreshQuota(workspace.language, true);
         });
       workspace.pending = markRaw(pending);
       return pending;
