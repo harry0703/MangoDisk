@@ -409,7 +409,7 @@
       },
       "windows_maintenance_explorer-cache": {
         "name": "アイコンとサムネイルのキャッシュを再構築",
-        "description": "エクスプローラーでアイコンが空白または誤表示になる、サムネイルが崩れる問題を修復します"
+        "description": "デスクトップやエクスプローラーの空白・誤表示のアイコンとサムネイルを修復します。エクスプローラーが一時的に再起動します。リンク先が削除されたショートカットは修復できません"
       },
       "windows_maintenance_update-components": {
         "name": "Windows Update サービスを再起動",
@@ -1395,6 +1395,10 @@
       "windows_update_enable-restart-notifications": {
         "name": "更新で再起動が必要なときに通知",
         "description": "更新完了に再起動が必要な場合、明確に通知します"
+      },
+      "windows_explorer_hide-shortcut-arrows": {
+        "name": "ショートカットの矢印を非表示",
+        "description": "デスクトップとエクスプローラーのショートカット矢印を非表示にします。元に戻すこともできます。管理者の承認が必要で、すべてのユーザーに影響し、Windows の再起動後に反映されます。他のツールで矢印が設定されている場合は利用できません"
       }
     }
   },

@@ -1,3 +1,4 @@
+use super::shortcut_overlay;
 use std::{collections::BTreeMap, io};
 
 use windows_sys::Win32::UI::WindowsAndMessaging::{
@@ -50,6 +51,12 @@ struct SettingDefinition {
 }
 
 const SETTINGS: &[SettingDefinition] = &[
+    machine_setting(
+        shortcut_overlay::SETTING_ID,
+        r"SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\Shell Icons",
+        "29",
+        ValueKind::Text,
+    ),
     setting(
         "windows.explorer.show-file-extensions",
         r"Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced",
@@ -1556,6 +1563,9 @@ fn diagnostic_for_error(code: PlatformErrorCode) -> PlatformSystemSettingDiagnos
 }
 
 fn read_value(definition: SettingDefinition) -> PlatformResult<PlatformSystemSettingValue> {
+    if definition.id == shortcut_overlay::SETTING_ID {
+        return shortcut_overlay::read();
+    }
     if uses_windows_11_tray_contract(definition) {
         return read_windows_11_tray_icons();
     }
@@ -1593,6 +1603,9 @@ fn write_value(
     definition: SettingDefinition,
     value: &PlatformSystemSettingValue,
 ) -> PlatformResult<()> {
+    if definition.id == shortcut_overlay::SETTING_ID {
+        return shortcut_overlay::write(value);
+    }
     if uses_windows_11_tray_contract(definition) {
         return write_windows_11_tray_icons(value);
     }
@@ -1699,6 +1712,9 @@ fn effective_value(
     definition: SettingDefinition,
     value: &PlatformSystemSettingValue,
 ) -> PlatformSystemSettingValue {
+    if definition.id == shortcut_overlay::SETTING_ID {
+        return shortcut_overlay::effective(value);
+    }
     if uses_windows_11_tray_contract(definition) {
         return windows_11_tray_effective_value(value);
     }
@@ -1720,6 +1736,9 @@ fn value_matches_desired(
     desired: &PlatformSystemSettingValue,
 ) -> bool {
     match desired {
+        PlatformSystemSettingValue::Missing if definition.id == shortcut_overlay::SETTING_ID => {
+            current == desired
+        }
         PlatformSystemSettingValue::Snapshot(_) => current == desired,
         _ => effective_value(definition, current) == *desired,
     }
@@ -2048,6 +2067,16 @@ fn validate_value(
     definition: SettingDefinition,
     value: &PlatformSystemSettingValue,
 ) -> PlatformResult<()> {
+    if definition.id == shortcut_overlay::SETTING_ID {
+        return if shortcut_overlay::valid_value(value) {
+            Ok(())
+        } else {
+            Err(PlatformError::new(
+                PlatformErrorCode::InvalidData,
+                "shortcut overlay value is not allowlisted",
+            ))
+        };
+    }
     let valid_snapshot = match value {
         PlatformSystemSettingValue::Snapshot(PlatformSystemSettingSnapshot::Text(value)) => {
             definition.composite_text_key.is_some() && value.len() <= 16 * 1024

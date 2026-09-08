@@ -561,6 +561,13 @@ const MACOS_SETTINGS: &[SettingDefinition] = &[
 ];
 
 const WINDOWS_SETTINGS: &[SettingDefinition] = &[
+    elevated_custom(
+        "windows.explorer.hide-shortcut-arrows",
+        SystemSettingCategory::Appearance,
+        DefinitionValue::Boolean(false),
+        DefinitionValue::Boolean(true),
+        true,
+    ),
     one_click(
         "windows.explorer.show-file-extensions",
         SystemSettingCategory::Productivity,
@@ -1776,6 +1783,24 @@ mod tests {
     use std::collections::BTreeSet;
 
     use super::*;
+
+    #[test]
+    fn shortcut_arrows_are_manual_and_require_elevation_and_restart() {
+        let setting = definitions(SystemSettingsPlatform::Windows)
+            .iter()
+            .find(|item| item.id == "windows.explorer.hide-shortcut-arrows")
+            .expect("shortcut arrow setting should be present");
+        assert!(matches!(
+            setting.selection_kind,
+            SystemSettingSelectionKind::Custom
+        ));
+        assert_eq!(
+            setting.default_value.owned(),
+            PlatformSystemSettingValue::Boolean(false)
+        );
+        assert!(setting.requires_elevation);
+        assert!(setting.requires_restart);
+    }
 
     #[test]
     fn platform_catalogs_have_unique_namespaced_identifiers() {

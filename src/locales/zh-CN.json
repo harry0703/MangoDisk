@@ -399,7 +399,7 @@
       },
       "windows_maintenance_explorer-cache": {
         "name": "重建图标和缩略图缓存",
-        "description": "解决文件资源管理器中图标空白、显示错误或缩略图异常的问题"
+        "description": "修复桌面、文件资源管理器中图标空白、显示错误或缩略图异常的问题。会短暂重启资源管理器；无法恢复目标已删除的快捷方式"
       },
       "windows_maintenance_update-components": {
         "name": "重启 Windows 更新服务",
@@ -1319,6 +1319,10 @@
       "windows_update_enable-restart-notifications": {
         "name": "更新需要重启时通知",
         "description": "在完成更新前明确提醒需要重新启动"
+      },
+      "windows_explorer_hide-shortcut-arrows": {
+        "name": "隐藏快捷方式小箭头",
+        "description": "隐藏桌面和文件资源管理器中的快捷方式箭头，可恢复默认显示。需要管理员权限，影响所有用户，重启电脑后生效；已有第三方箭头设置时不可用"
       }
     }
   },

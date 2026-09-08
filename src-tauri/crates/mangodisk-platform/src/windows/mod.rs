@@ -19,6 +19,7 @@ mod path_identity;
 mod privacy;
 mod process_control;
 mod project_markers;
+mod shortcut_overlay;
 mod startup;
 mod system_maintenance;
 mod system_settings;

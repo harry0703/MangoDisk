@@ -212,6 +212,11 @@ impl SystemSettingsService {
                     } else {
                         SystemSettingChangeOutcomeStatus::Unchanged
                     };
+                    log::info!(
+                        "system_setting_change_completed operation_id={} setting_id={} target={:?} changed={} verified=true restart_required={}",
+                        operation.id(), item.public.setting_id, item.public.target, result.changed,
+                        item.public.requires_restart
+                    );
                     results.push(change_result(
                         item.public.setting_id.clone(),
                         status,
@@ -1361,6 +1366,31 @@ mod tests {
             },
             native_items,
         }
+    }
+
+    #[test]
+    fn shortcut_overlay_restore_uses_the_durable_native_baseline() {
+        let id = "windows.explorer.hide-shortcut-arrows";
+        let mut item = native_fixture(id, SystemSettingStatus::Optimized, true, None, false);
+        item.current_value = PlatformSystemSettingValue::Snapshot(
+            PlatformSystemSettingSnapshot::Text("owned-icon".into()),
+        );
+        item.effective_value = PlatformSystemSettingValue::Boolean(true);
+        item.recommended_value = PlatformSystemSettingValue::Boolean(true);
+        item.disabled_value = PlatformSystemSettingValue::Boolean(false);
+        let recovery = RecoveryItem {
+            setting_id: id.into(),
+            original_value: PlatformSystemSettingValue::Missing,
+            optimized_value: PlatformSystemSettingValue::Boolean(true),
+        };
+        assert_eq!(
+            desired_value_for_target(&item, SystemSettingTargetState::Default, Some(&recovery)),
+            Some(PlatformSystemSettingValue::Missing)
+        );
+        assert_eq!(
+            desired_value_for_target(&item, SystemSettingTargetState::Default, None),
+            None
+        );
     }
 
     #[test]

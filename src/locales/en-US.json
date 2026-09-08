@@ -404,7 +404,7 @@
       },
       "windows_maintenance_explorer-cache": {
         "name": "Rebuild icon and thumbnail caches",
-        "description": "Fix blank or incorrect icons and broken thumbnails in File Explorer"
+        "description": "Fix blank or incorrect desktop and File Explorer icons and thumbnails. Briefly restarts File Explorer; cannot repair shortcuts whose target has been deleted"
       },
       "windows_maintenance_update-components": {
         "name": "Restart Windows Update services",
@@ -1393,6 +1393,10 @@
       "windows_update_enable-restart-notifications": {
         "name": "Notify when updates need a restart",
         "description": "Show a clear reminder when a restart is required to finish updating"
+      },
+      "windows_explorer_hide-shortcut-arrows": {
+        "name": "Hide shortcut arrows",
+        "description": "Hide shortcut arrows on the desktop and in File Explorer, with an option to restore them. Requires administrator approval, affects all users, and takes effect after restarting Windows. Unavailable when another tool has configured the arrows"
       }
     }
   },

@@ -81,3 +81,7 @@ mod startup_baseline_tests {
         );
     }
 }
+
+#[cfg(all(test, not(windows)))]
+#[path = "windows/shortcut_overlay/icon.rs"]
+mod windows_shortcut_icon_tests;

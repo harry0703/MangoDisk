@@ -399,7 +399,7 @@
       },
       "windows_maintenance_explorer-cache": {
         "name": "重建圖示與縮圖快取",
-        "description": "解決檔案總管中圖示空白、顯示錯誤或縮圖異常的問題"
+        "description": "修復桌面、檔案總管中圖示空白、顯示錯誤或縮圖異常的問題。會短暫重新啟動檔案總管；無法還原目標已刪除的捷徑"
       },
       "windows_maintenance_update-components": {
         "name": "重新啟動 Windows Update 服務",
@@ -1319,6 +1319,10 @@
       "windows_update_enable-restart-notifications": {
         "name": "更新需要重新啟動時通知",
         "description": "在完成更新前明確提醒需要重新啟動"
+      },
+      "windows_explorer_hide-shortcut-arrows": {
+        "name": "隱藏捷徑小箭頭",
+        "description": "隱藏桌面及檔案總管中的捷徑箭頭，可還原預設顯示。需要管理員權限，影響所有使用者，重新啟動電腦後生效；已有第三方箭頭設定時無法使用"
       }
     }
   },
