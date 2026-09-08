@@ -37,3 +37,19 @@ it('preserves blocked, review-only and cross-device semantics with zero records'
     synchronizationMayPropagate: true,
   });
 });
+
+it('preserves permission-required state instead of interpreting unreadable data as empty', () => {
+  const item = {
+    ...fixtures[1]!.subject,
+    sourceName: 'Safari',
+    kind: 'browserCache',
+    capability: 'permissionRequired',
+    itemCount: 0,
+    estimatedBytes: 0,
+  } as unknown as PrivacyItem;
+  expect(privacyAiContext(item, 'Browser cache', 'allTime', 'macos').subject).toMatchObject({
+    capability: 'permissionRequired',
+    itemCount: 0,
+    estimatedBytes: 0,
+  });
+});
