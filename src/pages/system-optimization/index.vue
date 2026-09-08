@@ -38,6 +38,9 @@ import { useSystemSettingsStore } from '@/stores/system-settings-store';
 import MdSystemSettingRiskDialog from './components/md-system-setting-risk-dialog.vue';
 
 const { t, locale } = useI18n({ useScope: 'global' });
+// Explanatory tooltips should fill each line naturally; balanced wrapping can leave a large
+// empty area and split short CJK phrases. The popper boundary still limits narrow windows.
+const settingTooltipClass = 'max-w-[min(24rem,var(--reka-tooltip-content-available-width))] text-wrap leading-relaxed';
 const aiStore = useAiStore();
 const store = useSystemSettingsStore();
 const executionRequested = ref(false);
@@ -314,7 +317,7 @@ watch(
                 }}
               </Button>
             </TooltipTrigger>
-            <TooltipContent side="top" :side-offset="6">
+            <TooltipContent side="top" :side-offset="6" :class="settingTooltipClass">
               {{ t('systemOptimization.statuses.authorizationRequired') }}
             </TooltipContent>
           </Tooltip>
@@ -357,7 +360,7 @@ watch(
                 appearance="unstyled"
                 class="item-help"
                 :label="t('systemOptimization.statuses.requiresRestart')"
-                tooltip-class="max-w-72 leading-relaxed"
+                :tooltip-class="settingTooltipClass"
               >
                 <MdIcon :name="ICON_NAMES.help" :size="13" />
               </MdIconAction>
@@ -373,7 +376,7 @@ watch(
                     }}
                   </MdStatusBadge>
                 </TooltipTrigger>
-                <TooltipContent side="top" :side-offset="6">
+                <TooltipContent side="top" :side-offset="6" :class="settingTooltipClass">
                   {{ riskDescription(item) }}
                 </TooltipContent>
               </Tooltip>
