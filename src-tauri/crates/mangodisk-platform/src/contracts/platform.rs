@@ -66,6 +66,19 @@ pub trait Platform: Send + Sync {
     ) -> Result<ApplicationUninstallExecutionOutcome, ApplicationUninstallPlatformError> {
         Err(ApplicationUninstallPlatformError::Unsupported)
     }
+    /// Removes explicitly selected installation metadata and its owned registry children.
+    /// Resolve only fixed registration sources, preserve files, and verify the entry is absent.
+    /// Application state and uninstall capability do not restrict this independent action.
+    fn remove_application_record(
+        &self,
+        _application_id: &str,
+        _dry_run: bool,
+    ) -> PlatformResult<()> {
+        Err(PlatformError::new(
+            super::PlatformErrorCode::Unsupported,
+            "application record removal is unavailable",
+        ))
+    }
     /// Process state changes too frequently to share the inventory cache.
     /// Callers capture snapshots at the safety boundary appropriate to each
     /// scan or destructive rule and may refresh them during long operations.

@@ -19,6 +19,8 @@ mod path_identity;
 mod privacy;
 mod process_control;
 mod project_markers;
+mod registration_removal;
+pub use registration_removal::run_application_record_helper_mode;
 mod shortcut_overlay;
 mod startup;
 mod system_maintenance;
@@ -303,6 +305,10 @@ impl Platform for WindowsPlatform {
         registration: &ApplicationUninstallRegistration,
     ) -> Result<ApplicationUninstallRegistrationState, ApplicationUninstallPlatformError> {
         native_uninstall::registration_state(registration)
+    }
+
+    fn remove_application_record(&self, application_id: &str, dry_run: bool) -> PlatformResult<()> {
+        registration_removal::remove(application_id, dry_run)
     }
 
     fn execute_application_uninstall_registration(

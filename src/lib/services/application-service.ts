@@ -22,6 +22,18 @@ interface ApplicationUninstallCloseResponse {
 }
 
 export class ApplicationService {
+  static recordUninstallDetailsOpened(applicationId: string, catalogRevision: string): Promise<void> {
+    return invoke<void>('log_application_uninstall_details', { applicationId, catalogRevision });
+  }
+
+  static removeRecord(applicationId: string): Promise<void> {
+    return invoke<void>('remove_application_record', { applicationId });
+  }
+
+  static openWindowsInstalledApps(): Promise<void> {
+    return invoke<void>('open_windows_installed_apps');
+  }
+
   static scanLeftovers(): Promise<ApplicationLeftoverScanResult> {
     return invoke<ApplicationLeftoverScanResult>('scan_application_leftovers');
   }

@@ -112,6 +112,52 @@ pub struct InstalledApplication {
     /// create an executable uninstall plan from typed evidence whose identity
     /// and install scope can be revalidated by the platform.
     pub uninstall_registration: Option<ApplicationUninstallRegistration>,
+    /// Explains why no executable registration was accepted. The same typed reason is shown in
+    /// the catalog and logged with its redacted application ID; raw commands never leave Windows.
+    pub uninstall_diagnostic: Option<ApplicationUninstallDiagnostic>,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+pub enum ApplicationUninstallDiagnostic {
+    CommandMissing,
+    CommandUnreadable,
+    InvalidCommand,
+    RelativeExecutable,
+    UnresolvedEnvironment,
+    ExecutableMissing,
+    ExecutableAccessDenied,
+    ExecutableProbeFailed,
+    InvalidExecutable,
+    UnsupportedCommandHost,
+    RegistrationConflict,
+}
+
+impl ApplicationUninstallDiagnostic {
+    pub const fn stable_code(self) -> &'static str {
+        match self {
+            Self::CommandMissing => "command_missing",
+            Self::CommandUnreadable => "command_unreadable",
+            Self::InvalidCommand => "invalid_command",
+            Self::RelativeExecutable => "relative_executable",
+            Self::UnresolvedEnvironment => "unresolved_environment",
+            Self::ExecutableMissing => "executable_missing",
+            Self::ExecutableAccessDenied => "executable_access_denied",
+            Self::ExecutableProbeFailed => "executable_probe_failed",
+            Self::InvalidExecutable => "invalid_executable",
+            Self::UnsupportedCommandHost => "unsupported_command_host",
+            Self::RegistrationConflict => "registration_conflict",
+        }
+    }
+}
+
+/// Shared by inventory diagnostics, Core plans, and UI interaction logs. Hashing keeps
+/// private registry/package identifiers out of logs without losing cross-stage correlation.
+pub fn application_uninstall_diagnostic_id(catalog_identifier: &str) -> String {
+    let mut hasher = blake3::Hasher::new();
+    hasher.update(b"mangodisk-application-uninstall-v2");
+    hasher.update(catalog_identifier.as_bytes());
+    format!("application-{}", &hasher.finalize().to_hex()[..24])
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
@@ -278,4 +324,39 @@ impl Error for ApplicationUninstallPlatformError {}
 pub struct DetectedTool {
     pub name: String,
     pub executable: ControlledExecutable,
+}
+
+/// Missing registered paths are evidence only when every existing ancestor is a plain directory
+/// on an accessible volume. Share this fact between catalog classification and removal preflight
+/// so permission failures, offline roots, and reparse points never become deletion authority.
+pub fn registered_application_path_is_missing(path: &std::path::Path) -> bool {
+    use std::io::ErrorKind;
+    if !path.is_absolute()
+        || !std::fs::symlink_metadata(path).is_err_and(|error| error.kind() == ErrorKind::NotFound)
+    {
+        return false;
+    }
+    let mut root_is_accessible = false;
+    for ancestor in path.ancestors().skip(1) {
+        match std::fs::symlink_metadata(ancestor) {
+            Ok(metadata) => {
+                #[cfg(windows)]
+                let link_like = {
+                    use std::os::windows::fs::MetadataExt;
+                    metadata.file_attributes()
+                        & windows_sys::Win32::Storage::FileSystem::FILE_ATTRIBUTE_REPARSE_POINT
+                        != 0
+                };
+                #[cfg(not(windows))]
+                let link_like = metadata.file_type().is_symlink();
+                if !metadata.is_dir() || link_like {
+                    return false;
+                }
+                root_is_accessible = ancestor.parent().is_none();
+            }
+            Err(error) if error.kind() == ErrorKind::NotFound => {}
+            Err(_) => return false,
+        }
+    }
+    root_is_accessible
 }

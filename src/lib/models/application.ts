@@ -82,6 +82,19 @@ export type ApplicationUninstallCapability =
   'ready' | 'applicationRunning' | 'requiresElevation' | 'protectedApplication' | 'viewOnly';
 export type ApplicationUninstallRecordState = 'installed' | 'orphanedRegistration';
 
+export type ApplicationUninstallDiagnostic =
+  | 'commandMissing'
+  | 'commandUnreadable'
+  | 'invalidCommand'
+  | 'relativeExecutable'
+  | 'unresolvedEnvironment'
+  | 'executableMissing'
+  | 'executableAccessDenied'
+  | 'executableProbeFailed'
+  | 'invalidExecutable'
+  | 'unsupportedCommandHost'
+  | 'registrationConflict';
+
 export interface ApplicationUninstallCandidate {
   applicationId: string;
   primaryIdentifier: string;
@@ -97,6 +110,7 @@ export interface ApplicationUninstallCandidate {
   executionMode: ApplicationUninstallExecutionMode | null;
   capability: ApplicationUninstallCapability;
   recordState: ApplicationUninstallRecordState;
+  uninstallDiagnostic: ApplicationUninstallDiagnostic | null;
   applicationPath: string | null;
   possibleRelatedPaths: string[];
   iconPath: string | null;

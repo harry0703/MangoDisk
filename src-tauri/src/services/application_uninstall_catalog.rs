@@ -7,6 +7,14 @@ pub struct ApplicationUninstallCatalogCache {
 }
 
 impl ApplicationUninstallCatalogCache {
+    pub fn clear(&self) {
+        if let Ok(mut latest) = self.latest.write() {
+            *latest = None;
+        } else {
+            log::warn!("application_uninstall_catalog_cache_clear_failed");
+        }
+    }
+
     pub fn replace(&self, catalog: &ApplicationUninstallScanResult) {
         match self.latest.write() {
             Ok(mut latest) => *latest = Some(catalog.clone()),

@@ -219,6 +219,36 @@ impl ApplicationUninstallService {
         Ok(result)
     }
 
+    /// Explicitly removes the selected installation record, independently of uninstallability.
+    /// Native code resolves the ID under fixed registry roots and revalidates that exact snapshot.
+    /// A catalog-wide revision, running processes, or missing files cannot veto this separate
+    /// user action. No application paths or filesystem cleanup plans participate in it.
+    pub fn remove_application_record(application_id: &str, dry_run: bool) -> CoreResult<()> {
+        let operation = OperationGuard::start(CoordinatedOperationKind::Applications)?;
+        // Reject arbitrary transport input before it can enter diagnostic logs.
+        if !application_id
+            .strip_prefix("application-")
+            .is_some_and(|suffix| {
+                suffix.len() == 24 && suffix.bytes().all(|byte| byte.is_ascii_hexdigit())
+            })
+        {
+            return Err(CoreError::invalid_input("invalid application record ID"));
+        }
+        log::info!("application_record_removal_started operation_id={} application_id={} dry_run={dry_run}", operation.id(), application_id);
+        let result = current_platform().remove_application_record(application_id, dry_run);
+        if let Err(error) = &result {
+            if error.code() == mangodisk_platform::PlatformErrorCode::UserCancelled {
+                log::info!("application_record_removal_cancelled operation_id={} application_id={application_id}", operation.id());
+            } else {
+                log::warn!("application_record_removal_failed operation_id={} application_id={} code={:?} mutation_state={:?} error_digest={}", operation.id(), application_id, error.code(), error.mutation_state(), blake3::hash(error.as_bytes()).to_hex());
+            }
+        }
+        result?;
+        log::info!("application_record_removal_finished operation_id={} application_id={} dry_run={dry_run} verified=true files_deleted=0", operation.id(), application_id);
+        operation.complete();
+        Ok(())
+    }
+
     pub fn scan() -> CoreResult<ApplicationUninstallScanResult> {
         let operation = OperationGuard::start(CoordinatedOperationKind::ApplicationScan)?;
         let result = scan_without_guard(operation.id(), true, None, operation.cancellation_flag())?;
@@ -435,6 +465,12 @@ impl ApplicationUninstallService {
                         authorization_prompt,
                     )
                 };
+                log::info!(
+                    "application_uninstall_item_finished operation_id={} application_id={} plan_id={} dry_run={} affected_count={} failed_count={} reason={}",
+                    operation.id(), result.application_id, result.plan_id, result.dry_run,
+                    result.affected_item_count, result.failed_item_count,
+                    result.actions.iter().find_map(|action| action.reason).map_or("none", |reason| reason.stable_code())
+                );
                 progress.record(&result);
                 progress.emit(
                     ApplicationUninstallExecutionStage::Uninstalling,
@@ -1010,7 +1046,7 @@ fn execute_preflighted(
         result.dry_run = false;
         return result;
     };
-    match windows::execute_registration(&inspection, cancellation) {
+    match windows::execute_registration(&inspection, &plan.plan_id, cancellation) {
         Ok(windows::ApplicationUninstallExecution::Completed(outcome)) => {
             ApplicationUninstallResult {
                 plan_id: plan.plan_id.clone(),
@@ -1054,8 +1090,8 @@ fn execute_preflighted(
         }
         Err(reason) => {
             log::warn!(
-                "application_uninstall_native_execution_result_failed reason={}",
-                reason.stable_code()
+                "application_uninstall_native_execution_result_failed application_id={} plan_id={} reason={}",
+                plan.application_id, plan.plan_id, reason.stable_code()
             );
             let mut result = preflight::fail_all(plan, Some(inspection.application_name), reason);
             result.dry_run = false;
@@ -1578,6 +1614,20 @@ fn scan_without_guard(
         .count() as u64;
     let blocked_count = candidates.len() as u64 - ready_count;
 
+    // Summaries alone cannot explain one user's disabled row. Emit the catalog decision with
+    // the same redacted reference used by inventory logs, including cached inventories on later scans.
+    for candidate in candidates
+        .iter()
+        .filter(|candidate| !candidate.capability.supports_execution())
+    {
+        log::info!(
+            "application_uninstall_candidate_blocked operation_id={} application_id={} capability={:?} record_state={:?} reason={} running_process_count={} has_application_location={} known_executable_count={}",
+            operation_id, candidate.application_id, candidate.capability, candidate.record_state,
+            candidate.uninstall_diagnostic.map_or("none", |reason| reason.stable_code()),
+            candidate.running_processes.len(), candidate.application_path.is_some(), candidate.executable_paths.len()
+        );
+    }
+
     log::info!(
             "application_uninstall_catalog_ready operation_id={} candidate_count={} ready_count={} blocked_count={} hidden_count={} self_excluded_count={} catalog_actionable={} inventory_complete={} component_summaries={} inventory_elapsed_ms={} process_snapshot_elapsed_ms={} candidate_build_elapsed_ms={} component_summary_elapsed_ms={} elapsed_ms={}",
             operation_id,
@@ -1837,7 +1887,13 @@ fn candidate(
                 }
             }),
         capability: capability(application, &running_processes),
-        record_state: record_state(application),
+        record_state: if running_processes.is_empty() {
+            record_state(application)
+        } else {
+            ApplicationUninstallRecordState::Installed
+        },
+        uninstall_diagnostic: application.uninstall_diagnostic
+            .filter(|_| application.uninstall_registration.is_none()),
         icon_path: application
             .icon_path
             .as_ref()
@@ -1901,17 +1957,27 @@ fn record_state(application: &InstalledApplication) -> ApplicationUninstallRecor
         return ApplicationUninstallRecordState::Installed;
     };
     if application.uninstall_registration.is_some()
-        || bundle_path.exists()
+        || application.uninstall_diagnostic.is_some_and(|reason| {
+            !matches!(
+                reason,
+                mangodisk_platform::ApplicationUninstallDiagnostic::CommandMissing
+                    | mangodisk_platform::ApplicationUninstallDiagnostic::ExecutableMissing
+            )
+        })
+        || !registered_path_is_missing(bundle_path)
         || application.executable_paths.is_empty()
         || application
             .executable_paths
             .iter()
-            .any(|path| path.exists())
+            .any(|path| !registered_path_is_missing(path))
     {
         return ApplicationUninstallRecordState::Installed;
     }
     ApplicationUninstallRecordState::OrphanedRegistration
 }
+
+#[cfg(any(windows, test))]
+use mangodisk_platform::registered_application_path_is_missing as registered_path_is_missing;
 
 #[cfg(not(windows))]
 fn record_state(_application: &InstalledApplication) -> ApplicationUninstallRecordState {
@@ -1919,10 +1985,7 @@ fn record_state(_application: &InstalledApplication) -> ApplicationUninstallReco
 }
 
 fn application_id(application: &InstalledApplication) -> String {
-    let mut hasher = blake3::Hasher::new();
-    hasher.update(b"mangodisk-application-uninstall-v2");
-    hasher.update(application.catalog_identifier.as_bytes());
-    format!("application-{}", &hasher.finalize().to_hex()[..24])
+    mangodisk_platform::application_uninstall_diagnostic_id(&application.catalog_identifier)
 }
 
 #[cfg(target_os = "macos")]
@@ -2060,6 +2123,50 @@ mod tests {
     use super::*;
 
     #[test]
+    fn missing_registration_path_requires_an_absolute_absent_path_on_an_online_root() {
+        let directory = tempfile::tempdir().expect("fixture directory should be created");
+        assert!(!registered_path_is_missing(directory.path()));
+        let canonical = directory
+            .path()
+            .canonicalize()
+            .expect("fixture should resolve");
+        assert!(registered_path_is_missing(&canonical.join("absent.exe")));
+        assert!(!registered_path_is_missing(std::path::Path::new(
+            "relative/absent.exe"
+        )));
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn dangling_registration_links_are_not_evidence_of_a_removed_application() {
+        let directory = tempfile::tempdir().expect("fixture directory should be created");
+        let link = directory.path().join("application");
+        std::os::unix::fs::symlink(directory.path().join("missing"), &link)
+            .expect("fixture link should be created");
+        assert!(!registered_path_is_missing(&link));
+        assert!(!registered_path_is_missing(&link.join("missing-child.exe")));
+    }
+
+    #[test]
+    fn catalog_exposes_the_same_redacted_reference_and_typed_reason_as_inventory() {
+        let mut application = fixture_application();
+        application.uninstall_diagnostic =
+            Some(mangodisk_platform::ApplicationUninstallDiagnostic::ExecutableAccessDenied);
+        let item = candidate(&application, &ProcessSnapshot::default());
+        let json = serde_json::to_value(&item).expect("candidate should serialize");
+        assert_eq!(json["uninstallDiagnostic"], "executableAccessDenied");
+        assert_eq!(
+            json["applicationId"],
+            mangodisk_platform::application_uninstall_diagnostic_id(
+                &application.catalog_identifier
+            )
+        );
+        assert!(!item
+            .application_id
+            .contains(&application.primary_identifier));
+    }
+
+    #[test]
     fn stable_inventory_retry_requires_two_different_complete_revisions() {
         assert!(should_retry_changed_inventory(
             true,
@@ -2110,6 +2217,7 @@ mod tests {
 
     fn fixture_application() -> InstalledApplication {
         InstalledApplication {
+            uninstall_diagnostic: None,
             catalog_identifier: "macos-bundle:/Applications/Example Editor.app".to_string(),
             source_identities: Vec::new(),
             primary_identifier: "com.example.Editor".to_string(),

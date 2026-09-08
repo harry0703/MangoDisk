@@ -556,6 +556,7 @@ mod tests {
             execution_mode: None,
             capability: ApplicationUninstallCapability::ViewOnly,
             record_state: ApplicationUninstallRecordState::OrphanedRegistration,
+            uninstall_diagnostic: None,
             application_path: None,
             possible_related_paths: Vec::new(),
             icon_path: None,

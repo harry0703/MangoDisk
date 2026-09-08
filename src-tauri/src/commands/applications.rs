@@ -173,3 +173,67 @@ pub async fn execute_application_leftovers(
 pub fn cancel_application_leftovers() {
     ApplicationLeftoverService::cancel();
 }
+
+/// Keeps the system fallback limited to one fixed destination. The WebView cannot supply a
+/// command, registry key, or custom URI, and opening Settings never counts as an uninstall.
+#[tauri::command]
+pub async fn open_windows_installed_apps() -> CommandResult<()> {
+    run_blocking("open_windows_installed_apps", open_installed_apps_settings).await
+}
+
+#[cfg(windows)]
+fn open_installed_apps_settings() -> Result<(), CoreError> {
+    log::info!("windows_installed_apps_open_requested destination=appsfeatures");
+    tauri_plugin_opener::open_url("ms-settings:appsfeatures", None::<&str>).map_err(|error| {
+        log::warn!(
+            "windows_installed_apps_open_failed error_digest={}",
+            blake3::hash(error.to_string().as_bytes()).to_hex()
+        );
+        CoreError::operation_failed("Windows installed apps settings could not be opened")
+    })?;
+    log::info!("windows_installed_apps_open_finished outcome=opened");
+    Ok(())
+}
+
+#[cfg(not(windows))]
+fn open_installed_apps_settings() -> Result<(), CoreError> {
+    Err(CoreError::operation_failed(
+        "Windows installed apps settings are unavailable on this platform",
+    ))
+}
+
+#[tauri::command]
+pub async fn remove_application_record(
+    app: tauri::AppHandle,
+    application_id: String,
+) -> CommandResult<()> {
+    run_blocking("remove_application_record", move || {
+        let result = ApplicationUninstallService::remove_application_record(&application_id, false);
+        // Verification can fail after a committed native deletion. Never keep an adapter cache
+        // that would present the old record as fresh after either a success or an uncertain result.
+        app.state::<ApplicationUninstallCatalogCache>().clear();
+        result
+    })
+    .await
+}
+
+/// Correlate the item the user opened with native diagnostics without displaying support IDs.
+/// Only IDs from the current Core-produced catalog are logged; caller-supplied text is discarded.
+#[tauri::command]
+pub fn log_application_uninstall_details(
+    app: tauri::AppHandle,
+    application_id: String,
+    catalog_revision: String,
+) {
+    let cache = app.state::<ApplicationUninstallCatalogCache>();
+    let Some(catalog) = cache.find(&catalog_revision) else {
+        return;
+    };
+    if let Some(candidate) = catalog
+        .candidates
+        .iter()
+        .find(|candidate| candidate.application_id == application_id)
+    {
+        log::info!("application_uninstall_details_opened application_id={} capability={:?} record_state={:?} reason={}", candidate.application_id, candidate.capability, candidate.record_state, candidate.uninstall_diagnostic.map_or("none", |reason| reason.stable_code()));
+    }
+}

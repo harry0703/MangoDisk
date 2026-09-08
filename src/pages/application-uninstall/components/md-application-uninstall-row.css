@@ -160,56 +160,6 @@
   font-size: 11px;
 }
 
-.possible-related-list {
-  display: flex;
-  min-width: 0;
-  flex-direction: column;
-  gap: 6px;
-  border-width: 1px;
-  border-radius: 11px;
-  margin-inline: var(--result-table-hierarchy-indent) 14px;
-  padding: 10px 11px;
-  @apply border-border bg-background;
-}
-
-.possible-related-list > p {
-  margin: 0;
-  @apply text-muted-foreground;
-  font-size: 11px;
-}
-
-.possible-related-location {
-  position: relative;
-  display: flex;
-  min-width: 0;
-  align-items: center;
-}
-
-.possible-related-location small {
-  min-width: 0;
-  flex: 1;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.possible-related-location > :deep(.icon-action) {
-  position: absolute;
-  right: 0;
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 0.14s ease;
-}
-
-.possible-related-location:is(:hover, :has(:focus-visible)) > :deep(.icon-action) {
-  opacity: 1;
-  pointer-events: auto;
-}
-
-.possible-related-location:is(:hover, :has(:focus-visible)) small {
-  padding-right: 32px;
-}
-
 .component-row {
   display: grid;
   min-width: 0;
@@ -319,4 +269,38 @@
   .application-row-line :deep(.application-expand) {
     grid-column: 3;
   }
+}
+
+/* Read-only details use the same icon/text columns without a misleading cleanup checkbox. */
+.readonly-detail-row .component-primary {
+  grid-column: 3 / -1;
+}
+
+.application-settings-link {
+  @apply text-primary;
+  width: fit-content;
+  height: auto;
+  justify-content: flex-start;
+  padding: 0;
+  font-size: 10px;
+}
+
+.application-settings-link:hover {
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.related-location-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 7px;
+  margin: 0;
+  padding-inline: var(--result-table-content-inline-padding, 14px);
+  @apply text-muted-foreground;
+  font-size: 10px;
+}
+
+.related-location-note > :deep(svg) {
+  flex: none;
+  margin-top: 1px;
 }

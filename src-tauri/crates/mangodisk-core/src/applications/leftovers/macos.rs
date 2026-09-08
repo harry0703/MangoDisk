@@ -726,6 +726,7 @@ mod tests {
         let container = write_container(&root, "com.example.helper", &root.join("Removed.app"));
         let inventory = ApplicationInventory::fixture(
             vec![InstalledApplication {
+                uninstall_diagnostic: None,
                 catalog_identifier: format!(
                     "macos-bundle:{}",
                     root.join("Example.app").to_string_lossy()

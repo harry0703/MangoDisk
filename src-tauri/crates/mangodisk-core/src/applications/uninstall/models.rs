@@ -5,7 +5,7 @@ use std::path::PathBuf;
 
 use crate::ApplicationCloseMode;
 
-pub const APPLICATION_UNINSTALL_SCAN_SCHEMA_VERSION: u32 = 9;
+pub const APPLICATION_UNINSTALL_SCAN_SCHEMA_VERSION: u32 = 10;
 pub const APPLICATION_UNINSTALL_INSPECTION_SCHEMA_VERSION: u32 = 3;
 pub const APPLICATION_UNINSTALL_PLAN_SCHEMA_VERSION: u32 = 2;
 pub const APPLICATION_UNINSTALL_BATCH_PLAN_SCHEMA_VERSION: u32 = 1;
@@ -102,6 +102,7 @@ pub struct ApplicationUninstallCandidate {
     pub execution_mode: Option<ApplicationUninstallExecutionMode>,
     pub capability: ApplicationUninstallCapability,
     pub record_state: ApplicationUninstallRecordState,
+    pub uninstall_diagnostic: Option<mangodisk_platform::ApplicationUninstallDiagnostic>,
     pub application_path: Option<String>,
     /// Existing user-data locations whose names match multiple stable catalog
     /// facts. These paths are read-only hints, not verified uninstall
@@ -358,7 +359,6 @@ pub enum ApplicationUninstallActionReason {
     VerificationFailed,
 }
 
-#[cfg(windows)]
 impl ApplicationUninstallActionReason {
     pub(super) const fn stable_code(self) -> &'static str {
         match self {

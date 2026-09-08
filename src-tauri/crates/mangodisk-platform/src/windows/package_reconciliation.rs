@@ -53,6 +53,7 @@ pub(super) fn merge(
         applications.insert(
             identity,
             InstalledApplication {
+                uninstall_diagnostic: None,
                 catalog_identifier: format!(
                     "windows-{stable_source}:{}",
                     fact.identifier.to_ascii_lowercase()
@@ -611,6 +612,7 @@ mod tests {
         uninstall_registration: Option<ApplicationUninstallRegistration>,
     ) -> InstalledApplication {
         InstalledApplication {
+            uninstall_diagnostic: None,
             catalog_identifier: format!("windows-registry:{}", name.to_ascii_lowercase()),
             source_identities: vec![ApplicationSourceIdentity {
                 source: ApplicationInventorySource::WindowsRegistry,

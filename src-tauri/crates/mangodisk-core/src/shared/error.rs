@@ -137,6 +137,7 @@ impl From<PlatformError> for CoreError {
     fn from(error: PlatformError) -> Self {
         let mutation_state = error.mutation_state();
         let code = match error.code() {
+            PlatformErrorCode::UserCancelled => CoreErrorCode::OperationCancelled,
             PlatformErrorCode::AccessDenied => CoreErrorCode::PermissionDenied,
             PlatformErrorCode::ItemChanged => CoreErrorCode::OperationFailed,
             _ => CoreErrorCode::Platform,
@@ -170,5 +171,14 @@ mod tests {
             error.mutation_state(),
             PlatformMutationState::MayHaveChanged
         );
+    }
+    #[test]
+    fn platform_user_cancellation_remains_non_failure_in_core() {
+        let error = CoreError::from(PlatformError::new(
+            mangodisk_platform::PlatformErrorCode::UserCancelled,
+            "elevation cancelled",
+        ));
+        assert_eq!(error.code(), super::CoreErrorCode::OperationCancelled);
+        assert_eq!(error.mutation_state(), PlatformMutationState::NotAttempted);
     }
 }

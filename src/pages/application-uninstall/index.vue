@@ -41,9 +41,12 @@ import type {
 } from '@/lib/models/application-close';
 import type { TraversalProgress } from '@/lib/models/progress';
 import { ICON_NAMES } from '@/lib/models/ui';
+import { ApplicationService } from '@/lib/services/application-service';
 import { ApplicationIconService } from '@/lib/services/application-icon-service';
+import { LoggerService } from '@/lib/services/logger-service';
 import { ByteSizeService } from '@/lib/services/byte-size-service';
 import { OperatingSystemService } from '@/lib/services/operating-system-service';
+import { parseCommandError } from '@/lib/utils/error';
 import * as FormatUtils from '@/lib/utils/format';
 
 import {
@@ -106,6 +109,24 @@ const emit = defineEmits<{
   open: [path: string];
 }>();
 
+function toggleDetails(candidate: ApplicationUninstallCandidate): void {
+  expandedId.value = expandedId.value === candidate.applicationId ? null : candidate.applicationId;
+  const revision = props.catalog?.catalogRevision;
+  if (expandedId.value && revision) {
+    void ApplicationService.recordUninstallDetailsOpened(candidate.applicationId, revision).catch(() => {
+      LoggerService.warn('application-uninstall', 'details_log_failed');
+    });
+  }
+}
+
+async function openWindowsInstalledApps(): Promise<void> {
+  try {
+    await ApplicationService.openWindowsInstalledApps();
+  } catch {
+    toast.error(t('applicationUninstall.openWindowsInstalledAppsFailed'));
+  }
+}
+
 const query = ref('');
 const filter = ref<ApplicationCatalogFilter>('all');
 const sort = ref<ApplicationCatalogSort>('sizeDescending');
@@ -113,12 +134,49 @@ const expandedId = ref<string | null>(null);
 const selectedIds = ref<string[]>([]);
 const selectedComponentIds = ref<Record<string, string[]>>({});
 const confirmOpen = ref(false);
+const recordToRemove = ref<ApplicationUninstallCandidate | null>(null);
+const removingRecord = ref(false);
+
+async function removeRecord(): Promise<void> {
+  const candidate = recordToRemove.value;
+  if (!candidate || removingRecord.value) return;
+  removingRecord.value = true;
+  try {
+    await ApplicationService.removeRecord(candidate.applicationId);
+    recordToRemove.value = null;
+    toast.success(t('applicationUninstall.removeRecordSuccess'));
+    emit('scan');
+  } catch (error) {
+    const failure = parseCommandError(error);
+    if (failure?.code === 'operationCancelled') {
+      recordToRemove.value = null;
+    } else if (failure?.details.mutationState === 'mayHaveChanged' || failure?.details.reason === 'itemChanged') {
+      // The registration may already be gone. Refresh instead of inviting another stale removal.
+      recordToRemove.value = null;
+      toast.info(t('applicationUninstall.removeRecordRefreshing'));
+      emit('scan');
+    } else {
+      toast.error(
+        t(
+          failure?.code === 'permissionDenied'
+            ? 'applicationUninstall.removeRecordPermissionDenied'
+            : 'applicationUninstall.removeRecordFailed'
+        )
+      );
+    }
+  } finally {
+    removingRecord.value = false;
+  }
+}
+
 const closeWorkflow = ref(createApplicationUninstallCloseWorkflow());
 const cancellationConfirmOpen = ref(false);
 const executionList = ref<HTMLElement | null>(null);
 const applicationList = ref<InstanceType<typeof MdResultTable> | null>(null);
 const iconUrls = ref<ReadonlyMap<string, string>>(new Map());
-const busy = computed(() => props.scanning || props.preparing || props.executing || props.closingApplications);
+const busy = computed(
+  () => props.scanning || props.preparing || props.executing || props.closingApplications || removingRecord.value
+);
 const confirmationLoading = computed(() => props.preparing || (confirmOpen.value && !props.plan && !props.preview));
 const candidates = computed(() => props.catalog?.candidates ?? []);
 const windowsCatalog = OperatingSystemService.isWindows();
@@ -728,8 +786,10 @@ function confirmCancelExecution() {
                 :uninstall-enabled="catalog.executionSupported"
                 @toggle-selection="toggleSelection(candidate)"
                 @toggle-component="toggleComponent(candidate, $event)"
-                @toggle-expanded="expandedId = expandedId === candidate.applicationId ? null : candidate.applicationId"
+                @toggle-expanded="toggleDetails(candidate)"
                 @open="emit('open', $event)"
+                @open-windows-settings="openWindowsInstalledApps"
+                @remove-record="recordToRemove = candidate"
                 @uninstall="prepareApplication(candidate)"
                 @icon-error="handleApplicationIconError(candidate.iconPath)"
               />
@@ -771,6 +831,21 @@ function confirmCancelExecution() {
       </MdSelectionActionBar>
     </template>
 
+    <MdDestructiveActionDialog
+      :open="recordToRemove !== null"
+      :title="t('applicationUninstall.removeRecordTitle')"
+      :summary-label="recordToRemove?.name ?? ''"
+      :description="t('applicationUninstall.removeRecordDescription')"
+      :cancel-label="t('common.cancel')"
+      :confirm-label="t('applicationUninstall.removeRecord')"
+      :busy="removingRecord"
+      @update:open="
+        open => {
+          if (!open) recordToRemove = null;
+        }
+      "
+      @confirm="removeRecord"
+    />
     <MdDestructiveActionDialog
       :open="confirmOpen"
       :title="

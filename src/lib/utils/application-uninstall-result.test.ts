@@ -27,6 +27,7 @@ function candidate(
     executionMode: null,
     capability,
     recordState: 'installed',
+    uninstallDiagnostic: null,
     applicationPath: `/Applications/${applicationId}.app`,
     possibleRelatedPaths: [],
     iconPath: null,

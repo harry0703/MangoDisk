@@ -142,6 +142,7 @@ const applicationCandidate: ApplicationUninstallCandidate = {
   executionMode: null,
   capability: 'ready',
   recordState: 'installed',
+  uninstallDiagnostic: null,
   applicationPath: '/Applications/Fixture App.app',
   possibleRelatedPaths: [],
   iconPath: null,

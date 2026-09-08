@@ -29,14 +29,15 @@ use winreg::{
 };
 
 use crate::{
+    application_uninstall_diagnostic_id,
     command::{
         run_controlled_command, ControlledCommandLimits, ControlledEnvironmentPolicy,
         ControlledExecutable,
     },
     inventory::{detect_tools, normalize_fact},
     ApplicationInstallScope, ApplicationInventorySource, ApplicationSourceIdentity,
-    ApplicationUninstallRegistration, InstalledApplication, PlatformCancellation, SystemInventory,
-    WindowsRegistryView,
+    ApplicationUninstallDiagnostic, ApplicationUninstallRegistration, InstalledApplication,
+    PlatformCancellation, SystemInventory, WindowsRegistryView,
 };
 
 use super::{native_uninstall, package_reconciliation, package_sources, path_identity};
@@ -577,6 +578,7 @@ fn merge_packaged_application(
             // to an executable uninstall candidate. Display names are not
             // unique and therefore cannot authorize package removal.
             existing.uninstall_registration = Some(uninstall_registration);
+            existing.uninstall_diagnostic = None;
         }
         return;
     }
@@ -585,6 +587,7 @@ fn merge_packaged_application(
     applications.insert(
         identity,
         InstalledApplication {
+            uninstall_diagnostic: None,
             catalog_identifier: format!(
                 "windows-appx:{}",
                 package.package_family_name.to_ascii_lowercase()
@@ -746,18 +749,41 @@ fn read_uninstall_view(
     applications: &mut HashMap<String, InstalledApplication>,
     conflicting_registrations: &mut HashSet<String>,
 ) -> (bool, bool) {
-    let Ok(uninstall) = root.open_subkey_with_flags(UNINSTALL_PATH, KEY_READ | view) else {
-        return (false, false);
+    let uninstall = match root.open_subkey_with_flags(UNINSTALL_PATH, KEY_READ | view) {
+        Ok(key) => key,
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => {
+            log::info!(
+                "windows_uninstall_inventory_view_absent scope={} registry_view={:?}",
+                scope.stable_code(),
+                registry_view(view)
+            );
+            return (false, false);
+        }
+        Err(error) => {
+            log::warn!(
+                "windows_uninstall_inventory_view_unavailable scope={} registry_view={:?} native_code={:?} error_kind={:?}",
+                scope.stable_code(), registry_view(view), error.raw_os_error(), error.kind()
+            );
+            return (false, false);
+        }
     };
     let mut complete = true;
     for key_name in uninstall.enum_keys() {
-        let Ok(key_name) = key_name else {
-            complete = false;
-            continue;
+        let key_name = match key_name {
+            Ok(name) => name,
+            Err(error) => {
+                log::warn!("windows_uninstall_inventory_entry_failed scope={} registry_view={:?} stage=enumerate native_code={:?} error_kind={:?}", scope.stable_code(), registry_view(view), error.raw_os_error(), error.kind());
+                complete = false;
+                continue;
+            }
         };
-        let Ok(entry) = uninstall.open_subkey_with_flags(&key_name, KEY_READ | view) else {
-            complete = false;
-            continue;
+        let entry = match uninstall.open_subkey_with_flags(&key_name, KEY_READ | view) {
+            Ok(entry) => entry,
+            Err(error) => {
+                log::warn!("windows_uninstall_inventory_entry_failed application_id={} scope={} registry_view={:?} stage=open_entry native_code={:?} error_kind={:?}", application_uninstall_diagnostic_id(&format!("windows-registry:{}:{}", scope.stable_code(), key_name.to_ascii_lowercase())), scope.stable_code(), registry_view(view), error.raw_os_error(), error.kind());
+                complete = false;
+                continue;
+            }
         };
         if !is_visible_uninstall_entry(&entry) {
             continue;
@@ -771,9 +797,22 @@ fn read_uninstall_view(
         let registry_estimated_bytes = estimated_bytes_from_kib(estimated_size_kib);
         let registry_install_date =
             string_value(&entry, "InstallDate").and_then(|value| parse_install_date(&value));
-        let mut uninstall_registration = msi_registration(&entry, &key_name).or_else(|| {
-            registered_uninstall_registration(&entry, &key_name, scope, registry_view(view))
-        });
+        let mut uninstall_diagnostic = None;
+        let mut uninstall_registration =
+            msi_registration(&entry, &key_name).or_else(
+                || match registered_uninstall_registration(
+                    &entry,
+                    &key_name,
+                    scope,
+                    registry_view(view),
+                ) {
+                    Ok(registration) => Some(registration),
+                    Err(reason) => {
+                        uninstall_diagnostic = Some(reason);
+                        None
+                    }
+                },
+            );
         let chocolatey_package = string_value(&entry, "ChocolateyPackageName").or_else(|| {
             string_value(&entry, "InstallSource")
                 .as_deref()
@@ -789,6 +828,7 @@ fn read_uninstall_view(
             // the underlying MSI registration. Direct MSI removal would leave
             // Chocolatey's package database stale.
             uninstall_registration = Some(registration);
+            uninstall_diagnostic = None;
         }
         let identity_scope = uninstall_registration
             .as_ref()
@@ -923,6 +963,7 @@ fn read_uninstall_view(
         }
         if conflicting_registrations.contains(&identity) {
             uninstall_registration = None;
+            uninstall_diagnostic = Some(ApplicationUninstallDiagnostic::RegistrationConflict);
         }
         applications
             .entry(identity.clone())
@@ -952,6 +993,7 @@ fn read_uninstall_view(
                         existing
                             .uninstall_registration
                             .clone_from(&uninstall_registration);
+                        existing.uninstall_diagnostic = None;
                     }
                     (Some(_), Some(_))
                         if !registrations_are_compatible(
@@ -965,6 +1007,12 @@ fn read_uninstall_view(
                         // view cannot accidentally restore one side.
                         conflicting_registrations.insert(identity.clone());
                         existing.uninstall_registration = None;
+                        existing.uninstall_diagnostic = Some(ApplicationUninstallDiagnostic::RegistrationConflict);
+                        log::warn!(
+                            "windows_uninstall_registration_rejected application_id={} scope={} registry_view={:?} reason=registration_conflict",
+                            application_uninstall_diagnostic_id(&existing.catalog_identifier),
+                            scope.stable_code(), registry_view(view)
+                        );
                     }
                     _ => {}
                 }
@@ -983,6 +1031,7 @@ fn read_uninstall_view(
                 }
             })
             .or_insert(InstalledApplication {
+                uninstall_diagnostic,
                 catalog_identifier: format!("windows-registry:{identity}"),
                 source_identities,
                 primary_identifier: key_name,
@@ -1197,7 +1246,7 @@ fn parse_registry_path(value: &str) -> Option<PathBuf> {
     (!value.is_empty()).then(|| PathBuf::from(expand_environment_path(value)))
 }
 
-fn parse_display_icon_path(value: &str) -> Option<String> {
+pub(super) fn parse_display_icon_path(value: &str) -> Option<String> {
     let value = value.trim();
     if value.is_empty() {
         return None;
@@ -1258,14 +1307,42 @@ fn registered_uninstall_registration(
     key_name: &str,
     scope: RegistryScope,
     registry_view: WindowsRegistryView,
-) -> Option<ApplicationUninstallRegistration> {
-    let command = string_value(entry, "UninstallString")?;
-    let (command_kind, command_digest) = native_uninstall::registered_uninstall_command_evidence(
-        &command,
-        key_name,
-        scope.install_scope(),
-    )?;
-    Some(ApplicationUninstallRegistration::WindowsRegistered {
+) -> Result<ApplicationUninstallRegistration, ApplicationUninstallDiagnostic> {
+    let application_id = application_uninstall_diagnostic_id(&format!(
+        "windows-registry:{}:{}",
+        scope.stable_code(),
+        key_name.to_ascii_lowercase()
+    ));
+    let evidence = entry
+        .get_value::<String, _>("UninstallString")
+        .map_err(|error| native_uninstall::RegisteredCommandRejection {
+            reason: if error.kind() == std::io::ErrorKind::NotFound {
+                ApplicationUninstallDiagnostic::CommandMissing
+            } else {
+                ApplicationUninstallDiagnostic::CommandUnreadable
+            },
+            native_code: error.raw_os_error(),
+            detail: "read_registry_value",
+        })
+        .and_then(|command| {
+            native_uninstall::registered_uninstall_command_evidence_with_diagnostic(
+                &command,
+                key_name,
+                scope.install_scope(),
+            )
+        });
+    let (command_kind, command_digest) = evidence.map_err(|rejection| {
+        // Log the exact rejection at the evidence boundary, not just a catalog blocked count.
+        // The UI interaction logs use this same redacted ID so support can locate an affected application
+        // without recording its name, registry key, command line, or installation directory.
+        log::warn!(
+            "windows_uninstall_registration_rejected application_id={} scope={} registry_view={:?} source=uninstall_string reason={} detail={} native_code={:?} quiet_command_present={}",
+            application_id, scope.stable_code(), registry_view, rejection.reason.stable_code(), rejection.detail,
+            rejection.native_code, entry.get_raw_value("QuietUninstallString").is_ok()
+        );
+        rejection.reason
+    })?;
+    Ok(ApplicationUninstallRegistration::WindowsRegistered {
         key_name: key_name.to_string(),
         scope: scope.install_scope(),
         registry_view,
@@ -1671,6 +1748,7 @@ mod tests {
         let mut applications = HashMap::from([(
             "machine:example".to_string(),
             InstalledApplication {
+                uninstall_diagnostic: None,
                 catalog_identifier: "windows-registry:machine:example".to_string(),
                 source_identities: vec![ApplicationSourceIdentity {
                     source: ApplicationInventorySource::WindowsRegistry,

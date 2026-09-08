@@ -575,6 +575,7 @@ fn read_application_with_cancellation(
     executable_paths.dedup();
     Some((
         InstalledApplication {
+            uninstall_diagnostic: None,
             catalog_identifier: format!("macos-bundle:{}", bundle.to_string_lossy()),
             source_identities: vec![ApplicationSourceIdentity {
                 source: ApplicationInventorySource::MacosBundle,
@@ -1247,6 +1248,7 @@ mod tests {
         fs::write(&executable, b"application executable")
             .expect("the executable fixture should be written");
         let mut application = InstalledApplication {
+            uninstall_diagnostic: None,
             catalog_identifier: format!("macos-bundle:{}", root.to_string_lossy()),
             source_identities: vec![ApplicationSourceIdentity {
                 source: ApplicationInventorySource::MacosBundle,

@@ -76,6 +76,13 @@ impl CommandError {
             if let Some(reason) = error.reason() {
                 command_error.details.insert("reason", reason.as_str());
             }
+            // A failed postflight can follow a successful write. Preserve that uncertainty so
+            // adapters refresh native state instead of presenting a retry against stale data.
+            if error.mutation_state() == mangodisk_platform::PlatformMutationState::MayHaveChanged {
+                command_error
+                    .details
+                    .insert("mutationState", "mayHaveChanged");
+            }
             return command_error;
         }
 
@@ -199,5 +206,31 @@ mod tests {
         assert_eq!(json["code"], "operationFailed");
         assert_eq!(json["details"]["reason"], "resourceBusy");
         assert!(!json.to_string().contains("private native diagnostic"));
+    }
+    #[test]
+    fn native_cancellation_and_uncertain_writes_reach_the_frontend() {
+        let cancelled = CoreError::from(mangodisk_platform::PlatformError::new(
+            mangodisk_platform::PlatformErrorCode::UserCancelled,
+            "private cancellation detail",
+        ));
+        let json = serde_json::to_value(CommandError::operation(
+            "remove_application_record",
+            cancelled,
+        ))
+        .unwrap();
+        assert_eq!(json["code"], "operationCancelled");
+        assert_eq!(json["retryable"], false);
+        assert!(json["details"].get("mutationState").is_none());
+        let uncertain = CoreError::from(
+            mangodisk_platform::PlatformError::operation_failed("private verification detail")
+                .with_possible_side_effects(),
+        );
+        let json = serde_json::to_value(CommandError::operation(
+            "remove_application_record",
+            uncertain,
+        ))
+        .unwrap();
+        assert_eq!(json["details"]["mutationState"], "mayHaveChanged");
+        assert!(!json.to_string().contains("private"));
     }
 }
