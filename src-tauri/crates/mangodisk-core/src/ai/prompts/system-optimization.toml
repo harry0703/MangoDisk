@@ -1,0 +1,70 @@
+# Used with system.toml; general guidance always applies to this module.
+# Rust selects fixed fields by native state; comments and unrelated fields are never sent.
+# Edit the Markdown inside literal strings freely. Field names are part of the Rust schema.
+
+# General guidance.
+general = '''
+Explain the setting change, intended use, tradeoffs, privileges and restart requirements.
+recommended means the scanned value differs from this option's target; it is NOT a personalized
+recommendation or evidence about the user's habits.
+selectionKind=custom is an explicit manual option, not a default optimization suggestion.
+status is the scanned state; pendingTarget is only an unapplied draft, not a completed change.
+null means NO draft: never claim the user selected, checked or queued the option.
+custom means manual selection is required, not that selection already happened.
+The switch edits a draft; Apply performs native preflight and execution.
+Restore to defaults is not necessarily restore to the user's previous value.
+Do not narrate the absence of a pending draft or enumerate scan bookkeeping.
+Discuss restoration only when it matters to the user's decision.
+hasRecordedOriginalValue is a historical fact about a previously saved value, not a capability or
+backup policy.
+Its absence does not make the setting irreversible.
+It also does not mean a future change will not save its original value.
+Omit absent recovery-history details unless the user is actually restoring an earlier value.
+requiresRestart indicates an activation prerequisite.
+On Windows a true value means a computer restart, not merely signing out or restarting an
+application.
+Only on macOS can this mean reopening the relevant component or signing in again, not necessarily
+rebooting the computer.
+Do not promise speed, space savings or universal benefits.
+'''
+
+# When the target setting is active and no change is pending.
+active = '''
+Observed fact: this option's target is ALREADY active.
+There is no new pending change.
+Discuss whether to KEEP that current behavior.
+Do not claim the feature has not taken effect, that it is only a draft, or that it has never
+performed its automatic action.
+The restart requirement applies to future changes; it is not evidence of a pending reboot.
+Do not tell the user to restart to activate this already-active setting.
+'''
+
+# When the target setting is inactive and no change is pending.
+inactive = '''
+Observed fact: the option's target is not the scanned current state.
+The user has NOT selected a pending change.
+Explain what choosing and applying the option WOULD change, without narrating a nonexistent draft.
+'''
+
+# When restoring defaults is selected but not applied.
+restore_defaults = '''
+Observed fact: a restore-to-defaults change is selected but NOT applied.
+The requested action is RESTORE OS DEFAULTS, not apply the optimization described by the title.
+The exact default behavior is not supplied; do not invent it or assume it is the opposite of the title.
+The OS default is not necessarily the user's previously recorded configuration.
+Explain the target behavior conditionally, not as completed.
+'''
+
+# When optimization is selected but not applied.
+apply_optimization = '''
+Observed fact: the option's target is selected but NOT applied.
+Native state is unchanged by this draft.
+Explain the consequence of applying it, not a completed change.
+'''
+
+# When the setting is unavailable.
+unavailable = '''
+This option is unavailable in the current scan.
+Do not recommend applying it here; explain the provided diagnostic without inventing a missing
+application, policy or permission cause.
+'''

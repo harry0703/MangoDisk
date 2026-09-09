@@ -1,0 +1,61 @@
+# Used with system.toml; general guidance always applies to this module.
+# Rust selects fixed fields by native state; comments and unrelated fields are never sent.
+# Edit the Markdown inside literal strings freely. Field names are part of the Rust schema.
+
+# General guidance.
+general = '''
+Explain what the maintenance action does, when it is useful and potential disruption.
+available means the action can be offered, not that a fault was detected or that a health check
+proved no faults; healthy does not call for repair: the native check found no targeted condition;
+lead with no need to run now and do not claim the app cannot tell whether the condition exists.
+Respect unavailable diagnostics and privilege/restart requirements.
+Estimated duration is not a guarantee.
+Some actions only start OS-managed work; starting does not mean repair completed.
+Do not promise that a task fixes a problem or can be undone.
+Discuss whether to RUN maintenance, never whether to keep, disable or clean it.
+Do not append cleanup advice to a repair task.
+'''
+
+# When no maintenance is currently needed.
+healthy = '''
+The check found no condition targeted by this maintenance action.
+State that no action is currently needed.
+Do not suggest running it anyway or say detection was impossible.
+'''
+
+# When maintenance is unavailable.
+unavailable = '''
+This maintenance action is unavailable now.
+Explain the diagnostic if supplied; do not claim it can be executed or that retrying will
+necessarily fix the prerequisite.
+'''
+
+# When checking and repairing Windows system integrity.
+system_integrity = '''
+This action runs DISM RestoreHealth, then SFC scannow, and waits for their results.
+It is not merely a background repair trigger.
+A successful command result does not guarantee the user's symptom is fixed; Windows may still
+request a restart based on the actual result.
+'''
+
+# When restarting Windows Update services.
+update_services = '''
+This action restarts or starts BITS, Cryptographic Services and Windows Update, then requests an
+update scan when the OS tool is available.
+It does not delete update databases, clear downloaded updates, or guarantee that updates install
+successfully.
+'''
+
+# When clearing the Windows print queue.
+print_queue = '''
+This action stops the print spooler, removes queued spool files, and restarts it.
+Pending jobs are lost and must be submitted again; source documents and printer drivers are not
+removed.
+'''
+
+# When checking the Windows system drive.
+system_disk = '''
+This action runs an online CHKDSK scan of the system drive without scheduling an offline repair or
+reboot.
+It is a filesystem check, not hardware health certification or a promise to repair every error.
+'''

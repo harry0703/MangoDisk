@@ -59,6 +59,8 @@ fn capture_ai_evaluation_catalogs() {
 struct EvaluationCase {
     id: String,
     context: AiContext,
+    #[serde(default)]
+    language: Option<String>,
 }
 
 async fn evaluate(
@@ -80,7 +82,7 @@ async fn evaluate(
         config.clone(),
         AiRequest {
             context: Some(case.context.clone()),
-            language: "zh-CN".into(),
+            language: case.language.as_deref().unwrap_or("zh-CN").into(),
         },
         &operation_id,
         receiver,
@@ -94,13 +96,14 @@ async fn evaluate(
     .await;
     let elapsed_ms = started.elapsed().as_millis();
     println!(
-        "evaluation_completed case={} success={} elapsed_ms={elapsed_ms}",
+        "evaluation_completed case={} success={} error={:?} elapsed_ms={elapsed_ms}",
         case.id,
-        result.is_ok()
+        result.is_ok(),
+        result.as_ref().err()
     );
     match result {
         Ok(usage) => {
-            json!({"id":case.id,"module":case.context.subject.module_name(),"elapsedMs":elapsed_ms,"answer":answer,"usage":usage,"error":null})
+            json!({"id":case.id,"language":case.language.as_deref().unwrap_or("zh-CN"),"module":case.context.subject.module_name(),"elapsedMs":elapsed_ms,"answer":answer,"usage":usage,"error":null})
         }
         Err(error) => {
             json!({"id":case.id,"module":case.context.subject.module_name(),"elapsedMs":elapsed_ms,"answer":answer,"error":error})
@@ -124,6 +127,9 @@ async fn evaluate_ai_corpus() {
                     .all(|c| c.is_ascii_alphanumeric() || c == '-')
         );
         case.context.validate().unwrap();
+        assert!(super::language::valid_language_tag(
+            case.language.as_deref().unwrap_or("zh-CN")
+        ));
     }
     let config = AiConfiguration {
         schema_version: 1,
@@ -137,18 +143,24 @@ async fn evaluate_ai_corpus() {
         max_tokens: None,
     };
     config.validate().unwrap();
+    // Serialize when a provider limits concurrent streams. This evaluation
+    // control does not alter production requests or add automatic retries.
+    let concurrency = std::env::var("MANGODISK_AI_EVAL_CONCURRENCY")
+        .map(|value| value.parse::<usize>().expect("numeric concurrency"))
+        .unwrap_or(2);
+    assert!((1..=2).contains(&concurrency));
     let mut file = fs::OpenOptions::new()
         .write(true)
         .create_new(true)
         .open(output)
         .unwrap();
-    // Two explicit requests at a time keep the evaluation bounded without
-    // modifying production's single-request UI lifecycle or adding retries.
-    for (pair_index, pair) in cases.chunks(2).enumerate() {
-        let first = evaluate(&pair[0], &config, pair_index * 2);
+    for (pair_index, pair) in cases.chunks(concurrency).enumerate() {
+        let first = evaluate(&pair[0], &config, pair_index * concurrency);
         let values = if pair.len() == 2 {
-            let (left, right) =
-                tokio::join!(first, evaluate(&pair[1], &config, pair_index * 2 + 1));
+            let (left, right) = tokio::join!(
+                first,
+                evaluate(&pair[1], &config, pair_index * concurrency + 1)
+            );
             vec![left, right]
         } else {
             vec![first.await]

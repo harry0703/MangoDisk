@@ -288,6 +288,11 @@ pub async fn official_explain(
     // its prompt only for older clients; this field is covered by the body signature.
     let body = explanation_body(&context, &input.language)?;
     let builder = request(&metadata, id, Method::POST, EXPLANATION_PATH, body)?;
+    // Request validation bounds the language tag before it reaches diagnostics.
+    log::info!(
+        "ai_official_request_policy operation_id={id} language={}",
+        input.language
+    );
     transport::stream_request(builder, id, cancel, emit, true).await
 }
 

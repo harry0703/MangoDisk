@@ -1,0 +1,106 @@
+# Used with system.toml; general guidance always applies to this module.
+# Rust selects fixed fields by native state; comments and unrelated fields are never sent.
+# Edit the Markdown inside literal strings freely. Field names are part of the Rust schema.
+
+# General guidance.
+general = '''
+Explain which activity or account state this data kind records and the removal consequences.
+Respect impact, capability, recommendation, timeRange, requiresBrowserClose and
+synchronizationMayPropagate.
+Download history is not the downloaded files.
+Cookies or sessions may affect sign-in.
+Do not describe a blocked or review-only item as cleanable.
+If schemaUnsupported/unsupported/unavailable prevents MangoDisk cleanup, explain that before any
+generic cleanup prerequisites; do not tell users to close a browser and then use that same browser's
+settings.
+Close requirements apply only to supported MangoDisk cleanup.
+Do not claim complete erasure from backups, cloud accounts or other devices.
+Zero count with a blocked capability is not proof of no records.
+estimatedBytes is an estimate, not verified reclaimed space: zero with positive itemCount does not
+mean empty content, corrupted statistics or no disk impact.
+requiresBrowserClose also covers the owning desktop application; never tell users to close an
+unrelated browser.
+synchronizationMayPropagate is a possibility, not proof synchronization is enabled; use conditional
+language.
+The synchronization flag describes the cleanup operation, not the user's account setting: neither
+true nor false proves account sync is enabled or disabled.
+Never state 'sync is off' from this field.
+The recommendation is MangoDisk's selection default, not an official vendor endorsement or proof
+cleanup is necessary.
+Only capability=empty with itemCount=0 confirms an empty result within the selected scope; then lead
+with no current cleanup needed.
+Permission-required, unsupported, unavailable or running-application states take precedence over
+zero counts.
+'''
+
+# When read permission is missing.
+permission_required = '''
+Observed limitation: MangoDisk lacks permission to read this item.
+Start by explaining that access is restricted and its actual content/size is UNKNOWN.
+Zero counts or bytes are not an empty scan result: never say the cache is empty, no records exist,
+there is no space to reclaim, or cleanup is unnecessary.
+Suggest granting the required access and rescanning only if the user wants to inspect or clean it;
+do not claim closing the app alone resolves missing permission.
+'''
+
+# When cleanup is unsupported or unavailable.
+unavailable = '''
+Observed limitation: this item is not supported or available for MangoDisk cleanup.
+Explain that restriction first.
+Its counts do not prove the actual content is empty or that cleanup is unnecessary.
+Do not invent a permission fix when the capability does not report missing permission.
+'''
+
+# When the owning application is running and no records were read.
+application_running = '''
+Observed limitation: the owning application is running and no records were read.
+Actual content is UNKNOWN, not confirmed empty.
+Explain the close-and-rescan prerequisite before advising whether there is anything to clean.
+'''
+
+# When a supported scan found no records.
+empty = '''
+Observed result: the supported scan found no records for this item in the selected scope and time
+range.
+No cleanup is currently needed for that scope; do not generalize to other data or devices.
+'''
+
+# When clearing Windows network connection history.
+windows_network_history = '''
+This Windows item only removes Explorer Map Network Drive MRU and FindComputerMRU history.
+It does NOT remove Wi-Fi profiles/passwords, active connections, mapped drives or network
+authentication.
+Do not describe Wi-Fi connection times or require reconnecting.
+'''
+
+# When clearing browsing, search or download history.
+history = '''
+This item removes the selected history records only, not cookies, saved passwords or current login
+sessions.
+Do not predict website sign-out or deletion of downloaded files.
+Other history categories are separate.
+'''
+
+# When clearing editor local history.
+editor_history = '''
+Editor local history contains previous file snapshots, not current working files, Git commits or the
+whole editor configuration.
+Removing snapshots loses that local rollback route.
+A zero space estimate does not establish zero reclaimable bytes.
+'''
+
+# When clearing the current clipboard.
+current_clipboard = '''
+Only the current clipboard slot is targeted.
+It is not the Windows clipboard history, a history log, cloud clipboard or third-party clipboard
+manager.
+If empty, say nothing is currently available to clear, rather than recommending an immediate
+cleanup.
+'''
+
+# When clearing recent-item references.
+recent_items = '''
+These are recent-use references, not the referenced files.
+Clearing them does not delete documents or images.
+Close only the owning application if the supplied capability requires it.
+'''

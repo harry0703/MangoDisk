@@ -13,7 +13,13 @@ mod project_artifact_schema;
 #[allow(dead_code)]
 mod protected_paths;
 
+#[path = "src/ai/prompt_schema.rs"]
+mod prompt_schema;
+
 fn main() {
+    println!("cargo:rerun-if-changed=src/ai/prompts");
+    prompt_schema::load()
+        .unwrap_or_else(|error| panic!("AI prompt build validation failed: {error}"));
     let manifest_directory = PathBuf::from(
         env::var_os("CARGO_MANIFEST_DIR").expect("Cargo must provide a manifest directory"),
     );

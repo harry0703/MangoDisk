@@ -51,11 +51,45 @@ authorize cleanup. Existing native preflight and confirmation remain authoritati
   Execution arguments, opaque operational IDs, privacy profiles and record details
   remain excluded. Model attribution is inference, not proof of ownership or safety.
 - Core combines common explanation boundaries with a subject-specific prompt.
+  The requested UI language tag explicitly controls the answer language,
+  regardless of the language used in item metadata. Rust contains no language
+  name mapping or supported-UI-locale list.
   The model must distinguish startup configuration from service runtime, draft
   settings from applied changes, and available maintenance from diagnosed faults.
   No prompt editor or model-driven operation capabilities are exposed.
 - Page deactivation or unmounting does not cancel explanations. Native state
   changes dismiss only that module's panel; they do not generate paid requests.
+
+## Editing prompts
+
+Prompt text lives in six TOML resources in [`prompts/`](prompts/):
+
+- [system.toml](prompts/system.toml): shared language, presentation and operation boundaries;
+- [cleanup.toml](prompts/cleanup.toml), [privacy.toml](prompts/privacy.toml),
+  [startup.toml](prompts/startup.toml),
+  [system-optimization.toml](prompts/system-optimization.toml) and
+  [system-maintenance.toml](prompts/system-maintenance.toml): each tool's general
+  guidance and conditional instructions.
+
+Use multiline literal strings (`'''`) to edit Markdown without escaping newlines
+or backslashes. TOML comments explain when each field applies; comments are never
+sent to the model. Headings inside the text are ordinary Markdown, not selection keys.
+Only leading/trailing framing whitespace is trimmed; internal paragraph breaks remain.
+
+Edit the text and rebuild to update instructions. `{{language}}` in `system.shared`
+is the only placeholder; it receives the validated UI language tag exactly once.
+Adding a UI language needs no Rust prompt mapping. Stable field names are declared
+in [prompt_schema.rs](prompt_schema.rs); renaming a field requires updating its
+Rust declaration and typed selectors. The build script uses the same schema to reject
+missing, unknown or duplicate fields, empty text and invalid placeholders, with
+source diagnostics. Do not use unsupported template markers (`{{...}}`) in other fields.
+
+Sources are embedded with `include_str!` and parsed once per process. Runtime does
+not read files or split Markdown headings. [prompt.rs](prompt.rs) selects applicable
+fields using typed domain facts. Keep these conditions intact when editing text;
+unrelated instructions must not be sent. Custom and free providers use the same
+assembled prompt. File count does not determine token usage: only selected text
+enters the request, not TOML syntax, field names or maintenance comments.
 
 ## Provider contract
 
@@ -134,14 +168,17 @@ typography and inert links. Every streaming update is sanitized through an
 explicit formatting allowlist: no scripts, images, embedded documents, styles,
 or event handlers. If sanitization is unsupported, Vue renders plain text and
 logs a typed compatibility diagnostic. Reasoning stays plain text. Prompts ask
-for a short conclusion, brief bullets, and selective bold emphasis, not headings
-or tables. Unexpected code blocks and tables remain locally scrollable. Copy
+for a conclusion, useful bullets, and selective bold emphasis, not headings
+or tables. No fixed word or character budget is imposed by the prompt.
+Language, style, operational boundaries and domain facts are separate prompt sections.
+Unexpected code blocks and tables remain locally scrollable. Copy
 preserves the answer's Markdown source; mouse selection copies visible text.
 Sanitizer regression tests use jsdom because DOMPurify does not support happy-dom
 as a security test environment. Production rendering still uses the native WebView.
 
 Logs contain module tags, context schema versions, operation IDs, durations, HTTP status, typed failure reasons, and
 token counts, text/reasoning byte counts, stream completion and request policy.
+Request policy logs include the validated output language for both provider modes.
 Stream summaries also cover cancellation and report the actual terminal error;
 normal cancellation is an informational event, not a warning. HTTP error bodies
 are read only for diagnostics, bounded at 8 KiB and two seconds. Known provider
@@ -175,15 +212,21 @@ Run repository checks and Core tests on macOS and Windows. The ignored
 `MANGODISK_AI_TEST_MODEL`; it can incur provider charges. Select a synthetic
 module fixture with `MANGODISK_AI_TEST_MODULE` (defaults to `cleanup`). Check the test source
 for current environment variable names before running it.
+Set `MANGODISK_AI_TEST_LANGUAGE` to review another output language (defaults to
+`zh-CN`). This opt-in test prints its synthetic-fixture answer for manual review;
+a successful stream alone does not prove that the requested language was used.
 
 Two ignored tests support reproducible multi-module evaluation:
 - `capture_ai_evaluation_catalogs` reads native catalogs into an existing absolute
   `MANGODISK_AI_EVAL_DIRECTORY`, using isolated application state. It never cleans
   files or changes startup/system settings.
-- `evaluate_ai_corpus` reads an explicit JSON array of `{id, context}` from
+- `evaluate_ai_corpus` reads an explicit JSON array of `{id, context, language?}` from
   `MANGODISK_AI_EVAL_INPUT` and writes answer/usage/timing records to a new
   `MANGODISK_AI_EVAL_OUTPUT` file. It uses the production transport and default
-  reasoning, with two requests at a time and no automatic retries. The provider
+  reasoning, with two requests at a time and no automatic retries. Optional per-case
+  language defaults to `zh-CN`; set `MANGODISK_AI_EVAL_CONCURRENCY=1` for serial
+  comparisons on rate-limited providers. Results include actual input/output token
+  usage and the full answer for quality review. The provider
   variables above are required. Validate costs and review every answer manually;
   HTTP success is not evidence of factual accuracy.
 Keep catalogs, corpora and raw answers outside the repository and feedback logs:

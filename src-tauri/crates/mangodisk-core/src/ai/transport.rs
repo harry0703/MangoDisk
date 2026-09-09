@@ -90,7 +90,8 @@ pub async fn explain(
         return Err(AiError::Cancelled);
     }
     log::info!(
-        "ai_request_policy operation_id={operation_id} reasoning={:?} max_tokens={:?} temperature={:?} timeout_seconds=180 context_bytes={} wire_limit_bytes={MAX_STREAM_WIRE_BYTES}",
+        "ai_request_policy operation_id={operation_id} language={} reasoning={:?} max_tokens={:?} temperature={:?} timeout_seconds=180 context_bytes={} wire_limit_bytes={MAX_STREAM_WIRE_BYTES}",
+        request.language,
         config.reasoning,
         config.max_tokens,
         config.temperature,
@@ -441,6 +442,8 @@ mod tests {
                 ReasoningMode::Disabled
             };
         let module = std::env::var("MANGODISK_AI_TEST_MODULE").unwrap_or_else(|_| "cleanup".into());
+        let language =
+            std::env::var("MANGODISK_AI_TEST_LANGUAGE").unwrap_or_else(|_| "zh-CN".into());
         let fixtures: Vec<serde_json::Value> = serde_json::from_str(include_str!(
             "../../../../../tests/fixtures/ai-context-v2.json"
         ))
@@ -453,6 +456,7 @@ mod tests {
         let (_cancel, receiver) = watch::channel(false);
         let mut chunks = 0;
         let mut reasoning_chunks = 0;
+        let mut answer = String::new();
         // Match the production adapter's UUID-shaped correlation header.
         let operation_id = format!(
             "00000000-0000-4000-8000-{:012x}",
@@ -466,13 +470,16 @@ mod tests {
             config,
             AiRequest {
                 context: Some(context),
-                language: "zh-CN".into(),
+                language: language.clone(),
             },
             &operation_id,
             receiver,
             |delta| {
                 match delta {
-                    AiDelta::Text(_) => chunks += 1,
+                    AiDelta::Text(text) => {
+                        chunks += 1;
+                        answer.push_str(&text);
+                    }
                     AiDelta::Reasoning(_) => reasoning_chunks += 1,
                 }
                 true
@@ -482,6 +489,9 @@ mod tests {
         assert!(result.is_ok(), "provider result: {:?}", result.err());
         assert!(chunks > 1, "expected multiple streamed text chunks");
         println!("provider_stream text_chunks={chunks} reasoning_chunks={reasoning_chunks}");
+        // This opt-in test sends synthetic fixtures only. Retain its answer for
+        // language review; HTTP success alone cannot verify model compliance.
+        println!("provider_answer language={language}: {answer}");
     }
 
     #[tokio::test]

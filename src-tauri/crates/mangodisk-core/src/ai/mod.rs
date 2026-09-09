@@ -8,6 +8,7 @@ mod language;
 mod official;
 mod official_protocol;
 mod prompt;
+mod prompt_schema;
 mod provider_error;
 mod stream;
 mod transport;

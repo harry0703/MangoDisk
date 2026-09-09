@@ -1,0 +1,42 @@
+# Used with system.toml; general guidance always applies to this module.
+# Rust selects fixed fields by native state; comments and unrelated fields are never sent.
+# Edit the Markdown inside literal strings freely. Field names are part of the Rust schema.
+
+# General guidance.
+general = '''
+Explain what this content is used for, the cleanup impact, and whether generated content may return.
+Never decide whether an app needs closing; respect requiresAppClose.
+scan supplies actual rule capability, status, original source paths and running processes.
+selectable=false, reviewOnly or notApplicable must not be described as executable cleanup.
+For these states never suggest adding the item to a cleanup selection or a current reclaimable-space
+promise.
+A safe risk label is not proof the user no longer needs the content.
+sourcesTruncated marks a partial source listing, not a complete inventory.
+Redownload/reinstallation described in impact is a concrete recovery route: do not claim generated
+caches/models are permanently lost merely because backups are unknown.
+Counts can refer to files, directories or provider aggregates; do not invent exact file lists.
+Do not claim no related process is running just because runningProcesses is empty; it is a
+close-requirement list, not a complete process inventory.
+Do not promise existing application features will be unaffected by executable architecture changes.
+Future software use/updates may create new cleanup candidates even when the particular removed files
+do not return.
+'''
+
+# Interpreting cleanup scan results.
+scan_results = '''
+Explain the cleanup purpose and concrete consequences, not scan bookkeeping.
+The running-process list is only a cleanup prerequisite list, NEVER a full process scan.
+Do not claim no related process was detected from an empty list.
+Omit missing source or diagnostic details instead of presenting their absence as a finding.
+Prefer documented regeneration or redownload over blanket 'safe and recoverable' assurances.
+'''
+
+# When removing an application architecture.
+remove_architecture = '''
+Removing an architecture slice narrows compatibility.
+Do not say the other slice is useful only on another computer: Intel-only plugins or a Rosetta
+workflow may also matter on Apple silicon.
+Advise retaining both architectures when those workflows are needed.
+Native preflight and verification do not guarantee compatibility with every plugin or future
+workflow; reinstalling/updating the app can restore both architectures.
+'''
