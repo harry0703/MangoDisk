@@ -1083,9 +1083,12 @@
     #[test]
     fn stale_codex_reports_match_only_direct_report_files() {
         let _operation_lock = crate::shared::operation::test_operation_lock();
-        let sandbox = std::env::current_dir()
-            .expect("the test process must have a working directory")
-            .join("target")
+        // A checkout can live under protected Projects/Documents directories. Keep this
+        // disposable fixture in the canonical OS temporary directory so the production root
+        // policy still applies. Canonicalization also avoids the macOS /var alias when the
+        // direct-child matcher compares a file's parent with the canonical cleanup root.
+        let sandbox = fs::canonicalize(std::env::temp_dir())
+            .expect("the OS temporary directory must resolve")
             .join(format!(
                 "mangodisk-codex-report-boundary-test-{}-{}",
                 std::process::id(),
