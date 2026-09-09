@@ -909,6 +909,7 @@ mod tests {
         fs::write(bundle.path().join("binary"), b"application")
             .expect("application fixture must be written");
         let candidate = ApplicationUninstallCandidate {
+            system_kind: Default::default(),
             application_id: "application-example".to_string(),
             primary_identifier: "com.example.Editor".to_string(),
             source_identities: Vec::new(),
@@ -958,6 +959,7 @@ mod tests {
         fs::write(bundle.path().join("binary"), b"application")
             .expect("application fixture must be written");
         let candidate = ApplicationUninstallCandidate {
+            system_kind: Default::default(),
             application_id: "application-example".to_string(),
             primary_identifier: "com.example.Editor".to_string(),
             source_identities: Vec::new(),

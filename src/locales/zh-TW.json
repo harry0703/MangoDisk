@@ -1925,6 +1925,9 @@
     }
   },
   "applicationUninstall": {
+    "showSystemItems": "顯示系統項目",
+    "systemApplication": "系統應用程式",
+    "sharedComponent": "共用元件",
     "title": "解除安裝應用程式",
     "startScan": "開始掃描",
     "rescan": "重新掃描",
@@ -1993,6 +1996,8 @@
     "clearSelection": "清除選取項目",
     "uninstallSelected": "解除安裝所選應用程式",
     "uninstallEntryUnavailableDescription": "暫時無法解除安裝",
+    "uninstallerMissing": "找不到解除安裝程式",
+    "uninstallerAccessDenied": "沒有權限存取解除安裝程式",
     "possibleRelatedLocations": "可能相關的資料夾",
     "possibleRelatedLocationsDescription": "這些資料夾可能包含其他應用程式的資料，不會自動刪除",
     "showPossibleRelatedLocation": "查看可能與 {application} 相關的資料夾",
@@ -2029,17 +2034,12 @@
     "cancelExecutionConfirmTitle": "停止本次解除安裝應用程式？",
     "cancelExecutionConfirmDescription": "尚未開始的應用程式將不再解除安裝，已經解除安裝的應用程式不會復原。目前系統解除安裝視窗可能仍會完成",
     "stopExecutionAction": "停止解除安裝",
-    "executionCancelledTitle": "解除安裝應用程式已停止",
-    "executionCancelledDescription": "已解除安裝 {completed} 個應用程式，另有 {cancelled} 個應用程式未由 MangoDisk 確認完成",
     "unknownApplication": "未知應用程式",
     "confirmBatchAction": "確認解除安裝",
     "cancelledTitle": "已取消解除安裝",
-    "cancelledDescription": "沒有應用程式被解除安裝",
     "completed": "解除安裝應用程式已完成",
     "completedWithWarnings": "解除安裝未能全部完成",
-    "batchExecutionSummary": "已解除安裝 {count} 個應用程式，釋放 {size}；{failed} 個未能完成",
-    "batchExecutionEstimateSummary": "已解除安裝 {count} 個應用程式，預估釋放 {size}；{failed} 個未能完成",
-    "restartRequired": "Windows 提示需要重新啟動才能完成變更",
+    "restartRequired": "需要重新啟動電腦才能完成解除安裝",
     "componentKinds": {
       "applicationBinary": "應用程式檔案",
       "nativeInstaller": "Windows 解除安裝程式",
@@ -2076,7 +2076,15 @@
     "removeRecordSuccess": "已刪除安裝紀錄",
     "removeRecordRefreshing": "紀錄狀態已變更，正在更新清單",
     "removeRecordPermissionDenied": "沒有權限刪除此紀錄",
-    "removeRecordFailed": "無法刪除安裝紀錄，請再試一次"
+    "removeRecordFailed": "無法刪除安裝紀錄，請再試一次",
+    "executionStoppedTitle": "已停止等待解除安裝",
+    "executionFinishedTitle": "解除安裝已結束",
+    "resultCompleted": "已解除安裝 {count} 個",
+    "resultFailed": "失敗 {count} 個",
+    "resultCancelled": "已取消 {count} 個",
+    "resultContinuing": "另有 {count} 個應用程式，請在解除安裝視窗查看結果",
+    "resultEstimatedSpace": "預計釋放 {size}",
+    "resultReleasedSpace": "釋放 {size}"
   },
   "history": {
     "title": "操作紀錄",
@@ -2193,7 +2201,8 @@
       "externalUninstallerContinuing": "系統解除安裝視窗仍在執行，結果尚未確認",
       "permanentDeleteFailed": "無法永久刪除此項目",
       "recoveryRequired": "解除安裝未完整結束，請檢查或還原應用程式後再重試",
-      "nativeInstallerFailed": "Windows Installer 未能完成解除安裝",
+      "nativeInstallerFailed": "解除安裝程式未能完成解除安裝",
+      "nativeInstallerFailedAfterRemoval": "安裝記錄已移除，但解除安裝程式回報了錯誤",
       "verificationFailed": "MangoDisk 無法確認解除安裝結果"
     }
   },

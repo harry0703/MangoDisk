@@ -542,6 +542,7 @@ mod tests {
         publisher: Option<&str>,
     ) -> ApplicationUninstallCandidate {
         ApplicationUninstallCandidate {
+            system_kind: Default::default(),
             application_id: "application-fixture".to_string(),
             primary_identifier: primary_identifier.to_string(),
             source_identities: Vec::new(),

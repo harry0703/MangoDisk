@@ -13,6 +13,7 @@ import type {
 } from '@/lib/models/application';
 import type { TraversalProgress } from '@/lib/models/progress';
 import { ApplicationService } from '@/lib/services/application-service';
+import { LoggerService } from '@/lib/services/logger-service';
 import { MacOsPermissionService } from '@/lib/services/macos-permission-service';
 import * as ApplicationUninstallResultUtils from '@/lib/utils/application-uninstall-result';
 import { parseCommandError } from '@/lib/utils/error';
@@ -109,6 +110,16 @@ export const useApplicationStore = defineStore('applications', {
       } finally {
         this.closingUninstallApplications = false;
       }
+    },
+    removeUninstallCatalogRecord(applicationId: string) {
+      const catalog = this.uninstallCatalog;
+      if (!catalog) return;
+      this.uninstallCatalog = ApplicationUninstallResultUtils.removeApplications(catalog, new Set([applicationId]));
+      this.clearPreparedUninstall();
+      LoggerService.info(
+        'application-uninstall',
+        `record_removed_from_catalog removed_count=${catalog.candidates.length - this.uninstallCatalog.candidates.length} remaining_count=${this.uninstallCatalog.candidates.length} rescan=false`
+      );
     },
     clearPreparedUninstall() {
       if (this.executingUninstall) return;

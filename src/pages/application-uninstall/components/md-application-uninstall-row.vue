@@ -5,6 +5,7 @@ import { useI18n } from 'vue-i18n';
 import { Button } from '@/components/ui/button';
 import MdApplicationIcon from '@/components/custom/md-application-icon.vue';
 import MdIconAction from '@/components/custom/md-icon-action.vue';
+import MdStatusBadge from '@/components/custom/md-status-badge.vue';
 import MdResultCheckbox from '@/components/custom/md-result-checkbox.vue';
 import MdResultTableHierarchy from '@/components/custom/md-result-table-hierarchy.vue';
 import MdResultTableRow from '@/components/custom/md-result-table-row.vue';
@@ -15,9 +16,14 @@ import { ByteSizeService } from '@/lib/services/byte-size-service';
 import * as FormatUtils from '@/lib/utils/format';
 import * as PathUtils from '@/lib/utils/path';
 
-import { applicationCanStartUninstall, applicationStatusKey } from '../application-uninstall-catalog';
-import { applicationSizeHintKey } from '../application-uninstall-presentation';
+import {
+  applicationCanStartUninstall,
+  applicationStatusKey,
+  applicationIsSystemItem,
+} from '../application-uninstall-catalog';
+import { applicationSizeHintKey, applicationUnavailableTitleKey } from '../application-uninstall-presentation';
 import { defaultApplicationComponentIds } from '../application-uninstall-selection';
+import MdApplicationUninstallDetailRow from './md-application-uninstall-detail-row.vue';
 
 const props = defineProps<{
   candidate: ApplicationUninstallCandidate;
@@ -156,7 +162,18 @@ function displayedSizeHint(): string {
         >
           <MdApplicationIcon :src="iconSrc" :platform="candidate.platform" @error="emit('iconError')" />
           <span class="application-identity">
-            <strong class="md-result-primary">{{ candidate.name }}</strong>
+            <span class="flex min-w-0 items-center gap-2">
+              <strong class="md-result-primary">{{ candidate.name }}</strong>
+              <MdStatusBadge v-if="applicationIsSystemItem(candidate)" size="compact">
+                {{
+                  t(
+                    candidate.systemKind === 'sharedRuntime' || candidate.systemKind === 'windowsSharedPackage'
+                      ? 'applicationUninstall.sharedComponent'
+                      : 'applicationUninstall.systemApplication'
+                  )
+                }}
+              </MdStatusBadge>
+            </span>
             <small>
               {{ candidate.publisher || candidate.primaryIdentifier }}
               <template v-if="candidate.version">
@@ -240,33 +257,26 @@ function displayedSizeHint(): string {
       <MdResultTableHierarchy
         v-if="candidate.components.length || candidate.possibleRelatedPaths.length || showUnavailableEntry"
       >
-        <MdResultTableRow
+        <MdApplicationUninstallDetailRow
           v-if="showUnavailableEntry"
-          class="component-row readonly-detail-row application-record-actions"
+          class="application-record-actions"
+          :icon="ICON_NAMES.application"
+          :title="t(applicationUnavailableTitleKey(candidate.uninstallDiagnostic))"
         >
-          <!-- Informational rows share component alignment but never imply selectable cleanup. -->
-          <span aria-hidden="true" />
-          <span class="component-icon">
-            <MdIcon :name="ICON_NAMES.application" :size="17" />
-          </span>
-          <span class="component-primary">
-            <span class="component-main">
-              <strong class="md-result-primary">{{
-                t('applicationUninstall.uninstallEntryUnavailableDescription')
-              }}</strong>
-              <Button
-                v-if="candidate.platform === 'windowsRegistry'"
-                class="application-settings-link"
-                variant="ghost"
-                size="sm"
-                :disabled="busy"
-                @click="emit('openWindowsSettings')"
-              >
-                {{ t('applicationUninstall.openWindowsInstalledApps') }}
-              </Button>
-            </span>
-          </span>
-        </MdResultTableRow>
+          <template #actions>
+            <Button
+              v-if="candidate.platform === 'windowsRegistry'"
+              class="application-settings-link"
+              variant="ghost"
+              size="sm"
+              :disabled="busy"
+              @click="emit('openWindowsSettings')"
+            >
+              {{ t('applicationUninstall.openWindowsInstalledApps') }}
+              <MdIcon :name="ICON_NAMES.external" :size="14" />
+            </Button>
+          </template>
+        </MdApplicationUninstallDetailRow>
         <MdResultTableRow
           v-for="component in candidate.components"
           :key="component.componentId"
@@ -315,36 +325,26 @@ function displayedSizeHint(): string {
             {{ displayedComponentSize(component) }}
           </strong>
         </MdResultTableRow>
-        <MdResultTableRow
+        <MdApplicationUninstallDetailRow
           v-for="path in candidate.possibleRelatedPaths"
           :key="path"
-          class="component-row readonly-detail-row possible-related-location"
+          class="possible-related-location"
+          :icon="ICON_NAMES.folder"
+          :title="t('applicationUninstall.possibleRelatedLocations')"
+          :description="PathUtils.display(path)"
+          :description-title="path"
         >
-          <span aria-hidden="true" />
-          <span class="component-icon">
-            <MdIcon :name="ICON_NAMES.folder" :size="17" />
-          </span>
-          <span class="component-primary">
-            <span class="component-main">
-              <strong class="md-result-primary">{{ t('applicationUninstall.possibleRelatedLocations') }}</strong>
-              <small :title="path">{{ PathUtils.display(path) }}</small>
-            </span>
-            <span class="component-actions">
-              <MdIconAction
-                variant="ghost"
-                :label="t('applicationUninstall.showLocation')"
-                :aria-label="
-                  t('applicationUninstall.showPossibleRelatedLocation', {
-                    application: candidate.name,
-                  })
-                "
-                @click="emit('open', path)"
-              >
-                <MdIcon :name="ICON_NAMES.folder" :size="16" />
-              </MdIconAction>
-            </span>
-          </span>
-        </MdResultTableRow>
+          <template #actions>
+            <MdIconAction
+              variant="ghost"
+              :label="t('applicationUninstall.showLocation')"
+              :aria-label="t('applicationUninstall.showPossibleRelatedLocation', { application: candidate.name })"
+              @click="emit('open', path)"
+            >
+              <MdIcon :name="ICON_NAMES.folder" :size="16" />
+            </MdIconAction>
+          </template>
+        </MdApplicationUninstallDetailRow>
         <template v-if="candidate.possibleRelatedPaths.length" #footer>
           <p class="related-location-note">
             <MdIcon :name="ICON_NAMES.info" :size="12" />

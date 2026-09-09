@@ -1082,7 +1082,7 @@ fn execute_preflighted(
         ),
         Ok(windows::ApplicationUninstallExecution::Cancelled) => {
             log::info!(
-                "application_uninstall_native_execution_result_cancelled reason=elevation_prompt"
+                "application_uninstall_native_execution_result_cancelled reason=native_user_cancelled"
             );
             let mut result = preflight::cancel_all(plan, Some(inspection.application_name), None);
             result.dry_run = false;
@@ -1614,6 +1614,12 @@ fn scan_without_guard(
         .count() as u64;
     let blocked_count = candidates.len() as u64 - ready_count;
 
+    super::system_classification::log_catalog(
+        operation_id,
+        &candidates,
+        include_component_summaries,
+    );
+
     // Summaries alone cannot explain one user's disabled row. Emit the catalog decision with
     // the same redacted reference used by inventory logs, including cached inventories on later scans.
     for candidate in candidates
@@ -1804,6 +1810,7 @@ fn candidate(
     };
 
     ApplicationUninstallCandidate {
+        system_kind: super::system_classification::classify(application),
         application_id: application_id(application),
         primary_identifier: application.primary_identifier.clone(),
         source_identities: application
@@ -1880,6 +1887,8 @@ fn candidate(
                             ApplicationUninstallExecutionMode::ExternalClient
                         }
                         mangodisk_platform::WindowsRegisteredUninstallKind::Executable
+                        | mangodisk_platform::WindowsRegisteredUninstallKind::Rundll32
+                        | mangodisk_platform::WindowsRegisteredUninstallKind::BatchScript
                         | mangodisk_platform::WindowsRegisteredUninstallKind::UserPowerShellScript => {
                             ApplicationUninstallExecutionMode::Interactive
                         }
@@ -2167,6 +2176,39 @@ mod tests {
     }
 
     #[test]
+    fn verified_record_removal_updates_only_the_selected_catalog_row() {
+        let mut removed = candidate(&fixture_application(), &ProcessSnapshot::default());
+        removed.application_id = "removed".to_string();
+        removed.capability = ApplicationUninstallCapability::ViewOnly;
+        let mut remaining = removed.clone();
+        remaining.application_id = "remaining".to_string();
+        remaining.capability = ApplicationUninstallCapability::Ready;
+        let mut scan = ApplicationUninstallScanResult {
+            schema_version: APPLICATION_UNINSTALL_SCAN_SCHEMA_VERSION,
+            scanned_at_ms: 123,
+            supported: true,
+            execution_supported: true,
+            catalog_actionable: true,
+            inventory_complete: true,
+            catalog_revision: Some("original-revision".to_string()),
+            candidates: vec![removed, remaining],
+            ready_count: 1,
+            blocked_count: 1,
+            hidden_count: 0,
+            related_directory_count: 0,
+            related_path_scan_elapsed_ms: 0,
+            elapsed_ms: 1,
+        };
+        assert_eq!(scan.remove_record("removed"), 1);
+        assert_eq!(scan.candidates.len(), 1);
+        assert_eq!(scan.candidates[0].application_id, "remaining");
+        assert_eq!((scan.ready_count, scan.blocked_count), (1, 0));
+        assert_eq!(scan.scanned_at_ms, 123);
+        assert_eq!(scan.catalog_revision.as_deref(), Some("original-revision"));
+        assert_eq!(scan.remove_record("removed"), 0);
+    }
+
+    #[test]
     fn stable_inventory_retry_requires_two_different_complete_revisions() {
         assert!(should_retry_changed_inventory(
             true,
@@ -2217,6 +2259,8 @@ mod tests {
 
     fn fixture_application() -> InstalledApplication {
         InstalledApplication {
+            #[cfg(windows)]
+            system_signed: false,
             uninstall_diagnostic: None,
             catalog_identifier: "macos-bundle:/Applications/Example Editor.app".to_string(),
             source_identities: Vec::new(),

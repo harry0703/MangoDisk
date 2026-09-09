@@ -1999,6 +1999,9 @@
     }
   },
   "applicationUninstall": {
+    "showSystemItems": "Show system items",
+    "systemApplication": "System app",
+    "sharedComponent": "Shared component",
     "title": "App Uninstaller",
     "startScan": "Start Scan",
     "rescan": "Scan Again",
@@ -2067,6 +2070,8 @@
     "clearSelection": "Clear selection",
     "uninstallSelected": "Uninstall Selected",
     "uninstallEntryUnavailableDescription": "Uninstall is currently unavailable",
+    "uninstallerMissing": "Uninstaller not found",
+    "uninstallerAccessDenied": "Permission needed to access the uninstaller",
     "possibleRelatedLocations": "Possibly related folders",
     "possibleRelatedLocationsDescription": "These folders may contain data from other apps. They won’t be deleted automatically",
     "showPossibleRelatedLocation": "Show a folder possibly related to {application}",
@@ -2103,17 +2108,12 @@
     "cancelExecutionConfirmTitle": "Stop this application uninstall?",
     "cancelExecutionConfirmDescription": "Apps that have not started will not be uninstalled. Apps already removed cannot be restored, and the current system uninstall window may still finish",
     "stopExecutionAction": "Stop uninstall",
-    "executionCancelledTitle": "Application uninstall stopped",
-    "executionCancelledDescription": "Uninstalled {completed} apps; MangoDisk could not confirm {cancelled} others",
     "unknownApplication": "Unknown application",
     "confirmBatchAction": "Confirm Uninstall",
     "cancelledTitle": "Uninstall cancelled",
-    "cancelledDescription": "No applications were uninstalled",
     "completed": "Application uninstall completed",
     "completedWithWarnings": "Uninstall did not finish completely",
-    "batchExecutionSummary": "Uninstalled {count} apps and released {size}; {failed} did not finish",
-    "batchExecutionEstimateSummary": "Uninstalled {count} apps. Estimated space: {size}. {failed} did not finish",
-    "restartRequired": "Windows reports that a restart is required to finish the change",
+    "restartRequired": "Restart your computer to finish uninstalling",
     "componentKinds": {
       "applicationBinary": "Application",
       "nativeInstaller": "Windows uninstaller",
@@ -2150,7 +2150,15 @@
     "removeRecordSuccess": "App entry removed",
     "removeRecordRefreshing": "The entry’s status has changed. Refreshing the list",
     "removeRecordPermissionDenied": "You don’t have permission to remove this entry",
-    "removeRecordFailed": "Could not remove the entry. Try again"
+    "removeRecordFailed": "Could not remove the entry. Try again",
+    "executionStoppedTitle": "Stopped waiting for uninstall",
+    "executionFinishedTitle": "Uninstall finished",
+    "resultCompleted": "Uninstalled: {count}",
+    "resultFailed": "Failed: {count}",
+    "resultCancelled": "Cancelled: {count}",
+    "resultContinuing": "Check the uninstaller window for {count} other apps",
+    "resultEstimatedSpace": "Estimated space freed: {size}",
+    "resultReleasedSpace": "Space freed: {size}"
   },
   "history": {
     "title": "Operation History",
@@ -2267,7 +2275,8 @@
       "externalUninstallerContinuing": "The system uninstall window is still running; its result is not confirmed",
       "permanentDeleteFailed": "Could not permanently delete the item",
       "recoveryRequired": "Uninstall did not finish cleanly; inspect or restore the application before retrying",
-      "nativeInstallerFailed": "Windows Installer could not complete the uninstall",
+      "nativeInstallerFailed": "The uninstaller could not complete the uninstall",
+      "nativeInstallerFailedAfterRemoval": "The installation record was removed, but the uninstaller reported an error",
       "verificationFailed": "MangoDisk could not confirm the result"
     }
   },

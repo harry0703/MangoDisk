@@ -1,5 +1,5 @@
 use std::{
-    collections::{HashMap, HashSet},
+    collections::{BTreeMap, HashMap, HashSet},
     env,
     ffi::OsString,
     fs,
@@ -51,8 +51,9 @@ Get-StartApps -ErrorAction SilentlyContinue | ForEach-Object {
   $family = ([string]$_.AppID).Split('!')[0]
   if ($family -and -not $startApps.ContainsKey($family)) { $startApps[$family] = [string]$_.Name }
 }
+$packages = @(Get-AppxPackage -ErrorAction Stop)
 $items = @(
-  Get-AppxPackage -ErrorAction SilentlyContinue |
+  $packages |
     Where-Object { -not $_.IsFramework -and -not $_.IsResourcePackage -and -not $_.NonRemovable -and -not $_.IsPartiallyStaged } |
     ForEach-Object {
       $package = $_
@@ -69,6 +70,7 @@ $items = @(
         if ($appListLogo) { $appListLogo } else { [string]$visualElements.Square150x150Logo }
       } else { '' }
       [pscustomobject]@{
+        systemSigned = ([string]$package.SignatureKind -eq 'System')
         packageFamilyName = [string]$package.PackageFamilyName
         packageFullName = [string]$package.PackageFullName
         name = $displayName
@@ -80,7 +82,17 @@ $items = @(
       }
     }
 )
-ConvertTo-Json -InputObject $items -Compress
+$result = [pscustomobject]@{
+  schemaVersion = 1
+  items = $items
+  packageCount = $packages.Count
+  excludedCount = $packages.Count - $items.Count
+  frameworkCount = @($packages | Where-Object { $_.IsFramework }).Count
+  resourceCount = @($packages | Where-Object { $_.IsResourcePackage }).Count
+  nonRemovableCount = @($packages | Where-Object { $_.NonRemovable }).Count
+  partiallyStagedCount = @($packages | Where-Object { $_.IsPartiallyStaged }).Count
+}
+ConvertTo-Json -InputObject $result -Depth 4 -Compress
 "#;
 // Get-AppxPackage reads the same current-user package repository but starts PowerShell and walks
 // every package. The repository key's child set changes whenever a package full name is added or
@@ -115,6 +127,7 @@ enum RegistryScope {
 #[derive(Deserialize)]
 #[serde(rename_all = "camelCase")]
 struct PackagedApplicationRecord {
+    system_signed: bool,
     package_family_name: String,
     package_full_name: String,
     name: String,
@@ -123,6 +136,21 @@ struct PackagedApplicationRecord {
     install_location: String,
     executable: String,
     icon: String,
+}
+
+// The command and decoder ship together. Exclusion counts can overlap because one package
+// may be both a framework and non-removable; excluded_count is the distinct package count.
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct PackagedApplicationInventory {
+    schema_version: u32,
+    items: Vec<PackagedApplicationRecord>,
+    package_count: usize,
+    excluded_count: usize,
+    framework_count: usize,
+    resource_count: usize,
+    non_removable_count: usize,
+    partially_staged_count: usize,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
@@ -471,8 +499,18 @@ fn read_packaged_applications(
     cancellation: &PlatformCancellation,
 ) -> Result<Vec<PackagedApplicationRecord>, String> {
     let json = powershell_json(APPX_INVENTORY_SCRIPT, cancellation)?;
-    serde_json::from_str(&json)
-        .map_err(|error| format!("windows_packaged_application_parse_failed error={error}"))
+    let inventory: PackagedApplicationInventory = serde_json::from_str(&json)
+        .map_err(|error| format!("windows_packaged_application_parse_failed error={error}"))?;
+    if inventory.schema_version != 1 {
+        return Err("windows_packaged_application_schema_unsupported".to_string());
+    }
+    log::info!(
+        "windows_packaged_application_filter_summary package_count={} visible_count={} excluded_count={} framework_count={} resource_count={} non_removable_count={} partially_staged_count={}",
+        inventory.package_count, inventory.items.len(), inventory.excluded_count,
+        inventory.framework_count, inventory.resource_count, inventory.non_removable_count,
+        inventory.partially_staged_count
+    );
+    Ok(inventory.items)
 }
 
 fn powershell_json(script: &str, cancellation: &PlatformCancellation) -> Result<String, String> {
@@ -562,6 +600,7 @@ fn merge_packaged_application(
             // Keep the package-exclusive estimate instead of the larger value:
             // registry estimates and recursive logical sizes can include
             // single-instance files that another package still owns.
+            existing.system_signed |= package.system_signed;
             existing.estimated_bytes = estimated_bytes;
             existing.installed_at_ms = install_location
                 .metadata()
@@ -587,6 +626,8 @@ fn merge_packaged_application(
     applications.insert(
         identity,
         InstalledApplication {
+            #[cfg(windows)]
+            system_signed: package.system_signed,
             uninstall_diagnostic: None,
             catalog_identifier: format!(
                 "windows-appx:{}",
@@ -768,6 +809,7 @@ fn read_uninstall_view(
         }
     };
     let mut complete = true;
+    let mut excluded_counts = BTreeMap::<&str, usize>::new();
     for key_name in uninstall.enum_keys() {
         let key_name = match key_name {
             Ok(name) => name,
@@ -785,12 +827,14 @@ fn read_uninstall_view(
                 continue;
             }
         };
-        if !is_visible_uninstall_entry(&entry) {
+        if let Some(reason) = uninstall_entry_exclusion_reason(&entry) {
+            *excluded_counts.entry(reason).or_default() += 1;
             continue;
         }
         let name = string_value(&entry, "DisplayName")
             .or_else(|| string_value(&entry, "QuietDisplayName"));
         let Some(name) = name.filter(|value| !value.trim().is_empty()) else {
+            *excluded_counts.entry("display_name_missing").or_default() += 1;
             continue;
         };
         let estimated_size_kib = entry.get_value::<u32, _>("EstimatedSize").ok();
@@ -1031,6 +1075,7 @@ fn read_uninstall_view(
                 }
             })
             .or_insert(InstalledApplication {
+                system_signed: false,
                 uninstall_diagnostic,
                 catalog_identifier: format!("windows-registry:{identity}"),
                 source_identities,
@@ -1048,6 +1093,10 @@ fn read_uninstall_view(
                 uninstall_registration,
             });
     }
+    log::info!(
+        "windows_uninstall_inventory_filter_summary scope={} registry_view={:?} complete={} excluded_counts={:?}",
+        scope.stable_code(), registry_view(view), complete, excluded_counts
+    );
     (true, complete)
 }
 
@@ -1210,13 +1259,19 @@ fn registrations_are_compatible(
     )
 }
 
-fn is_visible_uninstall_entry(entry: &RegKey) -> bool {
-    entry.get_value::<u32, _>("SystemComponent").ok() != Some(1)
-        && string_value(entry, "ParentKeyName").is_none()
-        && !matches!(
-            string_value(entry, "ReleaseType").as_deref(),
-            Some("Update" | "Hotfix" | "Security Update")
-        )
+fn uninstall_entry_exclusion_reason(entry: &RegKey) -> Option<&'static str> {
+    if entry.get_value::<u32, _>("SystemComponent").ok() == Some(1) {
+        Some("hidden_component")
+    } else if string_value(entry, "ParentKeyName").is_some() {
+        Some("child_registration")
+    } else if matches!(
+        string_value(entry, "ReleaseType").as_deref(),
+        Some("Update" | "Hotfix" | "Security Update")
+    ) {
+        Some("system_update")
+    } else {
+        None
+    }
 }
 
 fn expand_environment_path(value: &str) -> String {
@@ -1323,6 +1378,7 @@ fn registered_uninstall_registration(
             },
             native_code: error.raw_os_error(),
             detail: "read_registry_value",
+            target_kind: "unknown",
         })
         .and_then(|command| {
             native_uninstall::registered_uninstall_command_evidence_with_diagnostic(
@@ -1336,12 +1392,18 @@ fn registered_uninstall_registration(
         // The UI interaction logs use this same redacted ID so support can locate an affected application
         // without recording its name, registry key, command line, or installation directory.
         log::warn!(
-            "windows_uninstall_registration_rejected application_id={} scope={} registry_view={:?} source=uninstall_string reason={} detail={} native_code={:?} quiet_command_present={}",
-            application_id, scope.stable_code(), registry_view, rejection.reason.stable_code(), rejection.detail,
+            "windows_uninstall_registration_rejected application_id={} scope={} registry_view={:?} source=uninstall_string reason={} detail={} target_kind={} native_code={:?} quiet_command_present={}",
+            application_id, scope.stable_code(), registry_view, rejection.reason.stable_code(), rejection.detail, rejection.target_kind,
             rejection.native_code, entry.get_raw_value("QuietUninstallString").is_ok()
         );
         rejection.reason
     })?;
+    if command_kind == crate::WindowsRegisteredUninstallKind::BatchScript {
+        log::info!("windows_registered_batch_uninstaller_recognized application_id={} scope={} registry_view={:?} command_kind=batch-script", application_id, scope.stable_code(), registry_view);
+    }
+    if command_kind == crate::WindowsRegisteredUninstallKind::Rundll32 {
+        log::info!("windows_registered_rundll32_uninstaller_recognized application_id={} scope={} registry_view={:?} command_kind=rundll32", application_id, scope.stable_code(), registry_view);
+    }
     Ok(ApplicationUninstallRegistration::WindowsRegistered {
         key_name: key_name.to_string(),
         scope: scope.install_scope(),
@@ -1748,6 +1810,8 @@ mod tests {
         let mut applications = HashMap::from([(
             "machine:example".to_string(),
             InstalledApplication {
+                #[cfg(windows)]
+                system_signed: false,
                 uninstall_diagnostic: None,
                 catalog_identifier: "windows-registry:machine:example".to_string(),
                 source_identities: vec![ApplicationSourceIdentity {
@@ -1772,6 +1836,7 @@ mod tests {
         merge_packaged_application(
             &mut applications,
             PackagedApplicationRecord {
+                system_signed: false,
                 package_family_name: "Example_123".to_string(),
                 package_full_name: "Example_1.0.0.0_x64__123".to_string(),
                 name: "Example".to_string(),

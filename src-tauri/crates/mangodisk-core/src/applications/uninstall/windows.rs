@@ -134,7 +134,7 @@ pub(super) fn execute_registration(
                 Ok(outcome) => Ok(ApplicationUninstallExecution::Completed(outcome)),
                 Err(ApplicationUninstallPlatformError::UserCancelled) => {
                     log::info!(
-                        "application_uninstall_native_execution_cancelled reason=elevation_prompt"
+                        "application_uninstall_native_execution_cancelled reason=native_user_cancelled"
                     );
                     Ok(ApplicationUninstallExecution::Cancelled)
                 }
@@ -195,6 +195,9 @@ fn map_platform_error(
     match error {
         ApplicationUninstallPlatformError::RegistrationChanged => {
             ApplicationUninstallActionReason::ComponentChanged
+        }
+        ApplicationUninstallPlatformError::NativeFailureAfterRemoval(_) => {
+            ApplicationUninstallActionReason::NativeInstallerFailedAfterRemoval
         }
         ApplicationUninstallPlatformError::Unsupported
         | ApplicationUninstallPlatformError::RequiresElevation
@@ -304,6 +307,8 @@ fn registration_fingerprint(
             });
             hasher.update(match command_kind {
                 mangodisk_platform::WindowsRegisteredUninstallKind::Executable => b"executable",
+                mangodisk_platform::WindowsRegisteredUninstallKind::BatchScript => b"batch-script",
+                mangodisk_platform::WindowsRegisteredUninstallKind::Rundll32 => b"rundll32",
                 mangodisk_platform::WindowsRegisteredUninstallKind::UserPowerShellScript => {
                     b"user-powershell-script"
                 }

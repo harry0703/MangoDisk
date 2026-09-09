@@ -5,7 +5,7 @@ use std::path::PathBuf;
 
 use crate::ApplicationCloseMode;
 
-pub const APPLICATION_UNINSTALL_SCAN_SCHEMA_VERSION: u32 = 10;
+pub const APPLICATION_UNINSTALL_SCAN_SCHEMA_VERSION: u32 = 11;
 pub const APPLICATION_UNINSTALL_INSPECTION_SCHEMA_VERSION: u32 = 3;
 pub const APPLICATION_UNINSTALL_PLAN_SCHEMA_VERSION: u32 = 2;
 pub const APPLICATION_UNINSTALL_BATCH_PLAN_SCHEMA_VERSION: u32 = 1;
@@ -89,6 +89,8 @@ pub struct ApplicationUninstallCandidate {
     pub application_id: String,
     pub primary_identifier: String,
     pub source_identities: Vec<ApplicationUninstallSourceIdentity>,
+    /// Presentation classification only. Explicit uninstall and record removal remain independent.
+    pub system_kind: super::system_classification::ApplicationSystemKind,
     pub name: String,
     pub version: Option<String>,
     pub publisher: Option<String>,
@@ -158,6 +160,23 @@ pub struct ApplicationUninstallScanResult {
     pub related_directory_count: u64,
     pub related_path_scan_elapsed_ms: u64,
     pub elapsed_ms: u64,
+}
+
+impl ApplicationUninstallScanResult {
+    /// Remove a natively verified record from a display snapshot without enumerating inventory.
+    /// This does not refresh the catalog revision or authorize further native operations.
+    pub fn remove_record(&mut self, application_id: &str) -> usize {
+        let previous_count = self.candidates.len();
+        self.candidates
+            .retain(|candidate| candidate.application_id != application_id);
+        self.ready_count = self
+            .candidates
+            .iter()
+            .filter(|candidate| candidate.capability.supports_execution())
+            .count() as u64;
+        self.blocked_count = self.candidates.len() as u64 - self.ready_count;
+        previous_count - self.candidates.len()
+    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -356,6 +375,7 @@ pub enum ApplicationUninstallActionReason {
     PermanentDeleteFailed,
     RecoveryRequired,
     NativeInstallerFailed,
+    NativeInstallerFailedAfterRemoval,
     VerificationFailed,
 }
 
@@ -374,6 +394,7 @@ impl ApplicationUninstallActionReason {
             Self::PermanentDeleteFailed => "permanent_delete_failed",
             Self::RecoveryRequired => "recovery_required",
             Self::NativeInstallerFailed => "native_installer_failed",
+            Self::NativeInstallerFailedAfterRemoval => "native_installer_failed_after_removal",
             Self::VerificationFailed => "verification_failed",
         }
     }

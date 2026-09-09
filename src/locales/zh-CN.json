@@ -1930,6 +1930,9 @@
     }
   },
   "applicationUninstall": {
+    "showSystemItems": "显示系统项",
+    "systemApplication": "系统应用",
+    "sharedComponent": "共享组件",
     "title": "应用卸载",
     "startScan": "开始扫描",
     "rescan": "重新扫描",
@@ -1998,6 +2001,8 @@
     "clearSelection": "清除选择",
     "uninstallSelected": "卸载所选应用",
     "uninstallEntryUnavailableDescription": "暂时无法卸载",
+    "uninstallerMissing": "找不到卸载程序",
+    "uninstallerAccessDenied": "没有权限访问卸载程序",
     "possibleRelatedLocations": "可能关联的文件夹",
     "possibleRelatedLocationsDescription": "这些文件夹可能包含其他应用的数据，不会自动删除",
     "showPossibleRelatedLocation": "查看可能与 {application} 相关的目录",
@@ -2034,17 +2039,12 @@
     "cancelExecutionConfirmTitle": "停止本次应用卸载？",
     "cancelExecutionConfirmDescription": "尚未开始的应用将不再卸载，已经卸载的应用不会恢复。当前系统卸载窗口可能仍会完成",
     "stopExecutionAction": "停止卸载",
-    "executionCancelledTitle": "应用卸载已停止",
-    "executionCancelledDescription": "已卸载 {completed} 个应用，另有 {cancelled} 个应用未由 MangoDisk 确认完成",
     "unknownApplication": "未知应用",
     "confirmBatchAction": "确认卸载",
     "cancelledTitle": "已取消卸载",
-    "cancelledDescription": "没有应用被卸载",
     "completed": "应用卸载已完成",
     "completedWithWarnings": "卸载未能全部完成",
-    "batchExecutionSummary": "已卸载 {count} 个应用，释放 {size}；{failed} 个未能完成",
-    "batchExecutionEstimateSummary": "已卸载 {count} 个应用，预计释放 {size}；{failed} 个未能完成",
-    "restartRequired": "Windows 提示需要重启后完成更改",
+    "restartRequired": "需要重启电脑才能完成卸载",
     "componentKinds": {
       "applicationBinary": "应用文件",
       "nativeInstaller": "Windows 卸载程序",
@@ -2081,7 +2081,15 @@
     "removeRecordSuccess": "安装记录已删除",
     "removeRecordRefreshing": "记录状态已变化，正在刷新列表",
     "removeRecordPermissionDenied": "没有权限删除此记录",
-    "removeRecordFailed": "未能删除安装记录，请重试"
+    "removeRecordFailed": "未能删除安装记录，请重试",
+    "executionStoppedTitle": "已停止等待卸载",
+    "executionFinishedTitle": "卸载已结束",
+    "resultCompleted": "已卸载 {count} 个",
+    "resultFailed": "失败 {count} 个",
+    "resultCancelled": "已取消 {count} 个",
+    "resultContinuing": "另有 {count} 个应用，请在卸载窗口查看结果",
+    "resultEstimatedSpace": "预计释放 {size}",
+    "resultReleasedSpace": "释放 {size}"
   },
   "history": {
     "title": "操作历史",
@@ -2198,7 +2206,8 @@
       "externalUninstallerContinuing": "系统卸载窗口仍在运行，结果尚未确认",
       "permanentDeleteFailed": "无法彻底删除此项目",
       "recoveryRequired": "卸载未完整结束，请检查或恢复应用后再重试",
-      "nativeInstallerFailed": "Windows Installer 未能完成卸载",
+      "nativeInstallerFailed": "卸载程序未能完成卸载",
+      "nativeInstallerFailedAfterRemoval": "安装记录已移除，但卸载程序报告了错误",
       "verificationFailed": "MangoDisk 无法确认卸载结果"
     }
   },

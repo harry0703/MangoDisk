@@ -67,6 +67,10 @@ pub struct InstalledApplication {
     /// never authorize uninstall execution or filesystem deletion by
     /// themselves.
     pub source_identities: Vec<ApplicationSourceIdentity>,
+    /// Whether Windows reports a package signed as part of the operating system.
+    /// This is display evidence only; it does not grant or restrict uninstall authority.
+    #[cfg(windows)]
+    pub system_signed: bool,
     pub name: String,
     pub version: Option<String>,
     pub publisher: Option<String>,
@@ -193,6 +197,8 @@ pub enum WindowsRegistryView {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum WindowsRegisteredUninstallKind {
     Executable,
+    BatchScript,
+    Rundll32,
     UserPowerShellScript,
     WingetProduct,
 }
@@ -291,6 +297,8 @@ pub enum ApplicationUninstallPlatformError {
     UserCancelled,
     RegistrationChanged,
     NativeFailure(u32),
+    /// The vendor failed, but postflight verified that this exact registration is absent.
+    NativeFailureAfterRemoval(u32),
 }
 
 impl ApplicationUninstallPlatformError {
@@ -301,12 +309,13 @@ impl ApplicationUninstallPlatformError {
             Self::UserCancelled => "user_cancelled",
             Self::RegistrationChanged => "registration_changed",
             Self::NativeFailure(_) => "native_failure",
+            Self::NativeFailureAfterRemoval(_) => "native_failure_after_removal",
         }
     }
 
     pub const fn native_code(self) -> Option<u32> {
         match self {
-            Self::NativeFailure(code) => Some(code),
+            Self::NativeFailure(code) | Self::NativeFailureAfterRemoval(code) => Some(code),
             _ => None,
         }
     }

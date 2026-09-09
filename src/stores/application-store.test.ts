@@ -130,6 +130,7 @@ const closeResult: ApplicationCloseBatchResult = {
 const applicationCandidate: ApplicationUninstallCandidate = {
   applicationId: 'application-1',
   primaryIdentifier: 'com.example.fixture',
+  systemKind: 'unclassified',
   sourceIdentities: [{ source: 'macosBundle', identifier: 'com.example.fixture' }],
   name: 'Fixture App',
   version: '1.0.0',
@@ -158,6 +159,30 @@ describe('application uninstall workflow', () => {
     setActivePinia(createPinia());
     vi.restoreAllMocks();
     vi.spyOn(useAppStore(), 'refreshSystemDisk').mockResolvedValue(true);
+  });
+
+  it('removes one verified record without scanning or replacing remaining candidates', () => {
+    const store = useApplicationStore();
+    const removed = { ...applicationCandidate, applicationId: 'removed', capability: 'viewOnly' as const };
+    store.uninstallCatalog = {
+      ...catalog,
+      candidates: [removed, applicationCandidate],
+      readyCount: 1,
+      blockedCount: 1,
+    };
+    const remaining = store.uninstallCatalog.candidates[1];
+    const scan = vi.spyOn(ApplicationService, 'scanUninstallCatalog');
+    store.uninstallPlan = plan;
+    store.removeUninstallCatalogRecord('removed');
+    expect(store.uninstallCatalog.candidates).toEqual([remaining]);
+    expect(store.uninstallCatalog.candidates[0]).toBe(remaining);
+    expect(store.uninstallCatalog.readyCount).toBe(1);
+    expect(store.uninstallCatalog.blockedCount).toBe(0);
+    expect(store.uninstallCatalog.scannedAtMs).toBe(catalog.scannedAtMs);
+    expect(store.uninstallPlan).toBeNull();
+    expect(scan).not.toHaveBeenCalled();
+    store.removeUninstallCatalogRecord('removed');
+    expect(store.uninstallCatalog.candidates).toHaveLength(1);
   });
 
   it('publishes the catalog snapshot updated by application close', async () => {

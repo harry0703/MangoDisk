@@ -666,6 +666,7 @@ async function cancelDeepCleanup() {
           :closing-applications="applicationStore.closingUninstallApplications"
           :close-result="applicationStore.uninstallCloseResult"
           @scan="scanApplications"
+          @record-removed="applicationStore.removeUninstallCatalogRecord"
           @cancel-scan="applicationStore.cancelUninstallCatalogScan()"
           @prepare="prepareApplicationUninstall"
           @cancel-plan="applicationStore.clearPreparedUninstall()"

@@ -34,6 +34,7 @@ function candidate(
   return {
     applicationId,
     primaryIdentifier: applicationId,
+    systemKind: 'unclassified',
     sourceIdentities: [{ source: 'macosBundle', identifier: applicationId }],
     name: applicationId,
     version: null,

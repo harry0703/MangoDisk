@@ -7,6 +7,7 @@ mod models;
 mod plan;
 mod preflight;
 mod service;
+mod system_classification;
 #[cfg(windows)]
 mod windows;
 #[cfg(windows)]

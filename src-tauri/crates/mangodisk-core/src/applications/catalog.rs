@@ -601,6 +601,8 @@ mod icon_tests {
 
     fn application(name: &str, executable: &str, icon: &str) -> InstalledApplication {
         InstalledApplication {
+            #[cfg(windows)]
+            system_signed: false,
             uninstall_diagnostic: None,
             catalog_identifier: format!("fixture:{name}"),
             primary_identifier: format!("fixture.{name}"),

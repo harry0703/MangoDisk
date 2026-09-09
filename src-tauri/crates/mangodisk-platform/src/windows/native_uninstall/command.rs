@@ -1,6 +1,6 @@
 /// Splits a registered command without invoking a shell or searching PATH. Some vendors omit
-/// quotes around paths containing spaces. Only an `.exe` suffix followed by whitespace or the
-/// end of the string is a boundary; a directory such as `tools.exe.backup` is not an executable.
+/// quotes around paths containing spaces. An `.exe`, `.bat`, or `.cmd` suffix followed by
+/// whitespace or the end of the string is a boundary; `tools.exe.backup` is not an executable.
 #[cfg(test)]
 pub(super) fn split_registered_command(command: &str) -> Option<(String, String)> {
     parse_registered_command(command).ok()
@@ -32,12 +32,14 @@ pub(super) fn parse_registered_command(command: &str) -> Result<(String, String)
         return Ok((executable.to_string(), tail.trim().to_string()));
     }
     let lowercase = command.to_ascii_lowercase();
-    let end = lowercase
-        .match_indices(".exe")
-        .find_map(|(index, _)| {
+    let end = [".exe", ".bat", ".cmd"]
+        .into_iter()
+        .flat_map(|suffix| lowercase.match_indices(suffix))
+        .filter_map(|(index, _)| {
             let end = index + 4;
             (end == command.len() || command[end..].starts_with(char::is_whitespace)).then_some(end)
         })
+        .min()
         .ok_or("missing_executable_suffix")?;
     let executable = &command[..end];
     if executable.contains('"') {
@@ -75,6 +77,28 @@ pub(super) fn expand_environment_variables(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn batch_paths_preserve_arguments_and_ignore_suffixes_inside_directories() {
+        for extension in ["bat", "CMD"] {
+            let executable = format!(r"C:\tools.exe.backup\Vendor Suite\uninstall.{extension}");
+            let arguments = r#"/remove "value with spaces & punctuation""#;
+            for registered in [
+                format!(r#""{executable}" {arguments}"#),
+                format!("{executable} {arguments}"),
+            ] {
+                assert_eq!(
+                    split_registered_command(&registered),
+                    Some((executable.clone(), arguments.to_string()))
+                );
+            }
+        }
+        assert_eq!(split_registered_command(r"C:\uninstall.bat.backup"), None);
+        assert_eq!(
+            split_registered_command(r#""C:\uninstall.cmd"/remove"#),
+            None
+        );
+    }
 
     #[test]
     fn environment_expansion_is_bounded_and_preserves_unresolved_tokens() {

@@ -94,6 +94,24 @@ export function applicationCatalogFilters(windows: boolean): readonly Applicatio
   return windows ? WINDOWS_CATALOG_FILTERS : MACOS_CATALOG_FILTERS;
 }
 
+/** Only positive Core evidence hides a row; missing or unknown classifications stay visible. */
+export function applicationIsSystemItem(candidate: ApplicationUninstallCandidate): boolean {
+  return (
+    candidate.platform === 'windowsRegistry' &&
+    (candidate.systemKind === 'windowsSystemPackage' ||
+      candidate.systemKind === 'windowsBuiltinApp' ||
+      candidate.systemKind === 'sharedRuntime' ||
+      candidate.systemKind === 'windowsSharedPackage')
+  );
+}
+
+export function displayedApplications(
+  candidates: readonly ApplicationUninstallCandidate[],
+  showSystemItems: boolean
+): ApplicationUninstallCandidate[] {
+  return candidates.filter(candidate => showSystemItems || !applicationIsSystemItem(candidate));
+}
+
 export function applicationSupportsUninstall(candidate: ApplicationUninstallCandidate): boolean {
   return candidate.capability === 'ready' || candidate.capability === 'requiresElevation';
 }

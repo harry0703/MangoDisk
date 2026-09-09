@@ -1,4 +1,4 @@
-import type { ApplicationUninstallInstallerKind } from '@/lib/models/application';
+import type { ApplicationUninstallDiagnostic, ApplicationUninstallInstallerKind } from '@/lib/models/application';
 
 export type ApplicationSizeHintKey =
   'applicationUninstall.windowsAppPackageSizeHint' | 'applicationUninstall.applicationSizeEstimateHint';
@@ -14,4 +14,18 @@ export function applicationSizeHintKey(
   return installerKind === 'windowsAppx'
     ? 'applicationUninstall.windowsAppPackageSizeHint'
     : 'applicationUninstall.applicationSizeEstimateHint';
+}
+
+/** Keep the explanation tied to observed evidence; a Settings button does not prove that
+ * Windows can launch the registered uninstaller. Unknown failures retain the neutral fallback.
+ */
+export function applicationUnavailableTitleKey(diagnostic: ApplicationUninstallDiagnostic | null): string {
+  switch (diagnostic) {
+    case 'executableMissing':
+      return 'applicationUninstall.uninstallerMissing';
+    case 'executableAccessDenied':
+      return 'applicationUninstall.uninstallerAccessDenied';
+    default:
+      return 'applicationUninstall.uninstallEntryUnavailableDescription';
+  }
 }

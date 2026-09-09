@@ -2001,6 +2001,9 @@
     }
   },
   "applicationUninstall": {
+    "showSystemItems": "システム項目を表示",
+    "systemApplication": "システムアプリ",
+    "sharedComponent": "共有コンポーネント",
     "title": "アプリアンインストーラー",
     "startScan": "スキャン開始",
     "rescan": "再スキャン",
@@ -2069,6 +2072,8 @@
     "clearSelection": "選択を解除",
     "uninstallSelected": "選択したアプリをアンインストール",
     "uninstallEntryUnavailableDescription": "現在アンインストールできません",
+    "uninstallerMissing": "アンインストーラーが見つかりません",
+    "uninstallerAccessDenied": "アンインストーラーへのアクセス権限がありません",
     "possibleRelatedLocations": "関連する可能性のあるフォルダー",
     "possibleRelatedLocationsDescription": "他のアプリのデータが含まれる可能性があるため、自動では削除しません",
     "showPossibleRelatedLocation": "{application} に関連する可能性のあるフォルダーを表示",
@@ -2105,17 +2110,12 @@
     "cancelExecutionConfirmTitle": "アプリのアンインストールを停止しますか？",
     "cancelExecutionConfirmDescription": "開始されていないアプリはアンインストールされません。すでに削除されたアプリは復元できませんが、現在のシステムアンインストールウィンドウは終了する場合があります",
     "stopExecutionAction": "アンインストールを停止",
-    "executionCancelledTitle": "アプリのアンインストールを停止しました",
-    "executionCancelledDescription": "{completed} 個のアプリをアンインストールしました。残り {cancelled} 個は MangoDisk で完了を確認できませんでした",
     "unknownApplication": "不明なアプリ",
     "confirmBatchAction": "アンインストールを確認",
     "cancelledTitle": "アンインストールがキャンセルされました",
-    "cancelledDescription": "アプリはアンインストールされませんでした",
     "completed": "アプリのアンインストールが完了しました",
     "completedWithWarnings": "アンインストールは完全には終了しませんでした",
-    "batchExecutionSummary": "{count} 個のアプリをアンインストールし、{size} を解放しました。{failed} 個は完了しませんでした",
-    "batchExecutionEstimateSummary": "{count} 個のアプリをアンインストールしました。解放される推定容量は {size} です。{failed} 個は完了しませんでした",
-    "restartRequired": "Windows は変更を完了するために再起動が必要であると報告しています",
+    "restartRequired": "アンインストールを完了するにはパソコンを再起動してください",
     "componentKinds": {
       "applicationBinary": "アプリケーション",
       "nativeInstaller": "Windows アンインストーラー",
@@ -2152,7 +2152,15 @@
     "removeRecordSuccess": "アプリの登録を削除しました",
     "removeRecordRefreshing": "登録の状態が変わったため、一覧を更新しています",
     "removeRecordPermissionDenied": "この登録を削除する権限がありません",
-    "removeRecordFailed": "登録を削除できませんでした。もう一度お試しください"
+    "removeRecordFailed": "登録を削除できませんでした。もう一度お試しください",
+    "executionStoppedTitle": "アンインストールの待機を終了しました",
+    "executionFinishedTitle": "アンインストール処理が終了しました",
+    "resultCompleted": "完了: {count} 件",
+    "resultFailed": "失敗: {count} 件",
+    "resultCancelled": "キャンセル: {count} 件",
+    "resultContinuing": "ほか {count} 件はアンインストーラーの画面で結果を確認してください",
+    "resultEstimatedSpace": "解放容量（推定）: {size}",
+    "resultReleasedSpace": "解放容量: {size}"
   },
   "history": {
     "title": "操作履歴",
@@ -2269,7 +2277,8 @@
       "externalUninstallerContinuing": "システムアンインストールウィンドウがまだ実行中です。結果は確認されていません",
       "permanentDeleteFailed": "項目を完全に削除できませんでした",
       "recoveryRequired": "アンインストールが正常に完了しませんでした。再試行する前にアプリを確認または復元してください",
-      "nativeInstallerFailed": "Windows インストーラーがアンインストールを完了できませんでした",
+      "nativeInstallerFailed": "アンインストーラーが処理を完了できませんでした",
+      "nativeInstallerFailedAfterRemoval": "インストール情報は削除されましたが、アンインストーラーがエラーを報告しました",
       "verificationFailed": "MangoDisk が結果を確認できませんでした"
     }
   },

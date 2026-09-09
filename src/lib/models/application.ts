@@ -95,10 +95,14 @@ export type ApplicationUninstallDiagnostic =
   | 'unsupportedCommandHost'
   | 'registrationConflict';
 
+export type ApplicationSystemKind =
+  'unclassified' | 'windowsSystemPackage' | 'windowsBuiltinApp' | 'sharedRuntime' | 'windowsSharedPackage';
+
 export interface ApplicationUninstallCandidate {
   applicationId: string;
   primaryIdentifier: string;
   sourceIdentities: ApplicationUninstallSourceIdentity[];
+  systemKind: ApplicationSystemKind;
   name: string;
   version: string | null;
   publisher: string | null;
@@ -262,6 +266,7 @@ export type ApplicationUninstallActionReason =
   | 'permanentDeleteFailed'
   | 'recoveryRequired'
   | 'nativeInstallerFailed'
+  | 'nativeInstallerFailedAfterRemoval'
   | 'verificationFailed';
 
 export interface ApplicationUninstallActionResult {

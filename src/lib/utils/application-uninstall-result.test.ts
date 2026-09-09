@@ -15,6 +15,7 @@ function candidate(
   return {
     applicationId,
     primaryIdentifier: `com.example.${applicationId}`,
+    systemKind: 'unclassified',
     sourceIdentities: [{ source: 'macosBundle', identifier: `com.example.${applicationId}` }],
     name: applicationId,
     version: null,
@@ -123,5 +124,28 @@ describe('application uninstall result synchronization', () => {
     expect(ApplicationUninstallResultUtils.apply(snapshot, result('completed', 'cache')).candidates).toEqual(
       snapshot.candidates
     );
+  });
+});
+
+describe('native failures after verified registration removal', () => {
+  it('removes only the verified native row while retaining the failure result', () => {
+    const scan = catalog([candidate('removed'), candidate('untouched')]);
+    const failure = result('failed', 'applicationBinary');
+    failure.results[0]!.actions[0]!.kind = 'nativeInstaller';
+    failure.results[0]!.actions[0]!.reason = 'nativeInstallerFailedAfterRemoval';
+    const updated = ApplicationUninstallResultUtils.apply(scan, failure);
+    expect(updated.candidates.map(item => item.applicationId)).toEqual(['untouched']);
+    expect(updated.scannedAtMs).toBe(scan.scannedAtMs);
+    expect(failure.failedApplicationCount).toBe(1);
+    expect(failure.results[0]!.actions[0]!.status).toBe('failed');
+    expect(failure.releasedBytes).toBe(0);
+    failure.results[0]!.actions[0]!.reason = 'nativeInstallerFailed';
+    expect(ApplicationUninstallResultUtils.apply(scan, failure)).toBe(scan);
+    failure.results[0]!.actions[0]!.reason = 'nativeInstallerFailedAfterRemoval';
+    failure.results[0]!.actions[0]!.kind = 'applicationBinary';
+    expect(ApplicationUninstallResultUtils.apply(scan, failure)).toBe(scan);
+    failure.results[0]!.actions[0]!.kind = 'nativeInstaller';
+    failure.dryRun = true;
+    expect(ApplicationUninstallResultUtils.apply(scan, failure)).toBe(scan);
   });
 });

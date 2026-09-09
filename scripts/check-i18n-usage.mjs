@@ -301,6 +301,7 @@ const dynamicKeyGroups = {
     'permanentDeleteFailed',
     'recoveryRequired',
     'nativeInstallerFailed',
+    'nativeInstallerFailedAfterRemoval',
     'verificationFailed',
   ],
   'history.applicationUninstallStatuses': ['previewed', 'completed', 'failed'],

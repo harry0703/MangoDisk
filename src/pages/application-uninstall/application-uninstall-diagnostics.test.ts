@@ -25,6 +25,7 @@ afterEach(() => vi.restoreAllMocks());
 const candidate: ApplicationUninstallCandidate = {
   applicationId: 'application-0123456789abcdef01234567',
   primaryIdentifier: 'private-registration',
+  systemKind: 'unclassified',
   sourceIdentities: [],
   name: 'Example',
   version: null,
@@ -75,6 +76,10 @@ describe('simple uninstall actions', () => {
       const text = messages[locale].applicationUninstall;
       expect(wrapper.text()).not.toContain(candidate.applicationId);
       expect(wrapper.text()).not.toContain('executableAccessDenied');
+      expect(wrapper.text()).toContain(text.uninstallerAccessDenied);
+      await wrapper.setProps({ candidate: { ...candidate, uninstallDiagnostic: 'executableMissing' } });
+      expect(wrapper.text()).toContain(text.uninstallerMissing);
+      expect(wrapper.text()).not.toContain(text.uninstallerAccessDenied);
       expect(wrapper.findAll('.application-record-actions')).toHaveLength(1);
       const button = wrapper.findAll('button').find(item => item.text() === text.openWindowsInstalledApps)!;
       await button.trigger('click');
@@ -146,7 +151,7 @@ describe('explicit record removal', () => {
     const wrapper = shallowMount(ApplicationUninstallPage, {
       props: {
         catalog: {
-          schemaVersion: 10,
+          schemaVersion: 11,
           scannedAtMs: 0,
           supported: true,
           executionSupported: true,
@@ -192,10 +197,11 @@ describe('explicit record removal', () => {
     return { wrapper, dialog };
   }
 
-  it('closes the dialog and refreshes after successful removal', async () => {
+  it('closes the dialog and removes only the verified row without rescanning', async () => {
     const { wrapper, dialog } = await confirmRemoval();
     expect(dialog.props('open')).toBe(false);
-    expect(wrapper.emitted('scan')).toHaveLength(1);
+    expect(wrapper.emitted('scan')).toBeUndefined();
+    expect(wrapper.emitted('recordRemoved')).toEqual([[candidate.applicationId]]);
     expect(toast.success).toHaveBeenCalledWith(en.applicationUninstall.removeRecordSuccess);
     wrapper.unmount();
   });

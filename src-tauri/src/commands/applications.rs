@@ -91,11 +91,14 @@ pub async fn close_application_uninstall_applications(
 ) -> CommandResult<ApplicationUninstallCloseResponse> {
     run_blocking("close_application_uninstall_applications", move || {
         let catalog_cache = app.state::<ApplicationUninstallCatalogCache>();
-        let mut catalog = ApplicationUninstallCatalogCache::find(&catalog_cache, &catalog_revision)
-            .ok_or_else(|| CoreError::operation_failed("application uninstall catalog changed"))?;
+        let mut catalog =
+            ApplicationUninstallCatalogCache::find_snapshot(&catalog_cache, &catalog_revision)
+                .ok_or_else(|| {
+                    CoreError::operation_failed("application uninstall catalog changed")
+                })?;
         let close_result =
             ApplicationUninstallService::close_applications_from_catalog(request, &mut catalog)?;
-        ApplicationUninstallCatalogCache::replace(&catalog_cache, &catalog);
+        ApplicationUninstallCatalogCache::update_after_close(&catalog_cache, &catalog);
         Ok::<ApplicationUninstallCloseResponse, CoreError>(ApplicationUninstallCloseResponse {
             close_result,
             catalog,
@@ -209,9 +212,14 @@ pub async fn remove_application_record(
 ) -> CommandResult<()> {
     run_blocking("remove_application_record", move || {
         let result = ApplicationUninstallService::remove_application_record(&application_id, false);
-        // Verification can fail after a committed native deletion. Never keep an adapter cache
-        // that would present the old record as fresh after either a success or an uncertain result.
-        app.state::<ApplicationUninstallCatalogCache>().clear();
+        let cache = app.state::<ApplicationUninstallCatalogCache>();
+        if result.is_ok() {
+            cache.remove_record(&application_id);
+        } else {
+            // Verification can fail after a committed deletion. Uncertain results invalidate
+            // all cached evidence; the successful path preserves diagnostics for remaining rows.
+            cache.clear();
+        }
         result
     })
     .await
@@ -226,7 +234,7 @@ pub fn log_application_uninstall_details(
     catalog_revision: String,
 ) {
     let cache = app.state::<ApplicationUninstallCatalogCache>();
-    let Some(catalog) = cache.find(&catalog_revision) else {
+    let Some(catalog) = cache.find_snapshot(&catalog_revision) else {
         return;
     };
     if let Some(candidate) = catalog
@@ -234,6 +242,6 @@ pub fn log_application_uninstall_details(
         .iter()
         .find(|candidate| candidate.application_id == application_id)
     {
-        log::info!("application_uninstall_details_opened application_id={} capability={:?} record_state={:?} reason={}", candidate.application_id, candidate.capability, candidate.record_state, candidate.uninstall_diagnostic.map_or("none", |reason| reason.stable_code()));
+        log::info!("application_uninstall_details_opened application_id={} capability={:?} record_state={:?} system_kind={:?} reason={}", candidate.application_id, candidate.capability, candidate.record_state, candidate.system_kind, candidate.uninstall_diagnostic.map_or("none", |reason| reason.stable_code()));
     }
 }
