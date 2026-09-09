@@ -228,7 +228,7 @@ function loadMoreLeftoverCandidates(group: ApplicationLeftoverGroup) {
 }
 
 function runningProcessWarning(rule: PresentedScanRuleResult): string {
-  if (!rule.runningProcesses.length) return t('cleanup.requiresClose');
+  if (!rule.runningProcesses.length) return t('cleanup.sourceRequiresClose');
   return t('cleanup.requiresCloseProcesses', {
     processes: FormatUtils.list(rule.runningProcesses, locale.value),
   });
@@ -313,15 +313,6 @@ watch(
     visibleLeftoverCounts.value = {};
 
     if (showingApplicationOptimization.value) await loadApplicationOptimizationIcons();
-
-    // A category with one cleanup rule has no useful intermediate level.
-    // Reveal its locations immediately so the result behaves like a direct
-    // category-to-item browser while preserving explicit disclosure for
-    // categories containing several independent rules.
-    const rules = activeCategory.value?.rules ?? [];
-    if (rules.length === 1 && hasCleanupRuleDetails(rules[0])) {
-      expandedRuleIds.value = new Set([...expandedRuleIds.value, rules[0].ruleId]);
-    }
   },
   { immediate: true }
 );
@@ -634,7 +625,10 @@ watch(
                   <MdIcon :name="ICON_NAMES.info" :size="13" />
                   <span>{{ row.rule.impact }}</span>
                 </p>
-                <p v-if="row.rule.requiresAppClose" class="rule-detail-note warning">
+                <p
+                  v-if="row.rule.requiresAppClose || row.rule.runningProcesses.length > 0"
+                  class="rule-detail-note warning"
+                >
                   <MdIcon :name="ICON_NAMES.info" :size="13" />
                   <span>{{ runningProcessWarning(row.rule) }}</span>
                 </p>
@@ -651,8 +645,11 @@ watch(
                 :data-selected="sourceSelected(row.rule.ruleId, source.path)"
               >
                 <MdResultCheckbox
-                  :checked="!source.blockReason && sourceSelected(row.rule.ruleId, source.path)"
-                  :disabled="busy || Boolean(source.blockReason)"
+                  :checked="
+                    CleanupRuleSelectionUtils.sourceSelectable(row.rule, source) &&
+                    sourceSelected(row.rule.ruleId, source.path)
+                  "
+                  :disabled="busy || !CleanupRuleSelectionUtils.sourceSelectable(row.rule, source)"
                   :aria-label="t('cleanup.selectSource', { path: source.path })"
                   @update:checked="emit('toggleSource', row.rule.ruleId, source.path)"
                 />

@@ -194,6 +194,37 @@ Project artifact constraints are intentionally narrow:
 - Artifact paths must be normalized relative paths without absolute roots, `.` segments, or `..` traversal.
 - Verification lifecycle must be `verified`, evidence must contain at least one authoritative HTTPS source, and `verified_at` must use `YYYY-MM-DD`.
 
+### Codex worktree discovery
+
+Regular deep-cleanup scans also inspect `${CODEX_HOME}/worktrees` (or
+`~/.codex/worktrees` when the environment variable is unset). Discovery is bounded
+to the `worktrees/ID/checkout` layout and requires matching reciprocal Git
+pointers without linked path components. Optional `codex-thread.json` metadata
+is not required inside this configured location. Outside it, Codex ownership
+metadata remains necessary for Codex-specific classification. Identified
+checkouts use the existing opt-in project
+artifact rules; there is no separate scan mode or cleanup workflow. Explicit
+project scopes are not expanded. Sessions, images, credentials, plugins, source
+files, and entire worktrees are never cleanup targets.
+
+Codex artifact sources use the existing per-source close requirement while
+Codex or ChatGPT is running. Global Node, Python, Cargo, and other build processes
+are not associated with a checkout and are neither blockers nor close targets.
+Sources remain selectable. Confirmation uses the shared optional application
+close panel, unchecked by default; only selected sources contribute to it.
+Core resolves trusted project rule IDs to the fixed Codex/ChatGPT application
+set, never to process names supplied by the frontend.
+Execution rechecks checkout provenance and running processes before deletion;
+unavailable process inventory fails closed for these artifacts, not other projects.
+Execution reports known writers as `blocked` / `runningProcesses` (or `partial`
+when other sources were cleaned). Changed Git associations and unavailable
+process inspection report `preflightFailed`, with distinct diagnostic reasons.
+For disposable real Git worktree deletion and log validation, run
+`cargo test -p mangodisk-core codex_real_git_worktree_deletion_and_diagnostics -- --ignored --nocapture --test-threads=1`.
+With Codex or ChatGPT running, this test checks the live app guard, then injects deterministic process
+states for failure and idle scenarios; Git validation and deletion remain real.
+It never targets existing user worktrees or terminates running applications.
+
 ## User-facing text
 
 Rule execution data and UI presentation remain separate. Locale entries are optional at the schema level because MangoDisk can derive a readable fallback name from the rule ID. For a complete user-facing contribution, add `name`, `description`, and `impact` under `cleanupRules.entries.<rule-id>` in every supported file under [`src/locales`](../../../../src/locales). If you cannot provide a reliable translation, mention it in the pull request instead of adding unreviewed machine-translated text.

@@ -8,6 +8,12 @@ mod project_artifact_schema;
 mod project_artifacts;
 mod project_root_index;
 mod rust_toolchains;
+
+/// Only catalog-owned project rule IDs can request closure of the fixed Codex
+/// application set. Never accept process names supplied by the WebView.
+pub(super) fn project_artifact_close_processes(id: &str) -> Option<Vec<String>> {
+    project_artifacts::contains(id).then(super::codex_worktrees::application_process_names)
+}
 #[cfg(target_os = "macos")]
 mod user_cache_inventory;
 #[cfg(windows)]
@@ -685,6 +691,16 @@ pub(crate) fn catalog_digest() -> String {
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn project_app_closure_accepts_only_known_catalog_ids_and_fixed_apps() {
+        assert_eq!(
+            super::project_artifact_close_processes("project.rust-build-artifacts"),
+            Some(vec!["Codex".into(), "ChatGPT".into()])
+        );
+        assert!(super::project_artifact_close_processes("project.unknown").is_none());
+        assert!(super::project_artifact_close_processes("node").is_none());
+        assert!(super::project_artifact_close_processes("app.chatgpt-cache").is_none());
+    }
     use super::*;
 
     #[test]

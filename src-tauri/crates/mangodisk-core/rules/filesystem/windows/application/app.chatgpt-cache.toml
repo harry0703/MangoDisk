@@ -4,13 +4,13 @@
 # user-owned .codex directory remain outside the cleanup boundary.
 id = "app.chatgpt-cache"
 schema_version = 3
-rule_version = 1
+rule_version = 2
 platform = "windows"
 category = "application"
 risk = "safe"
 default_selected = false
 recommended_selected = true
-required_stopped_processes = ["ChatGPT.exe"]
+required_stopped_processes = ["ChatGPT.exe", "Codex.exe"]
 
 [[applicability]]
 kind = "anyOf"

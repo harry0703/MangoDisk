@@ -181,5 +181,40 @@ describe('CleanupRuleTextUtils', () => {
       message: messages['cleanupRules.actionReasons.verificationFailed'],
     });
     expect(result.record.details.payload.cleanup?.actions[0].message).toBe(result.actions[0].message);
+
+    // Project cleanup must carry its process reason through both the result
+    // dialog and persisted history, including mixed-success actions.
+    for (const status of ['blocked', 'partial'] as const) {
+      const guardedAction: CleanupActionResult = {
+        ...action,
+        ruleId: 'project.rust-build-artifacts',
+        actionKind: 'delete',
+        status,
+        reasonCode: 'runningProcesses',
+        runningProcesses: ['Codex', 'ChatGPT'],
+      };
+      const guardedResult = CleanupRuleTextUtils.cleanupResult(
+        {
+          ...cleanupResult,
+          actions: [guardedAction],
+          record: {
+            ...record,
+            details: {
+              ...record.details,
+              payload: {
+                ...record.details.payload,
+                cleanup: { ...record.details.payload.cleanup, actions: [guardedAction] },
+              },
+            },
+          },
+        },
+        (key, values) =>
+          key === 'cleanupRules.actionReasons.runningProcesses'
+            ? `Close ${values?.processes} before retrying`
+            : undefined
+      );
+      expect(guardedResult.actions[0]).toMatchObject({ status, message: 'Close Codex, ChatGPT before retrying' });
+      expect(guardedResult.record.details.payload.cleanup?.actions[0].message).toBe(guardedResult.actions[0].message);
+    }
   });
 });

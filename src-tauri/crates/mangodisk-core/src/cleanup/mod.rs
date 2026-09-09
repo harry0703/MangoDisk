@@ -1,5 +1,6 @@
 pub(crate) mod applicability;
 pub(crate) mod cleaners;
+mod codex_worktrees;
 mod custom_session;
 pub(crate) mod measurement;
 mod models;

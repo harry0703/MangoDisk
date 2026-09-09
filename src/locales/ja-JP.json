@@ -2756,7 +2756,7 @@
         "impact": "チャット、アカウント、ダウンロード済みファイルは保持されます。クリーンアップ前に Teams を終了してください。"
       },
       "app.chatgpt-cache": {
-        "name": "ChatGPT キャッシュ",
+        "name": "ChatGPT / Codex キャッシュ",
         "description": "ChatGPT と Codex のデスクトップアプリが保存する再作成可能なレンダリングデータと診断データ。",
         "impact": "会話、プロジェクト、認証情報、ブラウザの状態、サインイン状態は保持されます。クリーンアップ前に ChatGPT と Codex を終了してください。"
       },

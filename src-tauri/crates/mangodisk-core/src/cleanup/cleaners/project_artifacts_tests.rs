@@ -11,6 +11,266 @@ use crate::{
 
 static NEXT_FIXTURE_ID: AtomicU64 = AtomicU64::new(1);
 
+#[test]
+fn codex_worktree_artifacts_use_regular_project_rules_and_preserve_durable_data() {
+    let fixture = Fixture::new("codex-artifacts");
+    let checkout = fixture.0.join("worktrees/1234/project");
+    let admin = fixture.0.join("repository/.git/worktrees/project");
+    fs::create_dir_all(checkout.join("target")).unwrap();
+    fs::create_dir_all(&admin).unwrap();
+    fs::write(
+        checkout.join(".git"),
+        format!("gitdir: {}", admin.display()),
+    )
+    .unwrap();
+    fs::write(
+        admin.join("gitdir"),
+        checkout.join(".git").to_str().unwrap(),
+    )
+    .unwrap();
+    fs::write(
+        admin.join("codex-thread.json"),
+        r#"{"ownerThreadId":"fixture"}"#,
+    )
+    .unwrap();
+    fs::write(checkout.join("Cargo.toml"), "[package]\nname='fixture'\n").unwrap();
+    fs::write(checkout.join("target/output"), [7; 64]).unwrap();
+    fs::write(checkout.join("source.rs"), "source must remain").unwrap();
+    fs::write(fixture.0.join("auth.json"), "credential fixture").unwrap();
+
+    let roots = codex_worktrees::discover(&fixture.0, &|| false).unwrap();
+    assert_eq!(roots.len(), 1);
+    assert_eq!(
+        codex_worktrees::protected_checkout(&checkout.join("nested"), None),
+        Some(checkout.clone()),
+        "verified checkouts outside the configured home must remain protected"
+    );
+    let plan = build_plan(
+        &roots
+            .iter()
+            .map(|root| display_path(root))
+            .collect::<Vec<_>>(),
+        false,
+        current_platform_rules().unwrap(),
+        &|| false,
+    )
+    .unwrap();
+    let rule = plan
+        .rules
+        .iter()
+        .find(|rule| rule.source.id == "project.rust-build-artifacts")
+        .unwrap();
+    assert_eq!(rule.candidates.len(), 1);
+    let candidate = &rule.candidates[0];
+    assert_eq!(candidate.bytes, 64);
+    assert_eq!(
+        candidate.codex_checkout,
+        Some(fs::canonicalize(&checkout).unwrap())
+    );
+    assert!(candidate.path.ends_with("target"));
+
+    let mut result = scan_result(
+        &rule.source,
+        ScanItemStatus::Found,
+        64,
+        1,
+        0,
+        cleanup_source_details(&rule.candidates),
+    );
+    apply_codex_process_guard(
+        &mut result,
+        &rule.candidates,
+        Some(&Ok(vec!["Codex".into()])),
+    );
+    assert_eq!(result.status, ScanItemStatus::Found);
+    assert!(result.selectable);
+    assert!(
+        result.requires_app_close,
+        "known Codex apps must support the user-confirmed close flow"
+    );
+    assert_eq!(
+        result.sources[0].block_reason,
+        Some(crate::cleanup::CleanupSourceBlockReason::RequiresClose)
+    );
+
+    // Invalidate ownership after discovery. Even a manually forged selection
+    // must not delete a candidate whose recorded provenance has changed.
+    fs::remove_file(admin.join("gitdir")).unwrap();
+    let _lock = test_operation_lock();
+    let operation = OperationGuard::start(CoordinatedOperationKind::Cleanup).unwrap();
+    let action = execute_rule(rule, None, false, &operation);
+    assert_eq!(action.released_bytes, 0);
+    assert_eq!(action.failed_item_count, 1);
+    assert!(checkout.join("target/output").exists());
+    assert!(checkout.join("source.rs").exists());
+    assert!(fixture.0.join("auth.json").exists());
+}
+
+#[test]
+fn codex_discovery_failure_and_rebuilt_plans_preserve_automatic_source_protection() {
+    let fixture = Fixture::new("codex-discovery-failure");
+    let checkout = fixture.0.join("worktrees/1234/project");
+    let admin = fixture.0.join("repository/.git/worktrees/project");
+    fs::create_dir_all(checkout.join("target")).unwrap();
+    fs::create_dir_all(&admin).unwrap();
+    fs::write(
+        checkout.join(".git"),
+        format!("gitdir: {}", admin.display()),
+    )
+    .unwrap();
+    fs::write(
+        admin.join("gitdir"),
+        checkout.join(".git").to_str().unwrap(),
+    )
+    .unwrap();
+    fs::write(
+        admin.join("codex-thread.json"),
+        r#"{"ownerThreadId":"fixture"}"#,
+    )
+    .unwrap();
+    fs::write(checkout.join("Cargo.toml"), "[package]\nname='fixture'\n").unwrap();
+    fs::write(checkout.join("target/output"), [7; 64]).unwrap();
+    fs::write(checkout.join("source.rs"), "source must remain").unwrap();
+    // Exceed the bounded enumerator without depending on platform permissions.
+    // Native or cached project discovery can still return the valid checkout.
+    for index in 0..513 {
+        fs::write(fixture.0.join(format!("worktrees/entry-{index}")), "").unwrap();
+    }
+    assert!(codex_worktrees::discover(&fixture.0, &|| false).is_err());
+    let roots = [display_path(&checkout)];
+    let rebuild = || {
+        build_plan_with_progress(
+            &roots,
+            true,
+            current_platform_rules().unwrap(),
+            &|| false,
+            &|_| {},
+            &|_, _, _| {},
+            Some(&fixture.0),
+        )
+        .unwrap()
+    };
+    let plan = rebuild();
+    assert!(!plan.limited);
+    let rule = plan
+        .rules
+        .iter()
+        .find(|rule| rule.source.id == "project.rust-build-artifacts")
+        .unwrap();
+    assert_eq!(rule.candidates.len(), 1);
+    assert_eq!(
+        rule.candidates[0].codex_checkout,
+        Some(fs::canonicalize(&checkout).unwrap())
+    );
+    let mut result = scan_result(
+        &rule.source,
+        ScanItemStatus::Found,
+        64,
+        1,
+        0,
+        cleanup_source_details(&rule.candidates),
+    );
+    apply_codex_process_guard(
+        &mut result,
+        &rule.candidates,
+        Some(&Ok(vec!["Codex".into()])),
+    );
+    assert!(result.selectable);
+    assert_eq!(result.status, ScanItemStatus::Found);
+
+    // Execution rebuilds its plan instead of trusting preview provenance.
+    // Breaking the Git association must not reclassify this candidate as ordinary.
+    fs::remove_file(admin.join("gitdir")).unwrap();
+    let rebuilt = rebuild();
+    let rule = rebuilt
+        .rules
+        .iter()
+        .find(|rule| rule.source.id == "project.rust-build-artifacts")
+        .unwrap();
+    assert_eq!(rule.candidates.len(), 1);
+    assert!(rule.candidates[0].codex_checkout.is_some());
+    let _lock = test_operation_lock();
+    let operation = OperationGuard::start(CoordinatedOperationKind::Cleanup).unwrap();
+    let action = execute_rule(rule, None, false, &operation);
+    assert_eq!(action.released_bytes, 0);
+    assert_eq!(action.failed_item_count, 1);
+    assert_eq!(
+        fs::read(checkout.join("target/output")).unwrap(),
+        vec![7; 64]
+    );
+    assert_eq!(
+        fs::read_to_string(checkout.join("source.rs")).unwrap(),
+        "source must remain"
+    );
+}
+
+#[test]
+fn codex_process_guard_leaves_normal_project_sources_selectable() {
+    let fixture = Fixture::new("mixed-codex-sources");
+    let candidates = [false, true].map(|codex| ArtifactCandidate {
+        project_root: fixture.0.clone(),
+        codex_checkout: codex.then(|| fixture.0.clone()),
+        path: fixture.0.join(if codex {
+            "codex/target"
+        } else {
+            "ordinary/target"
+        }),
+        bytes: 32,
+        file_count: 1,
+        modified_at_ms: None,
+        measurement_limited: false,
+    });
+    let rule = &current_platform_rules().unwrap()[0];
+    for processes in [
+        Ok(vec!["Codex".into()]),
+        Err("inventory unavailable".into()),
+    ] {
+        let mut result = scan_result(
+            rule,
+            ScanItemStatus::Found,
+            64,
+            2,
+            0,
+            cleanup_source_details(&candidates),
+        );
+        apply_codex_process_guard(&mut result, &candidates, Some(&processes));
+        assert!(result.selectable);
+        assert_eq!(result.bytes, if processes.is_ok() { 64 } else { 32 });
+        assert_eq!(result.file_count, if processes.is_ok() { 2 } else { 1 });
+        assert_eq!(
+            result
+                .sources
+                .iter()
+                .map(|source| source.bytes)
+                .sum::<u64>(),
+            64
+        );
+        assert_eq!(
+            result
+                .sources
+                .iter()
+                .filter(|source| source.block_reason.is_none())
+                .count(),
+            1
+        );
+    }
+    let mut result = scan_result(
+        rule,
+        ScanItemStatus::Found,
+        64,
+        2,
+        0,
+        cleanup_source_details(&candidates),
+    );
+    apply_codex_process_guard(&mut result, &candidates, Some(&Ok(Vec::new())));
+    assert_eq!(result.bytes, 64);
+    assert_eq!(result.file_count, 2);
+    assert!(result
+        .sources
+        .iter()
+        .all(|source| source.block_reason.is_none()));
+}
+
 struct Fixture(PathBuf);
 
 impl Fixture {

@@ -1,4 +1,11 @@
-import type { CleanupSourceSelection, RiskLevel, ScanRuleResult } from '@/lib/models/cleanup';
+import type { CleanupSourceDetail, CleanupSourceSelection, RiskLevel, ScanRuleResult } from '@/lib/models/cleanup';
+
+/** Project writers require confirmation and an execution-time guard, not a disabled selection. */
+export function sourceSelectable(rule: ScanRuleResult, source: CleanupSourceDetail): boolean {
+  return (
+    rule.selectable && (!source.blockReason || (rule.category === 'project' && source.blockReason === 'requiresClose'))
+  );
+}
 
 /** Pure calculations for cleanup selection state and byte totals. */
 export interface CleanupRuleSelectionState {
@@ -78,7 +85,7 @@ export function ruleSelectionLevel(
   if (selection.mode === 'exclude') {
     return selection.paths.length ? 'partial' : 'all';
   }
-  const selectableSources = rule.sources.filter(source => !source.blockReason);
+  const selectableSources = rule.sources.filter(source => sourceSelectable(rule, source));
   if (
     !rule.sourcesTruncated &&
     selectableSources.length > 0 &&
@@ -132,10 +139,10 @@ function bulkSelectableBytesForRule(rule: ScanRuleResult): number {
   // bulk selection retains the Core-owned aggregate. Complete inventories can
   // exclude disabled sources and keep the preset amount equal to what the UI
   // will actually select.
-  if (rule.sourcesTruncated || !rule.sources.some(source => Boolean(source.blockReason))) {
+  if (rule.sourcesTruncated || rule.sources.every(source => sourceSelectable(rule, source))) {
     return rule.bytes;
   }
-  return rule.sources.reduce((total, source) => total + (source.blockReason ? 0 : source.bytes), 0);
+  return rule.sources.reduce((total, source) => total + (sourceSelectable(rule, source) ? source.bytes : 0), 0);
 }
 export function selectionState(
   rules: readonly ScanRuleResult[],

@@ -192,10 +192,11 @@ where
 }
 
 impl CleanupService {
-    /// Closes applications referenced by trusted declarative cleanup rules.
+    /// Closes applications referenced by trusted cleanup rules.
     ///
-    /// The WebView supplies only stable rule IDs. Process aliases remain in
-    /// the validated rule catalog so an adapter cannot turn this workflow into
+    /// The WebView supplies only stable rule IDs. Process aliases come from
+    /// the validated rule catalog or fixed Core policy, never from the adapter,
+    /// so an adapter cannot turn this workflow into
     /// an arbitrary process termination primitive.
     pub fn close_applications(
         request: CleanupApplicationCloseRequest,
@@ -210,6 +211,14 @@ impl CleanupService {
         let rules = registry()?;
         let mut targets = Vec::with_capacity(request.rule_ids.len());
         for rule_id in &request.rule_ids {
+            if let Some(executable_names) = cleaners::project_artifact_close_processes(rule_id) {
+                targets.push(ResolvedApplicationCloseTarget {
+                    target_id: rule_id.clone(),
+                    executable_names,
+                    executable_paths: Vec::new(),
+                });
+                continue;
+            }
             let rule = rules
                 .iter()
                 .find(|rule| rule.id == rule_id.as_str())

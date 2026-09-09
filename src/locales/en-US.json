@@ -2754,7 +2754,7 @@
         "impact": "Chats, accounts, and downloaded files are kept. Close Teams before cleaning."
       },
       "app.chatgpt-cache": {
-        "name": "ChatGPT cache",
+        "name": "ChatGPT / Codex cache",
         "description": "Rebuildable rendering and diagnostic data saved by the ChatGPT and Codex desktop app.",
         "impact": "Conversations, projects, credentials, browser state, and sign-in state are kept. Close ChatGPT and Codex before cleaning."
       },

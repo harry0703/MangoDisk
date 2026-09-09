@@ -2685,7 +2685,7 @@
         "impact": "不会删除聊天、账号或下载文件；关闭 Teams 后清理。"
       },
       "app.chatgpt-cache": {
-        "name": "ChatGPT 应用缓存",
+        "name": "ChatGPT / Codex 缓存",
         "description": "ChatGPT 与 Codex 桌面应用保存的可重建渲染缓存和诊断数据",
         "impact": "不会删除对话、项目、凭据、浏览器状态或登录状态；关闭 ChatGPT 与 Codex 后清理。"
       },

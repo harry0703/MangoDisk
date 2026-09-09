@@ -18,6 +18,7 @@ use mangodisk_platform::{
 };
 
 use crate::{
+    cleanup::codex_worktrees,
     cleanup::measurement::MeasureResult,
     cleanup::{
         source_selection::{SourceScope, SourceSelectionPolicy},
@@ -103,6 +104,7 @@ struct ArtifactDraft {
 #[derive(Debug, Clone)]
 struct ArtifactCandidate {
     project_root: PathBuf,
+    codex_checkout: Option<PathBuf>,
     path: PathBuf,
     bytes: u64,
     file_count: u64,
@@ -217,65 +219,75 @@ pub(super) fn preview_all(
         is_cancelled,
         report_path,
         report_files,
+        configured_codex_home().as_deref(),
     ) {
-        Ok(plan) => plan
-            .rules
-            .iter()
-            .map(|rule| {
-                let complete_bytes: u64 = rule
-                    .candidates
-                    .iter()
-                    .filter(|candidate| !candidate.measurement_limited)
-                    .map(|candidate| candidate.bytes)
-                    .sum();
-                let complete_file_count: u64 = rule
-                    .candidates
-                    .iter()
-                    .filter(|candidate| !candidate.measurement_limited)
-                    .map(|candidate| candidate.file_count)
-                    .sum();
-                let limited_bytes: u64 = rule
-                    .candidates
-                    .iter()
-                    .filter(|candidate| candidate.measurement_limited)
-                    .map(|candidate| candidate.bytes)
-                    .sum();
-                let limited_file_count: u64 = rule
-                    .candidates
-                    .iter()
-                    .filter(|candidate| candidate.measurement_limited)
-                    .map(|candidate| candidate.file_count)
-                    .sum();
-                let status = if plan.limited {
-                    ScanItemStatus::Limited
-                } else if complete_bytes > 0 {
-                    ScanItemStatus::Found
-                } else if limited_bytes > 0 {
-                    ScanItemStatus::Limited
-                } else {
-                    ScanItemStatus::Clean
-                };
-                // A mixed rule exposes only fully measured bytes as
-                // reclaimable. If every candidate is limited, preserve the
-                // accessible estimate for the inspection report.
-                let (bytes, file_count) = if status == ScanItemStatus::Found {
-                    (complete_bytes, complete_file_count)
-                } else {
-                    (
-                        complete_bytes.saturating_add(limited_bytes),
-                        complete_file_count.saturating_add(limited_file_count),
-                    )
-                };
-                scan_result(
-                    &rule.source,
-                    status,
-                    bytes,
-                    file_count,
-                    plan.elapsed_ms / plan.rules.len().max(1) as u64,
-                    cleanup_source_details(&rule.candidates),
-                )
-            })
-            .collect(),
+        Ok(plan) => {
+            let processes = plan
+                .rules
+                .iter()
+                .flat_map(|rule| &rule.candidates)
+                .any(|candidate| candidate.codex_checkout.is_some())
+                .then(codex_worktrees::blocking_processes);
+            plan.rules
+                .iter()
+                .map(|rule| {
+                    let complete_bytes: u64 = rule
+                        .candidates
+                        .iter()
+                        .filter(|candidate| !candidate.measurement_limited)
+                        .map(|candidate| candidate.bytes)
+                        .sum();
+                    let complete_file_count: u64 = rule
+                        .candidates
+                        .iter()
+                        .filter(|candidate| !candidate.measurement_limited)
+                        .map(|candidate| candidate.file_count)
+                        .sum();
+                    let limited_bytes: u64 = rule
+                        .candidates
+                        .iter()
+                        .filter(|candidate| candidate.measurement_limited)
+                        .map(|candidate| candidate.bytes)
+                        .sum();
+                    let limited_file_count: u64 = rule
+                        .candidates
+                        .iter()
+                        .filter(|candidate| candidate.measurement_limited)
+                        .map(|candidate| candidate.file_count)
+                        .sum();
+                    let status = if plan.limited {
+                        ScanItemStatus::Limited
+                    } else if complete_bytes > 0 {
+                        ScanItemStatus::Found
+                    } else if limited_bytes > 0 {
+                        ScanItemStatus::Limited
+                    } else {
+                        ScanItemStatus::Clean
+                    };
+                    // A mixed rule exposes only fully measured bytes as
+                    // reclaimable. If every candidate is limited, preserve the
+                    // accessible estimate for the inspection report.
+                    let (bytes, file_count) = if status == ScanItemStatus::Found {
+                        (complete_bytes, complete_file_count)
+                    } else {
+                        (
+                            complete_bytes.saturating_add(limited_bytes),
+                            complete_file_count.saturating_add(limited_file_count),
+                        )
+                    };
+                    let mut result = scan_result(
+                        &rule.source,
+                        status,
+                        bytes,
+                        file_count,
+                        plan.elapsed_ms / plan.rules.len().max(1) as u64,
+                        cleanup_source_details(&rule.candidates),
+                    );
+                    apply_codex_process_guard(&mut result, &rule.candidates, processes.as_ref());
+                    result
+                })
+                .collect()
+        }
         Err(error) => {
             log::warn!(
                 "project_artifact_preview_failed error_digest={}",
@@ -325,7 +337,7 @@ pub(super) fn count() -> usize {
 
 pub(super) fn catalog_digest() -> String {
     let mut hasher = blake3::Hasher::new();
-    hasher.update(b"mangodisk-project-artifact-catalog-v2-complete-source-inventory");
+    hasher.update(b"mangodisk-project-artifact-catalog-v3-codex-worktrees");
     for (name, source) in EMBEDDED_PROJECT_ARTIFACT_RULE_SOURCES {
         hasher.update(name.as_bytes());
         hasher.update(source.as_bytes());
@@ -452,6 +464,24 @@ fn execute_rule(
     dry_run: bool,
     operation: &OperationGuard,
 ) -> CleanupActionResult {
+    execute_rule_with_process_check(
+        rule,
+        source_scope,
+        dry_run,
+        operation,
+        &codex_worktrees::blocking_processes,
+    )
+}
+
+// Only process discovery is injectable. Fixtures still exercise real Git
+// validation, filesystem preflight, deletion, and result aggregation.
+fn execute_rule_with_process_check(
+    rule: &RulePlan,
+    source_scope: Option<&SourceScope>,
+    dry_run: bool,
+    operation: &OperationGuard,
+    process_check: &dyn Fn() -> Result<Vec<String>, String>,
+) -> CleanupActionResult {
     if source_scope.is_some_and(|scope| {
         scope
             .validate_known_paths(
@@ -490,6 +520,9 @@ fn execute_rule(
     let mut released_bytes = 0_u64;
     let mut affected_item_count = 0_u64;
     let mut failed_item_count = 0_u64;
+    let mut blocked_item_count = 0_u64;
+    let mut preflight_failed_count = 0_u64;
+    let mut running_processes = Vec::<String>::new();
     for candidate in candidates {
         if operation.cancelled().load(Ordering::Relaxed) {
             failed_item_count = failed_item_count.saturating_add(1);
@@ -532,6 +565,48 @@ fn execute_rule(
             );
             continue;
         }
+        // Revalidate provenance and writers after measurement, immediately
+        // before deletion. A stale preview cannot authorize an active checkout.
+        if let Some(checkout) = &candidate.codex_checkout {
+            if !codex_worktrees::is_linked_checkout(checkout) {
+                failed_item_count = failed_item_count.saturating_add(1);
+                preflight_failed_count += 1;
+                log::warn!(
+                    "project_artifact_delete_skipped operation_id={} rule_id={} reason=codexCheckoutChanged",
+                    operation.id(), rule.source.id
+                );
+                continue;
+            }
+            match process_check() {
+                Ok(names) if names.is_empty() => {}
+                Ok(names) => {
+                    failed_item_count += 1;
+                    blocked_item_count += 1;
+                    for name in names {
+                        if !running_processes
+                            .iter()
+                            .any(|existing| existing.eq_ignore_ascii_case(&name))
+                        {
+                            running_processes.push(name);
+                        }
+                    }
+                    log::info!(
+                        "project_artifact_delete_skipped operation_id={} rule_id={} reason=codexWritersRunning process_count={}",
+                        operation.id(), rule.source.id, running_processes.len()
+                    );
+                    continue;
+                }
+                Err(error) => {
+                    failed_item_count += 1;
+                    preflight_failed_count += 1;
+                    log::warn!(
+                        "project_artifact_delete_skipped operation_id={} rule_id={} reason=codexProcessInspectionFailed error_digest={}",
+                        operation.id(), rule.source.id, blake3::hash(error.as_bytes()).to_hex()
+                    );
+                    continue;
+                }
+            }
+        }
         match delete_path_permanently(prepared, live.measured.bytes, live.measured.file_count) {
             Ok(()) => {
                 released_bytes = released_bytes.saturating_add(live.measured.bytes);
@@ -554,17 +629,31 @@ fn execute_rule(
             }
         }
     }
-    let status = match (failed_item_count, released_bytes) {
-        (0, _) => CleanupActionStatus::Completed,
-        (_, 0) => CleanupActionStatus::Failed,
-        _ => CleanupActionStatus::Partial,
+    let cancelled = operation.cancelled().load(Ordering::Relaxed);
+    let status = if failed_item_count == 0 {
+        CleanupActionStatus::Completed
+    } else if released_bytes > 0 || affected_item_count > 0 {
+        CleanupActionStatus::Partial
+    } else if !cancelled && blocked_item_count == failed_item_count {
+        CleanupActionStatus::Blocked
+    } else {
+        CleanupActionStatus::Failed
     };
+    log::info!(
+        "project_artifact_execution_finished operation_id={} rule_id={} status={:?} released_bytes={} affected_item_count={} failed_item_count={} blocked_item_count={} preflight_failed_count={} process_count={}",
+        operation.id(), rule.source.id, status, released_bytes, affected_item_count,
+        failed_item_count, blocked_item_count, preflight_failed_count, running_processes.len()
+    );
     CleanupActionResult {
         rule_id: rule.source.id.clone(),
         action_kind: CleanupActionKind::Delete,
         status,
-        reason_code: if operation.cancelled().load(Ordering::Relaxed) {
+        reason_code: if cancelled {
             Some(CleanupActionReason::Cancelled)
+        } else if failed_item_count > 0 && blocked_item_count == failed_item_count {
+            Some(CleanupActionReason::RunningProcesses)
+        } else if failed_item_count > 0 && preflight_failed_count == failed_item_count {
+            Some(CleanupActionReason::PreflightFailed)
         } else {
             (failed_item_count > 0).then_some(CleanupActionReason::ItemsSkipped)
         },
@@ -572,7 +661,7 @@ fn execute_rule(
         released_bytes,
         affected_item_count,
         failed_item_count,
-        running_processes: Vec::new(),
+        running_processes,
     }
 }
 
@@ -589,6 +678,7 @@ fn build_plan(
         is_cancelled,
         &|_| {},
         &|_, _, _| {},
+        configured_codex_home().as_deref(),
     )
 }
 
@@ -599,6 +689,7 @@ fn build_plan_with_progress(
     is_cancelled: &(dyn Fn() -> bool + Sync),
     report_path: &(dyn Fn(&Path) + Sync),
     report_files: &(dyn Fn(&Path, u64, u64) + Sync),
+    codex_home: Option<&Path>,
 ) -> Result<CatalogPlan, String> {
     let started = Instant::now();
     let mode = if deep_project_discovery && !configured_roots.is_empty() {
@@ -611,7 +702,7 @@ fn build_plan_with_progress(
         ProjectRootMode::Standard
     };
     let root_discovery_started = Instant::now();
-    let roots = match mode {
+    let mut roots = match mode {
         ProjectRootMode::Explicit => ProjectDiscoveryRoots {
             exact_roots: Vec::new(),
             recursive_roots: normalize_roots(configured_roots)?,
@@ -643,6 +734,16 @@ fn build_plan_with_progress(
                 report_files,
             )?
         }
+    };
+    // The regular home discovery intentionally excludes hidden application
+    // state. Add only positively identified linked checkouts, not `.codex`.
+    // Explicit project requests keep their original, user-selected scope.
+    let codex_roots = if mode != ProjectRootMode::Explicit {
+        let checkouts = automatic_codex_worktrees(codex_home, is_cancelled);
+        roots.recursive_roots.extend(checkouts.iter().cloned());
+        checkouts
+    } else {
+        Vec::new()
     };
     let root_discovery_elapsed_ms = root_discovery_started.elapsed().as_millis();
     if roots.is_empty() {
@@ -711,7 +812,20 @@ fn build_plan_with_progress(
         update_project_root_index(&projects);
     }
     if mode == ProjectRootMode::Standard {
+        // Retain old verified Codex checkouts independently of the recent-
+        // project cap: abandoned worktrees are useful cleanup candidates.
+        let codex_projects = projects
+            .iter()
+            .filter(|project| {
+                codex_roots.iter().any(|root| {
+                    current_platform().path_is_same_or_child(&project.project_root, root)
+                })
+            })
+            .cloned()
+            .collect::<Vec<_>>();
         retain_recent_project_matches(&mut projects, MAX_STANDARD_PROJECT_ROOTS);
+        projects.extend(codex_projects);
+        sort_and_deduplicate_project_matches(&mut projects);
     }
     let draft_collection_started = Instant::now();
     let drafts = collect_artifact_drafts(&projects, rules, is_cancelled, report_path);
@@ -723,6 +837,14 @@ fn build_plan_with_progress(
     let candidates = measure_artifacts(drafts, is_cancelled, report_path, report_files);
     let measurement_elapsed_ms = measurement_started.elapsed().as_millis();
     let mut candidates_by_rule = vec![Vec::new(); rules.len()];
+    // Match the canonical project paths, including fixed macOS system aliases.
+    // Failure keeps the lexical boundary rather than discarding protection.
+    let codex_home = codex_home.map(|home| {
+        current_platform()
+            .canonicalize_no_links(home)
+            .unwrap_or_else(|_| home.to_path_buf())
+    });
+    let mut protected_projects = HashMap::new();
     let limited = discovery_limited;
     for (draft, measured) in candidates {
         let measurement_limited = measured.measured.skipped_count > 0;
@@ -742,6 +864,26 @@ fn build_plan_with_progress(
             continue;
         }
         candidates_by_rule[draft.rule_index].push(ArtifactCandidate {
+            // Discovery provenance is a fast path, not the safety boundary.
+            // Native/index results need protection even when Codex discovery
+            // failed. Cache classification per project across artifact rules.
+            codex_checkout: protected_projects
+                .entry(draft.project_root.clone())
+                .or_insert_with(|| {
+                    codex_roots
+                        .iter()
+                        .find(|root| {
+                            current_platform().path_is_same_or_child(&draft.project_root, root)
+                        })
+                        .cloned()
+                        .or_else(|| {
+                            codex_worktrees::protected_checkout(
+                                &draft.project_root,
+                                codex_home.as_deref(),
+                            )
+                        })
+                })
+                .clone(),
             project_root: draft.project_root,
             modified_at_ms: measured.modified_at_ms,
             path: draft.path,
@@ -779,6 +921,55 @@ fn build_plan_with_progress(
         limited: limited || is_cancelled(),
         elapsed_ms: started.elapsed().as_millis() as u64,
     })
+}
+
+fn configured_codex_home() -> Option<PathBuf> {
+    #[cfg(not(test))]
+    {
+        codex_worktrees::home()
+            .map_err(|error| {
+                log::warn!(
+                    "codex_worktree_home_unavailable error_digest={}",
+                    blake3::hash(error.to_string().as_bytes()).to_hex()
+                );
+            })
+            .ok()
+    }
+    #[cfg(test)]
+    {
+        // Tests inject an isolated home at the plan boundary while retaining
+        // the real discovery and protection logic inside the plan builder.
+        None
+    }
+}
+
+fn automatic_codex_worktrees(
+    home: Option<&Path>,
+    is_cancelled: &(dyn Fn() -> bool + Sync),
+) -> Vec<PathBuf> {
+    let Some(home) = home else {
+        return Vec::new();
+    };
+    let started = Instant::now();
+    match codex_worktrees::discover(home, is_cancelled) {
+        Ok(roots) => {
+            log::info!(
+                "codex_worktrees_discovered checkout_count={} elapsed_ms={}",
+                roots.len(),
+                started.elapsed().as_millis()
+            );
+            roots
+        }
+        Err(error) => {
+            // An unavailable optional location must not suppress unrelated
+            // cleanup results or broaden discovery to the whole data home.
+            log::warn!(
+                "codex_worktree_discovery_skipped error_digest={}",
+                blake3::hash(error.to_string().as_bytes()).to_hex()
+            );
+            Vec::new()
+        }
+    }
 }
 
 fn retain_recent_project_matches(projects: &mut Vec<ProjectMatch>, maximum_roots: usize) {
@@ -1030,14 +1221,17 @@ fn cached_project_matches(
 fn automatic_project_roots(
     _rules: &[ProjectArtifactRuleSource],
     _mode: ProjectRootMode,
-    _selected_volume_roots: &[PathBuf],
+    selected_volume_roots: &[PathBuf],
     _is_cancelled: &(dyn Fn() -> bool + Sync),
     _report_path: &(dyn Fn(&Path) + Sync),
     _report_files: &(dyn Fn(&Path, u64, u64) + Sync),
 ) -> Result<ProjectDiscoveryRoots, String> {
     // Unit tests must not scan the contributor's real workspaces. Candidate
     // discovery is covered with isolated fixtures below.
-    Ok(ProjectDiscoveryRoots::default())
+    Ok(ProjectDiscoveryRoots {
+        exact_roots: Vec::new(),
+        recursive_roots: selected_volume_roots.to_vec(),
+    })
 }
 
 #[cfg(not(test))]
@@ -2213,6 +2407,79 @@ fn scan_result(
     }
 }
 
+fn apply_codex_process_guard(
+    result: &mut ScanRuleResult,
+    candidates: &[ArtifactCandidate],
+    processes: Option<&Result<Vec<String>, String>>,
+) {
+    let paths = candidates
+        .iter()
+        .filter(|candidate| candidate.codex_checkout.is_some())
+        .map(|candidate| display_path(&candidate.path))
+        .collect::<HashSet<_>>();
+    if paths.is_empty() {
+        return;
+    }
+    let (reason, status) = match processes {
+        Some(Ok(names)) if names.is_empty() => return,
+        Some(Ok(names)) => {
+            result.running_processes = names.clone();
+            result.requires_app_close = true;
+            (
+                crate::cleanup::CleanupSourceBlockReason::RequiresClose,
+                ScanItemStatus::RequiresClose,
+            )
+        }
+        Some(Err(_)) | None => {
+            log::warn!("codex_worktree_process_check_failed");
+            (
+                crate::cleanup::CleanupSourceBlockReason::IncompleteMeasurement,
+                ScanItemStatus::Limited,
+            )
+        }
+    };
+    for source in &mut result.sources {
+        if paths.contains(&source.path) && source.block_reason.is_none() {
+            source.block_reason = Some(reason);
+        }
+    }
+    // Known writers are a pre-cleanup warning, not a selection restriction.
+    // Execution still checks live processes before deleting each candidate.
+    // Unknown process state and incomplete measurements remain hard blocks.
+    let is_selectable = |source: &&CleanupSourceDetail| {
+        source.block_reason.is_none()
+            || source.block_reason == Some(crate::cleanup::CleanupSourceBlockReason::RequiresClose)
+    };
+    if result.sources.iter().filter(is_selectable).count() == 0 {
+        result.selectable = false;
+        if result.status != ScanItemStatus::Limited {
+            result.status = status;
+        }
+    } else if result.selectable {
+        // Keep hard-blocked source estimates for inspection without including
+        // them in selectable totals. The source inventory is complete here.
+        result.bytes = result
+            .sources
+            .iter()
+            .filter(is_selectable)
+            .map(|source| source.bytes)
+            .sum();
+        result.file_count = result
+            .sources
+            .iter()
+            .filter(is_selectable)
+            .map(|source| source.file_count)
+            .sum();
+    }
+    log::info!(
+        "codex_worktree_sources_guarded rule_id={} source_count={} process_count={} selectable_bytes={}",
+        result.rule_id,
+        paths.len(),
+        result.running_processes.len(),
+        if result.selectable { result.bytes } else { 0 }
+    );
+}
+
 fn cleanup_source_details(candidates: &[ArtifactCandidate]) -> CleanupSourceSummary {
     let source_count = candidates.len() as u64;
     let mut sources = candidates
@@ -2306,3 +2573,7 @@ fn path_name_ends_with(value: &str, suffix: &str) -> bool {
 #[cfg(test)]
 #[path = "project_artifacts_tests.rs"]
 mod tests;
+
+#[cfg(test)]
+#[path = "project_artifacts_execution_tests.rs"]
+mod execution_tests;

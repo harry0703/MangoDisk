@@ -798,6 +798,37 @@ describe('cleanup workflow completion', () => {
     expect(store.sourceSelections).toEqual([]);
   });
 
+  it('selects project sources requiring closure individually and in bulk without selecting limited sources', () => {
+    const store = useCleanupStore();
+    store.scan = cleanupScan({
+      rules: [
+        {
+          ruleId: 'project.rust-build-artifacts',
+          category: 'project',
+          selectable: true,
+          bytes: 600,
+          sourcesTruncated: false,
+          sources: [
+            { path: '/fixture/worktree/target', bytes: 200, blockReason: 'requiresClose' },
+            { path: '/fixture/project/target', bytes: 400, blockReason: null },
+            { path: '/fixture/limited/target', bytes: 100, blockReason: 'incompleteMeasurement' },
+          ],
+        },
+      ],
+    });
+    const ruleId = 'project.rust-build-artifacts';
+    store.toggleSource(ruleId, '/fixture/worktree/target');
+    expect(store.selectedRuleIds).toEqual([ruleId]);
+    expect(store.selectedBytes).toBe(200);
+    store.toggleSource(ruleId, '/fixture/limited/target');
+    expect(store.selectedBytes).toBe(200);
+    store.setRulesSelected([ruleId], true);
+    expect(store.sourceSelections).toEqual([
+      { ruleId, mode: 'include', paths: ['/fixture/worktree/target', '/fixture/project/target'] },
+    ]);
+    expect(store.selectedBytes).toBe(600);
+  });
+
   it('does not select rules that require a privileged scan', () => {
     const store = useCleanupStore();
     store.scan = cleanupScan({

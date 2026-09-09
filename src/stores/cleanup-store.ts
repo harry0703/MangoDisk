@@ -208,7 +208,7 @@ export const useCleanupStore = defineStore('cleanup', {
     toggleSource(ruleId: string, sourcePath: string) {
       const rule = this.scan?.rules.find(item => item.ruleId === ruleId);
       const source = rule?.sources.find(item => item.path === sourcePath);
-      if (!rule?.selectable || !source || source.blockReason) return;
+      if (!rule?.selectable || !source || !CleanupRuleSelectionUtils.sourceSelectable(rule, source)) return;
 
       const ruleSelected = this.selectedRuleIds.includes(ruleId);
       const existing = this.sourceSelections.find(selection => selection.ruleId === ruleId);
@@ -265,7 +265,8 @@ export const useCleanupStore = defineStore('cleanup', {
           continue;
         }
         const hasCompleteBlockedSources =
-          !rule.sourcesTruncated && rule.sources.some(source => Boolean(source.blockReason));
+          !rule.sourcesTruncated &&
+          rule.sources.some(source => !CleanupRuleSelectionUtils.sourceSelectable(rule, source));
         if (!hasCompleteBlockedSources) {
           selectedIds.add(ruleId);
           continue;
@@ -276,7 +277,9 @@ export const useCleanupStore = defineStore('cleanup', {
          * UI. Keep blocked sources outside the execution scope instead of
          * selecting the whole aggregated rule and relying on Core to skip them.
          */
-        const selectablePaths = rule.sources.filter(source => !source.blockReason).map(source => source.path);
+        const selectablePaths = rule.sources
+          .filter(source => CleanupRuleSelectionUtils.sourceSelectable(rule, source))
+          .map(source => source.path);
         if (!selectablePaths.length) {
           selectedIds.delete(ruleId);
           continue;

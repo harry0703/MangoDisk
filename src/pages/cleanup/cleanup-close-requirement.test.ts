@@ -47,6 +47,29 @@ const rule: ScanRuleResult = {
 };
 
 describe('cleanup close requirement', () => {
+  it('offers app closure only when a protected project source is selected', () => {
+    const projectRule: ScanRuleResult = {
+      ...rule,
+      category: 'project',
+      requiresAppClose: true,
+      runningProcesses: ['Codex', 'ChatGPT'],
+    };
+    expect(selectedCleanupCloseRequirement(projectRule, [rule.ruleId], [])).toEqual({
+      requiresAppClose: true,
+      runningProcesses: ['Codex', 'ChatGPT'],
+    });
+    for (const selection of [
+      { mode: 'include' as const, paths: ['/Applications/Editor.app'] },
+      { mode: 'exclude' as const, paths: ['/Applications/Browser.app', '/Applications/Telegram.app'] },
+    ]) {
+      expect(
+        selectedCleanupCloseRequirement(projectRule, [rule.ruleId], [{ ruleId: rule.ruleId, ...selection }])
+      ).toEqual({
+        requiresAppClose: false,
+        runningProcesses: [],
+      });
+    }
+  });
   it('keeps the rule-level process list when every source is selected', () => {
     expect(selectedCleanupCloseRequirement(rule, [rule.ruleId], [])).toEqual({
       requiresAppClose: true,

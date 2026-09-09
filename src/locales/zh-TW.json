@@ -2680,7 +2680,7 @@
         "impact": "不會刪除聊天、帳號或下載檔案；關閉 Teams 後清理。"
       },
       "app.chatgpt-cache": {
-        "name": "ChatGPT 應用程式快取",
+        "name": "ChatGPT / Codex 快取",
         "description": "ChatGPT 與 Codex 桌面應用程式儲存的可重建渲染快取和診斷資料",
         "impact": "不會刪除對話、專案、認證資訊、瀏覽器狀態或登入狀態；關閉 ChatGPT 與 Codex 後清理。"
       },

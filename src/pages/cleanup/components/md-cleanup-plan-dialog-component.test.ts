@@ -22,7 +22,10 @@ const dialogContentStub = {
   template: '<section class="dialog-content-stub" :data-dialog-height="height"><slot /></section>',
 };
 const applicationClosePanelStub = {
-  template: '<section class="application-close-panel-stub" />',
+  props: ['items'],
+  emits: ['update:selectedIds'],
+  template:
+    '<section class="application-close-panel-stub"><button @click="$emit(\'update:selectedIds\', [items[0].id])">Select app</button></section>',
 };
 
 function createRule(index: number, requiresAppClose = false): PresentedScanRuleResult {
@@ -70,7 +73,7 @@ function mountDialog(ruleCount: number, requiresAppClose = false) {
     global: {
       plugins: [i18n],
       stubs: {
-        Button: passthroughStub,
+        Button: { template: '<button><slot /></button>' },
         Dialog: passthroughStub,
         DialogDescription: passthroughStub,
         DialogTitle: passthroughStub,
@@ -84,6 +87,22 @@ function mountDialog(ruleCount: number, requiresAppClose = false) {
 }
 
 describe('cleanup plan dialog component', () => {
+  it('offers optional app closure for projects through the shared close panel', async () => {
+    const wrapper = mountDialog(1);
+    await wrapper.setProps({
+      rules: [{ ...createRule(1, true), category: 'project', runningProcesses: ['Codex', 'ChatGPT'] }],
+    });
+    expect(wrapper.find('.manual-close-warning').exists()).toBe(false);
+    expect(wrapper.find('.application-close-panel-stub').exists()).toBe(true);
+    await wrapper.findAll('button').at(-1)!.trigger('click');
+    expect(wrapper.emitted('closeApplications')).toBeUndefined();
+    expect(wrapper.emitted('execute')).toHaveLength(1);
+    await wrapper.get('.application-close-panel-stub button').trigger('click');
+    await wrapper.findAll('button').at(-1)!.trigger('click');
+    expect(wrapper.emitted('closeApplications')).toEqual([[['fixture.rule-1'], 'graceful']]);
+    expect(wrapper.emitted('execute')).toHaveLength(1);
+    wrapper.unmount();
+  });
   it('keeps a long cleanup plan inside the bounded dialog content scroller', () => {
     const wrapper = mountDialog(12);
 
