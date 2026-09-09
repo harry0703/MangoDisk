@@ -87,6 +87,16 @@ Fix common problems like missing search results, incorrect icons, no sound, or n
 
 Keep a clear record of every cleanup and system change. See how much space you recovered, what completed successfully, and whether anything still needs your attention.
 
+## AI Explanations
+
+> Available since version 1.1.0
+
+Unsure what an item does or what might happen if you change it? AI explanations use the item's description and current scan results to explain its purpose and what to consider before taking action. Spend less time looking things up and make more informed choices.
+
+Get explanations directly from items in Deep Cleanup (built-in rules), Privacy Cleanup, Startup Item Management, System Optimization, and System Maintenance.
+
+Official releases include free explanations each day, with the option to connect your own AI service. AI offers guidance; you decide which actions to take.
+
 ## Safety and Rules
 
 > [!IMPORTANT]
