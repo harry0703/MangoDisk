@@ -346,10 +346,17 @@
       "restartRequired": "「{name}」が完了しました。再起動すると変更が反映されます",
       "mayHaveChanged": "「{name}」を正常に完了できませんでした。一部の変更は反映されている可能性があるため、再確認してください",
       "failures": {
-        "permissionDenied": "「{name}」の実行には管理者権限が必要です",
+        "toolUnavailable": "必要なシステムツールを利用できないため、「{name}」を完了できません",
+        "verificationPermissionDenied": "「{name}」は実行されましたが、権限がないため結果を確認できません",
+        "timedOut": "「{name}」がタイムアウトしました。しばらくしてから再確認してください",
+        "serviceBusy": "関連サービスが処理中です。しばらくしてから「{name}」をお試しください",
+        "dependencyUnavailable": "依存するサービスを起動できないため、「{name}」を完了できません",
+        "serviceUnavailable": "必要なシステムサービスが見つからないため、「{name}」を完了できません",
+        "serviceDisabled": "「{name}」を完了できませんでした：必要なサービスが無効です",
+        "permissionDenied": "権限がないため「{name}」を完了できません",
         "unsupported": "現在のシステムでは「{name}」を利用できません",
-        "verificationFailed": "「{name}」は実行されましたが、MangoDisk が最終結果を確認できませんでした",
-        "platformFailure": "「{name}」に失敗しました。状態を確認してもう一度お試しください",
+        "verificationFailed": "「{name}」は実行されましたが、結果の確認に失敗しました。再確認してください",
+        "platformFailure": "「{name}」を完了できませんでした。再確認してからお試しください",
         "userCancelled": "「{name}」をキャンセルしました"
       }
     },

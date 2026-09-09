@@ -103,7 +103,7 @@ export const useSystemMaintenanceStore = defineStore('system-maintenance', {
           activeExecutionCount: runtime.executions.filter(isActive).length,
           hasCatalog: Boolean(runtime.catalog),
         });
-        if (!this.catalog && !this.executing) await this.scan();
+        if (!this.catalog && !this.executing) await this.scan('initialization');
       } catch (error) {
         this.initialized = false;
         this.scanFailed = true;
@@ -125,7 +125,7 @@ export const useSystemMaintenanceStore = defineStore('system-maintenance', {
       }
       await this.scan();
     },
-    applyJob(job: SystemMaintenanceJob, refreshWhenIdle = true) {
+    applyJob(job: SystemMaintenanceJob, liveUpdate = true) {
       const previous = this.executions[job.executionId];
       // Runtime restoration and desktop events travel through separate IPC channels. Revisions
       // prevent an older snapshot from replacing newer progress while both snapshots remain in the
@@ -163,26 +163,30 @@ export const useSystemMaintenanceStore = defineStore('system-maintenance', {
         failureReason: job.result.failureReason,
         mutationState: job.result.mutationState,
         restartRequired: job.result.requiresRestart,
+        automaticRescan: false,
       });
       // Live maintenance completion can change filesystem usage outside the cleanup domain.
-      // Restored terminal jobs use refreshWhenIdle=false and must not replay this side effect.
-      if (refreshWhenIdle && job.result.mutationState === 'changed') {
+      // Restored terminal jobs use liveUpdate=false and must not replay this side effect.
+      if (liveUpdate && job.result.mutationState === 'changed') {
         void useAppStore().refreshSystemDisk();
       }
-      if (refreshWhenIdle && !this.executing && !this.scanning) void this.scan();
+      // The job already supplies this row's terminal state. An automatic catalog scan disables
+      // every row and replaces the scan ID, hiding that result and making unrelated rows flicker.
+      // Keep the catalog until an explicit rescan; Core still checks each task before execution.
     },
-    async scan() {
+    async scan(trigger: 'initialization' | 'manual' = 'manual') {
       if (this.scanning || this.executing) return;
       this.scanning = true;
       this.scanFailed = false;
       this.cancellingScan = false;
       useAppStore().clearError();
-      LoggerService.info(LOG_DOMAINS.systemMaintenance, LOG_EVENTS.systemMaintenanceScanStarted);
+      LoggerService.info(LOG_DOMAINS.systemMaintenance, LOG_EVENTS.systemMaintenanceScanStarted, { trigger });
       try {
         const catalog = await SystemMaintenanceService.scan();
         this.catalog = catalog;
         this.scanFailed = false;
         LoggerService.info(LOG_DOMAINS.systemMaintenance, LOG_EVENTS.systemMaintenanceScanCompleted, {
+          scanId: catalog.scanId,
           itemCount: catalog.summary.itemCount,
           recommendedCount: catalog.summary.recommendedCount,
           unavailableCount: catalog.summary.unavailableCount,

@@ -91,6 +91,13 @@ pub enum SystemMaintenanceFailureReason {
     PermissionDenied,
     Unsupported,
     VerificationFailed,
+    VerificationPermissionDenied,
+    ToolUnavailable,
+    ServiceDisabled,
+    ServiceUnavailable,
+    DependencyUnavailable,
+    ServiceBusy,
+    TimedOut,
     PlatformFailure,
     UserCancelled,
 }

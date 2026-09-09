@@ -1001,7 +1001,7 @@ fn failed_platform_item(
         PlatformMutationState::NotAttempted => SystemMaintenanceMutationState::NotChanged,
         PlatformMutationState::MayHaveChanged => SystemMaintenanceMutationState::MayHaveChanged,
     };
-    failed_item(
+    let mut result = failed_item(
         operation_id,
         execution_id,
         task_id,
@@ -1009,7 +1009,23 @@ fn failed_platform_item(
         mutation_state,
         Some(&digest),
         elapsed_ms,
-    )
+    );
+    if let Some(reason) = error.failure_reason() {
+        use mangodisk_platform::PlatformFailureReason as Reason;
+        result.failure_reason = Some(match reason {
+            Reason::ToolUnavailable => SystemMaintenanceFailureReason::ToolUnavailable,
+            Reason::ServiceDisabled => SystemMaintenanceFailureReason::ServiceDisabled,
+            Reason::ServiceUnavailable => SystemMaintenanceFailureReason::ServiceUnavailable,
+            Reason::DependencyUnavailable => SystemMaintenanceFailureReason::DependencyUnavailable,
+            Reason::ServiceBusy => SystemMaintenanceFailureReason::ServiceBusy,
+            Reason::TimedOut => SystemMaintenanceFailureReason::TimedOut,
+            Reason::VerificationFailed => SystemMaintenanceFailureReason::VerificationFailed,
+            Reason::VerificationPermissionDenied => {
+                SystemMaintenanceFailureReason::VerificationPermissionDenied
+            }
+        });
+    }
+    result
 }
 
 fn map_status(status: PlatformSystemMaintenanceStatus) -> SystemMaintenanceStatus {
@@ -1134,6 +1150,42 @@ mod tests {
             requires_elevation,
             cancellation: Arc::new(AtomicBool::new(false)),
             sink: Arc::new(|_| {}),
+        }
+    }
+
+    #[test]
+    fn specific_native_causes_survive_partial_changes_and_verification() {
+        for (native, expected) in [
+            (
+                mangodisk_platform::PlatformFailureReason::ServiceDisabled,
+                SystemMaintenanceFailureReason::ServiceDisabled,
+            ),
+            (
+                mangodisk_platform::PlatformFailureReason::VerificationPermissionDenied,
+                SystemMaintenanceFailureReason::VerificationPermissionDenied,
+            ),
+        ] {
+            let error = PlatformError::operation_failed("fixture")
+                .with_failure_reason(native)
+                .with_possible_side_effects();
+            let result = failed_platform_item(
+                1,
+                "fixture",
+                "windows.maintenance.update-components".to_owned(),
+                &error,
+                1,
+            );
+            assert_eq!(result.failure_reason, Some(expected));
+            assert_eq!(
+                result.mutation_state,
+                SystemMaintenanceMutationState::MayHaveChanged
+            );
+            assert_eq!(result.status, SystemMaintenanceExecutionStatus::Failed);
+            let wire = serde_json::to_value(&result).unwrap();
+            assert_eq!(
+                wire["failureReason"],
+                serde_json::to_value(expected).unwrap()
+            );
         }
     }
 

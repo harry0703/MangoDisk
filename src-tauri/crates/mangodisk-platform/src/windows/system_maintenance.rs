@@ -22,6 +22,15 @@ use windows_sys::Win32::{
     },
 };
 
+#[cfg(test)]
+#[path = "system_maintenance/step_tests.rs"]
+mod step_tests;
+#[path = "system_maintenance/task_scripts.rs"]
+mod task_scripts;
+
+use crate::system_maintenance_helper::step_diagnostics::{
+    classify_failure, MaintenanceStage, MaintenanceStepDiagnostic, MaintenanceStepResult,
+};
 use crate::system_maintenance_helper::{
     PrivilegedFailureStage, PrivilegedMaintenanceFailure, PrivilegedMaintenanceOutcome,
     PrivilegedMaintenanceResult, PrivilegedProcessDiagnostics,
@@ -67,69 +76,11 @@ const DEFAULT_LIMITS: ControlledCommandLimits = ControlledCommandLimits {
     stdout_bytes: 64 * 1024,
     stderr_bytes: 64 * 1024,
 };
-const SYSTEM_INTEGRITY_SCRIPT: &str = r#"& $env:SystemRoot\System32\dism.exe /Online /Cleanup-Image /RestoreHealth; $dismExit = $LASTEXITCODE; if ($dismExit -ne 0 -and $dismExit -ne 3010) { exit $dismExit }; & $env:SystemRoot\System32\sfc.exe /scannow; $sfcExit = $LASTEXITCODE; if ($sfcExit -ne 0) { exit $sfcExit }; if ($dismExit -eq 3010) { exit 3010 }; exit 0"#;
-const SYSTEM_INTEGRITY_PROGRESS_SCRIPT: &str = r#"
-$progressClient = $null
-$progressWriter = $null
-try {
-  $progressClient = [System.Net.Sockets.TcpClient]::new()
-  $progressClient.Connect([System.Net.IPAddress]::Loopback, __PORT__)
-  $progressWriter = [System.IO.StreamWriter]::new($progressClient.GetStream(), [System.Text.UTF8Encoding]::new($false))
-  $progressWriter.AutoFlush = $true
-  $progressWriter.WriteLine('__TOKEN__')
-} catch {
-  $progressWriter = $null
-}
-function Send-MangoProgress([string]$phase, [int]$percent) {
-  if ($null -eq $script:progressWriter) { return }
-  try {
-    if ($percent -lt 0) { $script:progressWriter.WriteLine("$phase|") }
-    else { $script:progressWriter.WriteLine("$phase|$percent") }
-  } catch {
-    $script:progressWriter = $null
-  }
-}
-try {
-  Send-MangoProgress 'repairingComponentImage' -1
-  $lastPercent = -1
-  & $env:SystemRoot\System32\dism.exe /Online /Cleanup-Image /RestoreHealth 2>&1 | ForEach-Object {
-    $line = $_.ToString()
-    if ($line -match '([0-9]{1,3})(?:[\.,][0-9]+)?\s*%') {
-      $percent = [Math]::Min(100, [int]$matches[1])
-      if ($percent -ne $lastPercent) { Send-MangoProgress 'repairingComponentImage' $percent; $lastPercent = $percent }
-    }
-  }
-  $dismExit = $LASTEXITCODE
-  if ($dismExit -ne 0 -and $dismExit -ne 3010) { exit $dismExit }
-  Send-MangoProgress 'checkingSystemFiles' -1
-  $lastPercent = -1
-  & $env:SystemRoot\System32\sfc.exe /scannow 2>&1 | ForEach-Object {
-    $line = $_.ToString()
-    if ($line -match '([0-9]{1,3})\s*%') {
-      $percent = [Math]::Min(100, [int]$matches[1])
-      if ($percent -ne $lastPercent) { Send-MangoProgress 'checkingSystemFiles' $percent; $lastPercent = $percent }
-    }
-  }
-  $sfcExit = $LASTEXITCODE
-  if ($sfcExit -ne 0) { exit $sfcExit }
-  if ($dismExit -eq 3010) { exit 3010 }
-  exit 0
-} finally {
-  try { if ($null -ne $progressWriter) { $progressWriter.Dispose() } } catch {}
-  try { if ($null -ne $progressClient) { $progressClient.Dispose() } } catch {}
-}
-"#;
+const MAINTENANCE_STEPS_SCRIPT: &str = include_str!("system_maintenance/steps.ps1");
 static PROGRESS_CHANNEL_SEQUENCE: AtomicU64 = AtomicU64::new(1);
-const PROGRESS_CHANNEL_BUFFER_LIMIT: usize = 16 * 1024;
-const SEARCH_INDEX_SCRIPT: &str = r#"Stop-Service -Name WSearch -Force -ErrorAction Stop; Set-ItemProperty -Path 'HKLM:\SOFTWARE\Microsoft\Windows Search' -Name SetupCompletedSuccessfully -Type DWord -Value 0 -ErrorAction Stop; Start-Service -Name WSearch -ErrorAction Stop"#;
+const PROGRESS_CHANNEL_BUFFER_LIMIT: usize = 64 * 1024;
 const EXPLORER_CACHE_SCRIPT: &str = r#"Stop-Process -Name explorer -Force -ErrorAction SilentlyContinue; Remove-Item -LiteralPath "$env:LOCALAPPDATA\IconCache.db" -Force -ErrorAction SilentlyContinue; Remove-Item -Path "$env:LOCALAPPDATA\Microsoft\Windows\Explorer\iconcache*.db" -Force -ErrorAction SilentlyContinue; Remove-Item -Path "$env:LOCALAPPDATA\Microsoft\Windows\Explorer\thumbcache*.db" -Force -ErrorAction SilentlyContinue; Start-Process explorer.exe"#;
 const EXPLORER_PROCESS_QUERY_SCRIPT: &str = r#"if ($null -ne (Get-Process -Name explorer -ErrorAction SilentlyContinue | Select-Object -First 1)) { Write-Output 'running' } else { Write-Output 'stopped' }"#;
-const UPDATE_COMPONENTS_SCRIPT: &str = r#"$names = @('bits','cryptsvc','wuauserv'); foreach ($name in $names) { $service = Get-Service -Name $name -ErrorAction Stop; if ($service.Status -eq 'Running') { Restart-Service -Name $name -Force -ErrorAction Stop } else { Start-Service -Name $name -ErrorAction Stop } }; $uso = Join-Path $env:SystemRoot 'System32\UsoClient.exe'; if (Test-Path -LiteralPath $uso) { Start-Process -FilePath $uso -ArgumentList StartScan -WindowStyle Hidden }"#;
-const PRINT_QUEUE_SCRIPT: &str = r#"$stopped = $false; try { Stop-Service -Name Spooler -Force -ErrorAction Stop; $stopped = $true; $queue = Join-Path $env:SystemRoot 'System32\spool\PRINTERS'; if (Test-Path -LiteralPath $queue) { Get-ChildItem -LiteralPath $queue -Force -ErrorAction Stop | Remove-Item -Force -ErrorAction Stop } } finally { if ($stopped) { Start-Service -Name Spooler -ErrorAction Stop } }"#;
-const TIME_SYNC_SCRIPT: &str = r#"$service = Get-Service -Name W32Time -ErrorAction Stop; if ($service.Status -ne 'Running') { Start-Service -Name W32Time -ErrorAction Stop }; & $env:SystemRoot\System32\w32tm.exe /resync /force; if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }"#;
-const PERFORMANCE_COUNTERS_SCRIPT: &str = r#"& $env:SystemRoot\System32\lodctr.exe /R; if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }; $wow = Join-Path $env:SystemRoot 'SysWOW64\lodctr.exe'; if (Test-Path -LiteralPath $wow) { & $wow /R; if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE } }; & $env:SystemRoot\System32\wbem\winmgmt.exe /resyncperf; if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }"#;
-const SYSTEM_DISK_SCRIPT: &str = r#"& $env:SystemRoot\System32\chkdsk.exe $env:SystemDrive /scan; if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }"#;
-const AUDIO_SERVICE_SCRIPT: &str = r#"Restart-Service -Name Audiosrv -Force -ErrorAction Stop"#;
 
 pub(crate) fn scan(
     task_ids: &[&str],
@@ -184,7 +135,7 @@ pub(crate) fn scan(
             DNS_CACHE => availability_state(
                 DNS_CACHE,
                 system_executable(&windows, "ipconfig.exe").is_file(),
-                false,
+                true,
             ),
             TIME_SYNC => service_task_state(TIME_SYNC, "W32Time", true, &windows, cancellation),
             _ => unreachable!("validated maintenance identifier"),
@@ -259,14 +210,6 @@ pub(crate) fn execute(
         }
         PERFORMANCE_COUNTERS => {
             run_with_privileges(task_id, progress)?;
-            verify_after_mutation(run(
-                &system_executable(&windows, "lodctr.exe"),
-                &["/q:PerfOS"],
-                cancellation,
-                DEFAULT_LIMITS,
-                "windows_maintenance_performance_counter_query",
-                CommandEffect::ReadOnly,
-            ))?;
             Ok(execution(task_id, true, true, false, false))
         }
         SYSTEM_DISK => {
@@ -285,30 +228,8 @@ pub(crate) fn execute(
             run_with_privileges(task_id, progress)?;
             Ok(execution(task_id, true, true, false, false))
         }
-        DNS_CACHE => {
-            progress(PlatformSystemMaintenanceProgress::phase(
-                PlatformSystemMaintenancePhase::RefreshingNetwork,
-            ));
-            run(
-                &system_executable(&windows, "ipconfig.exe"),
-                &["/flushdns"],
-                cancellation,
-                DEFAULT_LIMITS,
-                "windows_maintenance_dns_cache",
-                CommandEffect::MayMutate,
-            )?;
-            Ok(execution(task_id, true, true, false, false))
-        }
-        TIME_SYNC => {
+        DNS_CACHE | TIME_SYNC => {
             run_with_privileges(task_id, progress)?;
-            verify_after_mutation(run(
-                &system_executable(&windows, "w32tm.exe"),
-                &["/query", "/status"],
-                cancellation,
-                DEFAULT_LIMITS,
-                "windows_maintenance_time_query",
-                CommandEffect::ReadOnly,
-            ))?;
             Ok(execution(task_id, true, true, false, false))
         }
         _ => unreachable!("validated maintenance identifier"),
@@ -443,7 +364,16 @@ fn explorer_running(windows: &Path, cancellation: &PlatformCancellation) -> Plat
 /// state. Preserve that ordering in the error contract so Core never labels a verification-tool
 /// failure as a safe, unchanged retry.
 fn verify_after_mutation<T>(result: PlatformResult<T>) -> PlatformResult<T> {
-    result.map_err(PlatformError::with_possible_side_effects)
+    result.map_err(|error| {
+        let reason = if error.code() == PlatformErrorCode::AccessDenied {
+            crate::PlatformFailureReason::VerificationPermissionDenied
+        } else {
+            crate::PlatformFailureReason::VerificationFailed
+        };
+        error
+            .with_possible_side_effects()
+            .with_failure_reason(reason)
+    })
 }
 
 fn run_with_privileges(
@@ -462,123 +392,61 @@ pub(crate) fn execute_with_current_privileges(
     task_id: &str,
     progress: &PlatformSystemMaintenanceProgressSink,
 ) -> PrivilegedMaintenanceResult {
-    let windows = windows_directory()?;
-    match task_id {
-        SYSTEM_INTEGRITY => {
-            run_system_integrity_with_current_privileges(&windows, task_id, progress)
-        }
-        SEARCH_INDEX => run_privileged_powershell(
-            &windows,
-            task_id,
-            SEARCH_INDEX_SCRIPT,
-            PlatformSystemMaintenancePhase::RebuildingSearchIndex,
-            progress,
-            None,
-            None,
-        ),
-        UPDATE_COMPONENTS => run_privileged_powershell(
-            &windows,
-            task_id,
-            UPDATE_COMPONENTS_SCRIPT,
-            PlatformSystemMaintenancePhase::RestartingServices,
-            progress,
-            None,
-            None,
-        ),
-        PRINT_QUEUE => run_privileged_powershell(
-            &windows,
-            task_id,
-            PRINT_QUEUE_SCRIPT,
-            PlatformSystemMaintenancePhase::RepairingPrintQueue,
-            progress,
-            None,
-            None,
-        ),
-        PERFORMANCE_COUNTERS => run_privileged_powershell(
-            &windows,
-            task_id,
-            PERFORMANCE_COUNTERS_SCRIPT,
-            PlatformSystemMaintenancePhase::RebuildingPerformanceCounters,
-            progress,
-            None,
-            None,
-        ),
-        SYSTEM_DISK => run_privileged_powershell(
-            &windows,
-            task_id,
-            SYSTEM_DISK_SCRIPT,
-            PlatformSystemMaintenancePhase::CheckingSystemDisk,
-            progress,
-            None,
-            None,
-        ),
-        AUDIO_SERVICE => run_privileged_powershell(
-            &windows,
-            task_id,
-            AUDIO_SERVICE_SCRIPT,
-            PlatformSystemMaintenancePhase::RestartingAudioService,
-            progress,
-            None,
-            None,
-        ),
-        STORE_CACHE => run_privileged_process(
-            &system_executable(&windows, "wsreset.exe"),
-            "",
-            task_id,
-            PlatformSystemMaintenancePhase::ResettingStoreCache,
-            progress,
-            None,
-            None,
-        ),
-        TIME_SYNC => run_privileged_powershell(
-            &windows,
-            task_id,
-            TIME_SYNC_SCRIPT,
-            PlatformSystemMaintenancePhase::SynchronizingTime,
-            progress,
-            None,
-            None,
-        ),
-        _ => Err(PlatformError::new(
+    let body = task_scripts::recipe(task_id).ok_or_else(|| {
+        PlatformError::new(
             PlatformErrorCode::Unsupported,
-            "system maintenance helper task identifier is unsupported",
+            "unsupported maintenance recipe",
         )
-        .into()),
-    }
+    })?;
+    let windows = windows_directory()?;
+    let phase = match task_id {
+        SYSTEM_INTEGRITY => PlatformSystemMaintenancePhase::RepairingComponentImage,
+        SEARCH_INDEX => PlatformSystemMaintenancePhase::RebuildingSearchIndex,
+        UPDATE_COMPONENTS => PlatformSystemMaintenancePhase::RestartingServices,
+        PRINT_QUEUE => PlatformSystemMaintenancePhase::RepairingPrintQueue,
+        PERFORMANCE_COUNTERS => PlatformSystemMaintenancePhase::RebuildingPerformanceCounters,
+        SYSTEM_DISK => PlatformSystemMaintenancePhase::CheckingSystemDisk,
+        AUDIO_SERVICE => PlatformSystemMaintenancePhase::RestartingAudioService,
+        STORE_CACHE => PlatformSystemMaintenancePhase::ResettingStoreCache,
+        TIME_SYNC => PlatformSystemMaintenancePhase::SynchronizingTime,
+        DNS_CACHE => PlatformSystemMaintenancePhase::RefreshingNetwork,
+        _ => unreachable!("validated maintenance recipe"),
+    };
+    let (mut channel, setup_error) = match ElevatedProgressChannel::bind() {
+        Ok(channel) => (Some(channel), None),
+        Err(error) => (None, error.raw_os_error()),
+    };
+    let script = maintenance_script(&windows, body, channel.as_ref());
+    run_privileged_powershell(
+        &windows,
+        task_id,
+        &script,
+        phase,
+        progress,
+        channel.as_mut(),
+        setup_error,
+    )
 }
 
-fn run_system_integrity_with_current_privileges(
+fn maintenance_script(
     windows: &Path,
-    task_id: &str,
-    progress: &PlatformSystemMaintenanceProgressSink,
-) -> PrivilegedMaintenanceResult {
-    match ElevatedProgressChannel::bind() {
-        Ok(mut channel) => {
-            let script = channel.instrumented_system_integrity_script();
-            run_privileged_powershell(
-                windows,
-                task_id,
-                &script,
-                PlatformSystemMaintenancePhase::RepairingComponentImage,
-                progress,
-                Some(&mut channel),
-                None,
-            )
-        }
-        Err(error) => {
-            // Progress telemetry is presentation-only. A local listener failure must not prevent
-            // the fixed, validated repair command from running successfully.
-            run_privileged_powershell(
-                windows,
-                task_id,
-                SYSTEM_INTEGRITY_SCRIPT,
-                PlatformSystemMaintenancePhase::RepairingComponentImage,
-                progress,
-                None,
-                error.raw_os_error(),
-            )
-        }
-    }
+    body: &str,
+    channel: Option<&ElevatedProgressChannel>,
+) -> String {
+    MAINTENANCE_STEPS_SCRIPT
+        .replace("__BODY__", body)
+        .replace(
+            "__WINDOWS__",
+            &windows.to_string_lossy().replace('\'', "''"),
+        )
+        .replace(
+            "__PORT__",
+            &channel.map_or(0, |channel| channel.port).to_string(),
+        )
+        .replace(
+            "__TOKEN__",
+            channel.map_or("", |channel| channel.token.as_str()),
+        )
 }
 
 fn run_privileged_powershell(
@@ -667,6 +535,7 @@ fn run_privileged_process(
         ));
     }
     progress(PlatformSystemMaintenanceProgress::phase(phase));
+    let mut steps = Vec::new();
     let wait = loop {
         if let Some(progress_channel) = channel.as_deref_mut() {
             let poll_result = progress_channel.poll(progress);
@@ -676,6 +545,11 @@ fn run_privileged_process(
             if let Err(error) = poll_result {
                 progress_channel_failed = true;
                 progress_channel_error_code = error.raw_os_error();
+                // Stop consuming a broken channel without discarding previously accepted
+                // evidence. Native failure classification and parent-side logs still need it.
+                steps = std::mem::take(&mut progress_channel.steps);
+                // Closing the reader also lets the child's best-effort writer stop sending.
+                progress_channel.stream = None;
                 channel = None;
             }
         }
@@ -690,6 +564,7 @@ fn run_privileged_process(
         progress_channel_authenticated = progress_channel.authenticated;
         progress_event_count = progress_channel.event_count;
         progress_rejected_connection_count = progress_channel.rejected_connection_count;
+        steps = std::mem::take(&mut progress_channel.steps);
         if let Err(error) = poll_result {
             progress_channel_failed = true;
             progress_channel_error_code = error.raw_os_error();
@@ -712,6 +587,7 @@ fn run_privileged_process(
         progress_rejected_connection_count,
         progress_event_count,
         elapsed_ms: started.elapsed().as_millis().min(u128::from(u64::MAX)) as u64,
+        steps: steps.into_boxed_slice(),
     };
     privileged_execution_from_status(diagnostics)
 }
@@ -725,6 +601,7 @@ struct ElevatedProgressChannel {
     rejected_connection_count: u32,
     event_count: u32,
     buffer: Vec<u8>,
+    steps: Vec<MaintenanceStepDiagnostic>,
 }
 
 impl ElevatedProgressChannel {
@@ -746,13 +623,8 @@ impl ElevatedProgressChannel {
             rejected_connection_count: 0,
             event_count: 0,
             buffer: Vec::with_capacity(512),
+            steps: Vec::new(),
         })
-    }
-
-    fn instrumented_system_integrity_script(&self) -> String {
-        SYSTEM_INTEGRITY_PROGRESS_SCRIPT
-            .replace("__PORT__", &self.port.to_string())
-            .replace("__TOKEN__", &self.token)
     }
 
     fn poll(&mut self, progress: &PlatformSystemMaintenanceProgressSink) -> std::io::Result<()> {
@@ -805,7 +677,36 @@ impl ElevatedProgressChannel {
                 }
                 continue;
             }
-            if let Some(value) = parse_system_integrity_progress(line) {
+            if line.starts_with('{') {
+                let record: MaintenanceStepDiagnostic =
+                    serde_json::from_str(line).map_err(|_| {
+                        std::io::Error::new(
+                            ErrorKind::InvalidData,
+                            "invalid maintenance step diagnostic",
+                        )
+                    })?;
+                if record.index == 0
+                    || record.index > 32
+                    || usize::from(record.index) > self.steps.len() + 1
+                {
+                    return Err(std::io::Error::new(
+                        ErrorKind::InvalidData,
+                        "invalid maintenance step index",
+                    ));
+                }
+                let index = usize::from(record.index - 1);
+                if index == self.steps.len() {
+                    if record.stage == MaintenanceStage::Verify {
+                        progress(PlatformSystemMaintenanceProgress::phase(
+                            PlatformSystemMaintenancePhase::Verifying,
+                        ));
+                    }
+                    self.steps.push(record);
+                } else {
+                    self.steps[index] = record;
+                }
+                self.event_count = self.event_count.saturating_add(1);
+            } else if let Some(value) = parse_system_integrity_progress(line) {
                 self.event_count = self.event_count.saturating_add(1);
                 progress(value);
             }
@@ -859,12 +760,23 @@ fn privileged_execution_from_status(
         None
     };
     if let Some(stage) = failure_stage {
-        return Err(PrivilegedMaintenanceFailure::with_diagnostics(
-            PlatformError::operation_failed("system maintenance privileged process failed")
-                .with_possible_side_effects(),
-            stage,
-            diagnostics,
-        ));
+        let step_failure = diagnostics
+            .steps
+            .iter()
+            .find(|record| record.result == MaintenanceStepResult::Failed);
+        let error = step_failure
+            .map(classify_failure)
+            .unwrap_or_else(|| {
+                PlatformError::operation_failed(format!(
+                    "maintenance process failed: stage={stage:?} exit_code={}",
+                    diagnostics.exit_code
+                ))
+            })
+            .with_possible_side_effects();
+        let native_error_code = step_failure.and_then(|record| record.native_error);
+        let mut failure = PrivilegedMaintenanceFailure::with_diagnostics(error, stage, diagnostics);
+        failure.native_error_code = native_error_code;
+        return Err(failure);
     }
     Ok(PrivilegedMaintenanceOutcome {
         requires_restart: diagnostics.exit_code == 3010,
@@ -891,7 +803,10 @@ fn run(
     )
     .map_err(|error| command_execution_error(error, effect))?;
     if !output.status.success() {
-        let error = PlatformError::operation_failed("system maintenance command failed");
+        let stdout_digest = blake3::hash(&output.stdout).to_hex().to_string();
+        let stderr_bytes = output.stderr_bytes;
+        log::warn!("windows_maintenance_command_failed command_id={command_id} effect={effect:?} exit_code={:?} stdout_digest={stdout_digest} stderr_bytes={stderr_bytes}", output.status.code());
+        let error = PlatformError::operation_failed(format!("maintenance command failed: command_id={command_id} exit_code={:?} stdout_digest={stdout_digest} stderr_bytes={stderr_bytes}", output.status.code()));
         return Err(match effect {
             CommandEffect::ReadOnly => error,
             CommandEffect::MayMutate => error.with_possible_side_effects(),
@@ -922,7 +837,9 @@ fn command_execution_error(error: ControlledCommandError, effect: CommandEffect)
 }
 
 fn command_error(error: ControlledCommandError) -> PlatformError {
-    PlatformError::new(
+    let timed_out = matches!(error, ControlledCommandError::TimedOut);
+    let diagnostic = format!("maintenance command could not complete: reason={error:?}");
+    let error = PlatformError::new(
         match error {
             ControlledCommandError::Cancelled => PlatformErrorCode::UserCancelled,
             ControlledCommandError::InvalidExecutable
@@ -933,8 +850,13 @@ fn command_error(error: ControlledCommandError) -> PlatformError {
             | ControlledCommandError::TimedOut
             | ControlledCommandError::OutputLimitExceeded => PlatformErrorCode::OperationFailed,
         },
-        "system maintenance command could not complete",
-    )
+        diagnostic,
+    );
+    if timed_out {
+        error.with_failure_reason(crate::PlatformFailureReason::TimedOut)
+    } else {
+        error
+    }
 }
 
 fn windows_directory() -> PlatformResult<PathBuf> {
@@ -1078,33 +1000,13 @@ mod tests {
             progress_rejected_connection_count: 0,
             progress_event_count: 0,
             elapsed_ms: 1,
+            steps: Box::new([]),
         }
     }
 
     #[test]
     fn unknown_task_identifiers_are_rejected() {
         assert!(validate_ids(&["windows.maintenance.unknown"]).is_err());
-    }
-
-    #[test]
-    fn every_powershell_script_is_compiled_into_the_adapter() {
-        for script in [
-            SYSTEM_INTEGRITY_SCRIPT,
-            SEARCH_INDEX_SCRIPT,
-            EXPLORER_CACHE_SCRIPT,
-            EXPLORER_PROCESS_QUERY_SCRIPT,
-            UPDATE_COMPONENTS_SCRIPT,
-            PRINT_QUEUE_SCRIPT,
-            TIME_SYNC_SCRIPT,
-            PERFORMANCE_COUNTERS_SCRIPT,
-            SYSTEM_DISK_SCRIPT,
-            AUDIO_SERVICE_SCRIPT,
-        ] {
-            assert!(!script.trim().is_empty());
-            assert!(!script.contains(['\n', '\r']));
-        }
-        assert!(SYSTEM_INTEGRITY_SCRIPT.contains("$dismExit"));
-        assert!(SYSTEM_INTEGRITY_SCRIPT.contains("exit 3010"));
     }
 
     #[test]

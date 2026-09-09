@@ -47,7 +47,18 @@ export interface SystemMaintenanceExecutionRequest {
 
 export type SystemMaintenanceExecutionStatus = 'completed' | 'started' | 'failed';
 export type SystemMaintenanceFailureReason =
-  'permissionDenied' | 'unsupported' | 'verificationFailed' | 'platformFailure' | 'userCancelled';
+  | 'permissionDenied'
+  | 'unsupported'
+  | 'verificationFailed'
+  | 'verificationPermissionDenied'
+  | 'toolUnavailable'
+  | 'serviceDisabled'
+  | 'serviceUnavailable'
+  | 'dependencyUnavailable'
+  | 'serviceBusy'
+  | 'timedOut'
+  | 'platformFailure'
+  | 'userCancelled';
 export type SystemMaintenanceMutationState = 'notChanged' | 'changed' | 'mayHaveChanged';
 
 export interface SystemMaintenanceExecutionItemResult {

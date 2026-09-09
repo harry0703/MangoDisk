@@ -16,6 +16,20 @@ pub enum PlatformErrorCode {
     Unsupported,
 }
 
+/// Optional, stable context for failures that a broad platform error code cannot explain.
+/// Callers may localize this reason without interpreting native messages or exit-code text.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum PlatformFailureReason {
+    ToolUnavailable,
+    ServiceDisabled,
+    ServiceUnavailable,
+    DependencyUnavailable,
+    ServiceBusy,
+    TimedOut,
+    VerificationFailed,
+    VerificationPermissionDenied,
+}
+
 /// Describes whether a failed native operation can still have changed operating-system state.
 ///
 /// Callers use this signal to retain preflight recovery data when a write or its verification
@@ -38,6 +52,7 @@ pub struct PlatformError {
     code: PlatformErrorCode,
     diagnostic: String,
     mutation_state: PlatformMutationState,
+    failure_reason: Option<PlatformFailureReason>,
 }
 
 impl PlatformError {
@@ -46,7 +61,17 @@ impl PlatformError {
             code,
             diagnostic: diagnostic.into(),
             mutation_state: PlatformMutationState::NotAttempted,
+            failure_reason: None,
         }
+    }
+
+    pub fn with_failure_reason(mut self, reason: PlatformFailureReason) -> Self {
+        self.failure_reason = Some(reason);
+        self
+    }
+
+    pub fn failure_reason(&self) -> Option<PlatformFailureReason> {
+        self.failure_reason
     }
 
     pub fn code(&self) -> PlatformErrorCode {

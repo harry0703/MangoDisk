@@ -341,10 +341,17 @@
       "restartRequired": "{name} completed. Restart your system to apply the changes",
       "mayHaveChanged": "{name} did not finish cleanly. Some changes may have taken effect; check again",
       "failures": {
-        "permissionDenied": "Administrator permission is required to run {name}",
+        "toolUnavailable": "Cannot complete “{name}”: a required system tool is unavailable",
+        "verificationPermissionDenied": "“{name}” ran, but permission was denied when checking the result",
+        "timedOut": "“{name}” timed out. Check again later",
+        "serviceBusy": "A required service is busy. Try “{name}” again later",
+        "dependencyUnavailable": "Cannot complete “{name}”: a dependent service could not start",
+        "serviceUnavailable": "Cannot complete “{name}”: a required system service is missing",
+        "serviceDisabled": "“{name}” could not finish: a required service is disabled",
+        "permissionDenied": "Insufficient permissions to complete “{name}”",
         "unsupported": "{name} is not supported on this system",
-        "verificationFailed": "{name} ran, but MangoDisk could not verify the final result",
-        "platformFailure": "{name} failed. Check the task status and try again",
+        "verificationFailed": "“{name}” ran, but its result could not be checked. Please check again",
+        "platformFailure": "“{name}” could not finish. Check again before retrying",
         "userCancelled": "{name} was cancelled"
       }
     },

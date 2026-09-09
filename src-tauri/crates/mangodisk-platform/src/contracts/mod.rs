@@ -31,7 +31,9 @@ pub use disk_cleanup::{
     PlatformCancellation, WindowsDiskCleanupAvailability, WindowsDiskCleanupEstimate,
     WindowsDiskCleanupExecution, WindowsDiskCleanupExecutionStatus, WindowsDiskCleanupKind,
 };
-pub use error::{PlatformError, PlatformErrorCode, PlatformMutationState, PlatformResult};
+pub use error::{
+    PlatformError, PlatformErrorCode, PlatformFailureReason, PlatformMutationState, PlatformResult,
+};
 pub use platform::Platform;
 pub use privacy::{
     PlatformPrivacyApplication, PlatformPrivacyApplicationNativeTraceKind,

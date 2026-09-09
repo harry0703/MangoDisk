@@ -5,6 +5,7 @@ import { toast } from 'vue-sonner';
 
 import MdAiAction from '@/components/custom/md-ai-action.vue';
 import { systemMaintenanceAiContext } from './system-maintenance-ai-context';
+import { maintenanceFailureFeedback } from './system-maintenance-feedback';
 import MdCategoryFilter from '@/components/custom/md-category-filter.vue';
 import MdCatalogList from '@/components/custom/md-catalog-list.vue';
 import MdCatalogListItem from '@/components/custom/md-catalog-list-item.vue';
@@ -86,12 +87,8 @@ watch(
       return;
     }
     if (result.status === 'failed') {
-      if (result.mutationState === 'mayHaveChanged') {
-        toast.warning(t('systemMaintenance.feedback.mayHaveChanged', { name }));
-        return;
-      }
-      const reason = result.failureReason ?? 'platformFailure';
-      toast.warning(t(`systemMaintenance.feedback.failures.${reason}`, { name }));
+      const feedback = maintenanceFailureFeedback(result, name, t);
+      toast.warning(feedback.message);
       return;
     }
     if (result.requiresRestart) {

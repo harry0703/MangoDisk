@@ -27,8 +27,13 @@ use crate::{
     PlatformSystemMaintenanceProgressSink,
 };
 
-const HELPER_FLAG: &str = "--mangodisk-system-maintenance-helper-v1";
-const PROTOCOL: &str = "mangodisk-system-maintenance-helper-v1";
+pub(crate) mod step_diagnostics;
+
+use step_diagnostics::{log_step_diagnostics, MaintenanceStepDiagnostic};
+
+const HELPER_FLAG: &str = "--mangodisk-system-maintenance-helper-v3";
+// The helper always comes from the running executable; reject mismatched schemas.
+const PROTOCOL: &str = "mangodisk-system-maintenance-helper-v3";
 const HELPER_START_TIMEOUT: Duration = Duration::from_secs(120);
 const HELPER_POLL_INTERVAL: Duration = Duration::from_millis(50);
 const MAX_MESSAGE_BYTES: usize = 64 * 1024;
@@ -38,7 +43,7 @@ static SESSION: OnceLock<Mutex<Option<ElevatedMaintenanceSession>>> = OnceLock::
 #[cfg(test)]
 static ELEVATION_LAUNCH_COUNT: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) struct PrivilegedMaintenanceOutcome {
     pub requires_restart: bool,
     pub diagnostics: PrivilegedProcessDiagnostics,
@@ -65,7 +70,7 @@ pub(crate) enum PrivilegedFailureStage {
     ProcessExit,
 }
 
-#[derive(Debug, Clone, Copy, Deserialize, Serialize, PartialEq, Eq)]
+#[derive(Debug, Clone, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
 pub(crate) struct PrivilegedProcessDiagnostics {
     pub wait_status: u32,
@@ -81,6 +86,7 @@ pub(crate) struct PrivilegedProcessDiagnostics {
     pub progress_rejected_connection_count: u32,
     pub progress_event_count: u32,
     pub elapsed_ms: u64,
+    pub steps: Box<[MaintenanceStepDiagnostic]>,
 }
 
 impl PrivilegedMaintenanceFailure {
@@ -544,12 +550,13 @@ impl ElevatedMaintenanceSession {
                             diagnostics,
                         );
                     }
-                    let error = PlatformError::new(
+                    let error = diagnostics.as_ref().and_then(|diagnostics| diagnostics.steps.iter().find(|record| record.result == step_diagnostics::MaintenanceStepResult::Failed))
+                        .map(step_diagnostics::classify_failure).unwrap_or_else(|| PlatformError::new(
                         error_code.into(),
                         format!(
                             "system maintenance helper task failed: diagnostic_digest={diagnostic_digest}"
                         ),
-                    );
+                    ));
                     return Err(SessionExecutionError::Remote(if mutation_possible {
                         error.with_possible_side_effects()
                     } else {
@@ -1022,8 +1029,9 @@ fn log_privileged_execution(
     failure_stage: Option<PrivilegedFailureStage>,
     diagnostics: &PrivilegedProcessDiagnostics,
 ) {
+    log_step_diagnostics(session_id, task_id, request_id, &diagnostics.steps);
     log::info!(
-        "windows_system_maintenance_privileged_process_finished session_id={} task_id={} request_id={} status={} failure_stage={:?} wait_status={} wait_error_code={} exit_code_read_succeeded={} exit_code={} progress_channel_enabled={} progress_channel_authenticated={} progress_channel_failed={} progress_channel_error_code={} progress_channel_setup_failed={} progress_channel_setup_error_code={} progress_rejected_connection_count={} progress_event_count={} native_elapsed_ms={}",
+        "windows_system_maintenance_privileged_process_finished session_id={} task_id={} request_id={} status={} failure_stage={:?} wait_status={} wait_error_code={} exit_code_read_succeeded={} exit_code={} progress_channel_enabled={} progress_channel_authenticated={} progress_channel_failed={} progress_channel_error_code={} progress_channel_setup_failed={} progress_channel_setup_error_code={} progress_rejected_connection_count={} progress_event_count={} diagnostic_step_count={} native_elapsed_ms={}",
         session_id,
         task_id,
         request_id,
@@ -1050,6 +1058,7 @@ fn log_privileged_execution(
             .unwrap_or_else(|| "none".to_string()),
         diagnostics.progress_rejected_connection_count,
         diagnostics.progress_event_count,
+        diagnostics.steps.len(),
         diagnostics.elapsed_ms
     );
 }

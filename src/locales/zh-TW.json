@@ -336,10 +336,17 @@
       "restartRequired": "「{name}」已完成，重新啟動系統後生效",
       "mayHaveChanged": "「{name}」未能完整結束，部分操作可能已經生效，建議重新檢查",
       "failures": {
-        "permissionDenied": "權限不足，無法執行「{name}」",
+        "toolUnavailable": "所需的系統工具無法使用，無法完成「{name}」",
+        "verificationPermissionDenied": "「{name}」已執行，但權限不足，無法檢查結果",
+        "timedOut": "「{name}」等待逾時，請稍後重新檢查",
+        "serviceBusy": "相關服務忙碌中，請稍後再試「{name}」",
+        "dependencyUnavailable": "相依服務無法啟動，無法完成「{name}」",
+        "serviceUnavailable": "找不到所需的系統服務，無法完成「{name}」",
+        "serviceDisabled": "「{name}」未完成：相關服務已停用",
+        "permissionDenied": "權限不足，無法完成「{name}」",
         "unsupported": "目前系統不支援「{name}」",
-        "verificationFailed": "「{name}」已執行，但 MangoDisk 無法確認最終結果",
-        "platformFailure": "「{name}」執行失敗，請重新檢查後再試",
+        "verificationFailed": "「{name}」已執行，但結果檢查失敗，請重新檢查",
+        "platformFailure": "「{name}」未能完成，請重新檢查後再試",
         "userCancelled": "已取消「{name}」"
       }
     },
