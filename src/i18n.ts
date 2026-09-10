@@ -3,6 +3,7 @@ import { createI18n } from 'vue-i18n';
 import { LANGUAGE_IDS, type LanguageId } from '@/lib/models/settings';
 import enUS from '@/locales/modules/en-us';
 import jaJP from '@/locales/modules/ja-jp';
+import koKR from '@/locales/modules/ko-kr';
 import zhCN from '@/locales/modules/zh-cn';
 import zhTW from '@/locales/modules/zh-tw';
 
@@ -22,6 +23,7 @@ export const i18n = createI18n<[MessageSchema], SupportedLocale, false>({
     [LANGUAGE_IDS.zhCN]: zhCN,
     [LANGUAGE_IDS.zhTW]: zhTW,
     [LANGUAGE_IDS.jaJP]: jaJP,
+    [LANGUAGE_IDS.koKR]: koKR,
     [LANGUAGE_IDS.enUS]: enUS,
   },
 });

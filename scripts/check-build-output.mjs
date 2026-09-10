@@ -2,7 +2,7 @@ import { readdir, stat } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 
 const assetDirectory = fileURLToPath(new URL('../dist/assets/', import.meta.url));
-const expectedLocaleIds = new Set(['en-us', 'ja-jp', 'zh-cn', 'zh-tw']);
+const expectedLocaleIds = new Set(['en-us', 'ja-jp', 'ko-kr', 'zh-cn', 'zh-tw']);
 const maximumApplicationChunkBytes = 300 * 1024;
 const maximumLocaleChunkBytes = 280 * 1024;
 

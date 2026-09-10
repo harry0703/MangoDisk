@@ -5,7 +5,7 @@
 <p align="center">macOS・Windows 対応のディスククリーンアップ、容量分析、プライバシー保護、システム最適化ツール</p>
 
 <p align="center">
-<a href="README.md">English</a> · <a href="README.zh-CN.md">简体中文</a> · <a href="README.zh-TW.md">繁體中文</a> · 日本語
+<a href="README.md">English</a> · <a href="README.zh-CN.md">简体中文</a> · <a href="README.zh-TW.md">繁體中文</a> · 日本語 · <a href="README.ko.md">한국어</a>
 </p>
 
 <p align="center">

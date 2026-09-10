@@ -2225,7 +2225,8 @@
       "zhCN": "简体中文",
       "enUS": "English",
       "zhTW": "繁體中文",
-      "jaJP": "日本語"
+      "jaJP": "日本語",
+      "koKR": "한국어"
     },
     "themeTitle": "顯示主題",
     "themeDescription": "選擇亮色、暗色或跟隨系統設定",

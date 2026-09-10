@@ -1,0 +1,3466 @@
+{
+  "ai": {
+    "configurationGuide": "설정 가이드",
+    "guideOpenInBrowser": "브라우저에서 설정 가이드 열기",
+    "guideOpenFailed": "가이드를 열 수 없습니다. 다시 시도하세요",
+    "thinking": "생각 중…",
+    "reasoningDetails": "사고 과정",
+    "loadingSettings": "설정을 읽는 중…",
+    "save": "저장",
+    "retry": "다시 시도",
+    "apiKey": "API Key",
+    "settingsTitle": "AI 설정",
+    "settingsDescription": "AI로 각 항목과 변경의 영향을 이해하고 더 나은 결정을 내리세요",
+    "providerTitle": "AI 설명",
+    "endpoint": "Base URL",
+    "endpointHint": "예: https://api.example.com/v1",
+    "showKey": "API Key 표시",
+    "hideKey": "API Key 숨기기",
+    "model": "모델 이름",
+    "keyPlaceholder": "API Key 입력",
+    "reasoning": "추론 모드",
+    "reasoningDefault": "제공자 기본값",
+    "reasoningDisabled": "추론 끄기(호환 제공자)",
+    "saved": "설정이 저장되었습니다",
+    "connected": "연결되었습니다. 설명할 준비가 되었습니다",
+    "deleted": "설정이 삭제되었습니다",
+    "deleteConfiguration": "설정 삭제",
+    "saveAndTest": "저장하고 테스트",
+    "explain": "AI 설명",
+    "disclosure": "전체 시작 경로를 포함한 항목 세부 정보가 설정한 AI 제공자에게 전송됩니다. 파일 내용은 전송되지 않습니다",
+    "notConfigured": "설명을 요청하기 전에 AI 제공자를 설정하세요",
+    "generating": "생성 중…",
+    "waiting": "응답을 기다리는 중…",
+    "stopped": "중지되었습니다. 부분 응답은 불완전할 수 있으며 제공자 요금은 청구될 수 있습니다",
+    "freeStopped": "중지되었습니다. 응답이 불완전할 수 있습니다",
+    "disclaimer": "AI 설명은 참고용입니다",
+    "stop": "생성 중지",
+    "configure": "설정",
+    "errors": {
+      "invalidConfiguration": "Base URL, 모델, API Key를 확인하세요",
+      "invalidContext": "항목 메타데이터가 없거나 너무 깁니다",
+      "notConfigured": "먼저 AI 제공자를 설정하세요",
+      "busy": "다른 AI 요청이 실행 중입니다. 잠시 후 다시 시도하세요",
+      "cancelled": "생성이 중지되었습니다",
+      "unauthorized": "인증에 실패했습니다. API Key와 접근 권한을 확인하세요",
+      "quotaExceeded": "잔액이 부족하거나 요청 한도에 도달했습니다. 제공자 계정을 확인하세요",
+      "modelUnavailable": "모델 또는 엔드포인트를 찾을 수 없습니다. URL과 모델 이름을 확인하세요",
+      "providerRejected": "제공자가 요청을 거부했습니다. 모델과 추론 설정을 확인하세요",
+      "connectionFailed": "연결에 실패했습니다. 네트워크와 제공자 URL을 확인하세요",
+      "timeout": "요청 시간이 초과되었습니다. 다시 시도하세요",
+      "invalidStream": "제공자가 호환되지 않는 스트림을 반환했습니다",
+      "incompleteStream": "응답이 완료되기 전에 끝났습니다. 다시 시도하세요",
+      "outputLimit": "응답이 길이 제한에 도달해 불완전할 수 있습니다",
+      "emptyResponse": "제공자가 표시할 텍스트를 반환하지 않았습니다",
+      "responseTooLarge": "응답이 크기 제한을 초과해 중지되었습니다",
+      "configurationUnavailable": "AI 설정을 읽거나 쓸 수 없습니다. 파일 권한을 확인하고 다시 시도하세요",
+      "freeUnavailable": "무료 AI를 일시적으로 사용할 수 없습니다. 나중에 다시 시도하세요",
+      "freeConsentRequired": "데이터 사용 방식을 확인해 주세요",
+      "freeDailyLimit": "무료 사용량을 모두 썼습니다. 초기화될 때까지 기다리거나 사용자 지정 서비스를 사용하세요",
+      "freeRateLimited": "요청이 너무 잦습니다. 잠시 후 다시 시도하세요",
+      "freeConcurrent": "다른 설명을 생성하는 중입니다. 잠시 기다리세요",
+      "freeClockSkew": "시스템 시간을 확인하고 다시 시도하세요",
+      "freeSignatureInvalid": "MangoDisk를 업데이트하거나 사용자 지정 서비스를 사용하세요. 이 빌드는 무료 AI를 사용할 수 없습니다",
+      "freeRequestExists": "중복된 요청이거나 더 이상 유효하지 않습니다. 새 설명을 시작하세요",
+      "freeArchiveUnavailable": "무료 설명을 처리할 수 없습니다. 나중에 다시 시도하세요"
+    },
+    "minimize": "최소화",
+    "restore": "AI 설명 펼치기",
+    "completed": "설명 준비 완료",
+    "explainItem": "AI 설명: {name}",
+    "serviceMode": "AI 서비스",
+    "freeService": "MangoDisk 무료",
+    "customService": "사용자 지정 서비스",
+    "customDescription": "API Key로 OpenAI 호환 서비스를 연결합니다",
+    "advancedSettings": "고급 설정",
+    "temperature": "Temperature",
+    "maxTokens": "Max Tokens",
+    "providerDefault": "제공자 기본값",
+    "freeDescription": "변경하기 전에 각 항목의 의미를 확인하세요",
+    "freeNoKey": "API Key 필요 없음",
+    "freeDailyAllowance": "매일 무료 설명 제공",
+    "freeDisclosure": "이름과 경로를 포함한 전체 항목 세부 정보가 MangoDisk와 모델 제공자에게 전송됩니다. 요청과 응답은 설명 개선을 위해 30일간 보관됩니다",
+    "freeBuildUnavailable": "이 버전은 사용자 지정 서비스만 지원합니다",
+    "freeAccept": "동의하고 설명 보기",
+    "freeRemaining": "오늘 남은 횟수: {remaining} / {limit}",
+    "freeDailyExhausted": "일일 한도 도달",
+    "freeResetsAt": "한도에 도달했습니다. {time}에 초기화됩니다",
+    "freeTemporarilyUnavailable": "무료 AI를 일시적으로 사용할 수 없습니다",
+    "freeUseCustom": "사용자 지정 서비스로 전환해 자신의 API Key를 사용하세요"
+  },
+  "navigation": {
+    "system-optimization": "시스템 최적화",
+    "system-maintenance": "시스템 유지 관리",
+    "cleanup": "심층 정리",
+    "analysis": "디스크 공간 분석",
+    "large-files": "대용량 파일 정리",
+    "duplicate-files": "중복 파일 정리",
+    "application-uninstall": "앱 제거",
+    "privacy": "개인정보 정리",
+    "startup": "시작 항목",
+    "history": "작업 기록",
+    "settings": "설정"
+  },
+  "privacy": {
+    "title": "개인정보 정리",
+    "idleTitle": "개인정보 흔적 찾기",
+    "idleDescription": "브라우저, 앱, 시스템 활동을 스캔합니다",
+    "scan": "지금 스캔",
+    "rescan": "다시 스캔",
+    "scanning": "개인정보 흔적 찾는 중",
+    "scanningSource": "{source} 확인 중",
+    "scanningDescription": "스캔은 어떤 데이터도 변경하지 않습니다",
+    "executing": "지우는 중",
+    "cancelling": "중지하는 중",
+    "clearSelected": "선택 항목 지우기",
+    "selectedSummary": "선택됨",
+    "selectedPendingSummary": "흔적 {count}개 · 스캔 대기 {pending}개",
+    "pendingScan": "스캔 대기",
+    "categoryNavigation": "개인정보 정리 카테고리",
+    "traceCount": "흔적 {count}개",
+    "categorySelected": "흔적 {count}개 선택됨",
+    "selectAllInCategory": "카테고리 선택",
+    "profileCount": "프로필 {count}개",
+    "toggleSource": "{source}의 실행 가능 항목 전환",
+    "toggleSourceDetails": "{source}의 정리 세부 정보 펼치기 또는 접기",
+    "toggleProfile": "프로필 {profile}의 실행 가능 항목 전환",
+    "timeRangeLabel": "정리 기간",
+    "toggleItem": "{item} 전환",
+    "permission": {
+      "badge": "전체 디스크 접근 권한 필요",
+      "summary": "일부 데이터에는 전체 디스크 접근 권한이 필요합니다",
+      "title": "전체 디스크 접근 권한 필요",
+      "description": "더 많은 앱과 시스템 활동을 스캔하려면 권한을 켜세요",
+      "instructions": "시스템 설정에서 MangoDisk의 전체 디스크 접근 권한을 켠 뒤 다시 스캔하세요",
+      "skip": "나중에",
+      "openSettings": "시스템 설정 열기"
+    },
+    "details": {
+      "open": "{item} 세부 정보 보기",
+      "title": "{item} 세부 정보",
+      "loading": "세부 정보 불러오는 중",
+      "failed": "세부 정보를 불러올 수 없습니다",
+      "retry": "다시 시도",
+      "aggregateOnly": "전체 개수만 확인할 수 있습니다",
+      "empty": "표시할 세부 정보가 없습니다",
+      "loadMore": "더 보기",
+      "unknown": "이름 없는 기록"
+    },
+    "completedTitle": "개인정보 정리 완료",
+    "completedDescription": "개인정보 흔적 {count}개를 지우고 확인했습니다",
+    "timeRanges": {
+      "lastHour": "지난 1시간",
+      "today": "오늘",
+      "lastSevenDays": "지난 7일",
+      "allTime": "전체 기간"
+    },
+    "selectionMode": {
+      "label": "선택",
+      "smart": "스마트 추천",
+      "all": "모두 선택",
+      "none": "모두 해제",
+      "manual": "직접 선택"
+    },
+    "categories": {
+      "browserActivity": "브라우저 활동",
+      "browserAccountState": "브라우저 계정",
+      "applicationActivity": "앱 활동",
+      "systemActivity": "시스템 활동"
+    },
+    "categoryDescriptions": {
+      "browserActivity": "방문, 검색, 다운로드, 세션 기록",
+      "browserAccountState": "쿠키, 사이트 데이터, 권한",
+      "applicationActivity": "앱 캐시, 로그, 세션, 최근 활동",
+      "systemActivity": "클립보드, 최근 항목, 시스템 활동"
+    },
+    "emptyResultsTitle": "개인정보 흔적을 찾지 못했습니다",
+    "emptyResultsDescription": "이 기간에 표시할 개인정보 정리 항목이 없습니다",
+    "kinds": {
+      "browsingHistory": "방문 기록",
+      "downloadHistory": "다운로드 기록",
+      "cookies": "쿠키 및 로그인 상태",
+      "siteStorage": "사이트 저장소",
+      "sitePermissions": "사이트 권한",
+      "sessions": "브라우저 세션",
+      "browserCache": "브라우저 캐시",
+      "searchHistory": "검색 기록",
+      "websiteIcons": "웹사이트 아이콘 기록",
+      "frequentlyVisitedSites": "자주 방문한 사이트",
+      "addressBarShortcuts": "주소 표시줄 바로 가기",
+      "savedPasswords": "저장된 암호",
+      "autofillData": "자동 완성 데이터",
+      "currentClipboard": "현재 클립보드",
+      "clipboardHistory": "클립보드 기록",
+      "recentItems": "최근 항목",
+      "recentApplications": "최근 사용한 앱",
+      "applicationUsageHistory": "앱 사용 기록",
+      "networkConnectionHistory": "네트워크 연결 기록",
+      "folderViewHistory": "폴더 보기 기록",
+      "printerHistory": "프린터 연결 기록",
+      "shellHistory": "터미널 및 명령 기록",
+      "jumpLists": "앱 점프 목록",
+      "runDialogHistory": "실행 명령 기록",
+      "fileDialogHistory": "파일 대화상자 기록",
+      "systemSearchHistory": "파일 탐색기 검색 기록",
+      "explorerPathHistory": "파일 탐색기 경로 기록",
+      "applicationCache": "앱 캐시",
+      "applicationLogs": "앱 로그",
+      "applicationSessions": "앱 세션",
+      "editorLocalHistory": "편집기 로컬 기록",
+      "recentDocuments": "최근 문서",
+      "recentProjects": "최근 프로젝트",
+      "recentConnections": "최근 연결",
+      "playbackHistory": "재생 기록",
+      "recentPaths": "최근 경로",
+      "recentSearches": "최근 검색"
+    },
+    "capabilities": {
+      "ready": "준비됨",
+      "empty": "흔적 없음",
+      "browserRunning": "정리하려면 브라우저를 닫으세요",
+      "applicationRunning": "정리하려면 앱을 닫으세요",
+      "scanAfterClose": "닫은 뒤 스캔",
+      "permissionRequired": "권한 필요",
+      "unsupported": "지원되지 않음",
+      "schemaUnsupported": "알 수 없는 데이터 구조",
+      "unavailable": "사용할 수 없음"
+    },
+    "recommendations": {
+      "reviewOnly": "보기 전용"
+    },
+    "impacts": {
+      "workflow": "최근 작업 흐름에 영향을 줄 수 있음",
+      "signOut": "계정이 로그아웃될 수 있음",
+      "crossDevice": "다른 기기에 영향을 줄 수 있음",
+      "dataLoss": "개인 콘텐츠가 삭제될 수 있음",
+      "unknown": "영향 알 수 없음"
+    },
+    "confirmation": {
+      "title": "개인정보 정리 확인",
+      "closeBrowsers": "일부 앱이 실행 중입니다. 작업을 저장한 뒤 앱을 종료할지 선택하세요",
+      "riskAcceptance": "선택한 항목으로 인해 계정이 로그아웃되거나 개인 데이터가 영구 삭제될 수 있음을 이해합니다",
+      "confirm": "지금 지우기",
+      "skipRunningAndContinue": "실행 중인 앱은 건너뛰고 계속"
+    },
+    "result": {
+      "title": "개인정보 정리 결과",
+      "successDescription": "개인정보 흔적 {count}개를 지우고 확인했습니다",
+      "partialDescription": "개인정보 흔적 {count}개를 지웠습니다. {failed}개 항목은 완료할 수 없습니다",
+      "cleanedTraces": "지운 흔적",
+      "processedItems": "처리된 항목",
+      "incompleteItems": "건너뜀 또는 실패",
+      "unknownSource": "개인정보 소스",
+      "statuses": {
+        "cleared": "지우고 확인함",
+        "unchanged": "변경 필요 없음",
+        "failed": "완료할 수 없음",
+        "cancelled": "건너뜀"
+      }
+    },
+    "feedback": {
+      "completed": "개인정보 흔적 {count}개를 지우고 확인했습니다",
+      "completedWithWarnings": "개인정보 흔적 {count}개를 지웠습니다. {failed}개 항목은 완료할 수 없습니다",
+      "noRemainingSelection": "실행 중인 브라우저를 건너뛰어 선택된 항목이 남아 있지 않습니다"
+    }
+  },
+  "navigationGroups": {
+    "storage": "저장 공간",
+    "privacy": "개인정보 보호 및 보안",
+    "system": "시스템 도구"
+  },
+  "systemMaintenance": {
+    "title": "시스템 유지 관리",
+    "scanning": "유지 관리 작업 확인 중",
+    "scanningDescription": "시스템을 변경하지 않고 구성 요소 상태만 확인합니다",
+    "scanFailedTitle": "유지 관리 확인을 완료하지 못했습니다",
+    "scanFailedDescription": "시스템은 변경되지 않았습니다. 다시 확인하고, 문제가 계속되면 설정에서 로그를 확인하세요",
+    "authorizationPrompt": "이 유지 관리 작업을 실행하려면 MangoDisk에 관리자 권한이 필요합니다",
+    "rescan": "다시 확인",
+    "filterCategory": "유지 관리 카테고리 필터",
+    "executeOne": "실행",
+    "executingOne": "실행 중",
+    "retryOne": "다시 시도",
+    "completedOne": "완료",
+    "systemProcessing": "시스템에서 처리 중",
+    "refreshRequired": "다시 확인 필요",
+    "cancelQueued": "대기 취소",
+    "cancelExecution": "중지",
+    "progress": {
+      "step": "{current}/{total}단계",
+      "elapsedSeconds": "{seconds}초 경과",
+      "elapsedMinutesSeconds": "{minutes}분 {seconds}초 경과",
+      "phases": {
+        "preparing": "준비 중",
+        "waitingForAuthorization": "관리자 승인 대기 중",
+        "repairingComponentImage": "Windows 구성 요소 복구 중 (DISM)",
+        "checkingSystemFiles": "시스템 파일 검사 중 (SFC)",
+        "checkingStartupDisk": "시동 디스크 검사 중",
+        "checkingSystemDisk": "Windows 시스템 드라이브 검사 중",
+        "rebuildingSearchIndex": "검색 색인 다시 생성 중",
+        "refreshingShellCaches": "인터페이스 캐시 새로 고침 중",
+        "restartingFinder": "Finder 재실행 중",
+        "restartingAudioService": "오디오 서비스 다시 시작 중",
+        "restartingServices": "시스템 서비스 다시 시작 중",
+        "repairingPrintQueue": "인쇄 대기열 복구 중",
+        "synchronizingTime": "시스템 시간 동기화 중",
+        "rebuildingPerformanceCounters": "성능 카운터 다시 생성 중",
+        "resettingStoreCache": "Microsoft Store 캐시 재설정 중",
+        "refreshingNetwork": "네트워크 캐시 새로 고침 중",
+        "rebuildingAppAssociations": "앱 연결 다시 생성 중",
+        "repairingPermissions": "사용자 폴더 권한 복구 중",
+        "restoringDefaults": "시스템 기본값 복원 중",
+        "verifying": "결과 확인 중"
+      }
+    },
+    "categories": {
+      "all": "전체",
+      "recommended": "추천",
+      "systemRepair": "시스템 복구",
+      "searchAndInterface": "검색 및 인터페이스",
+      "network": "네트워크"
+    },
+    "statuses": {
+      "healthy": "정상",
+      "recommended": "추천",
+      "available": "필요할 때 실행",
+      "unavailable": "사용할 수 없음",
+      "requiresElevation": "관리자 승인 필요"
+    },
+    "diagnostics": {
+      "accessDenied": "권한이 필요합니다",
+      "applicationRunning": "관련 앱이 실행 중입니다",
+      "checkFailed": "상태 확인에 실패했습니다",
+      "componentUnavailable": "시스템 구성 요소를 사용할 수 없습니다",
+      "toolUnavailable": "시스템 도구를 사용할 수 없습니다",
+      "unsupportedVersion": "이 시스템에서는 지원되지 않습니다"
+    },
+    "empty": {
+      "title": "이 카테고리에는 유지 관리 작업이 없습니다",
+      "description": "더 많은 작업을 보려면 다른 카테고리를 선택하세요"
+    },
+    "feedback": {
+      "cancelled": "{name} 작업이 취소되었습니다",
+      "cancelledMayHaveChanged": "{name} 작업을 중지했지만 일부 변경 사항이 적용되었을 수 있습니다. 다시 확인하세요",
+      "completed": "{name} 작업이 완료되었습니다",
+      "started": "{name} 작업을 시스템에서 처리하고 있습니다",
+      "restartRequired": "{name} 작업이 완료되었습니다. 변경 사항을 적용하려면 컴퓨터를 다시 시작하세요",
+      "mayHaveChanged": "{name} 작업이 정상적으로 끝나지 않았습니다. 일부 변경 사항이 적용되었을 수 있으니 다시 확인하세요",
+      "failures": {
+        "toolUnavailable": "필요한 시스템 도구를 사용할 수 없어 “{name}” 작업을 완료할 수 없습니다",
+        "verificationPermissionDenied": "“{name}” 작업은 실행되었지만 결과를 확인할 권한이 없습니다",
+        "timedOut": "“{name}” 작업 시간이 초과되었습니다. 나중에 다시 확인하세요",
+        "serviceBusy": "필요한 서비스가 사용 중입니다. 나중에 “{name}” 작업을 다시 시도하세요",
+        "dependencyUnavailable": "종속 서비스를 시작할 수 없어 “{name}” 작업을 완료할 수 없습니다",
+        "serviceUnavailable": "필요한 시스템 서비스가 없어 “{name}” 작업을 완료할 수 없습니다",
+        "serviceDisabled": "필요한 서비스가 비활성화되어 “{name}” 작업을 완료하지 못했습니다",
+        "permissionDenied": "권한이 부족하여 “{name}” 작업을 완료할 수 없습니다",
+        "unsupported": "{name} 작업은 이 시스템에서 지원되지 않습니다",
+        "verificationFailed": "“{name}” 작업은 실행되었지만 결과를 확인할 수 없습니다. 다시 확인하세요",
+        "platformFailure": "“{name}” 작업을 완료할 수 없습니다. 다시 시도하기 전에 먼저 다시 확인을 실행하세요",
+        "userCancelled": "{name} 작업이 취소되었습니다"
+      }
+    },
+    "confirmation": {
+      "title": "이 유지 관리 작업을 실행하시겠습니까?",
+      "description": "시간이 걸릴 수 있으며 시스템 구성 요소가 잠시 다시 시작될 수 있습니다",
+      "confirm": "실행"
+    },
+    "items": {
+      "macos_maintenance_spotlight-index": {
+        "name": "Spotlight 검색 색인 다시 생성",
+        "description": "Spotlight가 느리거나 파일을 찾지 못하거나 결과가 불완전할 때 파일 색인을 다시 만듭니다"
+      },
+      "macos_maintenance_launch-services": {
+        "name": "다음으로 열기 및 파일 연결 복구",
+        "description": "중복되거나 오래된 다음으로 열기 항목을 제거하고 파일 연결을 새로 고칩니다"
+      },
+      "macos_maintenance_quicklook-cache": {
+        "name": "Quick Look 파일 미리 보기 새로 고침",
+        "description": "스페이스 바를 눌렀을 때 미리 보기가 비어 있거나 오래되었거나 잘못 표시되면 캐시된 미리 보기를 새로 고칩니다"
+      },
+      "macos_maintenance_icon-cache": {
+        "name": "Finder 아이콘 캐시 다시 생성",
+        "description": "파일이나 앱의 아이콘이 비어 있거나 잘못되었거나 오래되었을 때 캐시된 아이콘을 다시 만듭니다"
+      },
+      "macos_maintenance_finder-service": {
+        "name": "Finder 재실행",
+        "description": "Finder가 느리거나 윈도우가 응답하지 않거나 데스크탑 항목이 새로 고쳐지지 않을 때 Finder를 다시 실행합니다"
+      },
+      "macos_maintenance_audio-service": {
+        "name": "오디오 서비스 다시 시작",
+        "description": "소리가 나지 않거나 장치가 사라지거나 오디오가 응답하지 않을 때 macOS 오디오를 다시 시작합니다"
+      },
+      "macos_maintenance_user-permissions": {
+        "name": "홈 폴더 권한 복구",
+        "description": "데스크탑, 문서 등 홈 폴더를 열거나 변경할 수 없을 때 접근 권한을 복원합니다"
+      },
+      "macos_maintenance_legacy-overrides": {
+        "name": "이전 최적화 도구가 변경한 설정 복원",
+        "description": "App Nap, 디스크 이미지 확인 등 관련 옵션을 macOS 기본값으로 되돌립니다"
+      },
+      "macos_maintenance_startup-disk": {
+        "name": "시동 디스크 파일 시스템 검사",
+        "description": "macOS 내장 도구로 디스크 내용을 변경하지 않고 파일 시스템 오류를 검사합니다"
+      },
+      "macos_maintenance_dns-cache": {
+        "name": "DNS 캐시 비우기",
+        "description": "웹 사이트나 네트워크 서비스 접속을 막을 수 있는 오래된 DNS 기록을 제거합니다"
+      },
+      "windows_maintenance_system-integrity": {
+        "name": "Windows 시스템 파일 복구",
+        "description": "Windows 내장 도구로 손상된 시스템 구성 요소와 보호된 파일을 찾아 복구합니다"
+      },
+      "windows_maintenance_search-index": {
+        "name": "Windows 검색 색인 다시 생성",
+        "description": "Windows 검색이 파일을 찾지 못하거나 잘못된 결과를 표시하거나 응답하지 않을 때 파일 색인을 다시 만듭니다"
+      },
+      "windows_maintenance_explorer-cache": {
+        "name": "아이콘 및 축소판 캐시 다시 생성",
+        "description": "데스크탑과 파일 탐색기의 비어 있거나 잘못된 아이콘과 축소판을 수정합니다. 파일 탐색기가 잠시 다시 시작되며, 대상이 삭제된 바로 가기는 복구할 수 없습니다"
+      },
+      "windows_maintenance_update-components": {
+        "name": "Windows Update 서비스 다시 시작",
+        "description": "Windows Update에 필요한 시스템 서비스를 다시 시작하고 즉시 업데이트를 확인합니다"
+      },
+      "windows_maintenance_print-queue": {
+        "name": "인쇄 대기열 복구",
+        "description": "멈추거나 취소할 수 없는 인쇄 작업을 제거한 뒤 인쇄 서비스를 다시 시작합니다"
+      },
+      "windows_maintenance_performance-counters": {
+        "name": "시스템 성능 데이터 복구",
+        "description": "작업 관리자나 모니터링 도구에 데이터가 누락되거나 잘못 표시될 때 성능 카운터를 다시 만듭니다"
+      },
+      "windows_maintenance_system-disk": {
+        "name": "Windows 시스템 드라이브 검사",
+        "description": "작업을 중단하거나 다시 시작 시 복구를 예약하지 않고 파일 시스템 오류를 검사합니다"
+      },
+      "windows_maintenance_audio-service": {
+        "name": "오디오 서비스 다시 시작",
+        "description": "소리가 나지 않거나 장치가 사라지거나 오디오가 응답하지 않을 때 Windows 오디오를 다시 시작합니다"
+      },
+      "windows_maintenance_store-cache": {
+        "name": "Microsoft Store 캐시 재설정",
+        "description": "Store가 열리지 않거나 다운로드가 멈추거나 페이지를 불러오지 못할 때 Store 캐시를 지웁니다"
+      },
+      "windows_maintenance_dns-cache": {
+        "name": "DNS 캐시 비우기",
+        "description": "웹 사이트나 네트워크 서비스 접속을 막을 수 있는 오래된 DNS 기록을 제거합니다"
+      },
+      "windows_maintenance_time-sync": {
+        "name": "시스템 시간 동기화",
+        "description": "시간 서버와 동기화하여 시계 오차로 인한 로그인 또는 인증서 오류를 해결합니다"
+      }
+    }
+  },
+  "systemOptimization": {
+    "title": "시스템 최적화",
+    "scanning": "시스템 설정 확인 중",
+    "scanningDescription": "스캔은 지원되는 설정을 읽기만 하며 시스템을 변경하지 않습니다",
+    "scanFailedTitle": "시스템 최적화를 확인할 수 없습니다",
+    "scanFailedDescription": "시스템 설정은 변경되지 않았습니다. 다시 확인해 보세요. 기존 작업은 다른 페이지에서 계속할 수 있습니다",
+    "applyChanges": "{count}개 변경 적용",
+    "pendingSummary": "대기 중인 변경",
+    "noChanges": "적용할 변경 없음",
+    "optimizing": "최적화 중…",
+    "checking": "설정 확인 중…",
+    "rescan": "다시 확인",
+    "restorePrevious": "이전 설정 복원",
+    "filterCategory": "최적화 카테고리 필터",
+    "pendingEmpty": {
+      "title": "대기 중인 변경 없음",
+      "description": "프리셋을 선택하거나 스위치를 조정하면 변경 사항이 여기에 모입니다"
+    },
+    "categories": {
+      "pending": "대기 중",
+      "all": "전체",
+      "performance": "성능",
+      "productivity": "생산성",
+      "privacy": "개인정보 보호 및 방해 요소",
+      "storage": "저장 공간",
+      "gaming": "게임",
+      "appearance": "화면 모양"
+    },
+    "modes": {
+      "label": "최적화 프로필",
+      "unchanged": {
+        "name": "현재 설정 유지"
+      },
+      "smart": {
+        "name": "스마트 추천"
+      },
+      "performance": {
+        "name": "성능"
+      },
+      "privacy": {
+        "name": "개인정보 보호"
+      },
+      "manual": {
+        "name": "사용자 지정"
+      }
+    },
+    "statuses": {
+      "pendingEnable": "켜기 예정",
+      "pendingDisable": "끄기 예정",
+      "authorizationRequired": "선택한 변경을 적용하려면 관리자 권한이 필요합니다",
+      "requiresRestart": "관련 시스템 구성 요소를 다시 열거나 다시 로그인하면 적용됩니다",
+      "caution": "주의",
+      "highImpact": "높은 영향",
+      "riskDescriptions": {
+        "caution": "이 설정은 장단점이 분명하니 필요에 맞는지 확인하세요",
+        "high": "이 설정은 보안, 복구 또는 업데이트 보호를 약화할 수 있습니다"
+      }
+    },
+    "riskDialog": {
+      "title": "높은 영향 설정 확인",
+      "description": "이 설정은 시스템 보안, 복구 또는 업데이트 보호를 약화할 수 있으므로 영향을 이해한 경우에만 계속하세요",
+      "note": "스마트 추천은 이 설정을 자동으로 선택하지 않으며, 직접 켠 항목만 적용됩니다",
+      "confirm": "그래도 계속"
+    },
+    "feedback": {
+      "nothingToApply": "선택한 항목은 이미 요청한 상태입니다",
+      "alreadyOptimized": "대기 중인 설정 변경이 없습니다",
+      "draftNotice": "변경 사항은 하단의 '변경 적용'을 클릭하면 적용됩니다",
+      "completed": "{count}개 시스템 설정 변경을 적용했습니다",
+      "completedRestart": "{count}개 변경을 적용했으며, 일부는 관련 시스템 구성 요소를 다시 열거나 다시 로그인해야 적용됩니다",
+      "cancelled": "{changed}개 변경이 완료된 후 관리자 인증이 취소되었습니다",
+      "cancelledRestart": "관리자 인증이 취소되었으며, 완료된 {changed}개 변경 중 일부는 관련 시스템 구성 요소를 다시 열거나 다시 로그인해야 적용됩니다",
+      "partial": "{changed}개 항목을 완료했으며 {failed}개는 적용할 수 없었습니다",
+      "partialRestart": "{changed}개 항목을 완료했으며 {failed}개는 적용할 수 없었습니다. 일부 변경은 관련 시스템 구성 요소를 다시 열거나 다시 로그인해야 적용됩니다"
+    },
+    "items": {
+      "macos_finder_show-file-extensions": {
+        "name": "모든 파일 확장자 표시",
+        "description": "실제 파일 유형을 파악하고 실수를 줄입니다"
+      },
+      "macos_finder_show-path-bar": {
+        "name": "Finder 경로 막대 표시",
+        "description": "Finder 하단에 전체 폴더 계층을 표시합니다"
+      },
+      "macos_finder_show-status-bar": {
+        "name": "Finder 상태 막대 표시",
+        "description": "항목 수와 사용 가능한 디스크 공간을 표시합니다"
+      },
+      "macos_finder_show-hidden-files": {
+        "name": "숨겨진 파일 표시",
+        "description": "숨겨진 항목을 Finder에서 바로 확인합니다"
+      },
+      "macos_finder_show-posix-path": {
+        "name": "Finder 제목에 전체 경로 표시",
+        "description": "윈도우 제목에 현재 폴더의 전체 경로를 표시합니다"
+      },
+      "macos_finder_disable-animations": {
+        "name": "Finder 애니메이션 줄이기",
+        "description": "윈도우 애니메이션을 줄여 파일 작업 반응을 더 빠르게 합니다"
+      },
+      "macos_finder_keep-folders-on-top": {
+        "name": "폴더를 항상 상단에 유지",
+        "description": "이름순으로 정렬할 때 폴더를 파일보다 앞에 둡니다"
+      },
+      "macos_finder_search-current-folder": {
+        "name": "기본적으로 현재 폴더 검색",
+        "description": "새 Finder 검색 범위를 현재 위치로 제한합니다"
+      },
+      "macos_finder_disable-extension-warning": {
+        "name": "확장자 변경 경고 건너뛰기",
+        "description": "파일 확장자를 변경할 때 다시 묻지 않습니다"
+      },
+      "macos_panels_expand-save": {
+        "name": "저장 패널 확장",
+        "description": "파일을 저장할 때 전체 폴더 선택 화면을 표시합니다"
+      },
+      "macos_panels_expand-print": {
+        "name": "프린트 패널 확장",
+        "description": "전체 프린트 옵션을 바로 표시합니다"
+      },
+      "macos_desktop_prevent-network-ds-store": {
+        "name": "네트워크 드라이브에 .DS_Store 생성 방지",
+        "description": "공유 폴더에 생기는 macOS 메타데이터 파일을 줄입니다"
+      },
+      "macos_desktop_prevent-usb-ds-store": {
+        "name": "USB 드라이브에 .DS_Store 생성 방지",
+        "description": "이동식 드라이브에 생기는 macOS 메타데이터 파일을 줄입니다"
+      },
+      "macos_dock_auto-hide": {
+        "name": "Dock 자동 숨기기",
+        "description": "필요할 때만 Dock을 표시해 데스크탑 공간을 확보합니다"
+      },
+      "macos_dock_minimize-to-application": {
+        "name": "윈도우를 앱 아이콘으로 최소화",
+        "description": "Dock에 별도의 윈도우 축소판을 추가하지 않습니다"
+      },
+      "macos_dock_use-scale-effect": {
+        "name": "최소화에 스케일 효과 사용",
+        "description": "지니 효과를 단순한 스케일 애니메이션으로 대체합니다"
+      },
+      "macos_mission-control_keep-space-order": {
+        "name": "Space 순서 유지",
+        "description": "최근 사용 내역에 따른 데스크탑 자동 재정렬을 막습니다"
+      },
+      "macos_dock_hide-recent-apps": {
+        "name": "Dock 최근 사용 앱 숨기기",
+        "description": "Dock 끝에 최근에 연 앱을 표시하지 않습니다"
+      },
+      "macos_screenshots_disable-shadow": {
+        "name": "스크린샷 윈도우 그림자 제거",
+        "description": "여백이 적고 대개 용량도 작은 윈도우 캡처를 만듭니다"
+      },
+      "macos_screenshots_use-png": {
+        "name": "스크린샷에 PNG 사용",
+        "description": "무손실 품질과 투명도를 유지합니다"
+      },
+      "macos_screenshots_disable-thumbnail": {
+        "name": "떠 있는 스크린샷 축소판 끄기",
+        "description": "미리 보기를 기다리지 않고 스크린샷을 바로 저장합니다"
+      },
+      "macos_keyboard_full-navigation": {
+        "name": "전체 키보드 탐색 켜기",
+        "description": "Tab 키로 더 많은 인터페이스 컨트롤 사이를 이동합니다"
+      },
+      "macos_keyboard_fast-key-repeat": {
+        "name": "키 반복 속도 높이기",
+        "description": "키를 누르고 있을 때 문자를 더 빠르게 반복합니다"
+      },
+      "macos_keyboard_short-repeat-delay": {
+        "name": "키 반복 지연 시간 줄이기",
+        "description": "키를 누르고 있을 때 문자 반복을 더 빨리 시작합니다"
+      },
+      "macos_text_disable-auto-correct": {
+        "name": "자동 수정 끄기",
+        "description": "입력한 텍스트를 시스템이 고쳐 쓰지 않게 합니다"
+      },
+      "macos_text_disable-smart-quotes": {
+        "name": "스마트 따옴표 끄기",
+        "description": "입력할 때 곧은 따옴표를 그대로 유지합니다"
+      },
+      "macos_text_disable-smart-dashes": {
+        "name": "스마트 대시 끄기",
+        "description": "연속된 하이픈을 자동으로 바꾸지 않습니다"
+      },
+      "macos_text_disable-auto-capitalization": {
+        "name": "자동 대문자 끄기",
+        "description": "영문 문장의 대문자를 자동으로 바꾸지 않습니다"
+      },
+      "macos_text_disable-period-substitution": {
+        "name": "스페이스 두 번 마침표 끄기",
+        "description": "스페이스를 두 번 입력해도 마침표를 넣지 않습니다"
+      },
+      "windows_explorer_show-file-extensions": {
+        "name": "파일 확장명 표시",
+        "description": "실제 파일 유형을 파악하고 실수를 줄입니다"
+      },
+      "windows_explorer_show-hidden-files": {
+        "name": "숨김 파일 표시",
+        "description": "파일 탐색기에 일반 숨김 항목을 표시합니다"
+      },
+      "windows_explorer_launch-this-pc": {
+        "name": "파일 탐색기를 내 PC로 열기",
+        "description": "새 창을 드라이브와 주요 위치로 시작합니다"
+      },
+      "windows_explorer_compact-mode": {
+        "name": "간단히 보기 사용",
+        "description": "같은 파일 탐색기 창에 더 많은 파일을 표시합니다"
+      },
+      "windows_explorer_show-full-path": {
+        "name": "제목 표시줄에 전체 경로 표시",
+        "description": "현재 폴더 위치를 더 명확하게 파악합니다"
+      },
+      "windows_explorer_show-item-checkboxes": {
+        "name": "항목 확인란 표시",
+        "description": "확인란으로 여러 파일을 선택합니다"
+      },
+      "windows_explorer_hide-recent-files": {
+        "name": "최근 파일 숨기기",
+        "description": "파일 탐색기 홈에 최근에 연 파일을 표시하지 않습니다"
+      },
+      "windows_explorer_hide-frequent-folders": {
+        "name": "자주 사용하는 폴더 숨기기",
+        "description": "파일 탐색기 홈에 자주 방문한 폴더를 표시하지 않습니다"
+      },
+      "windows_taskbar_show-seconds": {
+        "name": "작업 표시줄 시계에 초 표시",
+        "description": "시스템 시계에 초를 추가합니다"
+      },
+      "windows_taskbar_hide-task-view": {
+        "name": "작업 보기 버튼 숨기기",
+        "description": "사용하지 않을 수 있는 작업 표시줄 버튼을 제거합니다"
+      },
+      "windows_taskbar_hide-widgets": {
+        "name": "Windows 위젯 끄기",
+        "description": "작업 표시줄 항목을 제거하고 위젯 보드가 열리지 않게 합니다"
+      },
+      "windows_taskbar_disable-widgets-board": {
+        "name": "Windows 위젯 끄기",
+        "description": "최신 Windows 11 빌드에서 항목을 제거하고 위젯 보드를 비활성화합니다"
+      },
+      "windows_taskbar_enable-end-task": {
+        "name": "작업 표시줄에서 작업 끝내기 허용",
+        "description": "앱 아이콘의 상황에 맞는 메뉴에서 프로세스를 바로 종료합니다"
+      },
+      "windows_taskbar_hide-search": {
+        "name": "작업 표시줄 검색 숨기기",
+        "description": "시작 메뉴 검색은 그대로 두고 작업 표시줄 공간을 확보합니다"
+      },
+      "windows_taskbar_align-left": {
+        "name": "작업 표시줄 아이콘 왼쪽 맞춤",
+        "description": "시작 버튼과 앱 아이콘을 왼쪽으로 옮깁니다"
+      },
+      "windows_taskbar_disable-animations": {
+        "name": "작업 표시줄 애니메이션 끄기",
+        "description": "작업 표시줄 전환 효과를 줄여 반응을 더 빠르게 합니다"
+      },
+      "windows_desktop_prefer-performance-effects": {
+        "name": "Windows 시각 효과 줄이기",
+        "description": "일부 애니메이션과 투명 효과를 꺼서 렌더링 부담을 줄입니다"
+      },
+      "windows_personalization_dark-apps": {
+        "name": "앱에 다크 모드 사용",
+        "description": "지원되는 앱에서 어두운 화면을 사용합니다"
+      },
+      "windows_personalization_dark-system": {
+        "name": "Windows에 다크 모드 사용",
+        "description": "어두운 작업 표시줄과 시스템 인터페이스를 사용합니다"
+      },
+      "windows_gaming_enable-game-mode": {
+        "name": "게임 모드 켜기",
+        "description": "게임 실행 중에 시스템 리소스를 우선 배정합니다"
+      },
+      "windows_gaming_disable-capture": {
+        "name": "백그라운드 게임 캡처 끄기",
+        "description": "녹화가 필요 없을 때 캡처 부담을 줄입니다"
+      },
+      "windows_gaming_optimize-windowed-games": {
+        "name": "창 게임 최적화",
+        "description": "호환되는 게임에서 지연 시간이 더 낮은 표시 방식을 켭니다"
+      },
+      "windows_performance_disable-background-store-apps": {
+        "name": "백그라운드 Store 앱 제한",
+        "description": "사용하지 않는 Store 앱의 CPU와 메모리 사용을 줄입니다"
+      },
+      "windows_privacy_disable-advertising-id": {
+        "name": "광고 ID 끄기",
+        "description": "앱이 맞춤형 광고에 ID를 사용하지 못하게 합니다"
+      },
+      "windows_privacy_disable-tailored-experiences": {
+        "name": "진단 데이터 맞춤형 환경 끄기",
+        "description": "맞춤형 팁과 추천에 진단 데이터를 사용하지 않습니다"
+      },
+      "windows_privacy_disable-activity-publishing": {
+        "name": "다른 장치와 활동 공유 중지",
+        "description": "이 사용자의 활동 기록을 다른 장치에 게시하지 않습니다"
+      },
+      "windows_privacy_disable-activity-upload": {
+        "name": "활동 기록 업로드 중지",
+        "description": "이 사용자의 활동 기록을 클라우드에 업로드하지 않습니다"
+      },
+      "windows_content_disable-silent-app-installs": {
+        "name": "추천 앱 자동 설치 차단",
+        "description": "Windows가 현재 사용자에게 추천 앱을 백그라운드에서 추가하지 못하게 합니다"
+      },
+      "windows_content_disable-suggestions": {
+        "name": "시스템 제안 끄기",
+        "description": "시작 메뉴와 Windows의 홍보성 제안을 줄입니다"
+      },
+      "windows_content_disable-lock-screen-tips": {
+        "name": "잠금 화면 팁 끄기",
+        "description": "잠금 화면의 팁과 추천을 줄입니다"
+      },
+      "windows_content_disable-welcome-experience": {
+        "name": "업데이트 후 시작 환경 끄기",
+        "description": "업데이트나 로그인 후 표시되는 기능 홍보 페이지를 건너뜁니다"
+      },
+      "windows_content_disable-usage-tips": {
+        "name": "사용 팁 끄기",
+        "description": "Windows 사용 중 표시되는 팁과 추천을 줄입니다"
+      },
+      "windows_content_disable-notification-suggestions": {
+        "name": "알림 제안 끄기",
+        "description": "알림 센터에 시스템 추천을 표시하지 않습니다"
+      },
+      "windows_content_disable-device-setup-suggestions": {
+        "name": "장치 설정 제안 끄기",
+        "description": "설정 완료나 추가 서비스 사용을 권하는 메시지를 중지합니다"
+      },
+      "windows_search_disable-web-suggestions": {
+        "name": "시작 메뉴 웹 제안 끄기",
+        "description": "시작 메뉴 검색의 웹 결과와 제안을 줄입니다"
+      },
+      "windows_storage_enable-storage-sense": {
+        "name": "저장소 센스 켜기",
+        "description": "Windows가 임시 파일을 자동으로 제거해 공간을 확보하게 합니다"
+      },
+      "windows_desktop_reduce-menu-delay": {
+        "name": "메뉴 열림 지연 줄이기",
+        "description": "포인터를 올리면 하위 메뉴를 더 빨리 엽니다"
+      },
+      "windows_explorer_enable-auto-suggest": {
+        "name": "경로 및 명령 제안 켜기",
+        "description": "파일 탐색기 주소 표시줄과 실행 대화 상자에 일치하는 제안을 표시합니다"
+      },
+      "windows_explorer_disable-aero-shake": {
+        "name": "창 흔들어 최소화 끄기",
+        "description": "창을 끌 때 다른 창이 실수로 최소화되지 않게 합니다"
+      },
+      "windows_explorer_show-operation-details": {
+        "name": "파일 작업 세부 정보 펼치기",
+        "description": "파일을 복사하거나 이동할 때 속도와 남은 시간을 표시합니다"
+      },
+      "windows_explorer_hide-sync-notifications": {
+        "name": "파일 탐색기 동기화 홍보 끄기",
+        "description": "파일 탐색기의 클라우드 서비스 추천을 숨깁니다"
+      },
+      "windows_explorer_classic-context-menu": {
+        "name": "클래식 상황에 맞는 메뉴 사용",
+        "description": "Windows 11에서 전체 메뉴를 바로 표시합니다"
+      },
+      "windows_explorer_remove-cast-to-device": {
+        "name": "장치로 캐스트 제거",
+        "description": "파일의 상황에 맞는 메뉴에서 레거시 미디어 캐스트 항목을 숨깁니다"
+      },
+      "windows_taskbar_show-all-tray-icons": {
+        "name": "모든 트레이 아이콘 표시",
+        "description": "알림 영역에 앱 아이콘을 계속 표시합니다"
+      },
+      "windows_taskbar_hide-weather": {
+        "name": "작업 표시줄 날씨 숨기기",
+        "description": "Windows 10의 날씨 및 뉴스 항목을 제거합니다"
+      },
+      "windows_taskbar_hide-search-policy": {
+        "name": "작업 표시줄 검색 숨기기",
+        "description": "Windows 11 24H2 이상에서 작업 표시줄 검색 항목을 숨깁니다"
+      },
+      "windows_taskbar_hide-chat": {
+        "name": "작업 표시줄 채팅 버튼 숨기기",
+        "description": "사용하지 않는 채팅 또는 모임 바로 가기를 제거합니다"
+      },
+      "windows_taskbar_hide-copilot": {
+        "name": "작업 표시줄 Copilot 숨기기",
+        "description": "작업 표시줄에서 Copilot 항목을 제거합니다"
+      },
+      "windows_windowing_disable-snap-assist": {
+        "name": "스냅 도우미 제안 끄기",
+        "description": "창을 끌거나 가리킬 때 스냅 레이아웃을 표시하지 않습니다"
+      },
+      "windows_gaming_disable-game-dvr": {
+        "name": "Game DVR 끄기",
+        "description": "녹화가 필요 없을 때 백그라운드 캡처 활동을 줄입니다"
+      },
+      "windows_privacy_disable-input-personalization": {
+        "name": "입력 개인 설정 끄기",
+        "description": "입력한 내용을 개인 맞춤 입력 학습에 사용하지 않습니다"
+      },
+      "windows_privacy_disable-ink-personalization": {
+        "name": "필기 개인 설정 끄기",
+        "description": "필기 내용을 개인 맞춤 인식 학습에 사용하지 않습니다"
+      },
+      "windows_privacy_disable-feedback-requests": {
+        "name": "Windows 피드백 요청 줄이기",
+        "description": "Windows가 표시하는 사용 경험 설문과 피드백 요청을 줄입니다"
+      },
+      "windows_privacy_disable-nearby-sharing": {
+        "name": "근거리 공유 끄기",
+        "description": "필요 없을 때 주변 장치 검색과 공유를 비활성화합니다"
+      },
+      "windows_privacy_disable-cross-device-experiences": {
+        "name": "장치 간 환경 끄기",
+        "description": "앱이 다른 장치에서 활동을 이어가지 못하게 합니다"
+      },
+      "windows_privacy_disable-language-list-sharing": {
+        "name": "언어 목록 공유 중지",
+        "description": "맞춤 콘텐츠를 위해 선호 언어를 웹 사이트에 보내지 않습니다"
+      },
+      "windows_clipboard_disable-history": {
+        "name": "클립보드 기록 끄기",
+        "description": "복사한 여러 항목을 Windows에 보관하지 않습니다"
+      },
+      "windows_content_disable-spotlight": {
+        "name": "잠금 화면 Windows 추천 끄기",
+        "description": "잠금 화면의 추천 이미지와 콘텐츠 순환 표시를 중지합니다"
+      },
+      "windows_content_disable-phone-link-suggestions": {
+        "name": "휴대폰과 연결 제안 끄기",
+        "description": "휴대폰을 Windows에 연결하라는 메시지를 줄입니다"
+      },
+      "windows_content_disable-service-suggestions": {
+        "name": "Microsoft 서비스 제안 끄기",
+        "description": "Microsoft 서비스를 홍보하는 시스템 알림을 숨깁니다"
+      },
+      "windows_content_disable-preinstalled-app-suggestions": {
+        "name": "사전 설치 앱 제안 끄기",
+        "description": "현재 사용자를 위해 준비된 추천 앱을 줄입니다"
+      },
+      "windows_edge_disable-sidebar": {
+        "name": "Edge 사이드바 끄기",
+        "description": "Microsoft Edge의 사이드바와 Discover 항목을 숨깁니다"
+      },
+      "windows_edge_disable-personalization": {
+        "name": "Edge 개인 설정 끄기",
+        "description": "브라우징 데이터를 Microsoft 서비스 맞춤 설정에 사용하지 않습니다"
+      },
+      "windows_edge_disable-recommendations": {
+        "name": "Edge 추천 끄기",
+        "description": "Edge의 기능 홍보와 추천 환경을 줄입니다"
+      },
+      "windows_edge_disable-web-widget": {
+        "name": "Edge 웹 위젯 끄기",
+        "description": "Edge가 바탕 화면에 뉴스 및 검색 위젯을 제공하지 못하게 합니다"
+      },
+      "windows_office_disable-optional-telemetry": {
+        "name": "Office 선택적 진단 끄기",
+        "description": "Microsoft 365 앱에서 선택적 클라이언트 진단 데이터를 보내지 않습니다"
+      },
+      "windows_firefox_disable-telemetry": {
+        "name": "Firefox 원격 분석 끄기",
+        "description": "Firefox가 원격 분석을 업로드하거나 로컬 원격 분석 아카이브를 보관하지 못하게 합니다"
+      },
+      "windows_ai_disable-recall-snapshots": {
+        "name": "Recall 스냅샷 끄기",
+        "description": "Recall이 화면 활동 기록을 저장하고 분석하지 못하게 합니다"
+      },
+      "windows_ai_disable-copilot": {
+        "name": "Windows Copilot 끄기",
+        "description": "사용하지 않을 때 시스템 Copilot 항목을 비활성화합니다"
+      },
+      "windows_typing_disable-autocorrect": {
+        "name": "입력 자동 고침 끄기",
+        "description": "Windows가 입력한 단어를 자동으로 바꾸지 못하게 합니다"
+      },
+      "windows_typing_disable-spellcheck": {
+        "name": "입력 맞춤법 검사 끄기",
+        "description": "Windows 입력 영역에서 맞춤법 오류를 표시하지 않습니다"
+      },
+      "windows_typing_disable-text-prediction": {
+        "name": "텍스트 제안 끄기",
+        "description": "입력 중 예측 텍스트 제안을 표시하지 않습니다"
+      },
+      "windows_typing_disable-double-space-period": {
+        "name": "스페이스 두 번 마침표 끄기",
+        "description": "스페이스바를 두 번 눌러도 마침표를 넣지 않습니다"
+      },
+      "windows_accessibility_disable-sticky-keys-shortcut": {
+        "name": "고정 키 바로 가기 키 끄기",
+        "description": "Shift를 반복해서 눌러도 고정 키가 열리지 않게 합니다"
+      },
+      "windows_accessibility_disable-filter-keys-shortcut": {
+        "name": "필터 키 바로 가기 키 끄기",
+        "description": "Shift를 길게 눌러도 필터 키가 켜지지 않게 합니다"
+      },
+      "windows_accessibility_disable-toggle-keys-shortcut": {
+        "name": "토글 키 바로 가기 키 끄기",
+        "description": "Num Lock을 길게 눌러도 토글 키가 켜지지 않게 합니다"
+      },
+      "windows_desktop_reduce-hover-delay": {
+        "name": "포인터 가리키기 지연 줄이기",
+        "description": "포인터 가리키기를 사용하는 시스템 컨트롤의 반응을 더 빠르게 합니다"
+      },
+      "windows_performance_reduce-crash-dump": {
+        "name": "작은 충돌 덤프 사용",
+        "description": "미니 덤프로 디스크 공간을 절약하지만 진단 정보는 줄어듭니다"
+      },
+      "windows_privacy_disable-remote-assistance": {
+        "name": "원격 지원 끄기",
+        "description": "다른 사람이 Windows 원격 지원으로 연결하지 못하게 합니다"
+      },
+      "windows_performance_reduce-service-shutdown-timeout": {
+        "name": "종료 시 서비스 대기 시간 줄이기",
+        "description": "종료할 때 백그라운드 서비스를 덜 기다리며, 응답 없는 서비스는 더 빨리 종료될 수 있습니다"
+      },
+      "windows_performance_disable-network-throttling": {
+        "name": "멀티미디어 네트워크 처리량 제한 해제",
+        "description": "멀티미디어 네트워크 트래픽에 대한 Windows 제한을 줄이며, 결과는 네트워크와 앱에 따라 다릅니다"
+      },
+      "windows_performance_remove-reserved-bandwidth": {
+        "name": "QoS 예약 가능 대역폭을 0으로 설정",
+        "description": "QoS를 사용하는 시스템 또는 앱 트래픽에만 영향을 주며 일반 인터넷 속도는 대개 개선되지 않습니다"
+      },
+      "windows_performance_multimedia-responsiveness": {
+        "name": "게임 및 멀티미디어 우선순위 높이기",
+        "description": "백그라운드 작업에 CPU 시간을 덜 배정하므로 다른 백그라운드 작업에 영향을 줄 수 있습니다"
+      },
+      "windows_performance_multimedia-no-lazy-mode": {
+        "name": "멀티미디어 작업을 더 적극적으로 예약",
+        "description": "멀티미디어 작업의 지연 예약을 줄이며, CPU 사용량과 전력 소비가 늘 수 있습니다"
+      },
+      "windows_performance_multimedia-always-on": {
+        "name": "멀티미디어 스케줄러 항상 활성화",
+        "description": "멀티미디어 작업 예약을 항상 활성 상태로 유지하며, 유휴 상태에서 리소스 사용이 늘 수 있습니다"
+      },
+      "windows_gaming_enable-hardware-gpu-scheduling": {
+        "name": "하드웨어 가속 GPU 일정 예약 켜기",
+        "description": "더 많은 일정 예약을 GPU로 옮기며, 결과는 그래픽 드라이버에 따라 다르고 다시 시작이 필요합니다"
+      },
+      "windows_compatibility_disable-camera-frame-server": {
+        "name": "레거시 카메라 호환 모드 사용",
+        "description": "일부 오래된 카메라 앱의 미리 보기가 개선될 수 있지만, 여러 앱의 카메라 동시 사용에 영향을 줄 수 있습니다"
+      },
+      "windows_services_print-spooler-manual": {
+        "name": "인쇄 서비스를 수동 시작으로 설정",
+        "description": "서비스가 계속 실행되지 않게 하며, 인쇄하거나 가상 프린터를 사용하기 전에 시작해야 할 수 있습니다"
+      },
+      "windows_services_disable-sysmain": {
+        "name": "SysMain 미리 로드 끄기",
+        "description": "백그라운드 미리 로드와 디스크 활동을 줄이지만 앱 첫 실행이 느려질 수 있습니다"
+      },
+      "windows_services_disable-compatibility-assistant": {
+        "name": "프로그램 호환성 도우미 끄기",
+        "description": "오래된 앱에 대한 호환성 감지와 안내 메시지를 중지합니다"
+      },
+      "windows_services_disable-search-indexing": {
+        "name": "Windows Search 인덱싱 끄기",
+        "description": "백그라운드 인덱싱을 줄이지만 파일과 메일 검색이 훨씬 느려집니다"
+      },
+      "windows_services_disable-diagnostic-tracking": {
+        "name": "진단 추적 끄기",
+        "description": "Windows 진단 데이터 수집과 일부 문제 해결 기능을 줄입니다"
+      },
+      "windows_services_disable-error-reporting": {
+        "name": "Windows 오류 보고 끄기",
+        "description": "충돌 보고서 수집과 전송을 중지하며, 사용할 수 있는 진단 정보가 줄어듭니다"
+      },
+      "windows_services_disable-sensors": {
+        "name": "센서 서비스 끄기",
+        "description": "위치 및 방향 센서를 끄며, 컨버터블 장치 기능에 영향을 줄 수 있습니다"
+      },
+      "windows_services_disable-insider": {
+        "name": "Windows 참가자 서비스 끄기",
+        "description": "미리 보기 빌드를 사용하지 않을 때 참가자 프로그램 지원을 끕니다"
+      },
+      "windows_services_disable-xbox-auth": {
+        "name": "Xbox Live 인증 끄기",
+        "description": "Xbox 백그라운드 서비스를 줄이며, Game Pass와 Xbox 로그인이 작동하지 않을 수 있습니다"
+      },
+      "windows_services_disable-fax": {
+        "name": "팩스 서비스 끄기",
+        "description": "Windows 팩스를 사용하지 않을 때 서비스가 시작되지 않게 합니다"
+      },
+      "windows_services_disable-media-player-sharing": {
+        "name": "미디어 플레이어 공유 끄기",
+        "description": "로컬 네트워크 미디어 공유를 사용하지 않을 때 백그라운드 서비스를 중지합니다"
+      },
+      "windows_security_disable-system-restore": {
+        "name": "시스템 복원 끄기",
+        "description": "새 복원 지점을 만들지 않으며, 문제가 생겨도 시스템 복원을 사용할 수 없습니다"
+      },
+      "windows_security_disable-defender": {
+        "name": "정책으로 Microsoft Defender 바이러스 백신 끄기",
+        "description": "맬웨어 보호가 크게 약화되므로 다른 보안 솔루션이 있을 때만 선택하세요"
+      },
+      "windows_security_disable-smartscreen": {
+        "name": "Windows SmartScreen 끄기",
+        "description": "알 수 없는 앱과 다운로드의 평판 검사를 중지하며, 악성 파일 보호가 약화됩니다"
+      },
+      "windows_network_disable-smb1": {
+        "name": "SMB 1.0 끄기",
+        "description": "레거시 공유 프로토콜을 끄며, 오래된 NAS 장치가 연결되지 않을 수 있습니다"
+      },
+      "windows_network_disable-smb2": {
+        "name": "SMB 2/3 끄기",
+        "description": "최신 Windows 파일 및 프린터 공유가 중단되므로 SMB가 필요 없을 때만 사용하세요"
+      },
+      "windows_security_disable-vbs": {
+        "name": "가상화 기반 보안 끄기",
+        "description": "일부 게임 성능이 개선될 수 있지만 자격 증명과 커널 격리가 약화됩니다"
+      },
+      "windows_storage_disable-ntfs-last-access": {
+        "name": "NTFS 마지막 액세스 시간 업데이트 끄기",
+        "description": "메타데이터 쓰기를 줄이며, 액세스 시간에 의존하는 소프트웨어에 영향을 줄 수 있습니다"
+      },
+      "windows_update_notify-before-download": {
+        "name": "Windows 업데이트 다운로드 전 알림",
+        "description": "다운로드 전에 확인을 요구하며, 보안 업데이트를 직접 처리해야 합니다"
+      },
+      "windows_update_disable-peer-sharing": {
+        "name": "장치 간 업데이트 공유 끄기",
+        "description": "다른 PC와 Windows 업데이트를 주고받지 않고 업데이트 서버에서만 다운로드합니다"
+      },
+      "windows_update_disable-preview-builds": {
+        "name": "Windows 미리 보기 빌드 끄기",
+        "description": "참가자 빌드를 받지 않고 공개 릴리스 채널을 유지합니다"
+      },
+      "windows_update_prevent-restart-when-logged-on": {
+        "name": "로그인 중 자동 다시 시작 안 함",
+        "description": "사용자가 로그인한 동안 예약된 업데이트가 PC를 다시 시작하지 못하게 합니다"
+      },
+      "windows_update_disable-automatic-updates": {
+        "name": "Windows 자동 업데이트 끄기",
+        "description": "직접 확인할 때만 업데이트를 가져오므로 중요한 보안 수정이 늦어질 수 있습니다"
+      },
+      "windows_privacy_limit-diagnostic-data": {
+        "name": "Windows 진단 데이터 제한",
+        "description": "보안, 업데이트, 안정성에 필요한 진단 데이터만 보냅니다"
+      },
+      "windows_update_exclude-driver-updates": {
+        "name": "Windows 업데이트에서 드라이버 제외",
+        "description": "드라이버 자동 교체를 막고 드라이버를 직접 관리합니다"
+      },
+      "windows_update_disable-store-auto-updates": {
+        "name": "Microsoft Store 자동 업데이트 끄기",
+        "description": "앱 업데이트와 보안 수정을 직접 설치해야 합니다"
+      },
+      "windows_cloud_disable-onedrive-sync": {
+        "name": "정책으로 OneDrive 파일 동기화 끄기",
+        "description": "클라이언트를 제거하거나 기존 파일을 삭제하지 않고 OneDrive 동기화를 차단합니다"
+      },
+      "windows_search_disable-cortana-policy": {
+        "name": "정책으로 Cortana 끄기",
+        "description": "Cortana를 비활성화하며, 이전 Windows 버전의 일부 검색 기능에 영향을 줄 수 있습니다"
+      },
+      "windows_input_disable-windows-ink": {
+        "name": "Windows Ink 작업 영역 끄기",
+        "description": "펜 기능을 줄이므로 스타일러스와 필기 사용자에게는 권장하지 않습니다"
+      },
+      "windows_clipboard_disable-cross-device-policy": {
+        "name": "정책으로 장치 간 클립보드 끄기",
+        "description": "Microsoft 계정 장치 간에 클립보드 내용이 동기화되지 않게 합니다"
+      },
+      "windows_filesystem_enable-long-paths": {
+        "name": "Win32 긴 경로 켜기",
+        "description": "호환되는 앱이 260자보다 긴 경로에 접근할 수 있게 합니다"
+      },
+      "windows_setup_bypass-hardware-checks": {
+        "name": "Windows 11 하드웨어 검사 우회 허용",
+        "description": "지원되지 않는 CPU나 TPM에서도 업그레이드를 허용하며, 공식 지원을 받지 못할 수 있습니다"
+      },
+      "windows_time_use-utc-hardware-clock": {
+        "name": "하드웨어 시계에 UTC 사용",
+        "description": "Windows와 Linux 듀얼 부팅에 유용하며, Windows만 사용하는 시스템에서는 대개 필요 없습니다"
+      },
+      "windows_power_disable-modern-standby": {
+        "name": "최신 대기 모드 끄기",
+        "description": "레거시 절전 모드 사용을 시도하며, 지원하지 않는 장치는 절전 모드가 제대로 작동하지 않을 수 있습니다"
+      },
+      "windows_power_disable-hibernation": {
+        "name": "최대 절전 모드 끄기",
+        "description": "최대 절전 관련 디스크 사용을 줄이지만 최대 절전 모드와 빠른 시작을 사용할 수 없게 됩니다"
+      },
+      "windows_recovery_enable-registry-backups": {
+        "name": "주기적 레지스트리 백업 켜기",
+        "description": "Windows가 시스템 드라이브의 작은 공간을 사용해 레지스트리 백업을 만들게 합니다"
+      },
+      "windows_login_enable-verbose-status": {
+        "name": "자세한 로그인 상태 표시",
+        "description": "로그인과 종료 중 시스템 단계를 표시해 지연 원인 진단을 돕습니다"
+      },
+      "macos_finder_show-hard-drives-on-desktop": {
+        "name": "데스크탑에 내장 디스크 표시",
+        "description": "데스크탑에서 Mac의 내장 디스크를 바로 엽니다"
+      },
+      "macos_finder_show-external-drives-on-desktop": {
+        "name": "데스크탑에 외장 디스크 표시",
+        "description": "외장 디스크를 연결하면 데스크탑에 아이콘을 추가합니다"
+      },
+      "macos_finder_show-removable-media-on-desktop": {
+        "name": "데스크탑에 이동식 미디어 표시",
+        "description": "USB 드라이브, 디스크 등 이동식 장치를 데스크탑에 표시합니다"
+      },
+      "macos_dock_disable-launch-animation": {
+        "name": "Dock 실행 애니메이션 끄기",
+        "description": "앱을 실행할 때 아이콘이 튀어 오르는 애니메이션을 줄입니다"
+      },
+      "macos_dock_show-only-open-apps": {
+        "name": "Dock에 열린 앱만 표시",
+        "description": "실행 중이 아닌 고정 앱을 숨겨 Dock을 단순하게 만듭니다"
+      },
+      "macos_dock_dim-hidden-apps": {
+        "name": "가려진 앱 아이콘 흐리게 표시",
+        "description": "반투명 아이콘으로 현재 가려진 앱을 구분합니다"
+      },
+      "macos_mission-control_group-windows-by-app": {
+        "name": "Mission Control 윈도우를 앱별로 그룹화",
+        "description": "같은 앱의 윈도우를 Mission Control에서 함께 묶습니다"
+      },
+      "macos_keyboard_disable-press-and-hold": {
+        "name": "키를 길게 누르면 반복 입력",
+        "description": "악센트 문자 패널 대신 문자를 연속으로 입력합니다"
+      },
+      "macos_documents_save-locally": {
+        "name": "새 문서를 로컬에 저장",
+        "description": "새 문서를 저장할 때 iCloud 대신 Mac을 우선합니다"
+      },
+      "macos_printing_quit-after-finish": {
+        "name": "프린트 완료 시 대기열 종료",
+        "description": "남은 작업이 없으면 프린트 대기열을 자동으로 닫습니다"
+      },
+      "macos_finder_default-list-view": {
+        "name": "Finder 기본 보기를 목록으로 설정",
+        "description": "보기 설정이 저장되지 않은 폴더에 목록 보기를 사용합니다"
+      },
+      "macos_finder_folders-first-on-desktop": {
+        "name": "데스크탑 폴더를 항상 상단에 유지",
+        "description": "데스크탑을 정렬할 때 폴더를 파일보다 앞에 표시합니다"
+      },
+      "macos_finder_enable-quit-menu": {
+        "name": "Finder 종료 메뉴 표시",
+        "description": "필요할 때 Finder를 완전히 종료하고 다시 열 수 있게 합니다"
+      },
+      "macos_finder_remove-old-trash-items": {
+        "name": "오래된 휴지통 항목 자동 제거",
+        "description": "휴지통에 30일 이상 있던 항목을 삭제하며, 이후에는 휴지통에서 복원할 수 없습니다"
+      },
+      "macos_dock_remove-auto-hide-delay": {
+        "name": "Dock 자동 숨김 지연 제거",
+        "description": "포인터가 닿으면 Dock을 즉시 표시합니다"
+      },
+      "macos_dock_enable-magnification": {
+        "name": "Dock 확대 켜기",
+        "description": "포인터가 Dock 위를 지날 때 근처 앱 아이콘을 키웁니다"
+      },
+      "macos_window_disable-animations": {
+        "name": "윈도우 애니메이션 줄이기",
+        "description": "일부 열기 및 닫기 애니메이션을 꺼서 반응을 더 빠르게 합니다"
+      },
+      "macos_window_close-app-windows": {
+        "name": "앱 종료 시 윈도우 닫기",
+        "description": "다음에 앱을 시작할 때 이전 윈도우를 다시 열지 않습니다"
+      },
+      "macos_window_double-click-titlebar-minimize": {
+        "name": "제목 막대 이중 클릭으로 최소화",
+        "description": "제목 막대를 이중 클릭하면 확대/축소 대신 윈도우를 최소화합니다"
+      },
+      "macos_keyboard_use-standard-function-keys": {
+        "name": "F1–F12를 표준 기능 키로 사용",
+        "description": "밝기나 음량을 조절할 때는 Fn 키를 함께 누릅니다"
+      },
+      "macos_safari_show-full-url": {
+        "name": "Safari에 전체 웹 사이트 주소 표시",
+        "description": "현재 페이지의 전체 주소를 항상 표시합니다"
+      },
+      "macos_safari_disable-safe-download-auto-open": {
+        "name": "Safari 다운로드 자동 열기 중지",
+        "description": "macOS가 안전하다고 판단한 파일도 다운로드 후 자동으로 열지 않습니다"
+      },
+      "macos_safari_show-status-bar": {
+        "name": "Safari 상태 막대 표시",
+        "description": "링크를 가리키면 윈도우 하단에 대상 주소를 표시합니다"
+      },
+      "macos_safari_enable-develop-menu": {
+        "name": "Safari 개발자용 메뉴 켜기",
+        "description": "페이지 검사, 디버깅, 캐시 제어 도구를 표시합니다"
+      },
+      "macos_textedit_plain-text-default": {
+        "name": "텍스트 편집기 기본을 일반 텍스트로 설정",
+        "description": "새 텍스트 편집기 문서를 서식 없는 일반 텍스트로 만듭니다"
+      },
+      "macos_photos_disable-auto-open": {
+        "name": "기기 연결 시 사진 앱 열지 않기",
+        "description": "카메라, iPhone, 메모리 카드를 연결해도 사진 앱을 실행하지 않습니다"
+      },
+      "macos_privacy_disable-personalized-ads": {
+        "name": "Apple 개인 맞춤형 광고 끄기",
+        "description": "Apple이 계정 및 사용 정보로 광고를 맞춤화하지 않게 합니다"
+      },
+      "macos_sharing_disable-airdrop": {
+        "name": "AirDrop 받기 끄기",
+        "description": "주변 기기에서 보낸 콘텐츠를 검색하거나 받지 않습니다"
+      },
+      "macos_activity-monitor_show-all-processes": {
+        "name": "활성 상태 보기에 모든 프로세스 표시",
+        "description": "현재 사용자와 시스템이 실행한 프로세스를 기본으로 표시합니다"
+      },
+      "macos_app-store_enable-auto-updates": {
+        "name": "App Store 앱 자동 업데이트",
+        "description": "App Store가 설치된 앱의 업데이트를 자동으로 설치하도록 허용합니다"
+      },
+      "windows_explorer_show-status-bar": {
+        "name": "파일 탐색기 상태 표시줄 표시",
+        "description": "하단에 항목 수와 선택한 파일 정보를 표시합니다"
+      },
+      "windows_explorer_separate-process": {
+        "name": "폴더 창을 별도 프로세스로 실행",
+        "description": "약간의 메모리를 더 쓰는 대신 창 하나의 충돌 영향을 제한합니다"
+      },
+      "windows_explorer_restore-folders-at-login": {
+        "name": "로그인 후 폴더 창 복원",
+        "description": "로그아웃 전에 열어 둔 파일 탐색기 창을 다시 엽니다"
+      },
+      "windows_explorer_disable-sharing-wizard": {
+        "name": "고급 공유 설정 사용",
+        "description": "간단한 공유 마법사를 끄고 고급 권한으로 공유를 관리합니다"
+      },
+      "windows_taskbar_hide-badges": {
+        "name": "작업 표시줄 앱 배지 숨기기",
+        "description": "앱 아이콘에 읽지 않은 개수나 알림 표시를 표시하지 않습니다"
+      },
+      "windows_taskbar_disable-flashing": {
+        "name": "작업 표시줄 깜박임 끄기",
+        "description": "앱이 주의를 요청해도 작업 표시줄 아이콘을 깜박이지 않습니다"
+      },
+      "windows_taskbar_hide-window-sharing": {
+        "name": "작업 표시줄 창 공유 숨기기",
+        "description": "통화 중 작업 표시줄에서 창을 바로 공유하는 기능을 제공하지 않습니다"
+      },
+      "windows_taskbar_show-desktop-corner": {
+        "name": "작업 표시줄 바탕 화면 보기 모서리 켜기",
+        "description": "작업 표시줄 맨 오른쪽 모서리를 클릭해 바탕 화면을 빠르게 표시합니다"
+      },
+      "windows_personalization_disable-transparency": {
+        "name": "투명 효과 끄기",
+        "description": "시작 메뉴, 작업 표시줄, 시스템 화면의 반투명 렌더링을 줄입니다"
+      },
+      "windows_search_disable-highlights": {
+        "name": "검색 하이라이트 끄기",
+        "description": "Windows 검색에서 인기 콘텐츠와 제안을 제거합니다"
+      },
+      "windows_start_disable-recommendations": {
+        "name": "시작 메뉴 추천 끄기",
+        "description": "시작 메뉴의 팁, 바로 가기, 앱 제안을 줄입니다"
+      },
+      "windows_start_disable-account-notifications": {
+        "name": "시작 메뉴 계정 알림 끄기",
+        "description": "시작 메뉴에서 Microsoft 계정 및 동기화 제안을 숨깁니다"
+      },
+      "macos_finder_warn-before-empty-trash": {
+        "name": "휴지통 비우기 전 확인",
+        "description": "실수로 파일을 영구 삭제할 가능성을 줄입니다"
+      },
+      "macos_dock_enable-spring-loading": {
+        "name": "드래그 중 대상 자동 열기",
+        "description": "Dock의 폴더나 앱 위로 드래그하면 자동으로 펼칩니다"
+      },
+      "macos_dock_scroll-to-expose": {
+        "name": "Dock 아이콘 스크롤로 윈도우 표시",
+        "description": "앱 아이콘에서 위로 스크롤해 해당 앱의 모든 윈도우를 봅니다"
+      },
+      "macos_dock_fast-auto-hide-animation": {
+        "name": "Dock 자동 숨김 속도 높이기",
+        "description": "Dock을 표시하거나 숨길 때 애니메이션 지연을 줄입니다"
+      },
+      "macos_safari_disable-search-suggestions": {
+        "name": "Safari 검색 제안 끄기",
+        "description": "입력한 내용을 검색 제안 서비스에 덜 보냅니다"
+      },
+      "macos_safari_disable-top-hit-preload": {
+        "name": "Safari 상위 검색 결과 미리 로드 끄기",
+        "description": "확인하기 전에는 첫 번째 검색 결과를 로드하지 않습니다"
+      },
+      "macos_text_disable-text-completion": {
+        "name": "텍스트 완성 끄기",
+        "description": "입력 중 시스템이 텍스트를 완성하지 않게 합니다"
+      },
+      "macos_text_disable-inline-predictions": {
+        "name": "인라인 예측 끄기",
+        "description": "커서 뒤에 예측 텍스트를 표시하지 않습니다"
+      },
+      "macos_sound_disable-volume-feedback": {
+        "name": "음량 피드백 사운드 끄기",
+        "description": "음량을 조절할 때 소리를 재생하지 않습니다"
+      },
+      "macos_time-machine_hide-new-disk-prompts": {
+        "name": "새 디스크 백업 제안 숨기기",
+        "description": "새로 연결한 디스크를 Time Machine에 사용할지 묻지 않습니다"
+      },
+      "macos_security_require-password-after-sleep": {
+        "name": "잠자기 해제 후 암호 요구",
+        "description": "잠자기에서 깨어나거나 화면 보호기를 해제할 때 인증을 요구합니다"
+      },
+      "macos_security_lock-immediately-after-sleep": {
+        "name": "잠자기 해제 즉시 암호 요구",
+        "description": "잠자기나 화면 보호기 이후 암호 없이 쓸 수 있는 유예 시간을 두지 않습니다"
+      },
+      "windows_explorer_confirm-file-delete": {
+        "name": "파일 삭제 전 확인",
+        "description": "파일을 삭제하거나 휴지통으로 이동하기 전에 확인 창을 표시합니다"
+      },
+      "windows_explorer_use-manual-default-printer": {
+        "name": "선택한 기본 프린터 유지",
+        "description": "Windows가 최근에 사용한 프린터에 따라 기본 프린터를 바꾸지 않게 합니다"
+      },
+      "windows_taskbar_show-on-all-displays": {
+        "name": "모든 디스플레이에 작업 표시줄 표시",
+        "description": "다중 디스플레이 환경에서 모든 화면에 작업 표시줄을 유지합니다"
+      },
+      "windows_gaming_disable-game-bar-controller": {
+        "name": "컨트롤러로 게임 바 열지 않기",
+        "description": "컨트롤러 버튼으로 게임 바가 실수로 열리지 않게 합니다"
+      },
+      "windows_gaming_disable-game-bar-tips": {
+        "name": "게임 바 팁 끄기",
+        "description": "게임 바 기능과 녹화 제안을 숨깁니다"
+      },
+      "windows_gaming_disable-dynamic-lighting": {
+        "name": "Windows 동적 조명 끄기",
+        "description": "RGB가 필요 없을 때 조명 제어와 백그라운드 활동을 줄입니다"
+      },
+      "windows_gaming_disable-app-lighting-control": {
+        "name": "앱의 동적 조명 제어 중지",
+        "description": "포그라운드 앱이 장치 조명을 제어하지 못하게 합니다"
+      },
+      "windows_start_hide-recently-added-apps": {
+        "name": "최근에 추가된 앱 숨기기",
+        "description": "시작 메뉴에서 새로 설치한 앱을 강조하지 않습니다"
+      },
+      "windows_start_hide-most-used-apps": {
+        "name": "가장 많이 사용하는 앱 숨기기",
+        "description": "시작 메뉴에 앱 사용 패턴을 드러내지 않습니다"
+      },
+      "windows_start_hide-recent-items": {
+        "name": "최근에 연 항목 숨기기",
+        "description": "시작 메뉴나 점프 목록에 최근 파일을 표시하지 않습니다"
+      },
+      "windows_edge_limit-diagnostic-data": {
+        "name": "Edge 필수 진단 데이터만 보내기",
+        "description": "선택적 브라우저 사용 및 웹 사이트 진단 데이터를 보내지 않습니다"
+      },
+      "windows_security_disable-autorun": {
+        "name": "모든 드라이브 자동 실행 끄기",
+        "description": "미디어를 삽입할 때 프로그램이 자동으로 실행되지 않게 합니다"
+      },
+      "windows_network_disable-llmnr": {
+        "name": "LLMNR 로컬 이름 확인 끄기",
+        "description": "로컬 멀티캐스트 이름 확인을 꺼서 스푸핑과 자격 증명 노출 위험을 줄입니다"
+      },
+      "windows_update_enable-microsoft-product-updates": {
+        "name": "다른 Microsoft 제품 업데이트",
+        "description": "Windows 업데이트를 통해 Office 등 다른 제품의 업데이트를 받습니다"
+      },
+      "windows_update_enable-restart-notifications": {
+        "name": "업데이트에 다시 시작이 필요할 때 알림",
+        "description": "업데이트를 완료하려면 다시 시작해야 할 때 명확한 알림을 표시합니다"
+      },
+      "windows_explorer_hide-shortcut-arrows": {
+        "name": "바로 가기 화살표 숨기기",
+        "description": "바탕 화면과 파일 탐색기의 바로 가기 화살표를 숨기며, 다시 표시할 수도 있습니다. 관리자 승인이 필요하고 모든 사용자에게 적용되며 Windows를 다시 시작한 후 반영됩니다. 다른 도구가 화살표를 설정한 경우에는 사용할 수 없습니다"
+      }
+    }
+  },
+  "applicationClose": {
+    "title": "실행 중인 앱 닫기(선택 사항)",
+    "selectAll": "모두 선택",
+    "clearAll": "모두 해제",
+    "processCount": "관련 프로세스 {count}개",
+    "closing": "선택한 앱이 닫힐 때까지 기다리는 중…",
+    "closeSelectedAndContinue": "앱 {count}개 닫고 계속",
+    "skipAndContinue": "건너뛰고 계속",
+    "normalCloseFailed": "기다린 뒤에도 일부 앱이 아직 실행 중입니다",
+    "forceWarning": "강제 종료하면 저장하지 않은 문서나 편집 내용이 사라질 수 있습니다. 계속하기 전에 작업이 저장되었는지 확인하세요",
+    "forceAndContinue": "강제 종료하고 계속"
+  },
+  "startup": {
+    "title": "시작 항목",
+    "scan": "시작 항목 스캔",
+    "rescan": "다시 스캔",
+    "scanning": "시작 항목 찾는 중",
+    "scanningDescription": "자동으로 시작되는 앱과 서비스를 찾고 있습니다. 이 스캔은 설정을 변경하지 않습니다",
+    "cancelling": "취소 중…",
+    "emptyTitle": "자동으로 시작되는 앱 관리",
+    "emptyDescription": "자동으로 시작되는 항목을 확인하고 필요에 따라 켜거나 끌 수 있습니다",
+    "noMatchesTitle": "일치하는 시작 항목이 없습니다",
+    "noMatchesDescription": "다른 검색어나 필터를 사용해 보세요",
+    "searchPlaceholderCompact": "프로그램 또는 게시자 검색",
+    "filterLabel": "상태별 시작 항목 필터",
+    "showSystemItems": "시스템 항목 표시",
+    "itemCount": "{count}개 항목",
+    "remainingResults": "결과 {count}개 더 있음",
+    "valueSeparator": ", ",
+    "mixedSources": "여러 유형",
+    "serviceStillRunning": "자동 시작 꺼짐, 아직 실행 중",
+    "viewDetails": "{name} 시작 세부 정보 보기",
+    "showLocation": "폴더에서 보기",
+    "showNamedLocation": "{name}의 폴더 보기",
+    "copyToClipboard": "클립보드에 복사",
+    "copyConfiguration": "{name}의 시작 구성 복사",
+    "copyCommand": "{name}의 실행 명령 복사",
+    "copiedToClipboard": "클립보드에 복사됨",
+    "noManageableTitle": "관리할 수 있는 시작 항목이 없습니다",
+    "noManageableDescription": "켜거나 끌 수 있는 프로그램을 찾지 못했습니다",
+    "summary": {
+      "programs": "{count}개 앱이 자동으로 시작됩니다",
+      "permissionRequired": "시작 항목을 더 보려면 전체 디스크 접근 권한을 켜세요",
+      "openPrivacySettings": "전체 디스크 접근 권한 설정 열기",
+      "enabled": "켜짐"
+    },
+    "permission": {
+      "title": "일부 시작 항목이 표시되지 않습니다",
+      "description": "더 많은 시작 항목을 스캔하려면 전체 디스크 접근 권한을 켜세요",
+      "instructions": "시스템 설정에서 MangoDisk의 전체 디스크 접근 권한을 켠 다음 돌아와서 다시 스캔하세요",
+      "skip": "나중에",
+      "openSettings": "시스템 설정 열기"
+    },
+    "filters": {
+      "all": "전체",
+      "enabled": "켜짐",
+      "disabled": "꺼짐",
+      "leftover": "잔여 항목"
+    },
+    "sourceKinds": {
+      "registryRun": "레지스트리 시작",
+      "startupFolder": "시작 프로그램 폴더",
+      "scheduledTask": "예약된 작업",
+      "service": "서비스",
+      "packagedStartupTask": "Store 앱 작업",
+      "launchAgent": "사용자 백그라운드 항목",
+      "launchDaemon": "시스템 백그라운드 항목",
+      "loginItem": "로그인 시 열리는 앱",
+      "backgroundTask": "백그라운드 로그인 항목",
+      "embeddedItem": "앱 제공 시작 항목",
+      "advancedAutoRun": "고급 자동 실행"
+    },
+    "configuredStates": {
+      "mixed": "일부 켜짐",
+      "enabled": "켜짐",
+      "disabled": "꺼짐",
+      "removed": "제거됨",
+      "unknown": "상태 알 수 없음",
+      "notApplicable": "해당 없음"
+    },
+    "runtimeStates": {
+      "running": "실행 중",
+      "stopped": "중지됨",
+      "loaded": "로드됨",
+      "unloaded": "로드되지 않음",
+      "unknown": "알 수 없음"
+    },
+    "trustStates": {
+      "system": "시스템 구성 요소",
+      "verified": "유효한 서명",
+      "invalid": "잘못된 서명",
+      "unsigned": "서명 없음",
+      "unknown": "알 수 없음"
+    },
+    "scopes": {
+      "currentUser": "현재 사용자",
+      "user": "사용자",
+      "allUsers": "모든 사용자",
+      "machine": "컴퓨터",
+      "system": "시스템"
+    },
+    "diagnostics": {
+      "accessDenied": "접근이 거부되었습니다",
+      "invalidData": "구성 데이터가 잘못되었습니다",
+      "missingIdentity": "프로그램 식별 정보가 없습니다",
+      "missingTarget": "대상 파일이 없습니다",
+      "stateUnavailable": "현재 상태를 확인할 수 없습니다",
+      "unsupportedFormat": "이 구성 형식은 지원되지 않습니다"
+    },
+    "change": {
+      "title": "변경 확인",
+      "checking": "시작 항목 확인 중…",
+      "descriptions": {
+        "enabled": "시작 항목 {count}개 켜기",
+        "disabled": "시작 항목 {count}개 끄기",
+        "removed": "시작 항목 {count}개 삭제"
+      },
+      "batchName": "시작 항목 {count}개",
+      "enableNamedGroup": "{name} 켜기",
+      "disableNamedGroup": "{name} 끄기",
+      "futureOnly": "자동 시작을 꺼도 이미 실행 중인 프로그램이나 서비스는 중지되지 않습니다",
+      "requiresElevation": "관리자 권한 필요",
+      "authorizationPromptMacos": "시작 설정을 변경하려면 MangoDisk에 관리자 권한이 필요합니다",
+      "confirm": "확인",
+      "applying": "적용 중…",
+      "refreshFailedResult": "작업은 완료되었지만 목록을 업데이트할 수 없습니다. 다시 스캔하세요",
+      "enableSuccessResult": "“{name}”의 자동 시작을 켰습니다",
+      "disableSuccessResult": "“{name}”의 자동 시작을 껐습니다",
+      "batchEnableSuccessResult": "시작 항목 {count}개를 켰습니다",
+      "batchDisableSuccessResult": "시작 항목 {count}개를 껐습니다",
+      "partialEnableResult": "“{name}”의 항목 {changed}개를 켰고 {failed}개는 실패했습니다",
+      "partialDisableResult": "“{name}”의 항목 {changed}개를 껐고 {failed}개는 실패했습니다",
+      "batchPartialEnableResult": "시작 항목 {changed}개를 켰고 {failed}개는 실패했습니다",
+      "batchPartialDisableResult": "시작 항목 {changed}개를 껐고 {failed}개는 실패했습니다",
+      "warnings": {
+        "affectsOtherTriggers": "이 예약된 작업에는 시작 외의 트리거도 있어 끄면 작업 전체에 영향을 줍니다",
+        "itemCurrentlyRunning": "이 항목은 현재 실행 중이며 이 변경으로는 중지되지 않습니다"
+      },
+      "skipReasons": {
+        "alreadyInDesiredState": "이미 요청한 상태입니다",
+        "catalogExpired": "스캔 세션이 만료되었습니다. 다시 스캔하세요",
+        "itemChanged": "스캔 후 시스템 구성이 변경되었습니다",
+        "itemMissing": "항목이 더 이상 존재하지 않습니다",
+        "stateUnknown": "구성된 상태를 확인할 수 없습니다",
+        "unsupportedCapability": "이 소스는 보기 전용이거나 시스템에서 관리합니다",
+        "requiresElevation": "관리자 권한이 필요합니다",
+        "targetUnavailable": "프로그램이 없거나 시작 구성이 잘못되었습니다"
+      }
+    },
+    "remove": {
+      "action": "시작 항목 삭제",
+      "title": "시작 항목 삭제",
+      "guidance": "시작 설정만 삭제되며 앱 파일은 그대로 남습니다",
+      "confirm": "삭제",
+      "successResult": "“{name}”의 시작 항목을 삭제했습니다",
+      "partialResult": "“{name}”의 항목 {changed}개를 삭제했고 {failed}개는 실패했습니다"
+    },
+    "cleanup": {
+      "manualGuidance": "더 이상 쓰이지 않는 항목이지만 안전한 제거를 위해 시스템 도구에서 처리해야 합니다",
+      "openTools": {
+        "services": "서비스 열기",
+        "taskScheduler": "작업 스케줄러 열기"
+      }
+    },
+    "detail": {
+      "timing": "시작 시점",
+      "description": "설명",
+      "version": "버전",
+      "systemManaged": "이 항목은 시스템에서 관리합니다. 시스템 설정의 로그인 항목 및 확장 프로그램에서 변경하세요",
+      "viewOnly": "이 항목은 볼 수만 있으며 MangoDisk에서 직접 변경할 수 없습니다",
+      "protectedService": "이 서비스는 Windows에서 보호하므로 여기에서 변경할 수 없습니다",
+      "openLoginItemsSettings": "로그인 항목 설정 열기",
+      "source": "시작 유형",
+      "startTiming": {
+        "boot": "컴퓨터 시작 후 실행",
+        "userLogon": "로그인 후 실행",
+        "background": "백그라운드에서 계속 실행",
+        "automatic": "필요할 때 자동 실행"
+      },
+      "configuration": "시작 구성",
+      "command": "실행 명령",
+      "runtime": "현재 실행 상태",
+      "trust": "디지털 서명",
+      "modified": "구성 수정일",
+      "diagnostics": "확인 필요"
+    }
+  },
+  "common": {
+    "decreaseValue": "{label} 줄이기",
+    "increaseValue": "{label} 늘리기",
+    "copy": "복사",
+    "copied": "복사됨",
+    "copyFailed": "복사할 수 없습니다. 다시 시도하세요",
+    "cancel": "취소",
+    "close": "닫기",
+    "open": "열기",
+    "showInFileManager": "파일 관리자에서 보기",
+    "deletePermanently": "영구 삭제",
+    "minimize": "최소화",
+    "maximize": "최대화",
+    "restore": "복원",
+    "expandSidebar": "사이드바 펼치기",
+    "collapseSidebar": "사이드바 접기",
+    "safe": "낮은 위험",
+    "operationFailed": "작업 실패",
+    "loadMore": "더 보기",
+    "filterFileCategory": "파일 유형으로 필터",
+    "estimatedRelease": "확보 예상 공간",
+    "limitedResults": "가장 큰 결과만 표시합니다. 일부 항목은 목록에 없습니다",
+    "fileCount": "{count}개 파일",
+    "itemCount": "{count}개 항목",
+    "locationCount": "{count}개 위치"
+  },
+  "errors": {
+    "operationBusy": "디스크 속도 저하를 막기 위해 현재 작업이 끝날 때까지 기다리거나, 취소한 뒤 다시 시도하세요",
+    "invalidInput": "잘못된 요청입니다. 선택한 항목을 확인하고 다시 시도하세요",
+    "operationCancelled": "작업이 취소되었습니다",
+    "operationFailed": "작업을 완료할 수 없습니다. 다시 시도하세요",
+    "permissionDenied": "MangoDisk에 이 작업을 완료할 권한이 없습니다",
+    "persistenceFailed": "MangoDisk가 작업 데이터를 저장하지 못했습니다. 다시 시도하세요",
+    "taskJoinFailed": "백그라운드 작업이 예기치 않게 중단되었습니다. 다시 시도하세요"
+  },
+  "errorTitles": {
+    "invalidInput": "선택 항목을 확인하세요",
+    "operationBusy": "다른 디스크 작업 실행 중",
+    "operationCancelled": "작업 취소됨",
+    "operationFailed": "작업 실패",
+    "permissionDenied": "권한 필요",
+    "persistenceFailed": "데이터 저장 실패",
+    "taskJoinFailed": "백그라운드 작업 중단됨"
+  },
+  "errorReasons": {
+    "folderSelectionLimitExceeded": {
+      "title": "선택한 폴더가 너무 많습니다",
+      "message": "한 번에 폴더를 64개까지만 선택한 뒤 다시 시도하세요"
+    },
+    "folderUnavailable": {
+      "title": "선택한 폴더를 사용할 수 없습니다",
+      "message": "선택한 항목 중 일부는 접근 가능한 폴더가 아닙니다. 권한, 공유 폴더 연결, 링크 대상을 확인한 뒤 폴더를 다시 선택하세요"
+    },
+    "resourceBusy": {
+      "title": "항목이 사용 중입니다",
+      "message": "이 항목이 파일 탐색기나 다른 앱에서 열려 있습니다. 관련 창이나 앱을 닫고 다시 시도하세요"
+    },
+    "accessDeniedOrBusy": {
+      "title": "항목에 접근할 수 없습니다",
+      "message": "시스템이 접근을 거부했습니다. 항목이 사용 중이거나 더 높은 권한이 필요할 수 있습니다. 관련 앱을 닫고 다시 시도하세요"
+    },
+    "itemChanged": {
+      "title": "항목이 방금 변경되었습니다",
+      "message": "삭제를 준비하는 동안 이 항목이 변경되었습니다. 잘못된 내용을 삭제하지 않도록 MangoDisk가 작업을 중단했습니다. 다시 분석하세요"
+    },
+    "scanResourcesReleasing": {
+      "title": "이전 스캔을 마무리하는 중입니다",
+      "message": "시스템이 이전 디스크 스캔의 리소스를 해제하고 있습니다. 잠시 후 다시 시도하세요"
+    },
+    "quickScanUnavailable": {
+      "title": "빠른 스캔을 사용할 수 없습니다",
+      "message": "이 위치에서는 Spotlight가 준비되지 않았습니다. 대신 전체 스캔을 사용하세요"
+    }
+  },
+  "folderPicker": {
+    "commonFolders": "자주 쓰는 폴더",
+    "standardFolders": {
+      "downloads": "다운로드",
+      "documents": "문서",
+      "pictures": "사진",
+      "videos": "동영상",
+      "music": "음악"
+    }
+  },
+  "scanScope": {
+    "label": "분석 범위",
+    "chooseFolder": "폴더 선택…",
+    "removeFolder": "기록에서 {name} 제거"
+  },
+  "overview": {
+    "startScan": "스캔 시작",
+    "rescan": "다시 스캔"
+  },
+  "cleanup": {
+    "title": "심층 정리",
+    "diskUsageSummary": "{available} 사용 가능",
+    "diskUsageDetails": "{name}: 사용 중 {used}, 사용 가능 {available}, 전체 {total}",
+    "diskUsageUsedLabel": "사용 중",
+    "diskUsageAvailableLabel": "사용 가능",
+    "diskUsageTotalLabel": "전체 용량",
+    "selected": "선택됨",
+    "totalSize": "전체 {size}",
+    "selectAll": "모두 선택",
+    "selectRule": "정리 항목 선택: {name}",
+    "privilegedScan": {
+      "required": "미확인",
+      "sizePending": "관리자 권한 필요",
+      "action": "관리자 확인",
+      "checking": "확인 중…"
+    },
+    "categoryItemCount": "{count}개 항목",
+    "categoryTitles": {
+      "custom": "사용자 지정 정리",
+      "system": "시스템 캐시",
+      "userCache": "사용자 캐시 파일",
+      "application": "앱 캐시",
+      "browser": "브라우저 데이터",
+      "development": "개발자 도구",
+      "project": "프로젝트 빌드 산출물",
+      "xcode": "Xcode 데이터",
+      "applicationOptimization": "앱 최적화",
+      "ai": "AI 모델 및 캐시",
+      "container": "컨테이너 캐시"
+    },
+    "categoryDescriptions": {
+      "custom": "지정한 폴더와 조건으로 찾은 파일",
+      "system": "임시 파일, 진단 데이터, 시스템 캐시",
+      "userCache": "사용자 폴더에 있는 앱 및 개발자 도구 캐시",
+      "application": "앱이 만든 캐시와 임시 콘텐츠",
+      "browser": "브라우저가 만든 임시 웹사이트 데이터",
+      "development": "개발자 도구의 임시 다운로드, 색인, 캐시",
+      "project": "프로젝트가 다시 만들 수 있는 의존성과 빌드 출력",
+      "xcode": "Xcode가 만든 기기 지원 파일, 아카이브, 개발 데이터",
+      "applicationOptimization": "이 Mac에서 쓰지 않는 프로세서 아키텍처용 앱 코드를 제거해 정상 동작에 영향 없이 저장 공간을 줄입니다",
+      "ai": "다운로드한 AI 모델과 임시 전송 파일",
+      "container": "컨테이너 도구의 사용하지 않는 빌드 캐시"
+    },
+    "selectSource": "정리 위치 선택: {path}",
+    "selectionState": {
+      "all": "모든 하위 항목 선택됨",
+      "partial": "일부 하위 항목 선택됨",
+      "none": "선택 안 함"
+    },
+    "selectionMode": {
+      "label": "선택",
+      "smart": "스마트 추천",
+      "all": "모두 선택",
+      "none": "모두 해제",
+      "manual": "직접 선택"
+    },
+    "estimated": "정리 가능 예상 데이터",
+    "selectedSummary": "선택한 항목",
+    "clean": "정리",
+    "scanFirst": "정리할 항목 찾기",
+    "emptyDescription": "시스템 및 앱 캐시, 로그, 임시 파일을 스캔해 정리할 데이터를 찾습니다",
+    "planDialogTitle": "정리 확인",
+    "adjustSelection": "선택으로 돌아가기",
+    "execute": "정리 시작",
+    "actualReleased": "제거한 데이터",
+    "resultDescription": "정리 항목, 데이터 양, 결과를 확인합니다",
+    "cancelledResultDescription": "완료된 항목은 정리된 상태로 남고, 아직 시작하지 않은 항목은 건너뛰었습니다",
+    "previewCompleted": "확인 완료",
+    "previewPassed": "확인 완료. 삭제된 파일 없음",
+    "completed": "정리 완료",
+    "completedWithWarnings": "경고와 함께 정리 완료",
+    "completedDescription": "{count}개 항목을 처리하고 {size}를 제거했습니다. {failed}개는 건너뛰거나 실패했습니다",
+    "cancelled": "정리 취소됨",
+    "processedItems": "처리된 항목",
+    "failedItems": "건너뜀 또는 실패",
+    "cleanableFound": "정리 가능 항목",
+    "summaryCount": "정리 가능 항목 {count}개 발견",
+    "summarySpace": "정리 가능 예상 데이터",
+    "emptyCleanTitle": "컴퓨터가 깨끗한 상태입니다",
+    "emptyCleanDescription": "정리할 항목이 없습니다 — 계속 유지하세요",
+    "selectedItemCount": "{count}개 항목 선택됨",
+    "closeAppsBeforeCleanup": "먼저 작업을 저장하세요. 선택한 앱은 정리 전에 닫히며, 아직 사용 중인 항목은 건너뜁니다",
+    "requiresCloseProcesses": "닫을 앱: {processes}",
+    "applicationComponentCount": "최적화할 항목이 없습니다 | 최적화할 수 있는 항목 {count}개 | 최적화할 수 있는 항목 {count}개",
+    "sourceRequiresClose": "정리 전에 앱을 닫으세요",
+    "sourceAccessLimited": "전체를 읽을 수 없어 제외되었습니다",
+    "sourceFiles": "파일 {count}개",
+    "sourceModified": "마지막 수정 {time}",
+    "aggregateOnlyDetails": "정리 범위, 항목 수, 전체 크기만 확인할 수 있으며 개별 파일은 나열할 수 없습니다",
+    "scanMode": {
+      "label": "스캔 유형 선택",
+      "standard": "표준 스캔",
+      "standardDescription": "현재 사용자의 정리 항목과 개발 프로젝트를 확인합니다",
+      "selectVolumes": "디스크 선택",
+      "selectVolumesDescription": "다른 디스크에서 더 많은 개발 프로젝트를 찾습니다",
+      "custom": "사용자 지정 정리",
+      "customDescription": "지정한 폴더와 조건으로 정리할 파일을 찾습니다",
+      "volumeDialogTitle": "검색할 디스크 선택",
+      "volumeDialogDescription": "시스템 디스크는 항상 스캔합니다. 개발 프로젝트와 빌드 파일을 찾을 다른 디스크를 선택하세요",
+      "systemVolume": "시스템 · 항상 스캔",
+      "volumeCapacity": "{total} 중 {available} 사용 가능",
+      "noVolumes": "사용할 수 있는 디스크가 없습니다",
+      "selectedVolumeCount": "디스크 {count}개 선택됨",
+      "startSelectedScan": "스캔 시작"
+    },
+    "customCleanup": {
+      "noAvailableDirectories": "스캔할 수 있는 폴더가 없습니다",
+      "restoreDirectoriesHint": "폴더를 복원하고 다시 스캔하거나 사용자 지정 규칙을 편집하세요",
+      "editRules": "규칙 편집",
+      "missingDirectoriesSkipped": "없는 폴더 {count}개 건너뜀",
+      "title": "사용자 지정 정리",
+      "description": "폴더와 파일 조건을 선택하세요",
+      "addRule": "규칙 추가",
+      "copyRule": "규칙 복제",
+      "ruleCopyName": "{name} 복사본",
+      "untitledRule": "제목 없는 규칙 {index}",
+      "directoryCount": "폴더 {count}개",
+      "ruleName": "규칙 이름",
+      "ruleNamePlaceholder": "예: 오래된 로그 파일",
+      "ruleNameRequired": "규칙 이름을 입력하세요",
+      "directories": "스캔할 폴더",
+      "chooseDirectories": "폴더 선택",
+      "dropDirectories": "또는 폴더를 여기에 놓으세요",
+      "directoriesRequired": "스캔할 폴더를 하나 이상 선택하세요",
+      "removeDirectory": "폴더 제거",
+      "patterns": "파일 이름",
+      "patternsPlaceholder": "예: *.log, *.tmp",
+      "patternsHint": "파일 이름에 * 또는 ?를 사용할 수 있습니다. 여러 패턴은 쉼표로 구분하세요",
+      "patternsRequired": "파일 이름 패턴을 하나 이상 입력하세요",
+      "patternsInvalid": "와일드카드 형식을 확인하세요",
+      "viewPatternExamples": "예시 보기",
+      "patternExamplesTitle": "파일 이름 와일드카드 예시",
+      "patternExampleExtension": "모든 .log 파일과 일치",
+      "patternExampleCharacter": "?는 문자 하나와 일치",
+      "patternExampleMultiple": "두 파일 유형 중 하나와 일치",
+      "minimumSize": "최소 크기(MB)",
+      "maximumSize": "최대 크기(MB)",
+      "sizeRangeInvalid": "최소 크기보다 작을 수 없습니다",
+      "noLimit": "제한 없음",
+      "modifiedTime": "파일 수정 날짜",
+      "modifiedAny": "전체 기간",
+      "modifiedOlder": "미수정 기간(이상)",
+      "modifiedNewer": "최근 수정 기간(이내)",
+      "modifiedTimeInvalid": "1–3650일 사이로 입력하세요",
+      "days": "일",
+      "includeSubdirectories": "하위 폴더 포함",
+      "includeSubdirectoriesDescription": "끄면 선택한 각 폴더 바로 안에 있는 파일만 검사합니다",
+      "removeEmptyDirectories": "빈 폴더 제거",
+      "removeEmptyDirectoriesDescription": "정리 후 선택한 폴더 안의 빈 하위 폴더를 제거합니다. 선택한 폴더 자체는 유지됩니다",
+      "removeRule": "이 규칙 삭제",
+      "empty": "아직 사용자 지정 규칙이 없습니다",
+      "includeStandardRules": "표준 스캔도 함께 실행",
+      "save": "저장",
+      "saveAndScan": "저장하고 스캔"
+    }
+  },
+  "analysis": {
+    "title": "디스크 공간 분석",
+    "pathLabel": "현재 위치",
+    "start": "분석 시작",
+    "analyzing": "폴더 스캔 중…",
+    "rescan": "다시 분석",
+    "result": "현재 폴더",
+    "treemap": "트리맵",
+    "treemapRemainder": "작은 항목 · {count}개",
+    "treemapRemainderHint": "작은 항목 {count}개가 총 {size}를 사용합니다. 자세한 내용은 목록에서 확인할 수 있습니다",
+    "details": "목록",
+    "back": "뒤로",
+    "forward": "앞으로",
+    "home": "분석 시작 위치로 돌아가기",
+    "localDisk": "로컬 디스크",
+    "name": "이름",
+    "size": "크기",
+    "fileCount": "파일",
+    "modified": "마지막 수정일",
+    "sortAscending": "오름차순 정렬",
+    "sortDescending": "내림차순 정렬",
+    "sortColumn": "{column}: {direction}",
+    "deleteTitle": "이 항목을 영구 삭제하시겠습니까?",
+    "deleteDescription": "파일 또는 폴더가 즉시 삭제되며 복구할 수 없습니다",
+    "deleteAction": "영구 삭제",
+    "emptyTitle": "디스크 공간을 무엇이 쓰는지 확인하세요",
+    "emptyDescription": "선택한 위치에서 파일과 폴더가 공간을 어떻게 사용하는지 분석합니다",
+    "folderFileSummary": "폴더 {folders}개 · 파일 {files}개",
+    "folderSpaceSummary": "폴더 {folders}개 · {size}"
+  },
+  "largeFiles": {
+    "title": "대용량 파일 정리",
+    "start": "스캔 시작",
+    "rescan": "다시 스캔",
+    "emptyTitle": "대용량 파일 찾기",
+    "emptyDescription": "선택한 위치에서 {size} 이상인 파일을 스캔합니다",
+    "fileName": "파일 이름",
+    "location": "경로",
+    "size": "크기",
+    "minimumSize": "최소 크기",
+    "modified": "수정일",
+    "noResults": "이 범위에 일치하는 대용량 파일이 없습니다",
+    "noResultsDescription": "크기 기준을 낮추거나, 파일 유형을 바꾸거나, 다른 스캔 범위를 선택하세요",
+    "summaryCount": "{size} 이상인 파일 {count}개 발견",
+    "summarySpace": "사용 중",
+    "scanning": "대용량 파일 스캔 중…",
+    "scanMode": {
+      "label": "스캔 방식 선택",
+      "quick": "빠른 스캔",
+      "quickDescription": "Spotlight를 사용해 빠르지만 아직 색인되지 않은 파일은 놓칠 수 있습니다",
+      "complete": "전체 스캔",
+      "completeDescription": "선택한 위치를 직접 탐색해 더 완전한 결과를 제공합니다",
+      "quickHint": "Spotlight로 검색하는 중입니다. 아직 색인되지 않은 파일은 누락될 수 있습니다",
+      "completeHint": "선택한 위치를 스캔하는 중입니다. 소요 시간은 파일 수에 따라 다릅니다"
+    },
+    "exclusions": {
+      "trigger": "제외된 폴더",
+      "title": "제외된 폴더",
+      "description": "이 폴더에 있는 파일은 대용량 파일 스캔 결과에서 제외됩니다",
+      "chooseFolders": "제외할 폴더 선택",
+      "folderCount": "폴더 {count}개 제외됨",
+      "addFolder": "폴더 추가",
+      "addingFolder": "추가 중…",
+      "removeFolder": "이 폴더 제거",
+      "emptyTitle": "클릭해서 폴더를 추가하거나 여기로 끌어다 놓으세요",
+      "emptyDescription": "빠른 스캔과 전체 스캔 모두 이 폴더를 건너뜁니다",
+      "systemProtectionNote": "시스템 보호 폴더는 항상 건너뜁니다",
+      "limitReached": "최대 {count}개 폴더까지 제외할 수 있습니다",
+      "save": "저장",
+      "saving": "저장 중…",
+      "saveAndScan": "저장하고 다시 스캔"
+    },
+    "deleteConfirmTitle": "이 파일을 영구 삭제하시겠습니까?",
+    "deleteConfirmDescription": "이 작업은 되돌릴 수 없습니다",
+    "deleteConfirmAction": "영구 삭제",
+    "selected": "선택됨",
+    "selectAll": "모든 결과 선택",
+    "batchDelete": "영구 삭제",
+    "batchDeleteTitle": "선택한 대용량 파일을 영구 삭제하시겠습니까?",
+    "batchDeleteDescription": "선택한 파일은 복구할 수 없습니다",
+    "deleteSafetyNote": "변경되었거나 사용할 수 없게 된 파일은 자동으로 건너뜁니다",
+    "deleteCompleted": "대용량 파일 정리 완료",
+    "deleteCompletedWithWarnings": "경고와 함께 대용량 파일 정리 완료",
+    "deleteCompletedDescription": "파일 {count}개를 삭제하고 {size}를 확보했습니다. {failed}개 실패"
+  },
+  "fileCategories": {
+    "all": "전체",
+    "video": "동영상",
+    "audio": "오디오",
+    "document": "문서",
+    "archive": "압축 파일",
+    "image": "이미지",
+    "aiModel": "AI 모델",
+    "other": "기타"
+  },
+  "duplicateFiles": {
+    "title": "중복 파일 정리",
+    "start": "스캔 시작",
+    "rescan": "다시 스캔",
+    "emptyTitle": "중복 파일 찾기",
+    "emptyDescription": "선택한 위치에서 {size} 이상인 파일을 스캔해 내용이 동일한 복사본을 찾습니다",
+    "scanning": "중복 파일 찾는 중…",
+    "validatingCandidates": "일치 가능 항목 확인 중…",
+    "comparingContents": "파일 내용 비교 중…",
+    "discoveredLogicalData": "발견한 논리 데이터",
+    "verifiedContentData": "읽은 콘텐츠 데이터",
+    "scanHint": "파일은 내용으로 비교합니다. 대용량 파일은 필요할 때만 전체를 읽습니다",
+    "deleteCompleted": "중복 파일 정리 완료",
+    "deleteCompletedWithWarnings": "경고와 함께 중복 파일 정리 완료",
+    "deleteCompletedDescription": "중복 파일 {count}개를 삭제하고 {size}를 확보했습니다. {failed}개 실패",
+    "summaryCount": "중복 그룹 {count}개 발견",
+    "summaryReclaimable": "최대 회수 가능",
+    "summaryReclaimableScanning": "지금까지 회수 가능",
+    "minimumSize": "최소 파일 크기",
+    "smartSelect": "스마트 선택",
+    "smartSelectMenuLabel": "스마트 선택 방식",
+    "smartSelectSafetyHint": "각 그룹에 파일이 하나 이상 남습니다. 방식을 바꾸면 선택이 다시 생성됩니다",
+    "keeperRuleLabels": {
+      "shortestPath": "경로가 가장 짧은 파일 유지",
+      "shortestName": "이름이 가장 짧은 파일 유지",
+      "oldestModified": "가장 먼저 수정된 파일 유지",
+      "newestModified": "가장 최근에 수정된 파일 유지"
+    },
+    "clearSelection": "선택 해제",
+    "selected": "선택됨",
+    "noResults": "현재 조건에 일치하는 중복 파일이 없습니다",
+    "noResultsDescription": "파일 유형을 바꾸거나, 최소 파일 크기를 낮추거나, 다른 위치를 선택해 다시 스캔하세요",
+    "selectGroup": "복사본 {count}개 선택",
+    "selectGroupHint": "파일 하나를 유지하고 현재 설정에 따라 나머지 복사본을 선택합니다",
+    "clearGroupSelectionHint": "이 그룹에서 선택한 복사본을 해제합니다",
+    "groupSelectionApplied": "{count}개 선택됨",
+    "batchDelete": "영구 삭제",
+    "deleteSingleTitle": "이 복사본을 영구 삭제하시겠습니까?",
+    "deleteSingleDescription": "이 작업은 되돌릴 수 없습니다",
+    "deleteTitle": "선택한 중복 복사본을 영구 삭제하시겠습니까?",
+    "deleteDescription": "선택한 복사본은 복구할 수 없습니다",
+    "deleteSafetyNote": "각 그룹에 파일이 하나 이상 남습니다. 변경되었거나 사용할 수 없는 파일은 자동으로 건너뜁니다",
+    "copyCount": "복사본 {count}개",
+    "groupCount": "중복 그룹 {count}개",
+    "groupSummary": "복사본 {count}개 · 각 {size} · 최대 {reclaimable} 회수 가능",
+    "directoryGroupSummary": "동일한 폴더 {count}개 · 각 {files} · 최대 {reclaimable} 회수 가능"
+  },
+  "applicationLeftovers": {
+    "categoryTitle": "앱 잔여 파일",
+    "scanning": "제거된 앱이 남긴 데이터를 확인하는 중…",
+    "scanHint": "더 이상 설치되어 있지 않은 앱과 명확히 연결된 데이터만 표시합니다. 스캔은 아무것도 변경하지 않습니다",
+    "accessLimitedDescription": "시스템 설정 → 개인정보 보호 및 보안에서 MangoDisk가 다른 앱 데이터에 접근하도록 허용한 뒤 다시 스캔하세요",
+    "incompleteDescription": "실수를 막기 위해 잔여 파일을 표시하지 않습니다. 나중에 다시 시도하세요",
+    "emptyTitle": "확인된 앱 잔여 파일이 없습니다",
+    "emptyDescription": "잔여 파일로 안전하게 식별할 수 있는 앱 데이터를 찾지 못했습니다",
+    "planSummary": "앱 {applications}개의 잔여 위치 {locations}개",
+    "planImpact": "선택한 앱 잔여 파일은 영구 삭제되며 복구할 수 없습니다",
+    "selectCandidate": "{name}의 잔여 데이터 선택",
+    "selectLocation": "{name} 선택",
+    "locationCount": "잔여 위치 {count}개",
+    "executionSummary": "{count}개 항목을 삭제하고 {size}를 확보했습니다. {failed}개 건너뜀",
+    "sources": {
+      "sandboxContainer": "앱 전용 데이터",
+      "applicationSupport": "앱 지원 파일",
+      "preferences": "환경설정",
+      "logs": "앱 로그",
+      "savedState": "저장된 윈도우 데이터",
+      "webData": "웹사이트 및 네트워크 데이터",
+      "applicationScripts": "앱 스크립트"
+    }
+  },
+  "applicationUninstall": {
+    "showSystemItems": "시스템 항목 표시",
+    "systemApplication": "시스템 앱",
+    "sharedComponent": "공유 구성 요소",
+    "title": "앱 제거",
+    "startScan": "스캔 시작",
+    "rescan": "다시 스캔",
+    "scanning": "설치된 앱 스캔 중…",
+    "readingApplicationCatalog": "설치된 앱 읽는 중",
+    "checkingProcesses": "실행 중인 앱 확인 중",
+    "validatingApplications": "변경 사항 확인 중",
+    "inspectingApplication": "앱 세부 정보 확인 중",
+    "currentScanStage": "현재 단계",
+    "currentApplicationSource": "현재 소스",
+    "currentApplication": "확인 중인 앱",
+    "checkedApplications": "확인한 앱",
+    "scannedApplicationData": "확인한 논리 데이터",
+    "scanHint": "아무것도 변경하지 않고 설치된 앱과 관련 파일을 확인합니다",
+    "searchPlaceholder": "앱 또는 개발자 검색",
+    "filterLabel": "제거 상태로 앱 필터",
+    "all": "전체",
+    "ready": "준비됨",
+    "running": "실행 중",
+    "unavailable": "사용할 수 없음",
+    "applicationName": "앱 이름",
+    "status": "상태",
+    "applicationSize": "예상 크기",
+    "applicationSizeUnavailable": "알 수 없음",
+    "applicationSizeEstimateHint": "시스템 카탈로그와 논리 파일 크기로 추정한 값입니다. 압축, 클론, 공유 파일에 따라 실제 공간 차이는 달라질 수 있습니다",
+    "windowsAppPackageSizeHint": "공유 파일은 이 추정치에 포함되지 않습니다",
+    "lastUsed": "마지막 사용",
+    "lastUsedUnavailable": "사용 기록 없음",
+    "installedOrUpdated": "설치 또는 업데이트",
+    "installDateUnavailable": "날짜 알 수 없음",
+    "sortByName": "앱 이름순 정렬",
+    "sortByStatus": "앱 상태순 정렬",
+    "sortBySize": "앱 크기순 정렬",
+    "sortByDate": "날짜순 정렬",
+    "summary": "앱 {count}개 발견",
+    "summarySpace": "예상 합계",
+    "selectVisible": "현재 결과 선택",
+    "selectApplication": "{name} 선택",
+    "selectComponent": "{application}의 {component} 선택",
+    "showApplicationLocation": "{application} 폴더에서 보기",
+    "showComponentLocation": "{component} 폴더에서 보기",
+    "emptyTitle": "일치하는 앱이 없습니다",
+    "emptyDescription": "검색어를 지우거나 설치된 앱을 다시 스캔하세요",
+    "incompleteTitle": "설치된 앱 목록을 모두 읽지 못했습니다",
+    "incompleteDescription": "실수를 막기 위해 제거 기능을 사용할 수 없습니다. 나중에 다시 시도하세요",
+    "viewOnlyTitle": "이 시스템에서는 제거를 사용할 수 없습니다",
+    "viewOnlyDescription": "설치된 앱을 확인할 수는 있지만 MangoDisk가 여기서 제거할 수는 없습니다",
+    "applicationRunning": "앱 닫기",
+    "closeBeforeUninstallTitle": "제거 전에 앱 닫기",
+    "closeBeforeUninstallDescription": "제거하기 전에 닫을 실행 중인 앱을 선택하세요",
+    "requiresElevation": "관리자 권한 필요",
+    "requiresElevationDescriptionMacos": "이 앱을 제거할 때 macOS가 관리자 승인을 요청합니다. 승인을 취소하면 앱은 설치된 상태로 남습니다",
+    "authorizationPromptMacos": "이 앱을 제거하려면 MangoDisk에 관리자 권한이 필요합니다",
+    "readyForReview": "준비됨",
+    "viewOnly": "제거 불가",
+    "orphanedRegistration": "오래된 항목",
+    "version": "버전 {version}",
+    "showLocation": "폴더에서 보기",
+    "uninstallApplication": "{application} 제거",
+    "expandApplicationDetails": "{application} 세부 정보 펼치기",
+    "collapseApplicationDetails": "{application} 세부 정보 접기",
+    "preflightFailed": "앱이 변경되었습니다. 목록을 새로 고치고 다시 시도하세요",
+    "batchPreflightFailedSummary": "일부 앱이 변경되었습니다. 목록을 새로 고치고 다시 시도하세요",
+    "selectedApplicationsLabel": "선택한 앱",
+    "selectedSizeLabel": "제거 예상 데이터",
+    "clearSelection": "선택 해제",
+    "uninstallSelected": "선택 항목 제거",
+    "uninstallEntryUnavailableDescription": "현재 제거를 사용할 수 없습니다",
+    "uninstallerMissing": "제거 프로그램을 찾을 수 없음",
+    "uninstallerAccessDenied": "제거 프로그램에 접근하려면 권한이 필요합니다",
+    "possibleRelatedLocations": "관련 가능성이 있는 폴더",
+    "possibleRelatedLocationsDescription": "이 폴더에는 다른 앱의 데이터가 있을 수 있습니다. 자동으로 삭제되지 않습니다",
+    "showPossibleRelatedLocation": "{application}과(와) 관련 가능성이 있는 폴더 보기",
+    "confirmBatchTitle": "선택한 앱 {count}개를 제거하시겠습니까?",
+    "confirmBatchDescription": "선택한 앱과 임시 데이터가 영구 삭제되며 복구할 수 없습니다",
+    "confirmBatchWithDataDescription": "선택한 앱과 확인된 관련 데이터가 영구 삭제되며 복구할 수 없습니다. 설정이나 로컬 파일이 포함될 수 있습니다",
+    "confirmNativeBatchTitle": "선택한 앱 {count}개를 제거하시겠습니까?",
+    "confirmNativeBatchDescription": "Windows가 선택한 앱을 하나씩 제거합니다. 추가 확인 창이나 진행 창이 표시될 수 있습니다",
+    "preparingBatchSummary": "선택한 앱 확인 중",
+    "confirmBatchSummary": "{count}개 제거 준비됨",
+    "validatingBatch": "선택한 앱 검증 중",
+    "finalizingBatch": "제거 결과 마무리 중",
+    "uninstallingApplicationTitle": "{name} 제거 중",
+    "executionProgressDescription": "앱 {total}개 중 {completed}개 완료",
+    "cancellingBatch": "앱 제거를 중지하는 중…",
+    "cancellingBatchDescription": "현재 시스템 제거 단계는 끝까지 진행될 수 있으며 다른 앱은 시작하지 않습니다",
+    "executionProgressValue": "{completed} / {total}",
+    "uninstallItemList": "앱 제거 진행 상황",
+    "uninstallItemPending": "제거 대기 중",
+    "uninstallItemActive": "제거 중",
+    "uninstallItemInteractive": "앱 제거 창에서 남은 단계를 완료하세요",
+    "uninstallItemCompleted": "제거 완료",
+    "uninstallItemCancelled": "시작 전 건너뜀",
+    "uninstallItemFailed": "완료되지 않음",
+    "uninstallItemStatus": {
+      "pending": "대기 중",
+      "active": "제거 중",
+      "completed": "완료",
+      "cancelled": "건너뜀",
+      "failed": "미완료"
+    },
+    "cancelExecutionAction": "제거 취소",
+    "cancellingAction": "취소 중…",
+    "cancelExecutionConfirmTitle": "이 앱 제거를 중지하시겠습니까?",
+    "cancelExecutionConfirmDescription": "아직 시작하지 않은 앱은 제거되지 않습니다. 이미 제거된 앱은 복원할 수 없으며 현재 시스템 제거 창은 끝까지 진행될 수 있습니다",
+    "stopExecutionAction": "제거 중지",
+    "unknownApplication": "알 수 없는 앱",
+    "confirmBatchAction": "제거 확인",
+    "cancelledTitle": "제거 취소됨",
+    "completed": "앱 제거 완료",
+    "completedWithWarnings": "제거가 완전히 끝나지 않았습니다",
+    "restartRequired": "제거를 마치려면 컴퓨터를 다시 시작하세요",
+    "componentKinds": {
+      "applicationBinary": "앱",
+      "nativeInstaller": "Windows 제거 프로그램",
+      "windowsAppPackage": "Microsoft Store 패키지",
+      "windowsMsiPackage": "Windows Installer 패키지",
+      "windowsScoopPackage": "Scoop 패키지",
+      "windowsChocolateyPackage": "Chocolatey 패키지",
+      "windowsRegisteredUninstaller": "제거 프로그램",
+      "cache": "앱 캐시",
+      "applicationSupport": "앱 지원 파일",
+      "preferences": "환경설정",
+      "logs": "앱 로그",
+      "savedState": "저장된 윈도우 데이터",
+      "sandboxContainer": "앱 전용 데이터",
+      "webData": "웹사이트 및 네트워크 데이터"
+    },
+    "executionModes": {
+      "silent": "대개 추가 조치가 필요 없음",
+      "interactive": "제거 창이 표시될 수 있음",
+      "externalClient": "패키지 관리자로 제거"
+    },
+    "componentRisks": {
+      "required": "제거에 필요",
+      "rebuildable": "다시 만들 수 있음",
+      "userData": "사용자 데이터가 있을 수 있음"
+    },
+    "initialTitle": "설치된 앱 관리",
+    "initialDescription": "앱 저장 공간을 확인하고 제거할 때 관련 파일도 함께 삭제합니다",
+    "openWindowsInstalledApps": "Windows 설정 열기",
+    "openWindowsInstalledAppsFailed": "Windows 앱 설정을 열 수 없습니다. 시작 메뉴에서 설정 → 앱을 여세요",
+    "removeRecord": "항목 제거",
+    "removeRecordTitle": "이 앱 항목을 제거하시겠습니까?",
+    "removeRecordDescription": "앱 항목만 제거됩니다. 파일과 데이터는 그대로 유지됩니다",
+    "removeRecordSuccess": "앱 항목이 제거되었습니다",
+    "removeRecordRefreshing": "항목 상태가 변경되었습니다. 목록을 새로 고칩니다",
+    "removeRecordPermissionDenied": "이 항목을 제거할 권한이 없습니다",
+    "removeRecordFailed": "항목을 제거할 수 없습니다. 다시 시도하세요",
+    "executionStoppedTitle": "제거 대기를 중지했습니다",
+    "executionFinishedTitle": "제거 완료",
+    "resultCompleted": "제거됨: {count}",
+    "resultFailed": "실패: {count}",
+    "resultCancelled": "취소됨: {count}",
+    "resultContinuing": "다른 앱 {count}개는 제거 프로그램 창을 확인하세요",
+    "resultEstimatedSpace": "확보 예상 공간: {size}",
+    "resultReleasedSpace": "확보한 공간: {size}"
+  },
+  "history": {
+    "title": "작업 기록",
+    "clear": "기록 지우기",
+    "clearConfirmTitle": "모든 작업 기록을 지우시겠습니까?",
+    "clearConfirmDescription": "이 작업은 되돌릴 수 없습니다",
+    "clearConfirmScope": "모든 작업 기록",
+    "clearConfirmCount": "기록 {count}개",
+    "clearConfirmNote": "기록만 지워집니다. 파일은 그대로 유지됩니다",
+    "clearConfirmAction": "기록 지우기",
+    "privacyRecordSummary": "개인정보 항목 {selected}개를 선택해 흔적 {changed}개를 지웠습니다",
+    "privacyItems": "개인정보 정리 항목",
+    "privacyStatuses": {
+      "cleared": "지우고 확인함",
+      "unchanged": "변경 필요 없음",
+      "failed": "완료할 수 없음",
+      "cancelled": "취소됨"
+    },
+    "emptyTitle": "아직 작업 기록이 없습니다",
+    "emptyDescription": "완료된 정리 및 시스템 관리 작업이 여기에 표시됩니다",
+    "categories": {
+      "deepCleanup": "심층 정리",
+      "largeFileCleanup": "대용량 파일 정리",
+      "duplicateFileCleanup": "중복 파일 정리",
+      "applicationUninstall": "앱 제거",
+      "startupManagement": "시작 항목 관리",
+      "systemOptimization": "시스템 최적화",
+      "privacyCleanup": "개인정보 정리"
+    },
+    "operation": "작업",
+    "planned": "예정",
+    "expected": "예상",
+    "estimated": "추정",
+    "actual": "실제",
+    "notCounted": "정리한 공간에 포함되지 않음",
+    "resultSpace": "결과",
+    "statusWarnings": "일부 항목 건너뜀",
+    "detailTitle": "작업 세부 정보",
+    "detailDescription": "이 작업의 항목, 공간 변화, 결과를 확인합니다",
+    "cleanupItems": "정리 항목",
+    "uninstalledApplications": "제거된 앱",
+    "affectedItems": "처리된 항목",
+    "affectedApplications": "제거된 앱",
+    "failedItems": "건너뜀 또는 실패",
+    "failedApplications": "미완료 앱",
+    "deleted": "영구 삭제됨",
+    "deleteFailed": "삭제할 수 없음",
+    "moreItemsOmitted": "펼치지 않은 항목 {count}개 더 있음",
+    "duration": "소요 시간",
+    "recordSummary": "정리 항목 {items}개 · {files}개 처리됨",
+    "uninstallRecordSummary": "앱 {items}개 선택 · {files}개 제거됨",
+    "startupRecordSummary": "{selected}개 선택 · {changed}개 변경됨",
+    "systemOptimizationRecordSummary": "{selected}개 선택 · {changed}개 변경됨",
+    "selectedItems": "선택한 항목",
+    "changedItems": "변경된 항목",
+    "startupItems": "시작 항목",
+    "systemSettings": "시스템 설정",
+    "systemOptimizationApplied": "최적화 적용됨",
+    "systemOptimizationChangeFailed": "변경 실패",
+    "systemOptimizationRestored": "이전 값 복원됨",
+    "systemOptimizationStatuses": {
+      "changed": "변경하고 확인함",
+      "unchanged": "변경이 필요 없었음",
+      "failed": "변경 실패"
+    },
+    "systemOptimizationFailureReasons": {
+      "settingChanged": "확인 후 설정이 변경되어 덮어쓰지 않았습니다",
+      "permissionDenied": "권한이 거부되었습니다",
+      "userCancelled": "작업이 취소되었습니다",
+      "unsupported": "이 설정은 더 이상 지원되지 않습니다",
+      "verificationFailed": "결과 값을 확인할 수 없습니다",
+      "platformFailure": "시스템 작업이 실패했습니다"
+    },
+    "startupStatuses": {
+      "changed": "변경 완료",
+      "unchanged": "변경이 필요 없었음",
+      "failed": "변경 실패"
+    },
+    "startupFailureReasons": {
+      "itemChanged": "작업 전에 시스템 구성이 변경되었습니다",
+      "permissionDenied": "권한이 거부되었습니다",
+      "userCancelled": "인증이 취소되었습니다",
+      "unsupported": "이 소스는 해당 작업을 지원하지 않습니다",
+      "verificationFailed": "결과 상태를 확인할 수 없습니다",
+      "platformFailure": "시스템 작업이 실패했습니다"
+    },
+    "applicationLeftoverStatuses": {
+      "previewed": "확인 완료. 삭제된 파일 없음",
+      "completed": "영구 삭제됨",
+      "cancelled": "처리 전 취소됨",
+      "failed": "처리되지 않음"
+    },
+    "applicationLeftoverReasons": {
+      "candidateChanged": "확인 후 내용이 변경되어 건너뛰었습니다",
+      "ownerReappeared": "관련 앱 또는 설치된 앱 목록이 변경되어 항목을 건너뛰었습니다",
+      "applicationRunning": "관련 앱이 아직 실행 중입니다",
+      "permanentDeleteFailed": "항목을 영구 삭제할 수 없습니다"
+    },
+    "applicationUninstallStatuses": {
+      "previewed": "확인 완료. 삭제된 파일 없음",
+      "completed": "제거 완료",
+      "cancelled": "제거 시작 전 취소됨",
+      "failed": "처리되지 않음"
+    },
+    "applicationUninstallReasons": {
+      "applicationUnavailable": "앱을 사용할 수 없습니다",
+      "applicationRunning": "앱이 아직 실행 중입니다",
+      "processStateUnavailable": "실행 중인 앱 상태를 확인할 수 없습니다",
+      "catalogChanged": "설치된 앱이 변경되었습니다. 다시 확인하세요",
+      "componentUnavailable": "제거하려고 선택한 항목을 사용할 수 없습니다",
+      "componentChanged": "제거하려고 선택한 항목이 검토 후 변경되었습니다",
+      "unsupportedExecutor": "이 시스템에서는 제거를 사용할 수 없습니다",
+      "executionAborted": "이전 작업이 실패해 남은 내용은 삭제하지 않았습니다",
+      "externalUninstallerContinuing": "시스템 제거 창이 아직 실행 중이며 결과가 확인되지 않았습니다",
+      "permanentDeleteFailed": "항목을 영구 삭제할 수 없습니다",
+      "recoveryRequired": "제거가 깔끔하게 끝나지 않았습니다. 다시 시도하기 전에 앱을 점검하거나 복원하세요",
+      "nativeInstallerFailed": "제거 프로그램이 제거를 완료하지 못했습니다",
+      "nativeInstallerFailedAfterRemoval": "설치 기록은 제거되었지만 제거 프로그램이 오류를 보고했습니다",
+      "verificationFailed": "MangoDisk가 결과를 확인할 수 없습니다"
+    }
+  },
+  "settings": {
+    "title": "설정",
+    "generalSection": "일반",
+    "macosPermissionsSection": "macOS 권한",
+    "supportSection": "지원",
+    "aboutSection": "정보",
+    "languageTitle": "언어",
+    "languageDescription": "MangoDisk에서 사용할 언어를 선택하세요",
+    "languageNames": {
+      "zhCN": "简体中文",
+      "zhTW": "繁體中文",
+      "jaJP": "日本語",
+      "koKR": "한국어",
+      "enUS": "English"
+    },
+    "themeTitle": "테마",
+    "themeDescription": "라이트, 다크 또는 시스템 테마를 사용합니다",
+    "themeLight": "라이트",
+    "themeDark": "다크",
+    "themeSystem": "시스템 설정 따르기",
+    "fullDiskAccessTitle": "전체 디스크 접근 권한",
+    "fullDiskAccessDescription": "MangoDisk가 보호된 시스템 및 앱 데이터를 스캔해 더 완전한 정리 결과를 제공합니다",
+    "openPrivacySettings": "시스템 설정",
+    "permissionStatus": {
+      "notChecked": "미확인",
+      "available": "접근 권한 확인됨",
+      "limited": "접근 권한 제한됨"
+    },
+    "feedbackTitle": "피드백",
+    "feedbackDescription": "스크린샷과 진단 로그를 함께 첨부해 문제나 제안을 보내세요",
+    "feedbackAction": "피드백 보내기",
+    "feedbackDialog": {
+      "title": "피드백 보내기",
+      "description": "여러분의 피드백이 MangoDisk를 더 좋게 만듭니다. 보내주신 의견은 빠짐없이 읽습니다",
+      "categoryLabel": "피드백 유형",
+      "categories": {
+        "issue": "문제",
+        "suggestion": "제안",
+        "other": "기타"
+      },
+      "contentLabel": "문제 또는 제안",
+      "contentPlaceholder": "무슨 일이 있었는지, 무엇을 하고 있었는지, 무엇을 기대했는지 알려주세요. 스크린샷을 여기에 붙여 넣을 수도 있습니다…",
+      "emailLabel": "연락 이메일(선택 사항)",
+      "emailPlaceholder": "진행 상황이 있으면 이메일로 알려드립니다",
+      "attachmentsLabel": "스크린샷 및 첨부 파일(선택 사항)",
+      "chooseAttachments": "첨부 파일 추가",
+      "addAttachments": "클릭해서 첨부하거나 파일을 여기에 놓으세요",
+      "attachmentHint": "이미지, PDF, 텍스트 파일, ZIP 압축 파일. 최대 {count}개, 각 10 MB 이하",
+      "removeAttachment": "첨부 파일 {name} 제거",
+      "includeLogs": "진단 로그 포함",
+      "logPrivacyHint": "(파일 내용이나 원본 경로는 포함되지 않으며 문제 해결에만 사용됩니다)",
+      "openLogFolder": "로그 폴더 열기",
+      "githubAction": "대신 GitHub에서 보고",
+      "submit": "피드백 보내기",
+      "submitting": "보내는 중…",
+      "successTitle": "피드백을 보냈습니다",
+      "successDescription": "피드백 감사합니다. MangoDisk 개선에 활용하겠습니다",
+      "referenceId": "참조 번호: {id}",
+      "copyReference": "피드백 참조 번호 복사",
+      "referenceCopied": "피드백 참조 번호가 복사되었습니다",
+      "errors": {
+        "contentTooShort": "10자 이상 입력하세요",
+        "contentTooLong": "최대 5,000자까지 입력할 수 있습니다",
+        "invalidEmail": "올바른 이메일 주소를 입력하세요",
+        "tooManyAttachments": "최대 5개 파일까지 첨부할 수 있습니다",
+        "unsupportedAttachment": "이미지, PDF, 텍스트 또는 ZIP 파일을 선택하세요",
+        "attachmentTooLarge": "첨부 파일은 각각 10 MB 이하여야 합니다",
+        "attachmentFailed": "첨부 파일을 읽을 수 없습니다. 제거하고 다시 시도하세요",
+        "submitFailed": "피드백을 보낼 수 없습니다. 나중에 다시 시도하세요. 작성한 내용과 첨부 파일은 저장되어 있습니다"
+      }
+    },
+    "diagnosticLogsTitle": "진단 로그",
+    "diagnosticLogsDescription": "문제 해결을 위해 MangoDisk 실행 로그를 확인합니다",
+    "openLogFolderAction": "폴더 열기",
+    "softwareUpdateTitle": "소프트웨어 업데이트",
+    "updateCheckAction": "업데이트 확인",
+    "updateChecking": "확인 중…",
+    "updateVersionAvailable": "버전 {version} 사용 가능",
+    "updateDownloading": "다운로드 중…",
+    "updateDownloadingProgress": "다운로드 중 · {percent}%",
+    "updateReadyToInstall": "설치 준비 완료",
+    "updateInstalling": "설치 중…",
+    "updateRestartRequired": "다시 시작 필요",
+    "updateRestarting": "다시 시작하는 중…",
+    "updateUpToDate": "최신 버전",
+    "updateUpToDateWithVersion": "버전 {version} · 최신 버전",
+    "updateRetry": "다시 시도",
+    "updateCheckFailedTitle": "업데이트를 확인할 수 없습니다",
+    "updateCheckUnknownError": "업데이트 서비스가 알 수 없는 오류를 반환했습니다",
+    "versionUnknown": "불러오는 중…",
+    "aboutTitle": "MangoDisk 정보",
+    "aboutDescription": "가볍고 안전한 오픈소스 크로스플랫폼 디스크 정리 및 저장 공간 분석 도구",
+    "projectLinksLabel": "프로젝트 링크",
+    "websiteAction": "공식 웹사이트",
+    "repositoryAction": "GitHub",
+    "licenseAction": "GPL-3.0 라이선스",
+    "versionValue": "버전 {version}"
+  },
+  "updates": {
+    "availableTitle": "MangoDisk {version}을(를) 사용할 수 있습니다",
+    "currentVersionDescription": "현재 버전 {version}",
+    "checkDescription": "새 버전 확인",
+    "checkingDescription": "업데이트 서비스에 연결하는 중…",
+    "upToDateDescription": "MangoDisk {version}은(는) 최신 버전입니다",
+    "releaseNotes": "새로운 기능",
+    "noReleaseNotes": "이 업데이트에는 개선 사항과 수정 사항이 포함되어 있습니다",
+    "downloadUpdate": "업데이트 다운로드",
+    "downloadPortable": "포터블 버전 다운로드",
+    "portableDescription": "포터블 버전은 수동으로 업데이트해야 합니다. 새 파일을 다운로드하고 MangoDisk를 종료한 뒤 현재 실행 파일을 교체하세요",
+    "continueInBackground": "백그라운드에서 계속",
+    "downloadedTitle": "MangoDisk {version} 준비 완료",
+    "installedTitle": "MangoDisk {version} 설치 완료",
+    "downloadComplete": "다운로드 완료 · 설치 후 MangoDisk가 다시 시작됩니다",
+    "installAndRestart": "설치하고 다시 시작",
+    "restartRequired": "설치 완료 · 업데이트를 마치려면 MangoDisk를 다시 시작하세요",
+    "restartNow": "지금 다시 시작",
+    "restarting": "MangoDisk를 다시 시작하는 중…",
+    "notNow": "나중에",
+    "later": "나중에",
+    "retry": "다시 시도",
+    "downloading": "업데이트 다운로드 중…",
+    "downloadProgress": "{total} 중 {downloaded} 다운로드됨",
+    "installing": "업데이트 설치 중…",
+    "downloadFailed": "다운로드 실패",
+    "manualDownloadFailed": "다운로드 페이지를 열 수 없습니다",
+    "installFailed": "설치 실패",
+    "restartFailed": "MangoDisk를 다시 시작할 수 없습니다",
+    "navigationNotice": "새 버전을 사용할 수 있습니다"
+  },
+  "loading": {
+    "starting": "디스크 정보를 읽는 중…",
+    "scanning": "회수 가능한 콘텐츠를 분석하는 중…",
+    "cancelling": "스캔 취소 중…",
+    "processing": "처리 중",
+    "currentStage": "분석 중",
+    "currentDirectory": "스캔 중",
+    "preparingDirectory": "폴더 준비 중…",
+    "currentAnalysisDirectory": "현재 항목",
+    "preparingAnalysisDirectory": "분석 준비 중…",
+    "checkedItems": "파일 확인됨",
+    "accessibleRuleProgress": "검사 {total}개 중 {completed}개 완료, 파일 {checked}개 스캔, {bytes} 스캔",
+    "checkedChecks": "검사 진행률",
+    "traversedData": "스캔한 데이터",
+    "elapsed": "경과 시간",
+    "cancelHint": "스캔은 파일 정보만 읽으며 취소해도 아무것도 바뀌지 않습니다",
+    "cleaning": "선택한 항목을 정리하는 중…",
+    "cleaningCurrentItem": "{name} 정리 중",
+    "cleaningApplicationLeftovers": "선택한 앱 데이터를 정리하는 중…",
+    "cancelCleanupAction": "정리 취소",
+    "cancelCleanupConfirmTitle": "이 정리를 중지하시겠습니까?",
+    "cancelCleanupConfirmDescription": "아직 시작하지 않은 항목은 정리되지 않습니다. 완료된 항목은 복원할 수 없으며 현재 시스템 단계는 끝까지 진행될 수 있습니다",
+    "stopCleanupAction": "정리 중지",
+    "cancellingCleanupAction": "취소 중…",
+    "cancellingCleanup": "정리를 중지하는 중…",
+    "cancellingCleanupHint": "현재 시스템 단계는 끝까지 진행될 수 있으며, 아직 시작하지 않은 항목은 정리되지 않습니다",
+    "previewing": "선택한 항목을 확인하는 중…",
+    "previewingCurrentItem": "{name} 확인 중",
+    "validating": "선택한 항목을 검증하는 중…",
+    "finalizing": "정리 결과를 마무리하는 중…",
+    "cleaningSafetyHint": "선택한 항목을 정리합니다. 변경되었거나 사용 중인 콘텐츠는 실수로 삭제되지 않도록 건너뜁니다",
+    "windowsPreviousInstallationsCleanupHint": "Windows 시스템 프롬프트를 확인한 뒤, Windows가 정리를 마칠 때까지 MangoDisk를 열어 두세요",
+    "previewingSafetyHint": "아무것도 삭제하거나 변경하지 않고 선택한 항목을 검토합니다",
+    "elapsedSeconds": "{count}초",
+    "cleanupItemList": "정리 항목 진행 상황",
+    "cleanupItemWaiting": "정리 대기 중",
+    "cleanupItemValidating": "현재 정리 범위를 확인하는 중",
+    "cleanupItemSystemProcessing": "시스템이 이 항목을 처리하는 중",
+    "windowsPreviousInstallationsCleanupWaiting": "Windows 확인 또는 정리를 기다리는 중",
+    "cleanupItemCompleted": "{count}개 처리, {size} 확보",
+    "cleanupItemChecked": "확인 완료. 변경된 콘텐츠 없음",
+    "cleanupItemPartial": "{count}개 처리, {size} 확보. 일부 콘텐츠는 건너뜀",
+    "cleanupItemSkipped": "이 항목은 처리되지 않았습니다. 자세한 내용은 결과를 확인하세요",
+    "cleanupItemDone": "완료",
+    "cleanupItemUnchanged": "변경 필요 없음",
+    "cleanupItemFailed": "완료할 수 없음",
+    "cleanupItemCancelled": "취소됨",
+    "cleanupItemSkippedLabel": "건너뜀",
+    "cleanupItemActive": "처리 중",
+    "cleanupItemPending": "대기 중",
+    "ruleProgress": "항목 진행률",
+    "ruleProgressValue": "{completed} / {total}",
+    "cleanupProgressSummary": "{total}개 중 {completed}개 완료",
+    "processedItems": "처리됨",
+    "releasedSpace": "확보한 공간",
+    "checkedData": "확인한 데이터",
+    "stepMayTakeMinutes": "몇 분 정도 걸릴 수 있습니다"
+  },
+  "cleanupRules": {
+    "categories": {
+      "ai": "AI 모델 및 캐시",
+      "custom": "사용자 지정 정리",
+      "system": "시스템",
+      "browser": "브라우저",
+      "container": "컨테이너",
+      "dev": "개발자 도구",
+      "app": "앱"
+    },
+    "entries": {
+      "system.user-temp": {
+        "name": "오래된 임시 파일",
+        "description": "운영 체제와 앱이 만든 임시 작업 파일입니다.",
+        "impact": "사용 중인 파일은 건너뜁니다. 필요하면 앱이 임시 콘텐츠를 다시 생성합니다."
+      },
+      "system.darwin-user-cache": {
+        "name": "비활성 시스템 캐시",
+        "description": "7일 넘게 업데이트되지 않은 사용자별 시스템 캐시 파일입니다.",
+        "impact": "설정과 개인 파일은 유지됩니다. 필요하면 macOS가 캐시 데이터를 다시 생성합니다."
+      },
+      "system.old-diagnostic-logs": {
+        "name": "오래된 진단 로그",
+        "description": "7일이 지난 사용자 수준의 앱 로그와 충돌 보고서입니다.",
+        "impact": "최근 로그는 계속 사용할 수 있지만, 제거된 과거 진단 정보는 나중에 사용할 수 없습니다."
+      },
+      "system.quicklook-cache": {
+        "name": "Quick Look 캐시",
+        "description": "Quick Look이 생성한 축소판과 임시 미리 보기입니다.",
+        "impact": "원본 파일은 유지됩니다. 첫 미리 보기를 다시 생성하는 데 잠시 시간이 걸릴 수 있습니다."
+      },
+      "system.help-cache": {
+        "name": "시스템 도움말 캐시",
+        "description": "macOS 도움말이 사용하는 다운로드 콘텐츠와 검색 데이터입니다.",
+        "impact": "도움말 설정은 유지됩니다. 다음에 열 때 도움말 콘텐츠를 다시 불러올 수 있습니다."
+      },
+      "system.geo-services-cache": {
+        "name": "지도 및 위치 캐시",
+        "description": "지도 앱과 위치 서비스가 저장한 지리 데이터 캐시입니다.",
+        "impact": "위치 권한은 변경되지 않습니다. 지도 데이터가 다시 다운로드될 수 있습니다."
+      },
+      "system.apple-media-cache": {
+        "name": "Apple 미디어 서비스 캐시",
+        "description": "App Store, 음악 및 기타 Apple 미디어 서비스가 사용하는 임시 데이터입니다.",
+        "impact": "구입 항목과 미디어 보관함은 유지됩니다. 다음 방문 시 콘텐츠를 다시 불러올 수 있습니다."
+      },
+      "system.parsecd-cache": {
+        "name": "시스템 제안 캐시",
+        "description": "macOS 제안 서비스가 생성한 임시 색인입니다.",
+        "impact": "개인 파일은 유지됩니다. 필요하면 macOS가 제안 색인을 다시 생성합니다."
+      },
+      "system.apple-intelligence-cache": {
+        "name": "Apple Intelligence 캐시",
+        "description": "로컬 Apple Intelligence 서비스가 생성한 임시 데이터입니다.",
+        "impact": "모델과 개인 콘텐츠는 유지됩니다. 일부 캐시는 시작 시 다시 생성될 수 있습니다."
+      },
+      "system.thumbnail-cache": {
+        "name": "축소판 및 아이콘 캐시",
+        "description": "Windows 파일 탐색기가 생성한 축소판과 아이콘 데이터베이스입니다.",
+        "impact": "폴더를 다시 열면 Windows가 미리 보기와 아이콘을 다시 생성합니다."
+      },
+      "system.directx-shader-cache": {
+        "name": "DirectX 셰이더 캐시",
+        "description": "그래픽 드라이버와 앱이 생성한 컴파일된 DirectX 셰이더 캐시입니다.",
+        "impact": "게임과 앱 데이터는 유지됩니다. 그래픽 앱이 셰이더를 잠시 다시 컴파일할 수 있습니다."
+      },
+      "system.crash-dumps": {
+        "name": "충돌 덤프",
+        "description": "앱이 충돌할 때 생성되는 진단 덤프 파일입니다.",
+        "impact": "제거된 덤프는 이전 충돌을 조사하는 데 더 이상 사용할 수 없습니다."
+      },
+      "system.error-reports": {
+        "name": "Windows 오류 보고서",
+        "description": "Windows 오류 보고가 생성한 사용자 및 시스템 진단 보고서입니다.",
+        "impact": "Windows는 계속 작동하지만, 제거된 보고서는 문제 해결에 더 이상 사용할 수 없습니다."
+      },
+      "system.stale-partial-downloads": {
+        "name": "오래된 미완료 다운로드",
+        "description": "7일 넘게 변경되지 않은 브라우저와 다운로드 관리자의 미완료 파일입니다.",
+        "impact": "제거된 다운로드는 이어받을 수 없습니다. 최근 작업과 완료된 파일은 유지됩니다."
+      },
+      "app.slack-cache": {
+        "name": "Slack 캐시",
+        "description": "Slack에서 생성된 웹 응답, 스크립트 및 그래픽 캐시로, 다시 생성할 수 있습니다.",
+        "impact": "워크스페이스, 메시지, 로그인 상태는 유지됩니다. 정리 전에 Slack을 닫으세요."
+      },
+      "app.lark-renderer-cache": {
+        "name": "Lark 렌더링 캐시",
+        "description": "Lark에서 생성된 웹 응답, 코드, GPU, 셰이더 및 Service Worker 캐시로, 다시 생성할 수 있습니다.",
+        "impact": "계정, 메시지, 다운로드, 워크스페이스, 브라우저 저장소, 로그인 상태는 유지됩니다. 정리 전에 Lark를 닫으세요."
+      },
+      "app.wechat-cache": {
+        "name": "WeChat 앱 캐시",
+        "description": "WeChat에서 생성된 웹, 코드, GPU, 셰이더 및 Service Worker 응답 캐시로, 다시 생성할 수 있습니다.",
+        "impact": "계정, 채팅, 파일, 미니 프로그램 저장소, 브라우저 데이터, 로그인 상태는 유지됩니다. 정리 전에 WeChat을 닫으세요."
+      },
+      "app.wecom-cache": {
+        "name": "WeCom 앱 캐시",
+        "description": "WeCom에서 생성된 CEF 웹, 코드, GPU, 셰이더, 구성 요소 및 Service Worker 응답 캐시로, 다시 생성할 수 있습니다.",
+        "impact": "프로필, 메시지, 메일, 문서, 다운로드, 브라우저 데이터, 로그인 상태는 유지됩니다. 정리 전에 WeCom을 닫으세요."
+      },
+      "app.qq-cache": {
+        "name": "QQ 앱 캐시",
+        "description": "QQ에서 생성된 웹, 코드, GPU, 셰이더 및 파티션 렌더링 캐시로, 다시 생성할 수 있습니다.",
+        "impact": "계정, 메시지, 파일, 패키지, 브라우저 데이터, 로그인 상태는 유지됩니다. 정리 전에 QQ를 닫으세요."
+      },
+      "app.qq-update-cache": {
+        "name": "QQ 다운로드된 업데이트",
+        "description": "QQ가 핫 업데이트 번들을 추출한 뒤 남겨 둔, 오래전 다운로드한 업데이트 아카이브입니다.",
+        "impact": "현재 및 대기 중인 버전, 계정, 메시지, 파일, 로그인 상태는 유지됩니다. 제거된 업데이트는 다시 다운로드해야 할 수 있습니다."
+      },
+      "app.ollama-update-cache": {
+        "name": "Ollama 다운로드된 업데이트",
+        "description": "Ollama가 다운로드한 오래된 macOS 업데이트 아카이브입니다.",
+        "impact": "모델, 매니페스트, 설정, 계정, 설치된 앱은 유지됩니다. 제거된 업데이트는 다시 다운로드해야 할 수 있습니다."
+      },
+      "app.parallels-windows-image-cache": {
+        "name": "Parallels Windows 이미지",
+        "description": "Parallels Desktop이 다운로드한 오래된 Windows ESD 설치 이미지입니다.",
+        "impact": "가상 머신, 스냅샷, 구성, 사용자 파일은 유지됩니다. 제거된 설치 이미지는 다시 다운로드해야 할 수 있습니다."
+      },
+      "app.ynote-cache": {
+        "name": "YNote 캐시",
+        "description": "YNote에서 생성된 인터페이스, 진단 로그 및 다운로드된 업데이트 데이터로, 다시 생성할 수 있습니다.",
+        "impact": "노트, 첨부 파일, 백업, 설정, 브라우저 저장소, 로그인 상태는 유지됩니다. 정리 전에 YNote를 닫으세요."
+      },
+      "app.qqlive-rendering-cache": {
+        "name": "QQLive 인터페이스 캐시",
+        "description": "QQLive 데스크탑 인터페이스가 생성한 임시 이미지, 아이콘, 웹, 코드, GPU 및 셰이더 데이터입니다.",
+        "impact": "런타임 구성 요소, 오프라인 패키지, 계정 상태, 설정, 브라우저 저장소는 유지됩니다. 정리 전에 QQLive를 닫으세요."
+      },
+      "app.flashvoice-cache": {
+        "name": "FlashVoice 캐시",
+        "description": "FlashVoice에서 생성된 WebKit 또는 WebView2 콘텐츠, 코드, 그래픽, 구성 요소 및 진단 캐시로, 다시 생성할 수 있습니다.",
+        "impact": "음성 모델, 녹음, 텍스트 변환 결과, 설정, 앱 파일은 유지됩니다. 정리 전에 FlashVoice를 닫으세요."
+      },
+      "app.utools-rendering-cache": {
+        "name": "uTools 렌더링 캐시",
+        "description": "uTools에서 생성된 웹, 코드, GPU, 셰이더, 파티션 및 진단 캐시로, 다시 생성할 수 있습니다.",
+        "impact": "클립보드 기록, 플러그인, 데이터베이스, 설정, 브라우저 저장소는 유지됩니다. 정리 전에 uTools를 닫으세요."
+      },
+      "app.baidu-netdisk-rendering-cache": {
+        "name": "BaiduNetdisk 렌더링 캐시",
+        "description": "BaiduNetdisk 인터페이스에서 생성된 웹, 코드, GPU 및 셰이더 캐시로, 다시 생성할 수 있습니다.",
+        "impact": "클라우드 파일, 계정 및 전송 데이터베이스, 동기화 상태, 설정, 브라우저 저장소는 유지됩니다. 정리 전에 BaiduNetdisk를 닫으세요."
+      },
+      "app.manus-rendering-cache": {
+        "name": "Manus 렌더링 캐시",
+        "description": "Manus에서 생성된 웹, 코드, GPU, 셰이더 및 사전 캐시로, 다시 생성할 수 있습니다.",
+        "impact": "작업, 로컬 파일, 자격 증명, 설정, 쿠키, 브라우저 저장소는 유지됩니다. 정리 전에 Manus를 닫으세요."
+      },
+      "app.manus-update-cache": {
+        "name": "Manus 다운로드된 업데이트",
+        "description": "Manus가 캐시한 다운로드된 데스크탑 업데이트 패키지와 대기 중인 업데이트 메타데이터입니다.",
+        "impact": "작업, 로컬 파일, 자격 증명, 설정, 설치된 앱은 유지됩니다. 업데이트를 다시 다운로드해야 할 수 있습니다."
+      },
+      "app.workbuddy-rendering-cache": {
+        "name": "WorkBuddy 렌더링 캐시",
+        "description": "WorkBuddy에서 생성된 웹, 코드, GPU, 셰이더 및 파티션 캐시로, 다시 생성할 수 있습니다.",
+        "impact": "작업, 프로젝트, 산출물, 데이터베이스, 스킬, 커넥터, 런타임, 설정, 브라우저 상태는 유지됩니다. 정리 전에 WorkBuddy를 닫으세요."
+      },
+      "app.clash-verge-diagnostic-cache": {
+        "name": "Clash Verge 진단 로그",
+        "description": "Clash Verge가 생성한 진단 로그 데이터입니다.",
+        "impact": "프로필, 프록시 구성, 런타임 구성 요소, GeoIP 데이터, 브라우저 저장소는 유지됩니다. 정리 전에 Clash Verge를 닫으세요."
+      },
+      "app.youdao-translation-cache": {
+        "name": "Youdao 번역 캐시",
+        "description": "Youdao Dictionary가 생성한 임시 번역, 이미지, WebKit 및 충돌 데이터입니다.",
+        "impact": "사전, 기록, 문서, 환경설정, 계정 상태는 유지됩니다. 정리 전에 Youdao Dictionary를 닫으세요."
+      },
+      "app.gitmind-rendering-cache": {
+        "name": "GitMind 렌더링 캐시",
+        "description": "GitMind에서 생성된 Electron 및 WebView2 콘텐츠, 코드, GPU, 셰이더, 구성 요소 및 진단 캐시로, 다시 생성할 수 있습니다.",
+        "impact": "마인드맵, 자격 증명, 기록, 설정, 브라우저 저장소, 업데이트 패키지는 유지됩니다. 정리 전에 GitMind를 닫으세요."
+      },
+      "app.whatsapp-rendering-cache": {
+        "name": "WhatsApp 렌더링 캐시",
+        "description": "WhatsApp에서 생성된 WebView2 콘텐츠, 코드, GPU, 셰이더, 구성 요소, 사전 및 응답 캐시로, 다시 생성할 수 있습니다.",
+        "impact": "계정, 메시지, 자격 증명, 설정, 기록, 네트워크 상태, 브라우저 저장소는 유지됩니다. 정리 전에 WhatsApp을 닫으세요."
+      },
+      "app.electron-updater-cache": {
+        "name": "Electron 앱 업데이트 캐시",
+        "description": "GoWhisper, WeFlow, GitMind가 남겨 둔 다운로드된 업데이트 설치 파일입니다.",
+        "impact": "앱과 앱 데이터는 유지됩니다. 제거된 업데이트 패키지는 다시 다운로드될 수 있습니다. 먼저 해당 앱을 닫으세요."
+      },
+      "app.lobsterai-update-cache": {
+        "name": "LobsterAI 업데이트 캐시",
+        "description": "LobsterAI가 남겨 둔 다운로드된 자동 업데이트 디스크 이미지입니다.",
+        "impact": "스킬, 통합, 로컬 데이터베이스, 설정은 유지됩니다. 제거된 업데이트는 다시 다운로드될 수 있습니다."
+      },
+      "app.qwenwork-cache": {
+        "name": "QwenWork 렌더링 캐시",
+        "description": "QwenWork에서 생성된 웹, 코드, GPU, 파티션 및 진단 캐시로, 다시 생성할 수 있습니다.",
+        "impact": "계정, 대화, 워크스페이스, 생성된 파일, 메모리 데이터는 유지됩니다. 먼저 QwenWork를 닫으세요."
+      },
+      "app.zenaion-cache": {
+        "name": "ZenAion 캐시",
+        "description": "ZenAion에서 생성된 메타데이터, 로그, 웹, 코드, GPU, 셰이더 및 구성 요소 캐시로, 다시 생성할 수 있습니다.",
+        "impact": "ID, 계정, 메모리, 스킬, 에이전트 상태, 설정, 브라우저 저장소는 유지됩니다. 먼저 ZenAion과 에이전트 호스트를 닫으세요."
+      },
+      "app.xmind-rendering-cache": {
+        "name": "Xmind 렌더링 캐시",
+        "description": "Xmind에서 생성된 웹, 코드, GPU, 셰이더 및 충돌 보고서 캐시로, 다시 생성할 수 있습니다.",
+        "impact": "마인드맵, 문서 복구 캐시, 설정, 쿠키, 로그인 상태는 유지됩니다. 먼저 Xmind를 닫으세요."
+      },
+      "app.dingtalk-content-cache": {
+        "name": "DingTalk 콘텐츠 캐시",
+        "description": "DingTalk이 삭제 가능으로 분류한 미니 앱, 임시 이미지, 카드, 테마 및 웹 리소스 캐시입니다.",
+        "impact": "채팅, 데이터베이스, 다운로드한 파일, 설정, 계정은 유지됩니다. DingTalk을 다시 시작하면 캐시된 콘텐츠가 다시 다운로드될 수 있습니다."
+      },
+      "app.tencent-meeting-cache": {
+        "name": "Tencent Meeting 캐시",
+        "description": "Tencent Meeting에서 생성된 네트워크 응답, 웹 코드, 그래픽, 셰이더 및 진단 로그 캐시로, 다시 생성할 수 있습니다.",
+        "impact": "계정, 회의, 녹화, 다운로드, 모델, 동적 리소스, 데이터베이스, 환경설정, HSTS, 브라우저 저장소는 유지됩니다. 정리 전에 Tencent Meeting을 닫으세요."
+      },
+      "app.tencent-lemon-cache": {
+        "name": "Tencent Lemon 캐시",
+        "description": "Tencent Lemon과 상태 모니터, 업데이터에서 생성된 네트워킹 및 원격 구성 캐시로, 다시 생성할 수 있습니다.",
+        "impact": "정리 기록, 스캔 데이터베이스, 설정, 모니터 상태, HTTP 데이터, 로그, 실행 구성은 유지됩니다. 정리 전에 Tencent Lemon과 모니터를 닫으세요."
+      },
+      "app.thunder-cache": {
+        "name": "Thunder 앱 캐시",
+        "description": "Thunder에서 생성된 네트워크 응답, 임시 파일, 진단 및 시스템 네트워킹 캐시로, 다시 생성할 수 있습니다.",
+        "impact": "다운로드 작업, 다운로드한 파일, 클라우드 드라이브 데이터베이스, 계정, 업로드, 환경설정, 브라우저 저장소는 유지됩니다. 정리 전에 Thunder를 닫으세요."
+      },
+      "app.sogou-input-cache": {
+        "name": "Sogou Input 캐시",
+        "description": "Sogou Input 인터페이스가 생성한 웹 응답 및 코드 캐시입니다.",
+        "impact": "사용자 사전, 개인화 데이터, 백업, 설정, 모델, 구성 요소, 업데이트, 브라우저 저장소는 유지됩니다. 정리 전에 관련 Sogou Input 프로세스를 닫으세요."
+      },
+      "app.wps-cache": {
+        "name": "WPS Office 앱 캐시",
+        "description": "WPS Office에서 생성된 앱, 시스템 네트워킹 및 임시 파일 캐시로, 다시 생성할 수 있습니다.",
+        "impact": "문서, 복구 데이터, 템플릿, 클라우드 파일, 계정, 환경설정, 브라우저 저장소는 유지됩니다. 정리 전에 WPS Office를 닫으세요."
+      },
+      "app.wps-rendering-cache": {
+        "name": "WPS Office 렌더링 캐시",
+        "description": "WPS Office 웹 인터페이스에서 생성된 네트워크 응답 및 코드 캐시로, 다시 생성할 수 있습니다.",
+        "impact": "문서, 복구 데이터, 클라우드 파일, 계정, 쿠키, 데이터베이스, 영구 브라우저 상태는 유지됩니다. 정리 전에 WPS Office를 닫으세요."
+      },
+      "app.wps-diagnostic-cache": {
+        "name": "WPS Office 진단 로그",
+        "description": "WPS Office가 생성한 앱, 렌더러, 클라우드 서비스, 워크스페이스 및 충돌 진단 데이터입니다.",
+        "impact": "문서, 복구 데이터, 템플릿, 클라우드 파일, 계정, 설정은 유지됩니다. 제거된 로그는 나중에 문제 해결에 사용할 수 없습니다."
+      },
+      "app.wechat-rendering-cache": {
+        "name": "Weixin 렌더링 캐시",
+        "description": "Weixin 및 WeChat 렌더러 프로필에서 생성된 웹, 코드, GPU 및 셰이더 캐시로, 다시 생성할 수 있습니다.",
+        "impact": "계정, 메시지, 파일, 기록, 쿠키, 로그인 상태는 유지됩니다. 먼저 Weixin 또는 WeChat을 닫으세요."
+      },
+      "app.qq-rendering-cache": {
+        "name": "QQ 렌더링 캐시",
+        "description": "Windows용 QQ가 생성한 임시 웹, 코드, 그래픽, 로그 및 충돌 보고서 데이터입니다.",
+        "impact": "계정, 메시지, 파일, 설정, 브라우저 저장소, 업데이터 지원 파일은 유지됩니다. 정리 전에 QQ를 닫으세요."
+      },
+      "app.wecom-diagnostic-cache": {
+        "name": "WeCom 진단 로그",
+        "description": "WeCom이 생성한 암호화된 진단, 네트워크, 통화, 프레임워크 및 설치 로그입니다.",
+        "impact": "계정, 메시지, 애플릿, 설정, 앱 데이터는 유지됩니다. 정리 전에 WeCom을 닫으세요."
+      },
+      "app.discord-cache": {
+        "name": "Discord 캐시",
+        "description": "Discord에서 생성된 웹 응답, 스크립트 및 그래픽 캐시로, 다시 생성할 수 있습니다.",
+        "impact": "계정, 채팅, 로그인 상태는 유지됩니다. 정리 전에 Discord를 닫으세요."
+      },
+      "app.signal-cache": {
+        "name": "Signal 캐시",
+        "description": "Signal Desktop에서 생성된 코드, 그래픽, 사전, 로그 및 충돌 보고서 캐시로, 다시 생성할 수 있습니다.",
+        "impact": "계정, 메시지, 첨부 파일, 암호화된 데이터베이스, 설정, 로그인 상태는 유지됩니다. 정리 전에 Signal을 닫으세요."
+      },
+      "app.postman-cache": {
+        "name": "Postman 렌더링 캐시",
+        "description": "Postman에서 생성된 웹, 스크립트, GPU 및 파티션 렌더링 캐시로, 다시 생성할 수 있습니다.",
+        "impact": "워크스페이스, 요청, 환경, 쿠키, 로그인 상태는 유지됩니다. 정리 전에 Postman을 닫으세요."
+      },
+      "app.notion-cache": {
+        "name": "Notion 렌더링 캐시",
+        "description": "Notion에서 생성된 웹, 스크립트, GPU, 사전, 로그 및 파티션 렌더링 캐시로, 다시 생성할 수 있습니다.",
+        "impact": "페이지, 오프라인 콘텐츠, 계정, 쿠키, 데이터베이스, 설정, 로그인 상태는 유지됩니다. 정리 전에 Notion을 닫으세요."
+      },
+      "app.netease-cloud-music-cache": {
+        "name": "NetEase Cloud Music 캐시",
+        "description": "NetEase Cloud Music에서 생성된 웹, 스크립트, GPU 및 진단 로그 캐시로, 다시 생성할 수 있습니다.",
+        "impact": "음악 다운로드, 오디오 캐시, 보관함 데이터, 재생목록, 계정, 쿠키, 설정은 유지됩니다. 정리 전에 NetEase Cloud Music을 닫으세요."
+      },
+      "app.zoom-cache": {
+        "name": "Zoom 캐시",
+        "description": "Zoom이 저장한 임시 파일입니다.",
+        "impact": "녹화, 채팅 파일, 설정은 유지됩니다. 정리 전에 Zoom을 닫으세요."
+      },
+      "app.teams-cache": {
+        "name": "Microsoft Teams 캐시",
+        "description": "새 Microsoft Teams와 클래식 Microsoft Teams가 사용하는 웹 및 그래픽 캐시로, 다시 생성할 수 있습니다.",
+        "impact": "채팅, 계정, 다운로드한 파일은 유지됩니다. 정리 전에 Teams를 닫으세요."
+      },
+      "app.chatgpt-cache": {
+        "name": "ChatGPT / Codex 캐시",
+        "description": "ChatGPT 및 Codex 데스크탑 앱이 저장한 렌더링 및 진단 데이터로, 다시 생성할 수 있습니다.",
+        "impact": "대화, 프로젝트, 자격 증명, 브라우저 상태, 로그인 상태는 유지됩니다. 정리 전에 ChatGPT와 Codex를 닫으세요."
+      },
+      "app.codex-diagnostic-cache": {
+        "name": "오래된 Codex 충돌 보고서",
+        "description": "7일 동안 수정되지 않은 대기 중인 Codex 충돌 보고서입니다.",
+        "impact": "대화, 프로젝트, 자격 증명, 설정, 최근 보고서는 유지됩니다. 정리 전에 Codex와 ChatGPT를 닫으세요."
+      },
+      "app.claude-cache": {
+        "name": "Claude 캐시",
+        "description": "Claude Desktop에서 생성된 웹, 코드, GPU, 셰이더, 사전 및 파티션 캐시로, 다시 생성할 수 있습니다.",
+        "impact": "세션, 자격 증명, 로컬 에이전트 작업, 구성, 브라우저 저장소, 로그, 확장 프로그램은 유지됩니다. 정리 전에 Claude를 닫으세요."
+      },
+      "app.lm-studio-cache": {
+        "name": "LM Studio 캐시",
+        "description": "LM Studio가 표준 macOS 캐시 디렉터리에 생성한 콘텐츠로, 다시 생성할 수 있습니다.",
+        "impact": "모델, 채팅, 이전 데이터 디렉터리는 유지됩니다. 정리 전에 LM Studio를 닫으세요."
+      },
+      "app.figma-cache": {
+        "name": "Figma 캐시",
+        "description": "Figma 데스크탑 앱에서 생성된 웹, 스크립트 및 그래픽 캐시로, 다시 생성할 수 있습니다.",
+        "impact": "로컬 초안과 디자인 파일은 유지됩니다. 정리 전에 Figma를 닫으세요."
+      },
+      "app.adobe-media-cache": {
+        "name": "Adobe 미디어 캐시",
+        "description": "Adobe 크리에이티브 앱이 생성한 미디어 분석 및 미리 보기 캐시입니다.",
+        "impact": "프로젝트 미디어와 사전 설정은 유지됩니다. 프로젝트를 다시 열 때 미디어를 다시 분석할 수 있습니다."
+      },
+      "app.office-cache": {
+        "name": "Microsoft Office 캐시",
+        "description": "Word, Excel, PowerPoint가 생성한 표준 앱 캐시입니다.",
+        "impact": "문서, 자동 복구 데이터, 클라우드 콘텐츠는 유지됩니다. 정리 전에 Office 앱을 닫으세요."
+      },
+      "app.media-cache": {
+        "name": "미디어 앱 캐시",
+        "description": "음악, 팟캐스트, 동영상 앱이 생성한 표준 시스템 캐시입니다.",
+        "impact": "보관함, 오프라인 콘텐츠, 미디어 파일은 유지됩니다. 정리 전에 관련 앱을 닫으세요."
+      },
+      "app.media-analysis-cache": {
+        "name": "미디어 분석 캐시",
+        "description": "샌드박스 처리된 사진 및 미디어 분석 서비스가 생성한 캐시와 임시 파일입니다.",
+        "impact": "사진과 동영상은 유지됩니다. 백그라운드 분석이 일부 데이터를 다시 생성할 수 있습니다."
+      },
+      "app.core-device-cache": {
+        "name": "Apple 기기 지원 캐시",
+        "description": "Apple 기기 연결 서비스가 생성한 로컬 캐시입니다.",
+        "impact": "기기 백업은 유지됩니다. 기기를 다시 연결하면 캐시가 다시 생성될 수 있습니다."
+      },
+      "app.wallpaper-agent-cache": {
+        "name": "배경화면 캐시",
+        "description": "샌드박스 처리된 배경화면 서비스가 생성한 런타임 캐시입니다.",
+        "impact": "배경화면 파일, 설정, 미리 보기 표지는 유지됩니다."
+      },
+      "app.google-updater-cache": {
+        "name": "Google 업데이터 캐시",
+        "description": "Google Updater가 다운로드한 확장 프로그램 업데이트와 임시 설치 파일입니다.",
+        "impact": "앱은 제거되지 않습니다. 업데이트 콘텐츠가 다시 다운로드될 수 있습니다."
+      },
+      "app.electron-cache": {
+        "name": "데스크탑 앱 캐시",
+        "description": "일반적인 데스크탑 앱의 임시 표시 데이터와 로그입니다.",
+        "impact": "계정, 세션, 데이터베이스, 로컬 문서는 유지됩니다. 먼저 관련 앱을 닫으세요."
+      },
+      "app.telegram-temporary-cache": {
+        "name": "Telegram 임시 파일",
+        "description": "Telegram Desktop이 만든 임시 알림 이미지, 트레이 아이콘, 캘린더 내보내기 및 충돌 덤프입니다.",
+        "impact": "Telegram을 완전히 닫아야 합니다. 계정, 채팅, 다운로드한 미디어, 설정, 이모지 리소스는 유지됩니다."
+      },
+      "app.vlc-cache": {
+        "name": "VLC 아트워크 및 충돌 캐시",
+        "description": "VLC 미디어 플레이어가 만든 캐시된 표지 아트워크와 충돌 덤프입니다.",
+        "impact": "VLC를 닫아야 합니다. 환경설정, 재생목록, 미디어 보관함 데이터, 미디어 파일은 유지됩니다. 아트워크는 다시 추출하거나 다운로드할 수 있습니다."
+      },
+      "app.ea-rendering-cache": {
+        "name": "EA 앱 렌더링 캐시",
+        "description": "EA 앱 인터페이스가 사용하는 임시 브라우저 및 QML 컴파일 캐시입니다.",
+        "impact": "EA 앱을 닫아야 합니다. 계정, 설치된 게임, 다운로드, 오프라인 상태, 브라우저 저장소는 유지됩니다. 인터페이스 캐시는 다시 생성됩니다."
+      },
+      "app.steam-rendering-cache": {
+        "name": "Steam 인터페이스 렌더링 캐시",
+        "description": "Steam의 Chromium 인터페이스가 사용하는 임시 웹, 코드, GPU 및 셰이더 데이터입니다.",
+        "impact": "Steam을 완전히 닫아야 합니다. 계정, 쿠키, 기록, 설정, 설치된 게임, 다운로드, 게임 셰이더 캐시는 유지됩니다. 인터페이스 콘텐츠는 다시 다운로드하거나 컴파일할 수 있습니다."
+      },
+      "app.battlenet-cache": {
+        "name": "Battle.net 캐시",
+        "description": "Battle.net이 사용하는 다운로드된 런처 콘텐츠, 임시 Blizzard 파일 및 렌더러 캐시입니다.",
+        "impact": "Battle.net과 Agent를 닫아야 합니다. 계정, 브라우저 세션, 런처 설정, 설치된 게임, 다운로드, 패치 상태는 유지됩니다. 인터페이스 콘텐츠는 다시 다운로드될 수 있습니다."
+      },
+      "app.spotify-rendering-cache": {
+        "name": "Spotify 렌더링 캐시",
+        "description": "Spotify 데스크탑 인터페이스가 생성한 임시 웹, 코드, GPU 및 셰이더 데이터입니다.",
+        "impact": "Spotify를 닫아야 합니다. 계정, 기록, 설정, 스트리밍 미디어 저장소, 오프라인 다운로드, 앱 파일은 유지됩니다. 인터페이스 콘텐츠는 다시 다운로드하거나 컴파일할 수 있습니다."
+      },
+      "app.dropbox-rendering-cache": {
+        "name": "Dropbox 인터페이스 캐시",
+        "description": "Dropbox 데스크탑 인터페이스가 생성한 임시 웹, 코드, GPU 및 셰이더 데이터입니다.",
+        "impact": "Dropbox를 닫아야 합니다. 계정, 동기화된 파일, 브라우저 저장소, 세션, 설정, Dropbox 동기화 복구 캐시는 유지됩니다. 인터페이스 콘텐츠는 다시 생성될 수 있습니다."
+      },
+      "app.game-launcher-cache": {
+        "name": "게임 런처 캐시",
+        "description": "지원되는 게임 런처가 생성한 삭제 가능한 상점 및 웹 캐시입니다.",
+        "impact": "관련 런처를 닫아야 합니다. 계정, 설치된 게임, 다운로드, 매니페스트, 패치 상태, 설치 패키지는 유지됩니다. 상점 콘텐츠는 다시 다운로드될 수 있습니다."
+      },
+      "container.docker-desktop-rendering-cache": {
+        "name": "Docker Desktop 인터페이스 캐시",
+        "description": "Docker Desktop 대시보드가 생성한 임시 웹, 코드, GPU 및 셰이더 데이터입니다.",
+        "impact": "Docker Desktop을 닫아야 합니다. 이미지, 컨테이너, 볼륨, 빌드 캐시, 설정, 프로젝트, 진단 정보, 로그, VM 디스크는 유지됩니다. 대시보드 콘텐츠는 다시 생성될 수 있습니다."
+      },
+      "container.docker-desktop-diagnostic-cache": {
+        "name": "Docker Desktop 오래된 로그",
+        "description": "7일이 지난 호스트 및 가상 머신 진단 로그입니다.",
+        "impact": "먼저 Docker Desktop을 닫으세요. 이미지, 컨테이너, 볼륨, 빌드 캐시, 설정, 프로젝트, VM 디스크, 최근 진단 정보는 유지됩니다."
+      },
+      "app.douyin-live-updater-cache": {
+        "name": "Douyin Live Companion 업데이트 캐시",
+        "description": "Douyin Live Companion이 다운로드한 오래된 설치 패키지입니다.",
+        "impact": "앱과 라이브 스트림 콘텐츠는 유지됩니다. 필요하면 업데이트 패키지를 다시 다운로드합니다."
+      },
+      "app.wechat-diagnostic-cache": {
+        "name": "WeChat 로그 및 임시 캐시",
+        "description": "Weixin 및 WeChat이 생성한 진단 로그와 소량의 임시 표시 데이터입니다.",
+        "impact": "메시지, 계정, 플러그인, 사용자 파일은 유지됩니다. 정리 전에 WeChat을 닫으세요."
+      },
+      "browser.chrome-cache": {
+        "name": "Chrome 캐시",
+        "description": "Chrome이 생성한 임시 웹, 코드, GPU 및 셰이더 데이터입니다.",
+        "impact": "암호, 쿠키, 기록, 확장 프로그램, 북마크는 유지됩니다. 먼저 브라우저를 닫으세요."
+      },
+      "browser.uc-cache": {
+        "name": "UC Browser 캐시",
+        "description": "UC Browser가 저장한 임시 웹, 코드, GPU, 셰이더 및 다운로드된 구성 요소 패키지 데이터입니다.",
+        "impact": "암호, 쿠키, 기록, 확장 프로그램, 북마크, 다운로드, 세션은 유지됩니다. 먼저 UC Browser를 닫으세요. 캐시 데이터는 필요하면 다시 생성되거나 다운로드됩니다."
+      },
+      "browser.360-speed-cache": {
+        "name": "360 Extreme Browser 캐시",
+        "description": "360 Extreme Browser가 저장한 임시 웹, 코드, GPU, 셰이더 및 다운로드된 구성 요소 패키지 데이터입니다.",
+        "impact": "암호, 쿠키, 기록, 확장 프로그램, 북마크, 다운로드, 세션은 유지됩니다. 먼저 360 Extreme Browser를 닫으세요. 캐시 데이터는 필요하면 다시 생성되거나 다운로드됩니다."
+      },
+      "browser.sogou-cache": {
+        "name": "Sogou Explorer 캐시",
+        "description": "Sogou Explorer가 저장한 임시 웹, 코드, GPU, Dawn 및 셰이더 데이터입니다.",
+        "impact": "암호, 쿠키, 기록, 확장 프로그램, 북마크, 다운로드, 세션은 유지됩니다. 먼저 Sogou Explorer를 닫으세요. 캐시 데이터는 필요하면 다시 생성됩니다."
+      },
+      "browser.360-safe-cache": {
+        "name": "360 Safe Browser 캐시",
+        "description": "360 Safe Browser가 저장한 임시 웹, 코드, GPU, Dawn 및 셰이더 데이터입니다.",
+        "impact": "암호, 쿠키, 기록, 확장 프로그램, 북마크, 다운로드, 세션은 유지됩니다. 먼저 360 Safe Browser를 닫으세요. 캐시 데이터는 필요하면 다시 생성됩니다."
+      },
+      "browser.2345-cache": {
+        "name": "2345 Browser 캐시",
+        "description": "2345 Browser가 저장한 임시 웹, 코드, GPU, Dawn 및 셰이더 데이터입니다.",
+        "impact": "암호, 쿠키, 기록, 확장 프로그램, 북마크, 다운로드, 세션은 유지됩니다. 먼저 2345 Browser를 닫으세요. 캐시 데이터는 필요하면 다시 생성됩니다."
+      },
+      "browser.edge-cache": {
+        "name": "Edge 캐시",
+        "description": "Edge가 저장한 임시 웹사이트 및 시작 파일입니다.",
+        "impact": "암호, 쿠키, 기록, 확장 프로그램, 북마크는 유지됩니다. 먼저 브라우저를 닫으세요."
+      },
+      "browser.edge-offline-cache": {
+        "name": "Edge 오프라인 캐시",
+        "description": "Edge가 더 빠른 로드나 오프라인 사용을 위해 저장한 웹사이트 데이터입니다.",
+        "impact": "암호, 기록, 북마크는 유지됩니다. 일부 사이트는 오프라인 콘텐츠를 다시 다운로드할 수 있습니다."
+      },
+      "browser.chrome-offline-cache": {
+        "name": "Chrome 오프라인 캐시",
+        "description": "Chrome이 더 빠른 로드나 오프라인 사용을 위해 저장한 웹사이트 데이터입니다.",
+        "impact": "암호, 기록, 북마크는 유지됩니다. 일부 사이트는 오프라인 콘텐츠를 다시 다운로드할 수 있습니다."
+      },
+      "browser.brave-cache": {
+        "name": "Brave 캐시",
+        "description": "Brave가 저장한 임시 웹사이트 및 시작 파일입니다.",
+        "impact": "암호, 쿠키, 기록, 확장 프로그램, 북마크는 유지됩니다. 먼저 브라우저를 닫으세요."
+      },
+      "browser.arc-cache": {
+        "name": "Arc 캐시",
+        "description": "Arc가 저장한 임시 웹사이트 및 시작 파일입니다.",
+        "impact": "스페이스, 암호, 쿠키, 기록, 확장 프로그램, 북마크는 유지됩니다. 먼저 브라우저를 닫으세요."
+      },
+      "browser.vivaldi-cache": {
+        "name": "Vivaldi 캐시",
+        "description": "Vivaldi가 저장한 임시 웹사이트 및 시작 파일입니다.",
+        "impact": "암호, 쿠키, 기록, 확장 프로그램, 북마크는 유지됩니다. 먼저 브라우저를 닫으세요."
+      },
+      "browser.chromium-cache": {
+        "name": "Chromium 캐시",
+        "description": "Chromium이 저장한 임시 웹사이트 및 시작 파일입니다.",
+        "impact": "암호, 쿠키, 기록, 확장 프로그램, 북마크는 유지됩니다. 먼저 브라우저를 닫으세요."
+      },
+      "browser.firefox-cache": {
+        "name": "Firefox 캐시",
+        "description": "Firefox가 저장한 임시 웹사이트 및 시작 파일입니다.",
+        "impact": "암호, 쿠키, 기록, 확장 프로그램, 북마크는 유지됩니다. 먼저 브라우저를 닫으세요."
+      },
+      "browser.opera-cache": {
+        "name": "Opera 캐시",
+        "description": "Opera가 저장한 임시 웹사이트 및 시작 파일입니다.",
+        "impact": "암호, 쿠키, 기록, 확장 프로그램, 북마크는 유지됩니다. 먼저 브라우저를 닫으세요."
+      },
+      "dev.xcode-derived-data": {
+        "name": "Xcode 파생 데이터",
+        "description": "Xcode DerivedData, 색인 및 중간 빌드 출력입니다.",
+        "impact": "소스 코드는 유지됩니다. 다음 빌드와 색인 작업에 시간이 더 걸릴 수 있습니다."
+      },
+      "dev.xcode-auxiliary-cache": {
+        "name": "Xcode 문서 및 기기 로그",
+        "description": "Xcode 문서 색인과 14일이 지난 iOS 또는 watchOS 기기 로그입니다.",
+        "impact": "소스 코드와 아카이브는 유지됩니다. 문서 색인은 나중에 다시 생성될 수 있습니다."
+      },
+      "special.xcode-device-support": {
+        "name": "Xcode DeviceSupport",
+        "description": "실제 기기 디버깅을 위해 Xcode가 준비한 시스템 지원 파일입니다.",
+        "impact": "해당 시스템 버전을 디버깅할 때 Xcode가 지원 파일을 다시 준비해야 합니다."
+      },
+      "special.xcode-simulator-runtime": {
+        "name": "시뮬레이터 런타임",
+        "description": "Xcode가 설치한 iOS, watchOS, tvOS 및 visionOS 시뮬레이터 런타임입니다.",
+        "impact": "제거된 시스템 버전의 시뮬레이터는 Xcode에서 런타임을 다시 다운로드할 때까지 작동하지 않습니다."
+      },
+      "special.xcode-archives": {
+        "name": "Xcode 앱 아카이브",
+        "description": "배포, 내보내기 및 충돌 심볼화에 사용되는 Xcode 아카이브입니다.",
+        "impact": "검토용으로만 표시되며 정리에는 추가되지 않습니다. 더 이상 필요하지 않은지 확인한 뒤 Xcode Organizer에서 아카이브를 관리하세요."
+      },
+      "special.additional-user-caches": {
+        "name": "추가 사용자 캐시",
+        "description": "별도로 표시되지 않은 기타 앱 캐시입니다.",
+        "impact": "기본적으로 선택되지 않습니다. 사용 중이거나 안전하게 확인할 수 없는 캐시는 건너뜁니다. 앱이 나중에 다시 생성할 수 있습니다."
+      },
+      "dev.npm-cache": {
+        "name": "npm 다운로드 캐시",
+        "description": "npm이 저장한 다운로드된 패키지입니다.",
+        "impact": "프로젝트와 설치된 의존성은 유지됩니다. 패키지가 다시 다운로드될 수 있습니다."
+      },
+      "dev.npx-cache": {
+        "name": "npx 임시 도구",
+        "description": "npx가 임시로 다운로드해 실행한 패키지입니다.",
+        "impact": "프로젝트 의존성은 유지됩니다. npx가 도구를 다시 다운로드할 수 있습니다."
+      },
+      "dev.node-gyp-cache": {
+        "name": "node-gyp 빌드 캐시",
+        "description": "네이티브 Node.js 모듈을 컴파일하는 데 사용되는 헤더와 임시 빌드 캐시입니다.",
+        "impact": "소스 코드는 유지됩니다. 필요한 헤더가 다시 다운로드될 수 있습니다."
+      },
+      "dev.pnpm-cache": {
+        "name": "pnpm 저장소 캐시",
+        "description": "pnpm이 저장한 다운로드된 패키지입니다.",
+        "impact": "프로젝트와 설치된 의존성은 유지됩니다. 패키지가 다시 다운로드될 수 있습니다."
+      },
+      "dev.yarn-cache": {
+        "name": "Yarn 다운로드 캐시",
+        "description": "Yarn이 저장한 다운로드된 패키지입니다.",
+        "impact": "프로젝트와 설치된 의존성은 유지됩니다. 패키지가 다시 다운로드될 수 있습니다."
+      },
+      "dev.pip-cache": {
+        "name": "pip 다운로드 캐시",
+        "description": "pip이 저장한 다운로드된 패키지입니다.",
+        "impact": "프로젝트와 설치된 의존성은 유지됩니다. 패키지가 다시 다운로드될 수 있습니다."
+      },
+      "dev.python-cache": {
+        "name": "Python 패키지 캐시",
+        "description": "Python 개발 도구가 저장한 다운로드된 패키지와 분석 데이터입니다.",
+        "impact": "프로젝트와 설치된 의존성은 유지됩니다. 패키지가 다시 다운로드될 수 있습니다."
+      },
+      "dev.pyinstaller-cache": {
+        "name": "PyInstaller 바이너리 캐시",
+        "description": "PyInstaller가 이후 빌드를 위해 저장한 처리된 바이너리 복사본입니다.",
+        "impact": "프로젝트, spec 파일, 빌드 출력은 유지됩니다. 이후 빌드에서 바이너리를 다시 처리해야 할 수 있습니다."
+      },
+      "dev.python-tooling-cache": {
+        "name": "Python 도구 캐시",
+        "description": "Poetry와 pyenv-win이 저장한 패키지 및 설치 프로그램 캐시입니다.",
+        "impact": "가상 환경과 설치된 인터프리터는 유지됩니다. 의존성이 다시 다운로드될 수 있습니다."
+      },
+      "dev.uv-cache": {
+        "name": "uv 캐시",
+        "description": "uv가 저장한 다운로드 및 빌드된 패키지입니다.",
+        "impact": "프로젝트, 가상 환경, 관리되는 Python 설치는 유지됩니다. 패키지를 다시 다운로드하거나 빌드할 수 있습니다."
+      },
+      "dev.dart-analysis-cache": {
+        "name": "Dart 분석 캐시",
+        "description": "Dart 및 Flutter 도구가 생성한 분석 결과 캐시입니다.",
+        "impact": "프로젝트와 SDK는 유지됩니다. 편집기와 분석 도구가 색인을 다시 만들어야 할 수 있습니다."
+      },
+      "dev.node-tooling-cache": {
+        "name": "Node.js 도구 캐시",
+        "description": "Corepack, nvm, Bun, node-gyp 및 Electron이 다운로드한 툴체인 캐시입니다.",
+        "impact": "프로젝트 의존성은 유지됩니다. 런타임이나 네이티브 빌드 리소스가 다시 다운로드될 수 있습니다."
+      },
+      "dev.cargo-cache": {
+        "name": "Cargo 패키지 캐시",
+        "description": "Cargo가 저장한 다운로드된 패키지입니다.",
+        "impact": "프로젝트와 설치된 의존성은 유지됩니다. 패키지가 다시 다운로드될 수 있습니다."
+      },
+      "dev.cargo-extracted-sources": {
+        "name": "Cargo 추출 소스 캐시",
+        "description": "로컬 빌드를 위해 Cargo가 추출한 크레이트 소스 트리입니다.",
+        "impact": "프로젝트와 다운로드된 크레이트 아카이브는 유지됩니다. Cargo가 소스를 다시 추출하거나 다운로드할 수 있습니다."
+      },
+      "dev.go-cache": {
+        "name": "Go 빌드 캐시",
+        "description": "로컬 Go 빌드 출력과 다운로드된 모듈 캐시입니다.",
+        "impact": "소스 코드는 유지됩니다. 이후 빌드에서 코드를 다시 컴파일하거나 모듈을 다운로드할 수 있습니다."
+      },
+      "dev.go-module-cache": {
+        "name": "Go 모듈 캐시",
+        "description": "Go 모듈이 저장한 다운로드된 패키지입니다.",
+        "impact": "프로젝트와 설치된 의존성은 유지됩니다. 패키지가 다시 다운로드될 수 있습니다."
+      },
+      "dev.homebrew-cache": {
+        "name": "Homebrew 다운로드 캐시",
+        "description": "Homebrew가 저장한 다운로드된 패키지입니다.",
+        "impact": "프로젝트와 설치된 의존성은 유지됩니다. 패키지가 다시 다운로드될 수 있습니다."
+      },
+      "dev.cocoapods-cache": {
+        "name": "CocoaPods 캐시",
+        "description": "CocoaPods가 저장한 다운로드된 패키지입니다.",
+        "impact": "프로젝트와 설치된 의존성은 유지됩니다. 패키지가 다시 다운로드될 수 있습니다."
+      },
+      "dev.swiftpm-cache": {
+        "name": "Swift Package Manager 캐시",
+        "description": "Swift Package Manager가 저장한 다운로드된 패키지입니다.",
+        "impact": "프로젝트와 설치된 의존성은 유지됩니다. 패키지가 다시 다운로드될 수 있습니다."
+      },
+      "dev.vscode-cache": {
+        "name": "Visual Studio Code 캐시",
+        "description": "Visual Studio Code의 임시 표시 및 컴파일된 코드 데이터, 다운로드된 확장 프로그램 패키지, 충돌 보고서입니다.",
+        "impact": "프로젝트, 설정, 설치된 확장 프로그램, 워크스페이스 상태, 계정, 백업은 유지됩니다. 먼저 Visual Studio Code를 닫으세요. 일부 데이터는 다시 생성되거나 다운로드될 수 있습니다."
+      },
+      "dev.editor-cache": {
+        "name": "코드 편집기 캐시",
+        "description": "코드 편집기의 임시 검색, 표시 및 로그 데이터입니다.",
+        "impact": "프로젝트, 설정, 확장 프로그램은 유지됩니다. 먼저 관련 앱을 닫으세요."
+      },
+      "dev.qoder-rendering-cache": {
+        "name": "Qoder 렌더링 캐시",
+        "description": "Qoder 에디션에서 생성된 코드, 확장 프로그램 패키지, 웹, GPU, 셰이더 및 진단 캐시입니다.",
+        "impact": "프로젝트, 설정, 확장 프로그램, 백업, 워크스페이스 상태, 로그인 상태는 유지됩니다. 먼저 두 Qoder 에디션을 모두 닫으세요."
+      },
+      "dev.browser-automation-cache": {
+        "name": "브라우저 자동화 캐시",
+        "description": "Playwright, Puppeteer, Cypress 및 Selenium이 다운로드한 브라우저 런타임입니다.",
+        "impact": "테스트 도구가 브라우저를 다시 다운로드해야 하며, 오프라인 상태에서는 사용하지 못할 수 있습니다."
+      },
+      "dev.visual-studio-cache": {
+        "name": "Visual Studio 캐시",
+        "description": "Visual Studio의 임시 검색, 표시 및 로그 데이터입니다.",
+        "impact": "프로젝트, 설정, 확장 프로그램은 유지됩니다. 먼저 관련 앱을 닫으세요."
+      },
+      "dev.jetbrains-cache": {
+        "name": "JetBrains IDE 캐시",
+        "description": "JetBrains IDE와 Android Studio의 임시 검색, 표시 및 로그 데이터입니다.",
+        "impact": "프로젝트, 설정, 확장 프로그램은 유지됩니다. 먼저 관련 앱을 닫으세요."
+      },
+      "dev.android-cache": {
+        "name": "Android SDK 캐시",
+        "description": "Android SDK Manager가 만든 임시 다운로드 및 추출 캐시입니다.",
+        "impact": "설치된 SDK, 에뮬레이터, 프로젝트는 유지됩니다. 구성 요소가 다시 다운로드될 수 있습니다."
+      },
+      "dev.android-user-cache": {
+        "name": "Android 사용자 캐시",
+        "description": "Android 개발 도구가 생성한 사용자 캐시로, 다시 생성할 수 있습니다.",
+        "impact": "프로젝트, SDK, 에뮬레이터는 유지됩니다. 개발 도구가 필요한 데이터를 다시 생성합니다."
+      },
+      "dev.package-manager-cache": {
+        "name": "패키지 관리자 캐시",
+        "description": "Composer, Deno 및 vcpkg가 저장한 다운로드된 패키지입니다.",
+        "impact": "프로젝트와 설치된 의존성은 유지됩니다. 패키지가 다시 다운로드될 수 있습니다."
+      },
+      "dev.nuget-cache": {
+        "name": "NuGet 패키지 및 요청 캐시",
+        "description": "NuGet이 저장한 다운로드된 패키지와 HTTP 응답입니다.",
+        "impact": "프로젝트와 설치된 의존성은 유지됩니다. 패키지가 다시 다운로드될 수 있습니다."
+      },
+      "dev.qclaw-compile-cache": {
+        "name": "QClaw 컴파일 캐시",
+        "description": "QClaw의 Node.js 런타임이 생성한 컴파일된 모듈 캐시입니다.",
+        "impact": "워크스페이스, 메모리, 플러그인, 설정은 유지됩니다. 먼저 QClaw를 닫으세요. 캐시가 다시 생성되는 동안 시작이 느려질 수 있습니다."
+      },
+      "dev.maven-cache": {
+        "name": "Maven 패키지 캐시",
+        "description": "Maven 로컬 저장소에 다운로드되거나 로컬로 설치된 아티팩트입니다.",
+        "impact": "프로젝트와 Maven 설정은 유지됩니다. 로컬 전용 아티팩트는 다시 빌드하거나 설치해야 합니다."
+      },
+      "dev.gradle-cache": {
+        "name": "Gradle 캐시",
+        "description": "Gradle이 저장한 다운로드된 의존성, Wrapper 배포판, 빌드 캐시 및 임시 파일입니다.",
+        "impact": "프로젝트, Gradle 설정, 설치된 JDK는 유지됩니다. 먼저 Gradle과 Java를 닫으세요. 지원 데이터는 다시 다운로드되거나 생성될 수 있습니다."
+      },
+      "dev.user-tool-cache": {
+        "name": "개발자 도구 캐시",
+        "description": "명령줄 개발자 도구가 생성한 캐시로, 다시 생성할 수 있습니다.",
+        "impact": "프로젝트와 설치된 도구는 유지됩니다. 지원 데이터가 다시 다운로드될 수 있습니다."
+      },
+      "dev.build-accelerator-cache": {
+        "name": "빌드 가속기 캐시",
+        "description": "빌드 가속 도구가 생성한 로컬 컴파일 산출물입니다.",
+        "impact": "소스 코드는 유지됩니다. 이후 빌드에서 이전에 캐시된 작업을 다시 컴파일할 수 있습니다."
+      },
+      "dev.sccache-cache": {
+        "name": "sccache 컴파일 캐시",
+        "description": "Rust, C/C++ 및 기타 빌드를 위해 sccache가 캐시한 컴파일러 산출물로, 다시 생성할 수 있습니다.",
+        "impact": "소스 코드와 도구 설정은 유지됩니다. 이후 빌드에서 캐시된 작업을 다시 컴파일할 수 있습니다."
+      },
+      "dev.jvm-tooling-cache": {
+        "name": "JVM 도구 캐시",
+        "description": "JVM 개발 도구가 생성한 색인, 다운로드 및 임시 데이터입니다.",
+        "impact": "프로젝트와 JDK 설치는 유지됩니다. 도구 데이터는 다시 생성되거나 다운로드될 수 있습니다."
+      },
+      "ai.huggingface-xet-cache": {
+        "name": "Hugging Face 다운로드 캐시",
+        "description": "Hugging Face 다운로드와 업로드 속도를 높이는 데 사용되는 임시 파일입니다.",
+        "impact": "모델, 데이터 세트, 완료되지 않은 업로드는 유지됩니다. 이후 전송 시 이 파일을 다시 다운로드할 수 있습니다."
+      },
+      "special.ai-model-hugging-face": {
+        "name": "Hugging Face 로컬 모델",
+        "description": "Hugging Face Hub가 다운로드한 모델 가중치와 스냅샷입니다.",
+        "impact": "직접 선택한 모델만 제거됩니다. 앱에서 사용하려면 다시 다운로드해야 합니다."
+      },
+      "special.ai-model-whisper": {
+        "name": "Whisper 음성 모델",
+        "description": "OpenAI Whisper가 다운로드한 음성 인식 모델 가중치입니다.",
+        "impact": "직접 선택한 모델만 제거됩니다. 필요하면 텍스트 변환 시 다시 다운로드합니다."
+      },
+      "special.ai-model-pytorch": {
+        "name": "PyTorch Hub 모델",
+        "description": "PyTorch Hub가 다운로드한 모델 체크포인트와 가중치 파일입니다.",
+        "impact": "직접 선택한 체크포인트만 제거됩니다. 다음 실행 시 앱이 다시 다운로드할 수 있습니다."
+      },
+      "special.ai-cache-pytorch-hub-repositories": {
+        "name": "PyTorch Hub 저장소 캐시",
+        "description": "사전 학습된 모델을 불러올 때 PyTorch Hub가 다운로드한 모델 정의 저장소입니다.",
+        "impact": "직접 선택한 저장소 캐시만 제거됩니다. 체크포인트는 유지되며, 관련 모델 코드는 다시 다운로드해야 합니다."
+      },
+      "special.ai-model-modelscope": {
+        "name": "ModelScope 로컬 모델",
+        "description": "ModelScope SDK, FunASR, Qwen 및 관련 프레임워크가 다운로드한 모델 저장소입니다.",
+        "impact": "선택한 모델만 제거됩니다. 데이터 세트와 학습 출력은 유지되며, 모델은 다시 다운로드해야 합니다."
+      },
+      "special.ai-model-keras": {
+        "name": "Keras 사전 학습 모델",
+        "description": "Keras Applications가 자동으로 다운로드한 사전 학습 가중치입니다.",
+        "impact": "선택한 가중치만 제거됩니다. Keras 데이터 세트는 유지되며, 가중치는 다시 다운로드해야 합니다."
+      },
+      "special.ai-model-openai-clip": {
+        "name": "OpenAI CLIP 비전 모델",
+        "description": "OpenAI CLIP이 자동으로 다운로드한 이미지-텍스트 모델 가중치입니다.",
+        "impact": "선택한 모델만 제거됩니다. 다음 사용 전에 CLIP이 다시 다운로드해야 합니다."
+      },
+      "special.ai-model-tensorflow-hub": {
+        "name": "TensorFlow Hub 모델",
+        "description": "TensorFlow Hub가 로컬에 다운로드하고 추출한 모델 모듈입니다.",
+        "impact": "선택한 모듈만 제거됩니다. 다음 실행 시 앱이 다시 다운로드하고 추출해야 합니다."
+      },
+      "special.ai-model-lm-studio": {
+        "name": "LM Studio 로컬 모델",
+        "description": "LM Studio가 저장한 대규모 언어 모델과 양자화된 가중치입니다.",
+        "impact": "먼저 LM Studio를 닫으세요. 선택한 모델만 제거되며, 다시 다운로드해야 합니다."
+      },
+      "special.ai-model-ollama": {
+        "name": "Ollama 로컬 모델 라이브러리",
+        "description": "다운로드된 Ollama 모델을 구성하는 파일입니다.",
+        "impact": "Ollama는 모델 간에 파일을 공유하므로 선택한 라이브러리 전체가 제거됩니다. 먼저 Ollama를 닫으세요. 모델은 다시 다운로드해야 합니다."
+      },
+      "special.ai-model-coqui-tts": {
+        "name": "Coqui TTS 음성 모델",
+        "description": "Coqui TTS가 다운로드한 텍스트 음성 변환 및 보코더 모델입니다.",
+        "impact": "직접 선택한 모델만 제거됩니다. 필요하면 음성 합성 시 다시 다운로드합니다."
+      },
+      "special.ai-model-gpt4all": {
+        "name": "GPT4All 로컬 모델",
+        "description": "GPT4All 기본 다운로드 디렉터리에 저장된 GGUF 언어 모델입니다.",
+        "impact": "먼저 GPT4All을 닫으세요. 선택한 모델만 제거되며, 채팅과 LocalDocs는 유지됩니다."
+      },
+      "special.ai-model-jan": {
+        "name": "Jan 로컬 모델",
+        "description": "Jan 데이터 폴더 안에서 관리되는 로컬 모델입니다.",
+        "impact": "먼저 Jan을 닫으세요. 선택한 모델만 제거되며, 대화, 어시스턴트, 설정, 로그는 유지됩니다."
+      },
+      "project.rust-build-artifacts": {
+        "name": "Rust 빌드 산출물",
+        "description": "Cargo target 출력과 크로스 컴파일 캐시입니다.",
+        "impact": "소스와 Cargo 구성은 유지됩니다. 다음 빌드에서 타깃을 다시 컴파일합니다."
+      },
+      "project.node-build-artifacts": {
+        "name": "Node.js 빌드 산출물",
+        "description": "Node.js 프로젝트의 의존성 폴더와 프레임워크 빌드 캐시입니다.",
+        "impact": "소스와 잠금 파일은 유지됩니다. 의존성과 캐시는 다시 설치해야 합니다."
+      },
+      "project.react-native-build-artifacts": {
+        "name": "React Native 빌드 산출물",
+        "description": "React Native 프로젝트의 Android, iOS, Expo 및 Metro 캐시입니다.",
+        "impact": "프로젝트 소스는 유지됩니다. 모바일 빌드가 이 캐시를 다시 생성합니다."
+      },
+      "project.python-build-artifacts": {
+        "name": "Python 빌드 산출물",
+        "description": "Python 프로젝트의 테스트, 타입 검사 및 바이트코드 캐시입니다.",
+        "impact": "소스와 가상 환경은 유지됩니다. 도구가 캐시를 다시 생성합니다."
+      },
+      "project.maven-build-artifacts": {
+        "name": "Maven 빌드 산출물",
+        "description": "Maven 프로젝트 target 폴더 아래의 컴파일된 출력입니다.",
+        "impact": "소스와 pom.xml은 유지됩니다. 다음 빌드에서 프로젝트를 다시 컴파일합니다."
+      },
+      "project.gradle-build-artifacts": {
+        "name": "Gradle 빌드 산출물",
+        "description": "Gradle 빌드 출력과 프로젝트 로컬 캐시입니다.",
+        "impact": "소스와 빌드 스크립트는 유지됩니다. 다음 빌드에서 출력을 다시 생성합니다."
+      },
+      "project.sbt-build-artifacts": {
+        "name": "SBT 빌드 산출물",
+        "description": "SBT target 폴더 아래의 컴파일된 출력입니다.",
+        "impact": "Scala 소스와 빌드 정의는 유지됩니다. 다음 빌드에서 타깃을 다시 컴파일합니다."
+      },
+      "project.dotnet-build-artifacts": {
+        "name": ".NET 빌드 산출물",
+        "description": ".NET 프로젝트의 컴파일된 bin 및 obj 폴더입니다.",
+        "impact": "프로젝트 파일과 소스는 유지됩니다. 다음 빌드에서 프로젝트를 다시 컴파일합니다."
+      },
+      "project.swift-build-artifacts": {
+        "name": "Swift 빌드 산출물",
+        "description": "Swift Package Manager가 생성한 .build 폴더입니다.",
+        "impact": "Package.swift와 소스는 유지됩니다. 의존성과 타깃은 다시 빌드됩니다."
+      },
+      "project.flutter-build-artifacts": {
+        "name": "Flutter 빌드 산출물",
+        "description": "Flutter 및 Dart 프로젝트의 빌드 출력과 도구 캐시입니다.",
+        "impact": "프로젝트 소스는 유지됩니다. Flutter가 제거된 폴더를 다시 생성합니다."
+      },
+      "project.cmake-build-artifacts": {
+        "name": "CMake 빌드 산출물",
+        "description": "CMake 프로젝트의 일반적인 out-of-source 빌드 폴더입니다.",
+        "impact": "CMakeLists.txt와 소스는 유지됩니다. 프로젝트를 다시 구성하고 빌드해야 합니다."
+      },
+      "project.zig-build-artifacts": {
+        "name": "Zig 빌드 산출물",
+        "description": "Zig 프로젝트의 로컬 컴파일 캐시입니다.",
+        "impact": "build.zig와 소스는 유지됩니다. 다음 빌드에서 타깃을 다시 컴파일합니다."
+      },
+      "project.godot-build-artifacts": {
+        "name": "Godot 빌드 산출물",
+        "description": "Godot가 생성한 가져온 데이터와 편집기 캐시입니다.",
+        "impact": "프로젝트 에셋과 설정은 유지됩니다. Godot가 리소스를 다시 가져옵니다."
+      },
+      "project.elixir-build-artifacts": {
+        "name": "Elixir 빌드 산출물",
+        "description": "Mix 출력과 언어 서비스 캐시입니다.",
+        "impact": "Elixir 소스와 mix.exs는 유지됩니다. 도구가 캐시를 다시 생성합니다."
+      },
+      "project.terraform-build-artifacts": {
+        "name": "Terraform 작업 디렉터리",
+        "description": "Terraform 프로젝트 작업 폴더에 다운로드된 프로바이더와 모듈입니다.",
+        "impact": "구성, 상태, 잠금 파일은 유지됩니다. 초기화 시 의존성을 다시 다운로드할 수 있습니다."
+      },
+      "project.unity-build-artifacts": {
+        "name": "Unity 빌드 산출물",
+        "description": "Unity의 Library, Temp, Obj 및 진단 폴더입니다.",
+        "impact": "에셋과 ProjectSettings는 유지됩니다. 프로젝트를 다시 가져오는 데 시간이 걸릴 수 있습니다."
+      },
+      "project.unreal-build-artifacts": {
+        "name": "Unreal 빌드 산출물",
+        "description": "Unreal 프로젝트의 바이너리, 중간 출력 및 파생 데이터 캐시입니다.",
+        "impact": "프로젝트 콘텐츠와 구성은 유지됩니다. Unreal이 출력을 다시 생성합니다."
+      },
+      "project.cocoapods-build-artifacts": {
+        "name": "CocoaPods 프로젝트 의존성",
+        "description": "프로젝트 Podfile에서 설치된 Pods 폴더입니다.",
+        "impact": "소스, Podfile, 잠금 파일은 유지됩니다. 의존성은 다시 설치해야 합니다."
+      },
+      "project.haskell-build-artifacts": {
+        "name": "Haskell 빌드 산출물",
+        "description": "로컬 Stack 및 Cabal 빌드 폴더입니다.",
+        "impact": "Haskell 소스와 프로젝트 구성은 유지됩니다. 다음 빌드에서 타깃을 다시 컴파일합니다."
+      },
+      "project.composer-build-artifacts": {
+        "name": "Composer 프로젝트 의존성",
+        "description": "PHP Composer가 설치한 의존성입니다.",
+        "impact": "소스 파일, composer.json, 잠금 파일은 유지됩니다. 의존성은 다시 설치해야 합니다."
+      },
+      "project.jupyter-build-artifacts": {
+        "name": "Jupyter 노트북 체크포인트",
+        "description": "Jupyter 노트북 옆에 자동으로 생성되는 체크포인트 폴더입니다.",
+        "impact": "노트북은 유지됩니다. 편집을 계속하면 Jupyter가 체크포인트를 다시 생성합니다."
+      },
+      "project.pixi-build-artifacts": {
+        "name": "Pixi 프로젝트 환경",
+        "description": "Pixi 프로젝트용으로 만들어진 로컬 환경입니다.",
+        "impact": "소스 파일, pixi.toml, 잠금 파일은 유지됩니다. 환경은 다시 복원해야 합니다."
+      },
+      "special.docker-build-cache": {
+        "name": "Docker 빌드 캐시",
+        "description": "Docker가 사용하지 않으며 이미지와 공유되지 않는다고 보고한 빌드 캐시입니다.",
+        "impact": "이미지, 컨테이너, 네트워크, 볼륨은 유지됩니다. 이후 빌드에서 캐시를 다시 다운로드하거나 생성할 수 있습니다."
+      },
+      "special.conda-cache": {
+        "name": "Conda 다운로드 캐시",
+        "description": "Conda가 보고한 다운로드된 패키지와 임시 데이터입니다.",
+        "impact": "환경과 설치된 패키지는 유지됩니다. Conda가 이 파일을 다시 다운로드할 수 있습니다."
+      },
+      "special.codex-archived-sessions": {
+        "name": "오래된 Codex 보관 세션",
+        "description": "30일 동안 수정되지 않은 Codex 대화 아카이브입니다.",
+        "impact": "선택한 보관 세션만 영구 제거됩니다. 다시 열거나 복구할 수 없습니다."
+      },
+      "special.rust-toolchains": {
+        "name": "추가 Rust 툴체인",
+        "description": "기본, 활성, 재정의 또는 감지된 프로젝트 구성에서 필요로 하지 않는 설치된 Rust 버전입니다.",
+        "impact": "선택한 버전만 rustup을 통해 제거됩니다. 해당 버전이 여전히 필요한 프로젝트는 다시 다운로드해야 합니다."
+      },
+      "special.dropbox-cache": {
+        "name": "Dropbox 임시 캐시",
+        "description": "Dropbox 계정 위치에서 발견된 임시 업로드, 다운로드 및 복구 파일입니다.",
+        "impact": "Dropbox를 완전히 닫아야 합니다. 동기화된 파일과 계정 설정은 유지됩니다. 임시 파일은 다시 생성될 수 있습니다."
+      },
+      "special.windows-recycle-bin": {
+        "name": "휴지통",
+        "description": "현재 계정의 Windows 휴지통에 있는 모든 항목입니다.",
+        "impact": "휴지통을 비운 뒤에는 파일과 폴더를 복원할 수 없습니다. 이 항목은 기본적으로 선택되지 않습니다."
+      },
+      "special.windows-system-logs": {
+        "name": "Windows 로그 파일",
+        "description": "Windows 디렉터리의 Panther, Logs 및 System32\\LogFiles 아래에 있는 3일이 지난 설치, 업그레이드 및 진단 로그입니다.",
+        "impact": "고정된 Windows 로그 위치와 로그 유형만 포함됩니다. 사용 중이거나 계정에서 접근할 수 없는 파일은 건너뜁니다."
+      },
+      "special.windows-internet-cache": {
+        "name": "인터넷 임시 파일",
+        "description": "Windows가 제거 가능하다고 보고한 임시 인터넷 데이터입니다.",
+        "impact": "저장된 암호와 검색 기록은 유지됩니다. 일부 페이지는 다시 불러올 수 있습니다."
+      },
+      "special.windows-delivery-optimization": {
+        "name": "배달 최적화 파일",
+        "description": "Windows에 더 이상 필요하지 않은 업데이트 배달 캐시입니다.",
+        "impact": "설치된 업데이트는 유지됩니다. Windows가 업데이트 데이터를 다시 다운로드할 수 있습니다."
+      },
+      "special.windows-defender-cache": {
+        "name": "Microsoft Defender 캐시",
+        "description": "Windows가 제거 가능하다고 보고한 임시 Defender 데이터입니다.",
+        "impact": "보호 설정, 격리 항목, 현재 보안 정의는 유지됩니다."
+      },
+      "special.windows-update-cleanup": {
+        "name": "Windows Update 정리",
+        "description": "Windows가 제거 가능하다고 보고한 대체된 업데이트 파일입니다.",
+        "impact": "설치된 업데이트는 계속 활성 상태입니다. 오래된 업데이트 파일을 제거하면 롤백 옵션이 제한될 수 있습니다."
+      },
+      "special.windows-previous-installations": {
+        "name": "이전 Windows 설치",
+        "description": "최신 버전의 Windows로 업그레이드한 뒤 남아 있는 Windows.old 데이터입니다.",
+        "impact": "정리하면 이전 설치가 영구 제거되며 이전 Windows 버전으로 되돌릴 수 없습니다."
+      },
+      "special.macos-universal-binaries": {
+        "name": "유니버설 바이너리",
+        "description": "호환되는 Mac 앱에 포함된 불필요한 Intel 또는 Apple silicon 코드입니다.",
+        "impact": "이 Mac에 필요한 코드는 유지하며, 정리 전후에 각 앱을 확인합니다. 실행 중이거나 안전하게 변경할 수 없는 앱은 건너뜁니다. 두 프로세서 유형을 모두 다시 지원하려면 앱을 다시 설치하거나 업데이트하세요."
+      }
+    },
+    "actionMessages": {
+      "blocked": "관련 앱을 닫고 다시 시도하세요",
+      "previewed": "확인 완료. 삭제된 파일은 없습니다",
+      "completed": "정리 완료",
+      "partial": "사용 중이거나 권한이 없는 파일은 안전하게 건너뛰었습니다",
+      "failed": "정리를 완료할 수 없습니다. 다른 파일은 제거되지 않았습니다"
+    },
+    "actionReasons": {
+      "runningProcesses": "다음 앱을 닫고 다시 시도하세요: {processes}",
+      "itemsSkipped": "사용 중이거나 권한이 없는 파일은 안전하게 건너뛰었습니다",
+      "requiredToolUnavailable": "이 정리에 필요한 앱 또는 도구를 사용할 수 없습니다. 변경된 내용은 없습니다",
+      "preflightFailed": "선택한 파일을 안전하게 확인할 수 없습니다. 변경된 내용은 없습니다",
+      "executionFailed": "정리가 완료되지 않았습니다. 다른 파일은 제거되지 않았습니다",
+      "verificationFailed": "정리는 완료되었지만 MangoDisk가 결과를 확인하지 못했습니다. 다시 스캔하세요",
+      "cleanerUnavailable": "이 정리 옵션은 현재 사용할 수 없습니다. 변경된 내용은 없습니다"
+    }
+  }
+}

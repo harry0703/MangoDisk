@@ -6,6 +6,7 @@ describe('localized project website links', () => {
     ['zh-CN', '/zh'],
     ['zh-TW', '/tw'],
     ['ja-JP', '/ja'],
+    ['ko-KR', ''],
     ['en-US', ''],
     ['unknown', ''],
   ])('maps %s to a stable documentation route without query parameters', (locale, prefix) => {

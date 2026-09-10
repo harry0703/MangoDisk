@@ -4,6 +4,7 @@ export const LANGUAGE_IDS = {
   zhCN: 'zh-CN',
   zhTW: 'zh-TW',
   jaJP: 'ja-JP',
+  koKR: 'ko-KR',
   enUS: 'en-US',
 } as const;
 
@@ -32,6 +33,12 @@ export const LANGUAGE_OPTIONS = [
     labelKey: 'settings.languageNames.jaJP',
     browserLanguagePrefixes: ['ja'],
     websitePath: '/ja',
+  },
+  {
+    id: LANGUAGE_IDS.koKR,
+    labelKey: 'settings.languageNames.koKR',
+    browserLanguagePrefixes: ['ko'],
+    websitePath: '',
   },
   {
     id: LANGUAGE_IDS.enUS,

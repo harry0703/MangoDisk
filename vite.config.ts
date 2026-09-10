@@ -4,7 +4,7 @@ import vue from '@vitejs/plugin-vue';
 import { fileURLToPath, URL } from 'node:url';
 import { defineConfig } from 'vite';
 
-const localeModulePattern = /\/src\/locales\/modules\/(en-us|ja-jp|zh-cn|zh-tw)\.ts$/u;
+const localeModulePattern = /\/src\/locales\/modules\/(en-us|ja-jp|ko-kr|zh-cn|zh-tw)\.ts$/u;
 
 /**
  * Resolve locale chunk names only from project-owned modules. Depending on
