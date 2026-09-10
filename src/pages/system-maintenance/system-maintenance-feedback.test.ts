@@ -4,6 +4,7 @@ import zhCN from '@/locales/zh-CN.json';
 import zhTW from '@/locales/zh-TW.json';
 import enUS from '@/locales/en-US.json';
 import jaJP from '@/locales/ja-JP.json';
+import koKR from '@/locales/ko-KR.json';
 import type { SystemMaintenanceExecutionItemResult } from '@/lib/models/system-maintenance';
 import { maintenanceFailureFeedback } from './system-maintenance-feedback';
 
@@ -21,6 +22,7 @@ describe.each([
   ['zh-TW', zhTW],
   ['en-US', enUS],
   ['ja-JP', jaJP],
+  ['ko-KR', koKR],
 ] as const)('maintenance failure feedback (%s)', (locale, messages) => {
   const { t } = createI18n({ legacy: false, locale, messages: { [locale]: messages } }).global;
   it('shows only the specific reason after partial changes', () => {

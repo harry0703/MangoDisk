@@ -11,7 +11,7 @@ afterEach(() => {
 });
 
 describe('AI quota copy', () => {
-  it.each<SupportedLocale>(['zh-CN', 'zh-TW', 'en-US', 'ja-JP'])(
+  it.each<SupportedLocale>(['zh-CN', 'zh-TW', 'en-US', 'ja-JP', 'ko-KR'])(
     'uses neutral fallback copy and server limits in %s',
     async locale => {
       i18n.global.locale.value = locale;
