@@ -12,20 +12,38 @@ pub enum Ink {
     Foreground,
     Upload,
     Download,
+    Usage(crate::resident::tray_display::usage_color::UsageTone),
 }
 impl Ink {
     pub fn rgb(self, foreground: [u8; 3]) -> [u8; 3] {
         // Match the macOS menu bar and the frontend status color tokens.
         match self {
             Self::Foreground => foreground,
+            Self::Usage(tone) => tone.rgb(foreground),
             Self::Upload => [255, 69, 58],
             Self::Download => [10, 132, 255],
         }
     }
 }
 
+/// Keep metric labels subordinate to values in both native renderers.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum TextStyle {
+    Label,
+    Value,
+}
+impl TextStyle {
+    pub fn pixels(self, dpi: u32) -> u32 {
+        match self {
+            Self::Label => 9 * dpi / 96,
+            Self::Value => 12 * dpi / 96,
+        }
+    }
+}
+
 pub struct Run<'a> {
     pub text: &'a str,
+    pub style: TextStyle,
     pub bounds: Bounds,
     pub alignment: Alignment,
     pub ink: Ink,
@@ -68,9 +86,9 @@ pub fn runs<'a>(columns: &'a [Column], surface: &Surface, dpi: u32) -> Vec<Run<'
                     // Reserve 28 DIP for four numeric characters, including 99.9
                     // and rounded 1000. This keeps zero close to the arrow while
                     // preserving a stable unit anchor as speed changes.
-                    let compact = cell.width() < scale(84);
+                    let compact = column.compact;
                     let padding = scale(if compact { 3 } else { 5 });
-                    let unit_width = scale(if compact { 30 } else { 33 });
+                    let unit_width = scale(if compact { 12 } else { 33 });
                     let spacing = scale(if compact { 2 } else { 3 });
                     let unit_left = cell.right - padding - unit_width;
                     (
@@ -96,6 +114,7 @@ pub fn runs<'a>(columns: &'a [Column], surface: &Surface, dpi: u32) -> Vec<Run<'
                 };
                 result.extend([
                     Run {
+                        style: TextStyle::Value,
                         text: if index == 0 { "↑" } else { "↓" },
                         bounds: arrow,
                         alignment: Alignment::Left,
@@ -106,12 +125,14 @@ pub fn runs<'a>(columns: &'a [Column], surface: &Surface, dpi: u32) -> Vec<Run<'
                         },
                     },
                     Run {
+                        style: TextStyle::Value,
                         text: &rate.value,
                         bounds: value,
                         alignment: Alignment::Right,
                         ink: Ink::Foreground,
                     },
                     Run {
+                        style: TextStyle::Value,
                         text: &rate.unit,
                         bounds: unit,
                         alignment: if surface.vertical {
@@ -124,17 +145,27 @@ pub fn runs<'a>(columns: &'a [Column], surface: &Surface, dpi: u32) -> Vec<Run<'
                 ]);
             }
         } else {
+            let split = cell.top + cell.height() * 5 / 12;
             for (index, text) in [&column.first, &column.second].into_iter().enumerate() {
                 result.push(Run {
                     text,
+                    style: if index == 0 {
+                        TextStyle::Label
+                    } else {
+                        TextStyle::Value
+                    },
                     bounds: Bounds {
                         left: cell.left + scale(3),
-                        top: cell.top + index as i32 * cell.height() / 2,
+                        top: if index == 0 { cell.top } else { split },
                         right: cell.right - scale(3),
-                        bottom: cell.top + (index as i32 + 1) * cell.height() / 2,
+                        bottom: if index == 0 { split } else { cell.bottom },
                     },
                     alignment: Alignment::Center,
-                    ink: Ink::Foreground,
+                    ink: if index == 1 {
+                        Ink::Usage(column.tone)
+                    } else {
+                        Ink::Foreground
+                    },
                 });
             }
         }
@@ -146,6 +177,44 @@ pub fn runs<'a>(columns: &'a [Column], surface: &Surface, dpi: u32) -> Vec<Run<'
 mod tests {
     use super::*;
     use crate::resident::tray_display::format::{DisplayEntry, DisplayId};
+
+    #[test]
+    fn percentage_tone_colors_only_values_for_all_percentage_metrics() {
+        use crate::resident::tray_display::usage_color::UsageTone;
+        for id in [DisplayId::Cpu, DisplayId::Memory, DisplayId::Disk] {
+            for tone in [UsageTone::Normal, UsageTone::Warning, UsageTone::Critical] {
+                let columns = super::super::presentation::columns(
+                    &[DisplayEntry {
+                        id,
+                        tone,
+                        usage_percent: Some(90),
+                        digits: "90".into(),
+                        marker: String::new(),
+                        text: String::new(),
+                        tooltip: String::new(),
+                    }],
+                    192,
+                    true,
+                );
+                let surface = Surface::arrange(
+                    &columns,
+                    Bounds {
+                        left: 0,
+                        top: 0,
+                        right: 1920,
+                        bottom: 80,
+                    },
+                    192,
+                )
+                .unwrap();
+                let runs = runs(&columns, &surface, 192);
+                assert_eq!(runs[0].ink, Ink::Foreground);
+                assert!(runs[0].style.pixels(96) < runs[1].style.pixels(96));
+                assert_eq!(runs[1].ink, Ink::Usage(tone));
+                assert_eq!(runs[1].text, "90%");
+            }
+        }
+    }
 
     #[test]
     fn rate_boundaries_never_change_field_geometry_or_lose_direction_colors() {
@@ -164,6 +233,8 @@ mod tests {
                 ] {
                     let columns = super::super::presentation::columns(
                         &[DisplayEntry {
+                            tone: Default::default(),
+                            usage_percent: None,
                             id: DisplayId::Upload,
                             text: title.into(),
                             marker: String::new(),

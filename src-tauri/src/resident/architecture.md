@@ -35,7 +35,7 @@ returns that reserved slot directly, so centered buttons do not send the monitor
 to an unrelated outer gap. Unknown environments prefer right,
 and collision checks still apply. These defaults do not replace saved choices.
 
-Resident preferences use schema version 7; resource snapshots use version 3.
+Resident preferences use schema version 8; resource snapshots use version 3.
 Version 1 preferences retain background and memory-display choices. Version 2
 preferences retain all selections and default to the original Windows tray mode.
 Version 3 retains that mode and defaults the new position preference to right.
@@ -43,8 +43,9 @@ Version 4 retains all choices and enables the new taskbar background option.
 Version 5 retains its saved left/right preference; only new installations default
 to automatic placement. Version 6 retains automatic/manual choices and defaults
 the new compact mode to off. Compact mode reduces horizontal cells from 50/84
-to 38/76 DIP (percentage/network) without reducing the 12-DIP font,
-color cues or fixed value/unit fields; paint and hit testing share those bounds.
+to 38/58 DIP (percentage/network), with abbreviated network units
+(B/K/M/G/T) and unchanged numeric precision. Labels use 9-DIP text and values
+use 12-DIP text in both densities; paint and hit testing share those bounds.
 Unknown persisted
 versions are rejected for writes. Memory snapshots and release results retain
 their separate version 1 contract.
@@ -183,6 +184,17 @@ channel keeps only weak references and runs no timer. Its content-addressed DLL
 may remain mapped until Explorer exits; the per-user cache avoids locking update
 or uninstall files. A build-specific channel identity prevents reuse of old code.
 Old cache files are removed on a later startup when Explorer has released them.
+When the app and Explorer have different process architectures (for example, an
+x64 build running on ARM64 Windows), child hosting still works but the XAML DLL
+cannot load into Explorer. Detect this before launching the companion and use
+collision-checked free taskbar space instead. No button space is reserved in this
+mode; insufficient free space retains the existing NoSpace status. Architecture
+query failures use the same conservative placement and log the native error.
+Recreated shell hosts repeat this check; compatible builds retain leased reservation.
+Unknown environments leave the architecture check pending. The first usable
+Windows 11 snapshot performs it, including after environment detection recovers.
+Fullscreen and hidden-shell states are evaluated before space allocation, since
+transient accessibility gaps during fullscreen are not evidence of insufficient space.
 Windows builds require the MSVC C++/WinRT headers supplied with the Windows SDK.
 Child creation temporarily adopts the parent's per-monitor DPI context on the
 native thread, then restores the previous thread context. Process DPI is unchanged.
@@ -209,8 +221,11 @@ notifications also wake fullscreen checks immediately. Notifications are coalesc
 our own thread is excluded, and hooks are removed before recreating the window.
 Subscription failure retains the timer fallback. No desktop-reorder hook or
 occlusion retry is needed for a child window.
-Geometry older than three seconds
-is rejected. Shell calls cannot block Tauri's event loop or resource samplers.
+Gap placement rejects geometry older than three seconds. An active reservation
+may continue during a slow UIA query only while the companion has confirmed its
+layout within three seconds and live shell bounds, DPI and alignment still match.
+A delayed UIA sample and its recovery are logged; stale helper replies are rejected.
+Shell calls cannot block Tauri's event loop or resource samplers.
 Model updates replace one bounded snapshot, and GDI objects are released after
 painting. Disabled taskbar presentation stops the window timer. The shell query
 thread performs no inspection while tray mode is selected or resident display is disabled.
@@ -221,12 +236,22 @@ wait for the shell layout to settle instead of activating no-space fallback.
 Windows 10 manual left/right reserves the start/end of the task-button container
 (top/bottom on a vertical taskbar). Button crowding does not activate tray fallback.
 The lease remains allocated during fullscreen/auto-hide, avoiding needless button
-reflow. With centered Windows 11 buttons, left placement reserves the repeater's
-outer left margin; Widgets and application buttons flow after the monitor. With
-left-aligned Windows 11 buttons, it reserves the Start button's right margin and
-preserves its real minimum width so its hit-test bounds remain valid. Right
-placement reserves the application repeater's right margin. Restoring properties is conditional on
-the last applied value, preserving later changes made by Explorer or another tool.
+reflow. With centered Windows 11 buttons, the repeater's positioning margins
+remain untouched. Only a natural button span that would collide with the selected
+monitor edge activates a maximum-width limit; ordinary layouts retain the
+original screen center. Crowded/uncombined buttons use Explorer's constrained
+layout and overflow behavior. A constrained lease measures the unconstrained span
+at most once per second unless its size or placement changes. It does not arrange
+the intermediate state and restores the final constraint before layout. This
+avoids oscillating on the visible-only overflow width or retaining recycled
+button slots after applications close. The monitor stays at the selected outer
+edge, and releasing the lease restores the original maximum width. With
+left-aligned Windows 11 buttons, left placement reserves the Start button's right margin and preserves its real
+minimum width so its hit-test bounds remain valid; right placement reserves the
+application repeater's right margin. The embedded XAML request uses version 2
+and rejects other versions; the DLL content key isolates different builds.
+Restoring properties is conditional on the last applied value, preserving later
+changes made by Explorer or another tool.
 Comparison tolerates XAML float-storage precision at fractional DPI; exact
 equality would mistake our own margin for an external update and compound it.
 Unknown shell versions use the existing non-mutating gap placement.
@@ -264,7 +289,7 @@ uses DirectWrite grayscale text and premultiplied BGRA. A cached
 software Direct2D DC target renders colored glyphs directly into alpha, avoiding
 the previous white-on-black GDI intensity-to-coverage conversion. Regular Segoe UI
 keeps stroke weight close to the opaque reference; both paths retain the same
-physical font size and cell rectangles. Factories, target and DPI-specific text
+physical label/value font sizes and cell rectangles. Factories, target and DPI-specific text
 format stay on the native window thread; a failed frame discards them for recovery. Background pixels use alpha 1/255
 rather than zero so clicks still reach the entire cell; hover raises that alpha
 to 28/255. ClearType remains enabled only for the opaque, known-background path.
@@ -274,7 +299,7 @@ because a newly layered window has no hit-testable pixels. Allocation/presentati
 hides the surface and activates the existing tray fallback; diagnostics record
 the failing stage and recovery, not every frame.
 
-Windows taskbar network columns keep a fixed 84 DIP width, or 76 DIP in compact mode. The arrow, right-aligned
+Windows taskbar network columns keep a fixed 84 DIP width, or 58 DIP in compact mode. The arrow, right-aligned
 value and unit occupy independent fields; upload arrows are red and download arrows
 blue, matching macOS. Side taskbars retain separate value/unit lines. Shared text-run
 geometry drives both opaque GDI drawing and transparent DirectWrite drawing. Taskbar rates
@@ -319,3 +344,55 @@ foreground-process skipping remains Windows-only because the macOS operation is
 global. macOS exposes only the timer and threshold; preferences containing an
 exclusion list or foreground skipping are rejected, never silently ignored.
 The separate settings window remains open when the monitor loses focus.
+
+### Usage colors and menu-bar density
+
+CPU, memory, and disk capacity percentages share configurable warning/critical
+thresholds (70/90 by default). Coloring is enabled for new installations and
+legacy versions without this preference; an explicit saved opt-out is retained.
+Only values change color; labels retain the theme
+foreground. Tones enter higher bands at the threshold and clear three percentage
+points below it. Unavailable readings and disabled coloring reset the tone.
+Changes to color rules reset hysteresis so new thresholds apply immediately.
+Changing the sampled disk resets its tone without affecting other metrics.
+
+Version 8 adds these color preferences and an independent macOS compact setting.
+Legacy selections and custom order are retained. The former default sequence
+and new installations use CPU, memory, disk, then network. macOS compact mode preserves labels, percentages and direction
+arrows, shortens network units, and reduces fixed field widths and spacing. Both
+densities reserve enough width for their largest numeric values at the native font.
+
+### Background update notice
+
+`services::app_updates` owns both scheduled discovery and explicit checks,
+independently of resident sampling and main-window creation. It checks after a
+3-second startup delay and then every six hours; failures retry after 1, 5, 30,
+and at most 60 minutes while retaining the last successful result. Wall-clock
+deadlines include sleep. A 30-second poll or window-focus read catches overdue
+checks. Concurrent callers share the active result, including failures; a manual
+check after completion explicitly refreshes. Each network operation has a total
+timeout and uses the same native locale, distribution, optional existing install
+identity, and OS version headers. Discovery does not depend on browser timezone
+metadata or create another installation identity.
+
+The versioned, revisioned `app-update-notice` snapshot is readable through
+`get_app_update_notice`. Consumers subscribe before reading and reject older
+revisions. Every successful check advances the revision, including no-update
+results, so both windows clear stale notices. Failed checks retain the prior
+result. The resource panel shows one text action in either tab; no tray-menu item
+or OS notification is created.
+
+The existing About navigation reads the native cache through
+`acquire_app_update(refresh=false)`. Only the main WebView may acquire a cloned
+plugin Update in its resource table. The cached native Update remains independent
+of that window's resource lifetime. `refresh=true` explicitly requests a check;
+opening the update window after discovery does not make another network request.
+The frontend continues using the plugin's signed download and install methods,
+including portable download URL validation and existing user-controlled actions.
+Downloaded resources are not replaced by background notices.
+
+Logs record request source and ID, shared requests, availability, version
+changes, elapsed time, retry delay, and retained-result state. Resource acquisition
+is distinct from network discovery. Polls and unchanged notice reads do not log.
+State remains process-local and is rediscovered after restart, without a new
+persisted settings schema or forced WebView creation.

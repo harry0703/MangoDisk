@@ -5,9 +5,54 @@ use windows_sys::{
     core::w,
     Win32::{
         Foundation::*,
+        System::Threading::*,
         UI::{HiDpi::*, WindowsAndMessaging::*},
     },
 };
+
+/// Child HWND hosting works across architectures, but an in-process XAML DLL
+/// must match Explorer. Detect this before starting a companion that cannot attach.
+pub unsafe fn xaml_architecture_matches(shell: HWND) -> bool {
+    let mut shell_pid = 0;
+    GetWindowThreadProcessId(shell, &mut shell_pid);
+    let process = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, 0, shell_pid);
+    let result = if process.is_null() {
+        Err(GetLastError())
+    } else {
+        let result = process_machine(GetCurrentProcess())
+            .and_then(|app| process_machine(process).map(|shell| (app, shell)));
+        CloseHandle(process);
+        result
+    };
+    match result {
+        Ok((app, shell)) => {
+            let mode = if app == shell { "reserved" } else { "free_gap" };
+            log::info!("resident_taskbar_architecture app_machine={app:#06x} shell_machine={shell:#06x} shell_pid={shell_pid} placement={mode}");
+            app == shell
+        }
+        Err(code) => {
+            log::warn!("resident_taskbar_architecture_unavailable shell_pid={shell_pid} code={code} fallback=free_gap");
+            false
+        }
+    }
+}
+
+unsafe fn process_machine(process: HANDLE) -> Result<u16, u32> {
+    // Windows 11's x64 emulation is not reported as WOW64. IsWow64Process2
+    // can therefore report UNKNOWN plus native ARM64 for an x64 executable.
+    // This information class reports the actual process architecture instead.
+    let mut info = PROCESS_MACHINE_INFORMATION::default();
+    if GetProcessInformation(
+        process,
+        ProcessMachineTypeInfo,
+        (&mut info as *mut PROCESS_MACHINE_INFORMATION).cast(),
+        std::mem::size_of_val(&info) as u32,
+    ) == 0
+    {
+        return Err(GetLastError());
+    }
+    Ok(info.ProcessMachine)
+}
 
 pub unsafe fn parent(shell: HWND) -> HWND {
     // Windows 10's rebar shares clipping/order with the task buttons. Windows
@@ -93,6 +138,27 @@ pub unsafe fn client_bounds(parent: HWND) -> Option<super::layout::Bounds> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn native_process_machine_reports_binary_architecture_even_under_emulation() {
+        use windows_sys::Win32::System::SystemInformation::{
+            IMAGE_FILE_MACHINE_AMD64, IMAGE_FILE_MACHINE_ARM64,
+        };
+        let expected = if cfg!(target_arch = "aarch64") {
+            IMAGE_FILE_MACHINE_ARM64
+        } else {
+            IMAGE_FILE_MACHINE_AMD64
+        };
+        let actual = unsafe { process_machine(GetCurrentProcess()) };
+        if super::super::position::read_environment()
+            == super::super::position::Environment::Windows10
+        {
+            // The production caller only probes Windows 11 XAML taskbars.
+            assert!(actual.is_err(), "Windows 10 has no ProcessMachineTypeInfo");
+        } else {
+            assert_eq!(actual, Ok(expected));
+        }
+    }
 
     #[test]
     fn child_hosting_preserves_parent_geometry_and_thread_dpi() {

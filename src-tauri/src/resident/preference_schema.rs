@@ -37,15 +37,26 @@ pub struct ResidentPreferences {
     pub taskbar_position: TaskbarPosition,
     pub taskbar_background: bool,
     pub taskbar_compact: bool,
+    pub menu_bar_compact: bool,
+    pub usage_colors: bool,
+    pub usage_warning_percent: u8,
+    pub usage_critical_percent: u8,
     pub metrics: Vec<DisplayMetric>,
     pub network_interface: Option<String>,
     pub disk_volume: Option<String>,
 }
 
+const DISPLAY_ORDER: [MetricId; 4] = [
+    MetricId::Cpu,
+    MetricId::Memory,
+    MetricId::Disk,
+    MetricId::Network,
+];
+
 impl Default for ResidentPreferences {
     fn default() -> Self {
         Self {
-            schema_version: 7,
+            schema_version: 8,
             revision: 0,
             enabled: true,
             show_icon: true,
@@ -53,7 +64,11 @@ impl Default for ResidentPreferences {
             taskbar_position: TaskbarPosition::default(),
             taskbar_background: true,
             taskbar_compact: false,
-            metrics: MetricId::ALL
+            menu_bar_compact: false,
+            usage_colors: true,
+            usage_warning_percent: 70,
+            usage_critical_percent: 90,
+            metrics: DISPLAY_ORDER
                 .into_iter()
                 .map(|id| DisplayMetric {
                     id,
@@ -78,10 +93,13 @@ impl ResidentPreferences {
     }
 
     pub fn normalize(mut self) -> Result<Self, &'static str> {
-        if self.schema_version != 7 {
+        if self.schema_version != 8 {
             return Err("preferences_version");
         }
-        if self.metrics.len() > 64
+        if self.usage_warning_percent < 1
+            || self.usage_warning_percent >= self.usage_critical_percent
+            || self.usage_critical_percent > 100
+            || self.metrics.len() > 64
             || [&self.network_interface, &self.disk_volume]
                 .iter()
                 .any(|id| {
@@ -99,7 +117,7 @@ impl ResidentPreferences {
             seen.push(metric.id);
             true
         });
-        for id in MetricId::ALL {
+        for id in DISPLAY_ORDER {
             if !seen.contains(&id) {
                 self.metrics.push(DisplayMetric { id, enabled: false });
             }
@@ -109,6 +127,33 @@ impl ResidentPreferences {
 }
 
 pub fn decode(mut value: serde_json::Value) -> Result<ResidentPreferences, &'static str> {
+    let version = value.get("schemaVersion").and_then(|v| v.as_u64());
+    if matches!(version, Some(2..=7)) {
+        for field in [
+            "menuBarCompact",
+            "usageColors",
+            "usageWarningPercent",
+            "usageCriticalPercent",
+        ] {
+            if value.get(field).is_some() {
+                return Err("preferences_invalid");
+            }
+        }
+        // Upgrade only the former default sequence; keep deliberate custom order.
+        if let Some(metrics) = value.get_mut("metrics").and_then(|v| v.as_array_mut()) {
+            let ids: Vec<_> = metrics
+                .iter()
+                .filter_map(|m| m.get("id").and_then(|id| id.as_str()))
+                .collect();
+            if ids == ["cpu", "memory", "network", "disk"] {
+                metrics.swap(2, 3);
+            }
+        }
+        value["menuBarCompact"] = false.into();
+        value["usageColors"] = true.into();
+        value["usageWarningPercent"] = 70.into();
+        value["usageCriticalPercent"] = 90.into();
+    }
     // Versions 2–6 had no density preference. Preserve their appearance and
     // reject fields that did not belong to the declared legacy protocol.
     if matches!(
@@ -159,7 +204,7 @@ pub fn decode(mut value: serde_json::Value) -> Result<ResidentPreferences, &'sta
             {
                 return Err("preferences_invalid");
             }
-            value["schemaVersion"] = 7.into();
+            value["schemaVersion"] = 8.into();
             value["taskbarBackground"] = true.into();
             value["windowsDisplayMode"] = "tray".into();
             value["taskbarPosition"] = "right".into();
@@ -171,7 +216,7 @@ pub fn decode(mut value: serde_json::Value) -> Result<ResidentPreferences, &'sta
             if value.get("taskbarPosition").is_some() || value.get("taskbarBackground").is_some() {
                 return Err("preferences_invalid");
             }
-            value["schemaVersion"] = 7.into();
+            value["schemaVersion"] = 8.into();
             value["taskbarBackground"] = true.into();
             value["taskbarPosition"] = "right".into();
             serde_json::from_value::<ResidentPreferences>(value)
@@ -190,7 +235,7 @@ pub fn decode(mut value: serde_json::Value) -> Result<ResidentPreferences, &'sta
             }
             // Existing installations keep the opaque presentation until the
             // user explicitly selects transparency.
-            value["schemaVersion"] = 7.into();
+            value["schemaVersion"] = 8.into();
             value["taskbarBackground"] = true.into();
             serde_json::from_value::<ResidentPreferences>(value)
                 .map_err(|_| "preferences_invalid")?
@@ -205,20 +250,23 @@ pub fn decode(mut value: serde_json::Value) -> Result<ResidentPreferences, &'sta
             ) {
                 return Err("preferences_invalid");
             }
-            value["schemaVersion"] = 7.into();
+            value["schemaVersion"] = 8.into();
             serde_json::from_value::<ResidentPreferences>(value)
                 .map_err(|_| "preferences_invalid")?
                 .normalize()
         }
         Some(6) => {
-            value["schemaVersion"] = 7.into();
+            value["schemaVersion"] = 8.into();
             serde_json::from_value::<ResidentPreferences>(value)
                 .map_err(|_| "preferences_invalid")?
                 .normalize()
         }
-        Some(7) => serde_json::from_value::<ResidentPreferences>(value)
-            .map_err(|_| "preferences_invalid")?
-            .normalize(),
+        Some(7 | 8) => {
+            value["schemaVersion"] = 8.into();
+            serde_json::from_value::<ResidentPreferences>(value)
+                .map_err(|_| "preferences_invalid")?
+                .normalize()
+        }
         _ => Err("preferences_version"),
     }
 }
@@ -227,15 +275,111 @@ pub fn decode(mut value: serde_json::Value) -> Result<ResidentPreferences, &'sta
 mod tests {
     use super::*;
 
+    fn legacy_preferences() -> serde_json::Value {
+        let mut value = serde_json::to_value(ResidentPreferences::default()).unwrap();
+        value["schemaVersion"] = 7.into();
+        for field in [
+            "menuBarCompact",
+            "usageColors",
+            "usageWarningPercent",
+            "usageCriticalPercent",
+        ] {
+            value.as_object_mut().unwrap().remove(field);
+        }
+        value
+    }
+
+    #[test]
+    fn usage_colors_default_on_without_overwriting_saved_opt_out() {
+        let defaults = ResidentPreferences::default();
+        assert!(defaults.usage_colors);
+        assert_eq!(defaults.usage_warning_percent, 70);
+        assert_eq!(defaults.usage_critical_percent, 90);
+        let saved = ResidentPreferences {
+            usage_colors: false,
+            usage_warning_percent: 55,
+            usage_critical_percent: 80,
+            ..defaults
+        };
+        let restored = decode(serde_json::to_value(&saved).unwrap()).unwrap();
+        assert_eq!(restored, saved);
+        assert_eq!(
+            decode(serde_json::to_value(&restored).unwrap()).unwrap(),
+            saved
+        );
+    }
+
+    #[test]
+    fn version_seven_preserves_order_and_adds_display_options() {
+        let mut old = legacy_preferences();
+        old["metrics"].as_array_mut().unwrap().reverse();
+        let order = old["metrics"].clone();
+        let migrated = decode(old).unwrap();
+        assert_eq!(migrated.schema_version, 8);
+        assert!(!migrated.menu_bar_compact);
+        assert!(migrated.usage_colors);
+        assert_eq!(serde_json::to_value(migrated).unwrap()["metrics"], order);
+        assert_eq!(
+            ResidentPreferences::default()
+                .metrics
+                .iter()
+                .map(|m| m.id)
+                .collect::<Vec<_>>(),
+            DISPLAY_ORDER
+        );
+    }
+
+    #[test]
+    fn legacy_default_order_moves_network_last_without_changing_enabled_flags() {
+        let mut old = legacy_preferences();
+        old["metrics"] = serde_json::json!([
+            {"id":"cpu", "enabled":false}, {"id":"memory", "enabled":true},
+            {"id":"network", "enabled":true}, {"id":"disk", "enabled":false}
+        ]);
+        let migrated = decode(old).unwrap();
+        assert_eq!(
+            migrated.metrics.iter().map(|m| m.id).collect::<Vec<_>>(),
+            DISPLAY_ORDER
+        );
+        assert!(migrated.shows(MetricId::Network));
+        assert!(!migrated.shows(MetricId::Disk));
+    }
+
+    #[test]
+    fn usage_thresholds_reject_invalid_ranges_and_round_trip() {
+        for (warning, critical) in [(0, 90), (90, 90), (95, 90), (70, 101)] {
+            assert!(ResidentPreferences {
+                usage_warning_percent: warning,
+                usage_critical_percent: critical,
+                ..Default::default()
+            }
+            .normalize()
+            .is_err());
+        }
+        let settings = ResidentPreferences {
+            menu_bar_compact: true,
+            usage_warning_percent: 60,
+            usage_critical_percent: 85,
+            ..Default::default()
+        };
+        assert_eq!(
+            decode(serde_json::to_value(&settings).unwrap()).unwrap(),
+            settings
+        );
+        let mut malformed = legacy_preferences();
+        malformed["usageColors"] = true.into();
+        assert!(decode(malformed).is_err());
+    }
+
     #[test]
     fn version_five_preserves_manual_positions_and_current_auto_round_trips() {
         for position in ["left", "right"] {
-            let mut old = serde_json::to_value(ResidentPreferences::default()).unwrap();
+            let mut old = legacy_preferences();
             old["schemaVersion"] = 5.into();
             old.as_object_mut().unwrap().remove("taskbarCompact");
             old["taskbarPosition"] = position.into();
             let migrated = decode(old).unwrap();
-            assert_eq!(migrated.schema_version, 7);
+            assert_eq!(migrated.schema_version, 8);
             assert_eq!(
                 serde_json::to_value(migrated).unwrap()["taskbarPosition"],
                 position
@@ -250,7 +394,7 @@ mod tests {
 
     #[test]
     fn version_six_preserves_automatic_position_and_defaults_to_standard_density() {
-        let mut old = serde_json::to_value(ResidentPreferences::default()).unwrap();
+        let mut old = legacy_preferences();
         old["schemaVersion"] = 6.into();
         old.as_object_mut().unwrap().remove("taskbarCompact");
         let migrated = decode(old).unwrap();
@@ -318,14 +462,14 @@ mod tests {
                 assert_eq!(migrated.shows(MetricId::Memory), memory);
                 assert!(migrated.show_icon);
                 assert!(!migrated.shows(MetricId::Cpu));
-                assert_eq!(migrated.schema_version, 7);
+                assert_eq!(migrated.schema_version, 8);
             }
         }
     }
 
     #[test]
     fn version_two_migrates_to_tray_without_changing_choices() {
-        let mut old = serde_json::to_value(ResidentPreferences::default()).unwrap();
+        let mut old = legacy_preferences();
         old["schemaVersion"] = 2.into();
         old.as_object_mut().unwrap().remove("taskbarCompact");
         old.as_object_mut().unwrap().remove("taskbarBackground");
@@ -345,7 +489,7 @@ mod tests {
 
     #[test]
     fn version_three_preserves_taskbar_mode_and_defaults_to_right() {
-        let mut old = serde_json::to_value(ResidentPreferences::default()).unwrap();
+        let mut old = legacy_preferences();
         old["schemaVersion"] = 3.into();
         old.as_object_mut().unwrap().remove("taskbarCompact");
         old.as_object_mut().unwrap().remove("taskbarBackground");
@@ -368,7 +512,7 @@ mod tests {
 
     #[test]
     fn version_four_keeps_background_and_current_preserves_transparency() {
-        let mut old = serde_json::to_value(ResidentPreferences::default()).unwrap();
+        let mut old = legacy_preferences();
         old["schemaVersion"] = 4.into();
         old.as_object_mut().unwrap().remove("taskbarCompact");
         old["taskbarPosition"] = "left".into();

@@ -2429,6 +2429,8 @@
     "versionValue": "版本 {version}"
   },
   "updates": {
+    "noticeAvailable": "新版本可用",
+    "noticeRetry": "重试打开更新",
     "availableTitle": "MangoDisk {version} 可用",
     "currentVersionDescription": "当前版本 {version}",
     "checkDescription": "检查是否有可用的新版本",
@@ -3536,7 +3538,12 @@
     "releaseButtonUnsupported": "不支持"
   },
   "systemStatus": {
-    "taskbarSettingsTitle": "任务栏设置",
+    "appearanceTitle": "显示样式",
+    "usageColors": "颜色提示",
+    "usageWarning": "橙色 ≥",
+    "usageCritical": "红色 ≥",
+    "usageColorsHelp": "CPU、内存和磁盘达到阈值时变色，低于阈值时保持默认颜色",
+    "menuBarCompactHint": "缩小间距，网速单位简写为 K、M、G",
     "configureAction": "配置…",
     "menuBarSettingsTitle": "菜单栏设置",
     "displaySettingsTitle": "任务栏与托盘设置",
@@ -3578,7 +3585,7 @@
     "networkScope": "所选接口的流量，包含局域网传输",
     "taskbarBackground": "显示背景",
     "taskbarCompact": "紧凑模式",
-    "taskbarPosition": "优先位置",
+    "taskbarPosition": "对齐方式",
     "taskbarAuto": "自动",
     "taskbarLeft": "靠左",
     "taskbarRight": "靠右",

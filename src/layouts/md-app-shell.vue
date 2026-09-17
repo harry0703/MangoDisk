@@ -3,7 +3,7 @@ import { computed, defineAsyncComponent, onBeforeUnmount, onMounted, ref, watch 
 import { useI18n } from 'vue-i18n';
 import { toast } from 'vue-sonner';
 
-import { APP_UPDATE_AUTOMATIC_CHECK_DELAY_MS, APP_UPDATE_STATUS_IDS } from '@/lib/models/app-update';
+import { APP_UPDATE_STATUS_IDS } from '@/lib/models/app-update';
 import type { ApplicationLeftoverCandidate, ApplicationUninstallBatchSelection } from '@/lib/models/application';
 import type { ApplicationCloseMode } from '@/lib/models/application-close';
 import type { DirectoryEntryInfo } from '@/lib/models/analysis';
@@ -21,6 +21,7 @@ import type { PageId } from '@/lib/models/application-shell';
 import { ApplicationWindowService } from '@/lib/services/application-window-service';
 import type { ResidentDestination } from '@/lib/models/resident';
 import { ResidentService } from '@/lib/services/resident-service';
+import { BackgroundUpdateService } from '@/lib/services/background-update-service';
 import { ApplicationMenuService } from '@/lib/services/application-menu-service';
 import { FileManagerService } from '@/lib/services/file-manager-service';
 import { LinkService } from '@/lib/services/link-service';
@@ -224,7 +225,7 @@ let historyInitialization: Promise<void> | null = null;
 let unlistenResident: (() => void) | null = null;
 let unlistenOpenAbout: (() => void) | null = null;
 let shellMounted = true;
-let automaticUpdateTimer: ReturnType<typeof setTimeout> | null = null;
+let stopUpdateNotice: (() => void) | undefined;
 
 function initializeDisks(): Promise<void> {
   diskInitialization ??= store.initialize().then(() => storageScopeStore.initialize(store.disks));
@@ -273,14 +274,18 @@ onMounted(() => {
   cleanupStore.initialize();
   preloadFeaturePages();
   void appUpdateStore.initialize();
-  // Update checks start after the first interactive frame and never delay
-  // cleanup initialization or navigation. Development builds use the same
-  // path so local update endpoints and the complete startup interaction can
-  // be verified before packaging.
-  automaticUpdateTimer = window.setTimeout(() => {
-    automaticUpdateTimer = null;
-    void appUpdateStore.check(store.settings.language, false);
-  }, APP_UPDATE_AUTOMATIC_CHECK_DELAY_MS);
+  // Every window reads the same native result. Acquiring a download handle
+  // from a completed check does not issue another network request.
+  void BackgroundUpdateService.watch(notice => {
+    if (notice.checked) {
+      void appUpdateStore.check(false);
+    }
+  })
+    .then(stop => {
+      if (shellMounted) stopUpdateNotice = stop;
+      else stop();
+    })
+    .catch(error => store.reportError(error));
   void connectWindowNavigation();
   void ApplicationMenuService.onOpenAbout(() => {
     void openAboutSettings();
@@ -332,7 +337,7 @@ async function connectWindowNavigation() {
 onBeforeUnmount(() => {
   shellMounted = false;
   window.removeEventListener('resize', syncSidebarExpansion);
-  if (automaticUpdateTimer) window.clearTimeout(automaticUpdateTimer);
+  stopUpdateNotice?.();
   unlistenOpenAbout?.();
   unlistenResident?.();
 });
@@ -356,10 +361,13 @@ async function openAboutSettings() {
   await navigate(PAGE_IDS.settings);
   settingsFocusRevision.value += 1;
   appUpdateStore.showAbout();
+  if (!appUpdateStore.update && !appUpdateStore.busy) {
+    await appUpdateStore.check(true, false);
+  }
 }
 
 async function checkForUpdates() {
-  await appUpdateStore.check(store.settings.language, true);
+  await appUpdateStore.check(true);
   if (appUpdateStore.status !== APP_UPDATE_STATUS_IDS.error) return;
   toast.error(t('settings.updateCheckFailedTitle'), {
     description: appUpdateStore.checkError || t('settings.updateCheckUnknownError'),

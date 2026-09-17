@@ -3,7 +3,7 @@ import { emptyReadings } from '@/lib/utils/system-resources';
 
 export function preferencesFixture(): ResidentPreferences {
   return {
-    schemaVersion: 7,
+    schemaVersion: 8,
     revision: 0,
     enabled: true,
     showIcon: true,
@@ -11,6 +11,10 @@ export function preferencesFixture(): ResidentPreferences {
     taskbarPosition: 'right',
     taskbarBackground: true,
     taskbarCompact: false,
+    menuBarCompact: false,
+    usageColors: true,
+    usageWarningPercent: 70,
+    usageCriticalPercent: 90,
     metrics: [
       { id: 'cpu', enabled: false },
       { id: 'memory', enabled: true },

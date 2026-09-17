@@ -6,6 +6,7 @@ import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n';
 
 import MdIcon from '@/components/icons/md-icon.vue';
+import MdUpdateNotice from './components/md-update-notice.vue';
 import MdTooltip from '@/components/custom/md-tooltip.vue';
 import { OperatingSystemService } from '@/lib/services/operating-system-service';
 import { type MetricId } from '@/lib/models/system-resources';
@@ -196,21 +197,24 @@ onBeforeUnmount(() => {
 <template>
   <main ref="panel" class="monitor-panel" tabindex="-1" :aria-label="t('monitoring.title')">
     <div class="monitor-body">
-      <div class="resource-tabs" role="tablist" :aria-label="t('systemStatus.details')">
-        <button
-          v-for="tab in tabs"
-          :id="`metric-tab-${tab}`"
-          :key="tab"
-          role="tab"
-          :aria-selected="selectedTab === tab"
-          aria-controls="metric-details"
-          :tabindex="selectedTab === tab ? 0 : -1"
-          @click="selectTab(tab)"
-          @keydown.right.prevent="moveTab()"
-          @keydown.left.prevent="moveTab()"
-        >
-          {{ t(tab === 'overview' ? 'systemStatus.overview' : 'systemStatus.memoryManagement') }}
-        </button>
+      <div class="resource-header">
+        <div class="resource-tabs" role="tablist" :aria-label="t('systemStatus.details')">
+          <button
+            v-for="tab in tabs"
+            :id="`metric-tab-${tab}`"
+            :key="tab"
+            role="tab"
+            :aria-selected="selectedTab === tab"
+            aria-controls="metric-details"
+            :tabindex="selectedTab === tab ? 0 : -1"
+            @click="selectTab(tab)"
+            @keydown.right.prevent="moveTab()"
+            @keydown.left.prevent="moveTab()"
+          >
+            {{ t(tab === 'overview' ? 'systemStatus.overview' : 'systemStatus.memoryManagement') }}
+          </button>
+        </div>
+        <MdUpdateNotice />
       </div>
       <section
         v-if="selectedTab === 'overview'"
@@ -298,8 +302,14 @@ onBeforeUnmount(() => {
   min-height: 0;
   overflow-y: auto;
 }
-.resource-tabs {
+.resource-header {
   @apply border-b border-border;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+}
+.resource-tabs {
   display: flex;
   justify-content: flex-start;
   gap: 24px;

@@ -2429,6 +2429,8 @@
     "versionValue": "バージョン {version}"
   },
   "updates": {
+    "noticeAvailable": "更新があります",
+    "noticeRetry": "更新画面を再度開く",
     "availableTitle": "MangoDisk {version} が利用可能です",
     "currentVersionDescription": "現在のバージョン {version}",
     "checkDescription": "新しいバージョンを確認",
@@ -3536,7 +3538,12 @@
     "releaseButtonUnsupported": "非対応"
   },
   "systemStatus": {
-    "taskbarSettingsTitle": "タスクバー設定",
+    "appearanceTitle": "表示スタイル",
+    "usageColors": "色でお知らせ",
+    "usageWarning": "オレンジ ≥",
+    "usageCritical": "赤 ≥",
+    "usageColorsHelp": "CPU・メモリ・ディスクの値がしきい値に達すると色が変わり、それ未満では通常の色で表示されます",
+    "menuBarCompactHint": "間隔を詰め、通信速度の単位を K・M・G に省略",
     "configureAction": "設定…",
     "menuBarSettingsTitle": "メニューバー設定",
     "displaySettingsTitle": "タスクバーとシステムトレイの設定",
@@ -3578,7 +3585,7 @@
     "networkScope": "選択したインターフェイスの通信量です。LAN 内の転送も含みます",
     "taskbarBackground": "背景を表示",
     "taskbarCompact": "コンパクト表示",
-    "taskbarPosition": "優先位置",
+    "taskbarPosition": "配置",
     "taskbarAuto": "自動",
     "taskbarLeft": "左側",
     "taskbarRight": "右側",

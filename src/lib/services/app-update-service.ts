@@ -1,20 +1,24 @@
+import { invoke } from '@tauri-apps/api/core';
 import { getVersion } from '@tauri-apps/api/app';
-import type { DownloadEvent, Update } from '@tauri-apps/plugin-updater';
+import { Update, type DownloadEvent } from '@tauri-apps/plugin-updater';
 
 import {
   APP_DISTRIBUTION_IDS,
   APP_UPDATE_ACTION_IDS,
-  APP_UPDATE_CHECK_TIMEOUT_MS,
   APP_UPDATE_DOWNLOAD_TIMEOUT_MS,
   type AppDistribution,
   type AppUpdateDownloadProgress,
   type AppUpdateInfo,
 } from '@/lib/models/app-update';
-import { AppUpdateMetadataService } from '@/lib/services/app-update-metadata-service';
+import { LoggerService } from '@/lib/services/logger-service';
+
+type AcquiredUpdate = {
+  schemaVersion: 1;
+  update: ConstructorParameters<typeof Update>[0] | null;
+};
 
 export class AppUpdateService {
   private static pendingUpdate: Update | null = null;
-  private static pendingRequestHeaders: Record<string, string> | null = null;
   private static checkPromise: Promise<AppUpdateInfo | null> | null = null;
   private static downloaded = false;
 
@@ -22,10 +26,10 @@ export class AppUpdateService {
     return getVersion();
   }
 
-  static check(language: string, distribution: AppDistribution): Promise<AppUpdateInfo | null> {
+  static check(distribution: AppDistribution, refresh: boolean): Promise<AppUpdateInfo | null> {
     if (AppUpdateService.checkPromise) return AppUpdateService.checkPromise;
 
-    AppUpdateService.checkPromise = AppUpdateService.performCheck(language, distribution).finally(() => {
+    AppUpdateService.checkPromise = AppUpdateService.performCheck(distribution, refresh).finally(() => {
       AppUpdateService.checkPromise = null;
     });
     return AppUpdateService.checkPromise;
@@ -33,8 +37,7 @@ export class AppUpdateService {
 
   static async download(onProgress: (progress: AppUpdateDownloadProgress) => void): Promise<void> {
     const update = AppUpdateService.pendingUpdate;
-    const headers = AppUpdateService.pendingRequestHeaders;
-    if (!update || !headers) throw new Error('No checked update is available for download.');
+    if (!update) throw new Error('No checked update is available for download.');
     if (AppUpdateService.downloaded) return;
 
     let downloadedBytes = 0;
@@ -53,7 +56,6 @@ export class AppUpdateService {
     };
 
     await update.download(reportProgress, {
-      headers,
       timeout: APP_UPDATE_DOWNLOAD_TIMEOUT_MS,
     });
     AppUpdateService.downloaded = true;
@@ -64,9 +66,7 @@ export class AppUpdateService {
     if (!update || !AppUpdateService.downloaded) throw new Error('No downloaded update is available for installation.');
 
     await update.install();
-    AppUpdateService.pendingUpdate = null;
-    AppUpdateService.pendingRequestHeaders = null;
-    AppUpdateService.downloaded = false;
+    await AppUpdateService.dispose();
   }
 
   static async restartApplication(): Promise<void> {
@@ -77,19 +77,21 @@ export class AppUpdateService {
   static async dispose(): Promise<void> {
     const update = AppUpdateService.pendingUpdate;
     AppUpdateService.pendingUpdate = null;
-    AppUpdateService.pendingRequestHeaders = null;
     AppUpdateService.downloaded = false;
-    if (update) await update.close();
+    if (update) {
+      try {
+        await update.close();
+      } catch (error) {
+        LoggerService.warn('app-update', 'update_resource_release_failed', { error });
+      }
+    }
   }
 
-  private static async performCheck(language: string, distribution: AppDistribution): Promise<AppUpdateInfo | null> {
+  private static async performCheck(distribution: AppDistribution, refresh: boolean): Promise<AppUpdateInfo | null> {
+    const result = await invoke<AcquiredUpdate>('acquire_app_update', { refresh });
+    if (result.schemaVersion !== 1) throw new Error('Unsupported update resource schema.');
+    const update = result.update ? new Update(result.update) : null;
     await AppUpdateService.dispose();
-    const headers = await AppUpdateMetadataService.createHeaders(language, distribution);
-    const { check } = await import('@tauri-apps/plugin-updater');
-    const update = await check({
-      headers,
-      timeout: APP_UPDATE_CHECK_TIMEOUT_MS,
-    });
     if (!update) return null;
 
     const info = {
@@ -111,7 +113,6 @@ export class AppUpdateService {
     }
 
     AppUpdateService.pendingUpdate = update;
-    AppUpdateService.pendingRequestHeaders = headers;
     return {
       ...info,
       action: APP_UPDATE_ACTION_IDS.automaticInstall,

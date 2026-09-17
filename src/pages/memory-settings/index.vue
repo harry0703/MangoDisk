@@ -7,6 +7,7 @@ import MdSettingsRow from '@/components/custom/md-settings-row.vue';
 import MdResultSearch from '@/components/custom/md-result-search.vue';
 import MdSwitch from '@/components/custom/md-switch.vue';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import MdIcon from '@/components/icons/md-icon.vue';
 import MdNativeFileIcon from '@/components/custom/md-native-file-icon.vue';
@@ -163,12 +164,12 @@ onBeforeUnmount(() => {
         </ul>
       </template>
       <template v-else-if="draft">
-        <MdSettingsGroup>
+        <MdSettingsGroup plain>
           <MdSettingsRow
+            compact
             :title="t('memoryRelease.automatic')"
             :description="t('memoryRelease.automaticDescription')"
             label-for="automatic-release"
-            ><template #icon><MdIcon :name="ICON_NAMES.clock" :size="18" /></template
             ><MdSwitch id="automatic-release" v-model="draft.automatic" :disabled="store.saving"
           /></MdSettingsRow>
           <div class="schedule-fields">
@@ -246,17 +247,17 @@ onBeforeUnmount(() => {
       <p v-else-if="!store.failed" class="empty">{{ t('memoryRelease.loading') }}</p>
     </div>
     <footer v-if="choosing">
-      <button class="page-action" @click="choosing = false">{{ t('memoryRelease.back') }}</button
-      ><button class="page-action primary" :disabled="!selected.length || loading" @click="addSelected">
+      <Button variant="outline" @click="choosing = false">{{ t('memoryRelease.back') }}</Button
+      ><Button class="primary" :disabled="!selected.length || loading" @click="addSelected">
         {{ t('memoryRelease.addSelected', { count: selected.length }) }}
-      </button>
+      </Button>
     </footer>
     <footer v-else>
       <span>{{ t('memoryRelease.saveHint') }}</span
-      ><button class="page-action" :disabled="store.saving" @click="close">{{ t('memoryRelease.cancel') }}</button
-      ><button class="page-action primary" :disabled="!draft || store.saving || conflict" @click="save">
+      ><Button variant="outline" :disabled="store.saving" @click="close">{{ t('memoryRelease.cancel') }}</Button
+      ><Button class="primary" :disabled="!draft || store.saving || conflict" @click="save">
         {{ t(store.saving ? 'memoryRelease.saving' : 'memoryRelease.save') }}
-      </button>
+      </Button>
     </footer>
   </main>
 </template>
@@ -264,7 +265,7 @@ onBeforeUnmount(() => {
 <style scoped>
 @reference "@assets/main.css";
 .release-settings {
-  @apply bg-background text-foreground;
+  @apply bg-card text-card-foreground;
   display: flex;
   flex-direction: column;
   /* Follow the WebView content bounds. Older WKWebView versions can size
@@ -295,7 +296,7 @@ header p {
   overflow-y: auto;
 }
 .schedule-fields {
-  padding: 12px;
+  padding-top: 4px;
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 10px;
@@ -436,24 +437,15 @@ footer {
   flex: none;
   display: flex;
   justify-content: flex-end;
-  gap: 10px;
-  padding: 10px 18px;
-  border-top: 1px solid var(--border);
+  gap: 8px;
+  min-height: var(--layout-dialog-footer-height);
+  padding: var(--layout-dialog-footer-padding);
+  @apply border-t border-border/70 bg-muted/20;
   align-items: center;
 }
 footer span {
   @apply text-muted-foreground;
-  font-size: 11px;
+  font-size: var(--font-content-secondary);
   margin-right: auto;
-}
-footer .page-action {
-  border: 1px solid var(--border);
-  padding: 7px 12px;
-}
-footer .page-action.primary {
-  @apply bg-primary text-primary-foreground border-primary;
-}
-footer .page-action.primary:hover:not(:disabled) {
-  @apply bg-primary/90;
 }
 </style>

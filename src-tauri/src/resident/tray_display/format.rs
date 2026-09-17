@@ -52,6 +52,8 @@ impl DisplayId {
 #[serde(rename_all = "camelCase")]
 pub struct DisplayEntry {
     pub id: DisplayId,
+    pub tone: super::usage_color::UsageTone,
+    pub usage_percent: Option<u8>,
     pub marker: String,
     pub digits: String,
     pub text: String,
@@ -195,6 +197,8 @@ pub fn entries(
             let name = labels.metric(metric.id);
             if status != MetricStatus::Ready || value.is_none() {
                 entries.push(DisplayEntry {
+                    tone: Default::default(),
+                    usage_percent: None,
                     id,
                     marker: marker.into(),
                     digits: "—".into(),
@@ -222,6 +226,8 @@ pub fn entries(
                     .map(|value| value.interface.name.as_str())
                     .unwrap_or("");
                 DisplayEntry {
+                    tone: Default::default(),
+                    usage_percent: None,
                     id,
                     marker: format!("{marker}{unit}"),
                     digits,
@@ -229,7 +235,9 @@ pub fn entries(
                     tooltip: format!("{name} {marker} {speed}/s · {interface}"),
                 }
             } else {
-                let digits = format!("{:.0}", value.clamp(0.0, 100.0));
+                // Display and threshold classification must share one rounded value.
+                let percent = value.clamp(0.0, 100.0).round() as u8;
+                let digits = percent.to_string();
                 let details = match metric.id {
                     MetricId::Memory => values
                         .memory
@@ -268,6 +276,8 @@ pub fn entries(
                     _ => "DISK",
                 };
                 DisplayEntry {
+                    tone: Default::default(),
+                    usage_percent: Some(percent),
                     id,
                     marker: marker.into(),
                     text: format!("{short} {digits:>3}%"),
@@ -302,8 +312,14 @@ mod tests {
                 );
                 assert!(!ids.is_empty());
                 assert!(ids.len() <= 6);
-                assert_eq!(ids.contains(&DisplayId::Upload), bits & 4 != 0);
-                assert_eq!(ids.contains(&DisplayId::Download), bits & 4 != 0);
+                assert_eq!(
+                    ids.contains(&DisplayId::Upload),
+                    prefs.shows(MetricId::Network)
+                );
+                assert_eq!(
+                    ids.contains(&DisplayId::Download),
+                    prefs.shows(MetricId::Network)
+                );
                 assert_eq!(ids.contains(&DisplayId::App), show_icon || bits == 0);
                 prefs.enabled = false;
                 assert!(desired(&prefs).is_empty());
@@ -365,6 +381,39 @@ mod tests {
             assert_eq!(entries[0].digits, "—");
             assert!(!entries[0].tooltip.contains("NaN"));
             assert!(!entries[0].tooltip.contains("inf"));
+        }
+    }
+
+    #[test]
+    fn displayed_percentages_and_color_thresholds_use_the_same_rounding() {
+        use super::super::usage_color::UsageTone;
+        use mangodisk_core::system_resources::metrics::{CpuUsage, MetricReading};
+        let preferences = ResidentPreferences::default();
+        let labels = super::super::labels::Labels::for_locale("en-US");
+        for (value, expected, tone) in [
+            (74.49, 74, UsageTone::Normal),
+            (74.5, 75, UsageTone::Warning),
+            (84.5, 85, UsageTone::Critical),
+            (100.5, 100, UsageTone::Critical),
+            (-0.5, 0, UsageTone::Normal),
+        ] {
+            let readings = ResourceReadings {
+                cpu: MetricReading::ready(
+                    CpuUsage {
+                        used_percent: value,
+                    },
+                    0,
+                ),
+                ..Default::default()
+            };
+            let entries = entries(&preferences, &readings, &labels, 1000.0);
+            let cpu = entries
+                .iter()
+                .find(|entry| entry.id == DisplayId::Cpu)
+                .unwrap();
+            assert_eq!(cpu.digits, expected.to_string());
+            assert_eq!(cpu.usage_percent, Some(expected));
+            assert_eq!(UsageTone::Normal.next(cpu.usage_percent, 75, 85), tone);
         }
     }
 

@@ -4,6 +4,7 @@ pub mod labels;
 mod macos;
 #[cfg(any(target_os = "macos", test))]
 mod macos_presentation;
+pub mod usage_color;
 #[cfg(windows)]
 pub mod windows_bitmap;
 
@@ -30,6 +31,45 @@ pub struct DisplayState {
     #[cfg(windows)]
     appearance: Option<windows_bitmap::Appearance>,
     failed: bool,
+    color_rules: Option<(bool, u8, u8)>,
+    color_disk_volume: Option<String>,
+    color_tones: HashMap<DisplayId, usage_color::UsageTone>,
+}
+
+impl DisplayState {
+    // Hysteresis belongs to the sampled volume, not the display slot. A newly
+    // selected disk can arrive without an intervening unavailable frame.
+    fn apply_colors(
+        &mut self,
+        entries: &mut [DisplayEntry],
+        preferences: &ResidentPreferences,
+        disk_volume: Option<&str>,
+    ) {
+        let color_rules = (
+            preferences.usage_colors && preferences.enabled,
+            preferences.usage_warning_percent,
+            preferences.usage_critical_percent,
+        );
+        for entry in entries.iter_mut() {
+            let same_source =
+                entry.id != DisplayId::Disk || self.color_disk_volume.as_deref() == disk_volume;
+            let previous = if self.color_rules == Some(color_rules) && same_source {
+                self.color_tones.get(&entry.id).copied().unwrap_or_default()
+            } else {
+                usage_color::UsageTone::Normal
+            };
+            entry.tone = if color_rules.0 {
+                previous.next(entry.usage_percent, color_rules.1, color_rules.2)
+            } else {
+                usage_color::UsageTone::Normal
+            };
+        }
+        // Keep classification separate from the successful-paint cache: native
+        // presentation failures must not restore tones from an older rule/source.
+        self.color_tones = entries.iter().map(|entry| (entry.id, entry.tone)).collect();
+        self.color_rules = Some(color_rules);
+        self.color_disk_volume = disk_volume.map(str::to_owned);
+    }
 }
 
 pub fn install(app: &tauri::AppHandle) -> tauri::Result<()> {
@@ -186,7 +226,7 @@ fn render(
 ) -> tauri::Result<()> {
     let labels = labels::Labels::load(app);
     let changed_locale = state.locale != labels.locale;
-    let entries = format::entries(
+    let mut entries = format::entries(
         preferences,
         &reading.resources,
         &labels,
@@ -195,6 +235,16 @@ fn render(
         } else {
             1024.0
         },
+    );
+    state.apply_colors(
+        &mut entries,
+        preferences,
+        reading
+            .resources
+            .disk
+            .value
+            .as_ref()
+            .map(|disk| disk.volume.id.as_str()),
     );
     #[cfg(not(windows))]
     let all_desired = format::desired(preferences);
@@ -258,6 +308,7 @@ fn render(
             &tray,
             &entries,
             preferences.effective_icon(),
+            preferences.menu_bar_compact,
             &summary,
             &mut state.macos,
         )? {
@@ -274,11 +325,19 @@ fn render(
             if let Some(tray) = app.tray_by_id(entry.id.tray_id()) {
                 let previous = state.entries.get(&entry.id);
                 if state.appearance != Some(appearance)
-                    || !previous
-                        .is_some_and(|old| old.marker == entry.marker && old.digits == entry.digits)
+                    || !previous.is_some_and(|old| {
+                        old.marker == entry.marker
+                            && old.digits == entry.digits
+                            && old.tone == entry.tone
+                    })
                 {
-                    let rgba = windows_bitmap::render(&entry.marker, &entry.digits, appearance)
-                        .map_err(|stage| tauri::Error::Io(std::io::Error::other(stage)))?;
+                    let rgba = windows_bitmap::render_colored(
+                        &entry.marker,
+                        &entry.digits,
+                        appearance,
+                        entry.tone,
+                    )
+                    .map_err(|stage| tauri::Error::Io(std::io::Error::other(stage)))?;
                     tray.set_icon(Some(tauri::image::Image::new_owned(
                         rgba,
                         appearance.size,
@@ -296,4 +355,57 @@ fn render(
     state.entries = entries.into_iter().map(|entry| (entry.id, entry)).collect();
     state.locale = labels.locale;
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use usage_color::UsageTone;
+
+    #[test]
+    fn switching_disks_resets_hysteresis_without_resetting_cpu() {
+        let mut state = DisplayState::default();
+        let preferences = ResidentPreferences::default();
+        let mut entries: Vec<_> = [DisplayId::Cpu, DisplayId::Disk]
+            .into_iter()
+            .map(|id| DisplayEntry {
+                id,
+                tone: UsageTone::Normal,
+                usage_percent: Some(95),
+                marker: String::new(),
+                digits: String::new(),
+                text: String::new(),
+                tooltip: String::new(),
+            })
+            .collect();
+        state.apply_colors(&mut entries, &preferences, Some("disk-a"));
+        assert!(entries
+            .iter()
+            .all(|entry| entry.tone == UsageTone::Critical));
+        state.entries = entries
+            .iter()
+            .cloned()
+            .map(|entry| (entry.id, entry))
+            .collect();
+        for entry in &mut entries {
+            entry.usage_percent = Some(89);
+        }
+        state.apply_colors(&mut entries, &preferences, Some("disk-a"));
+        assert!(entries
+            .iter()
+            .all(|entry| entry.tone == UsageTone::Critical));
+        state.apply_colors(&mut entries, &preferences, Some("disk-b"));
+        assert_eq!(entries[0].tone, UsageTone::Critical);
+        assert_eq!(entries[1].tone, UsageTone::Warning);
+        // Simulate a failed native frame by leaving the paint cache unchanged.
+        state.apply_colors(&mut entries, &preferences, Some("disk-b"));
+        assert_eq!(entries[1].tone, UsageTone::Warning);
+        let higher_threshold = ResidentPreferences {
+            usage_critical_percent: 91,
+            ..preferences
+        };
+        state.apply_colors(&mut entries, &higher_threshold, Some("disk-b"));
+        state.apply_colors(&mut entries, &higher_threshold, Some("disk-b"));
+        assert!(entries.iter().all(|entry| entry.tone == UsageTone::Warning));
+    }
 }

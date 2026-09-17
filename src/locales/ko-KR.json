@@ -2429,6 +2429,8 @@
     "versionValue": "버전 {version}"
   },
   "updates": {
+    "noticeAvailable": "업데이트 가능",
+    "noticeRetry": "업데이트 다시 열기",
     "availableTitle": "MangoDisk {version}을(를) 사용할 수 있습니다",
     "currentVersionDescription": "현재 버전 {version}",
     "checkDescription": "새 버전 확인",
@@ -3536,7 +3538,12 @@
     "releaseButtonUnsupported": "지원 안 됨"
   },
   "systemStatus": {
-    "taskbarSettingsTitle": "작업 표시줄 설정",
+    "appearanceTitle": "표시 스타일",
+    "usageColors": "색상 표시",
+    "usageWarning": "주황색 ≥",
+    "usageCritical": "빨간색 ≥",
+    "usageColorsHelp": "CPU, 메모리, 디스크 사용률이 기준값에 도달하면 색상이 바뀌며, 그 미만에서는 기본 색상으로 표시됩니다",
+    "menuBarCompactHint": "간격을 줄이고 네트워크 속도 단위를 K, M, G로 축약",
     "configureAction": "설정…",
     "menuBarSettingsTitle": "메뉴 막대 설정",
     "displaySettingsTitle": "작업 표시줄 및 시스템 트레이 설정",
@@ -3578,7 +3585,7 @@
     "networkScope": "선택한 인터페이스의 트래픽이며 로컬 네트워크 전송을 포함합니다",
     "taskbarBackground": "배경 표시",
     "taskbarCompact": "간결하게 표시",
-    "taskbarPosition": "우선 위치",
+    "taskbarPosition": "정렬",
     "taskbarAuto": "자동",
     "taskbarLeft": "왼쪽",
     "taskbarRight": "오른쪽",

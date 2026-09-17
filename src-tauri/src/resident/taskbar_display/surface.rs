@@ -68,6 +68,8 @@ mod tests {
     #[test]
     fn small_horizontal_taskbars_keep_the_existing_two_line_layout() {
         let column = Column {
+            compact: false,
+            tone: Default::default(),
             id: DisplayId::Cpu,
             first: "CPU".into(),
             second: "15%".into(),
@@ -101,6 +103,8 @@ mod tests {
             };
             let columns = vec![
                 Column {
+                    compact: false,
+                    tone: Default::default(),
                     id: DisplayId::Cpu,
                     first: "CPU".into(),
                     second: "15%".into(),
@@ -108,6 +112,8 @@ mod tests {
                     network: None,
                 },
                 Column {
+                    compact: false,
+                    tone: Default::default(),
                     id: DisplayId::Upload,
                     first: "↑ 999.9 GB/s".into(),
                     second: "↓ 1.2 MB/s".into(),

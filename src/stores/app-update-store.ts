@@ -12,6 +12,7 @@ import {
 import { LOG_DOMAINS, LOG_EVENTS } from '@/lib/models/telemetry';
 import { AppDistributionService } from '@/lib/services/app-distribution-service';
 import { AppUpdateService } from '@/lib/services/app-update-service';
+import { InstallationIdentityService } from '@/lib/services/installation-identity-service';
 import { LinkService } from '@/lib/services/link-service';
 import { LoggerService } from '@/lib/services/logger-service';
 import { normalizeError } from '@/lib/utils/error';
@@ -54,6 +55,16 @@ export const useAppUpdateStore = defineStore('app-update', {
   actions: {
     async initialize() {
       if (!this.currentVersion) {
+        // Keep installation identity creation in its existing owner. Native
+        // discovery reads the shared store and does not race a second writer.
+        try {
+          await InstallationIdentityService.getOrCreateInstallId();
+        } catch (error) {
+          LoggerService.warn(LOG_DOMAINS.appUpdate, LOG_EVENTS.updateMetadataUnavailable, {
+            source: 'installation_identity',
+            diagnostic: normalizeError(error),
+          });
+        }
         try {
           this.currentVersion = await AppUpdateService.currentVersion();
         } catch (error) {
@@ -71,7 +82,7 @@ export const useAppUpdateStore = defineStore('app-update', {
         }
       }
     },
-    async check(language: string, manual: boolean) {
+    async check(manual: boolean, refresh = manual) {
       if (this.status === APP_UPDATE_STATUS_IDS.downloaded || this.status === APP_UPDATE_STATUS_IDS.restartRequired) {
         if (manual) this.showAbout();
         return;
@@ -81,42 +92,49 @@ export const useAppUpdateStore = defineStore('app-update', {
       this.checkError = '';
       this.actionError = '';
       this.failureStage = null;
-      LoggerService.info(LOG_DOMAINS.appUpdate, LOG_EVENTS.updateCheckStarted, { manual });
+      LoggerService.info(LOG_DOMAINS.appUpdate, LOG_EVENTS.updateCheckStarted, { manual, refresh });
 
       try {
         await this.initialize();
         if (!this.distribution) throw new Error('The application distribution is unavailable.');
-        const update = await AppUpdateService.check(language, this.distribution);
+        const update = await AppUpdateService.check(this.distribution, refresh);
         if (!update) {
           this.update = null;
-          this.dialogOpen = manual;
+          this.dialogOpen = manual || this.dialogOpen;
           this.updateNoticeUnread = false;
           this.status = APP_UPDATE_STATUS_IDS.upToDate;
           LoggerService.info(LOG_DOMAINS.appUpdate, LOG_EVENTS.updateNotAvailable, {
             currentVersion: this.currentVersion,
             manual,
+            refresh,
           });
           return;
         }
 
         this.currentVersion = update.currentVersion;
         this.update = update;
-        this.dialogOpen = manual;
-        this.updateNoticeUnread = !manual;
+        this.dialogOpen = manual || this.dialogOpen;
+        this.updateNoticeUnread = !manual && !this.dialogOpen;
         this.status = APP_UPDATE_STATUS_IDS.available;
         LoggerService.info(LOG_DOMAINS.appUpdate, LOG_EVENTS.updateAvailable, {
           currentVersion: update.currentVersion,
           releaseVersion: update.version,
           action: update.action,
           manual,
+          refresh,
         });
       } catch (error) {
         const diagnostic = normalizeError(error).trim();
-        this.status = manual ? APP_UPDATE_STATUS_IDS.error : APP_UPDATE_STATUS_IDS.idle;
+        this.status = this.update
+          ? APP_UPDATE_STATUS_IDS.available
+          : manual
+            ? APP_UPDATE_STATUS_IDS.error
+            : APP_UPDATE_STATUS_IDS.idle;
         this.checkError = manual ? diagnostic : '';
-        this.dialogOpen = manual;
+        this.dialogOpen = manual || this.dialogOpen;
         LoggerService.warn(LOG_DOMAINS.appUpdate, LOG_EVENTS.updateCheckFailed, {
           manual,
+          refresh,
           diagnostic,
         });
       }

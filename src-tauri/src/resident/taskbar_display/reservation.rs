@@ -10,6 +10,7 @@ use std::{
     path::PathBuf,
     process::{Command, Stdio},
     sync::{mpsc, Arc, Mutex},
+    time::{Duration, Instant},
 };
 use tauri::Manager;
 
@@ -77,7 +78,7 @@ struct Reply {
     version: u32,
     result: Result<Bounds, Failure>,
 }
-type Snapshot = Option<(Request, Result<Bounds, Failure>)>;
+type Snapshot = Option<(Request, Result<Bounds, Failure>, Instant)>;
 
 pub struct Client {
     requests: mpsc::SyncSender<Request>,
@@ -110,6 +111,7 @@ impl Client {
         log::info!("resident_taskbar_layout_helper_started pid={pid}");
         std::thread::spawn(move || {
             while let Ok(request) = receiver.recv() {
+                let started = Instant::now();
                 let exchange = (|| -> Result<Bounds, Failure> {
                     let packet = serde_json::to_vec(&request)
                         .map_err(|_| Failure::new(Stage::Protocol, 0))?;
@@ -127,7 +129,8 @@ impl Client {
                     }
                     reply.result
                 })();
-                *snapshot.lock().unwrap_or_else(|e| e.into_inner()) = Some((request, exchange));
+                *snapshot.lock().unwrap_or_else(|e| e.into_inner()) =
+                    Some((request, exchange, started));
                 if matches!(
                     exchange,
                     Err(Failure {
@@ -146,6 +149,20 @@ impl Client {
         });
         Ok(Self { requests, latest })
     }
+    /// A live lease supplies authoritative placement even when UIA is slow.
+    /// Never reuse it after a shell change, a failed exchange, or a stalled helper.
+    pub fn has_recent_layout(&self, shell: usize, parent: usize) -> bool {
+        self.latest
+            .lock()
+            .unwrap_or_else(|e| e.into_inner())
+            .is_some_and(|(key, result, sampled)| {
+                key.shell == shell
+                    && key.parent == parent
+                    && result.is_ok()
+                    && sampled.elapsed() < Duration::from_secs(3)
+            })
+    }
+
     pub fn request(&self, request: Request) -> Option<Result<Bounds, Failure>> {
         if matches!(
             self.requests.try_send(request),
@@ -156,8 +173,10 @@ impl Client {
         self.latest
             .lock()
             .unwrap_or_else(|e| e.into_inner())
-            .filter(|(key, _)| *key == request)
-            .map(|(_, result)| result)
+            .filter(|(key, _, sampled)| {
+                *key == request && sampled.elapsed() < Duration::from_secs(3)
+            })
+            .map(|(_, result, _)| result)
     }
 }
 
@@ -231,6 +250,33 @@ pub fn run_helper_mode(args: impl IntoIterator<Item = std::ffi::OsString>) -> Op
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn layout_reuse_rejects_stale_failed_and_replaced_shells() {
+        let (requests, _receiver) = mpsc::sync_channel(1);
+        let key = Request::new(1, 2, Bounds::default(), (100, 40), 4, Edge::Left);
+        let latest = Arc::new(Mutex::new(Some((
+            key,
+            Ok(Bounds::default()),
+            Instant::now(),
+        ))));
+        let client = Client {
+            requests,
+            latest: latest.clone(),
+        };
+        assert!(client.has_recent_layout(1, 2));
+        assert!(!client.has_recent_layout(3, 2));
+        assert!(!client.has_recent_layout(1, 3));
+        *latest.lock().unwrap() = Some((
+            key,
+            Ok(Bounds::default()),
+            Instant::now() - Duration::from_secs(4),
+        ));
+        assert!(!client.has_recent_layout(1, 2));
+        assert!(client.request(key).is_none());
+        *latest.lock().unwrap() = Some((key, Err(Failure::new(Stage::Xaml, 1)), Instant::now()));
+        assert!(!client.has_recent_layout(1, 2));
+    }
+
     #[test]
     fn private_protocol_rejects_truncation_and_oversized_packets() {
         for bytes in [b"{}".to_vec(), vec![b' '; 5000]] {

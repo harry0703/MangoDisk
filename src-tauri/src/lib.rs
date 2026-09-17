@@ -217,6 +217,8 @@ pub fn run() {
             commands::ai::ai_explain,
             commands::ai::ai_get_quota,
             commands::app_distribution::get_app_distribution,
+            commands::app_updates::get_app_update_notice,
+            commands::app_updates::acquire_app_update,
             commands::applications::prepare_application_uninstall_batch,
             commands::applications::execute_application_uninstall_batch,
             commands::applications::cancel_application_uninstall_execution,
@@ -326,6 +328,7 @@ pub fn run() {
             }
             configure_core_storage(app)?;
             resident::install(app.handle())?;
+            services::app_updates::start(app.handle());
             let feedback_store = FeedbackDraftStore::initialize(&app.path().app_cache_dir()?);
             let feedback_cleanup_store = feedback_store.clone();
             app.manage(feedback_store);

@@ -79,6 +79,16 @@ fn native_grayscale_preserves_alpha_colors_and_field_fit_across_dpi() {
                 ]
                 .into_iter()
                 .map(|(id, text, digits)| DisplayEntry {
+                    tone: match id {
+                        DisplayId::Cpu => {
+                            crate::resident::tray_display::usage_color::UsageTone::Critical
+                        }
+                        DisplayId::Memory => {
+                            crate::resident::tray_display::usage_color::UsageTone::Warning
+                        }
+                        _ => Default::default(),
+                    },
+                    usage_percent: None,
                     id,
                     text: text.into(),
                     digits: digits.into(),
@@ -119,12 +129,22 @@ fn native_grayscale_preserves_alpha_colors_and_field_fit_across_dpi() {
                             .all(|p| p[..3].iter().all(|c| *c <= p[3])),
                         "invalid premultiplied alpha dpi={dpi}"
                     );
+                    for tone in [
+                        crate::resident::tray_display::usage_color::UsageTone::Warning,
+                        crate::resident::tray_display::usage_color::UsageTone::Critical,
+                    ] {
+                        let [r, g, b] = tone.rgb(foreground);
+                        assert!(
+                            pixels.chunks_exact(4).any(|p| p == [b, g, r, 255]),
+                            "missing usage color dpi={dpi} tone={tone:?}"
+                        );
+                    }
                     for run in &runs {
                         let layout = renderer
                             .write
                             .CreateTextLayout(
                                 &run.text.encode_utf16().collect::<Vec<_>>(),
-                                &renderer.format.as_ref().unwrap().1,
+                                renderer.format(run.style),
                                 1000.0,
                                 1000.0,
                             )

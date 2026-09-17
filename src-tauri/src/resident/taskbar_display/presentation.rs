@@ -3,6 +3,8 @@ use crate::resident::tray_display::format::DisplayId;
 #[derive(Clone, Debug, PartialEq, Eq, serde::Serialize)]
 pub struct Column {
     pub id: DisplayId,
+    pub compact: bool,
+    pub tone: crate::resident::tray_display::usage_color::UsageTone,
     pub first: String,
     pub second: String,
     pub width: i32,
@@ -58,6 +60,8 @@ pub fn columns(
             let network = entry.id == DisplayId::Upload;
             Column {
                 id: entry.id,
+                compact,
+                tone: entry.tone,
                 first: if network {
                     entry.text.split_whitespace().collect::<Vec<_>>().join(" ")
                 } else {
@@ -81,17 +85,17 @@ pub fn columns(
                         if entry.digits == "—" { "" } else { "%" }
                     )
                 },
-                // Both densities use the same rate precision and 12-DIP font.
+                // Compact units save width without discarding numeric precision.
                 // Four numeric characters cover 99.9 and a rounded 1000.
                 width: ((match (compact, network) {
-                    (true, true) => 76,
+                    (true, true) => 58,
                     (true, false) => 38,
                     (false, true) => 84,
                     (false, false) => 50,
                 }) * dpi
                     / 96) as i32,
                 network: network.then(|| {
-                    [
+                    let mut rates = [
                         Rate::from_title(&entry.text),
                         Rate::from_title(
                             entries
@@ -100,7 +104,18 @@ pub fn columns(
                                 .map(|e| e.text.as_str())
                                 .unwrap_or("↓ —"),
                         ),
-                    ]
+                    ];
+                    if compact {
+                        for rate in &mut rates {
+                            rate.unit = rate
+                                .unit
+                                .chars()
+                                .next()
+                                .map(|unit| unit.to_string())
+                                .unwrap_or_default();
+                        }
+                    }
+                    rates
                 }),
             }
         })
@@ -154,6 +169,8 @@ mod tests {
     }
     fn entry(id: DisplayId, text: &str, digits: &str) -> DisplayEntry {
         DisplayEntry {
+            tone: Default::default(),
+            usage_percent: None,
             id,
             marker: String::new(),
             digits: digits.into(),
@@ -197,13 +214,25 @@ mod tests {
             let compact = columns(&entries, dpi, true);
             assert_eq!(
                 compact.iter().map(|c| c.width).sum::<i32>(),
-                (3 * (38 * dpi / 96) + 76 * dpi / 96) as i32
+                (3 * (38 * dpi / 96) + 58 * dpi / 96) as i32
             );
             for (full, small) in standard.iter().zip(&compact) {
                 assert!(small.width < full.width);
                 assert_eq!(small.first, full.first);
                 assert_eq!(small.second, full.second);
-                assert_eq!(small.network, full.network);
+                if let (Some(small), Some(full)) = (&small.network, &full.network) {
+                    for (small, full) in small.iter().zip(full) {
+                        assert_eq!(small.value, full.value);
+                        assert_eq!(
+                            small.unit,
+                            full.unit
+                                .chars()
+                                .next()
+                                .map(|c| c.to_string())
+                                .unwrap_or_default()
+                        );
+                    }
+                }
             }
         }
     }

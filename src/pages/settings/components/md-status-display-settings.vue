@@ -17,6 +17,7 @@ import MdWindowsDisplayFeedback from './md-windows-display-feedback.vue';
 import { Select, SelectContent, SelectItem } from '@/components/ui/select';
 import { SelectTrigger } from 'reka-ui';
 import MdWindowsDisplayMode from './md-windows-display-mode.vue';
+import MdStatusAppearance from './md-status-appearance.vue';
 import { ICON_NAMES } from '@/lib/models/ui';
 import type { MetricId, NetworkInterface, ResourceVolume } from '@/lib/models/system-resources';
 import type { ResidentPreferences, ResidentReading } from '@/lib/models/resident';
@@ -389,11 +390,16 @@ onBeforeUnmount(() => {
               :preferences="settings.draft"
               @position="settings.change({ taskbarPosition: $event })"
               @background="settings.change({ taskbarBackground: $event })"
-              @compact="settings.change({ taskbarCompact: $event })"
               @change="
                 cancelDrag();
                 settings.change({ windowsDisplayMode: $event });
               "
+            />
+            <MdStatusAppearance
+              v-if="settings.draft"
+              :preferences="settings.draft"
+              :is-mac-os="isMacOs"
+              @change="settings.change($event)"
             />
             <div class="status-controls">
               <div class="controls-heading">
@@ -549,12 +555,8 @@ onBeforeUnmount(() => {
 }
 .display-options {
   display: grid;
-  gap: 20px;
+  gap: 14px;
   min-width: 0;
-}
-.windows-display-settings + .status-controls {
-  @apply border-t border-border/60;
-  padding-top: 16px;
 }
 .controls-heading {
   @apply text-muted-foreground;

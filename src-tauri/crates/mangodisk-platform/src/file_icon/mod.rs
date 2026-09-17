@@ -108,6 +108,8 @@ impl NativeFileIconService {
             ..NativeFileIconLoadResult::default()
         };
         for (query, requests) in grouped {
+            #[cfg(target_os = "macos")]
+            let _extraction_guard = macos::extraction_guard();
             let provider_variant = platform_provider_variant(&query);
             let lookup = cache.lookup(&query, &provider_variant);
             let png = if let Some(png) = lookup.png {
@@ -336,6 +338,57 @@ mod tests {
         assert_ne!(extensionless.key(), file_extension.key());
         assert_eq!(folder_extension.key(), "ext:folder");
         assert_eq!(file_extension.key(), "ext:file");
+    }
+
+    #[cfg(target_os = "macos")]
+    #[test]
+    #[ignore = "requires desktop shell icon services"]
+    fn concurrent_macos_batches_extract_each_icon_once() {
+        let root = std::env::temp_dir().join(format!(
+            "mangodisk-concurrent-icons-{}-{}",
+            std::process::id(),
+            SystemTime::now()
+                .duration_since(UNIX_EPOCH)
+                .unwrap()
+                .as_nanos()
+        ));
+        let barrier = std::sync::Arc::new(std::sync::Barrier::new(4));
+        let workers: Vec<_> = (0..4)
+            .map(|_| {
+                let root = root.clone();
+                let barrier = barrier.clone();
+                std::thread::spawn(move || {
+                    barrier.wait();
+                    NativeFileIconService::load(
+                        vec![NativeFileIconRequest {
+                            path: "/System/Library/CoreServices/Finder.app".into(),
+                            kind: NativeFileIconItemKind::Directory,
+                            mode: NativeFileIconMode::Path,
+                        }],
+                        Some(root),
+                    )
+                })
+            })
+            .collect();
+        let batches: Vec<_> = workers
+            .into_iter()
+            .map(|worker| worker.join().unwrap())
+            .collect();
+        assert!(batches
+            .iter()
+            .all(|batch| batch.assets.len() == 1 && batch.assignments.len() == 1));
+        assert_eq!(
+            batches
+                .iter()
+                .map(|batch| batch.system_lookups)
+                .sum::<usize>(),
+            1
+        );
+        assert_eq!(
+            batches.iter().map(|batch| batch.cache_hits).sum::<usize>(),
+            3
+        );
+        std::fs::remove_dir_all(root).unwrap();
     }
 
     #[cfg(any(target_os = "macos", windows))]

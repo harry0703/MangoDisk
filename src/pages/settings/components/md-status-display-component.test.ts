@@ -5,6 +5,7 @@ import { createI18n } from 'vue-i18n';
 import { beforeEach, afterEach, describe, expect, it, vi } from 'vitest';
 import Settings from './md-status-display-settings.vue';
 import WindowsMode from './md-windows-display-mode.vue';
+import { Select } from '@/components/ui/select';
 import WindowsFeedback from './md-windows-display-feedback.vue';
 import { ResidentService } from '@/lib/services/resident-service';
 import { preferencesFixture, readingFixture } from '@/tests/fixtures/resident';
@@ -61,6 +62,39 @@ describe('status display interactions', () => {
   afterEach(() => {
     wrappers.splice(0).forEach(wrapper => wrapper.unmount());
     vi.useRealTimers();
+  });
+
+  it('saves macOS density and usage thresholds without changing metric choices', async () => {
+    const wrapper = mount(Settings, { props: { isMacOs: true }, global: global() });
+    wrappers.push(wrapper);
+    await flushPromises();
+    await openConfiguration(wrapper);
+    await wrapper.get('#menu-bar-compact').trigger('click');
+    await flushPromises();
+    expect(ResidentService.savePreferences).toHaveBeenLastCalledWith(
+      expect.objectContaining({ menuBarCompact: true, metrics: preferencesFixture().metrics })
+    );
+    const selectors = wrapper.findAllComponents(Select);
+    selectors[0]!.vm.$emit('update:modelValue', '60');
+    await flushPromises();
+    expect(ResidentService.savePreferences).toHaveBeenLastCalledWith(
+      expect.objectContaining({ usageWarningPercent: 60, usageCriticalPercent: 90 })
+    );
+    await wrapper.get('#usage-colors').trigger('click');
+    await flushPromises();
+    expect(wrapper.find('#usage-warning').exists()).toBe(false);
+    expect(ResidentService.savePreferences).toHaveBeenLastCalledWith(
+      expect.objectContaining({ usageColors: false, usageWarningPercent: 60 })
+    );
+  });
+
+  it('offers shared usage colors on Windows without the macOS density setting', async () => {
+    const wrapper = mount(Settings, { props: { isMacOs: false }, global: global() });
+    wrappers.push(wrapper);
+    await flushPromises();
+    await openConfiguration(wrapper);
+    expect(wrapper.find('#usage-colors').exists()).toBe(true);
+    expect(wrapper.find('#menu-bar-compact').exists()).toBe(false);
   });
 
   it('keeps the page compact and saves dialog edits without toggling residency', async () => {
@@ -247,7 +281,7 @@ describe('status display interactions', () => {
     await wrapper.get('input[name="taskbar-position"][value="auto"]').setValue(true);
     await flushPromises();
     expect(ResidentService.savePreferences).toHaveBeenLastCalledWith(
-      expect.objectContaining({ schemaVersion: 7, taskbarPosition: 'auto' })
+      expect.objectContaining({ schemaVersion: 8, taskbarPosition: 'auto' })
     );
     await wrapper.get('input[name="windows-display-mode"][value="tray"]').setValue(true);
     await flushPromises();

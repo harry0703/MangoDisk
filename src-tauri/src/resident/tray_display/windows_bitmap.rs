@@ -125,6 +125,20 @@ fn draw(
 }
 
 pub fn render(marker: &str, digits: &str, appearance: Appearance) -> Result<Vec<u8>, &'static str> {
+    render_colored(
+        marker,
+        digits,
+        appearance,
+        super::usage_color::UsageTone::Normal,
+    )
+}
+
+pub fn render_colored(
+    marker: &str,
+    digits: &str,
+    appearance: Appearance,
+    tone: super::usage_color::UsageTone,
+) -> Result<Vec<u8>, &'static str> {
     let size = appearance.size;
     unsafe {
         let dc = CreateCompatibleDC(ptr::null_mut());
@@ -160,8 +174,17 @@ pub fn render(marker: &str, digits: &str, appearance: Appearance) -> Result<Vec<
         GdiFlush();
         let mask = std::slice::from_raw_parts(bits.cast::<u8>(), count);
         let mut rgba = vec![0; count];
-        for (source, destination) in mask.chunks_exact(4).zip(rgba.chunks_exact_mut(4)) {
-            destination[..3].copy_from_slice(&appearance.color);
+        for (index, (source, destination)) in mask
+            .chunks_exact(4)
+            .zip(rgba.chunks_exact_mut(4))
+            .enumerate()
+        {
+            let color = if index / size as usize >= split as usize {
+                tone.rgb(appearance.color)
+            } else {
+                appearance.color
+            };
+            destination[..3].copy_from_slice(&color);
             destination[3] = source[0].max(source[1]).max(source[2]);
         }
         Ok(rgba)
@@ -171,6 +194,36 @@ pub fn render(marker: &str, digits: &str, appearance: Appearance) -> Result<Vec<
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn tray_percentage_tones_keep_markers_in_the_system_foreground() {
+        for size in [16, 20, 24, 32, 48, 64] {
+            for foreground in [[32; 3], [245; 3]] {
+                for tone in [
+                    super::super::usage_color::UsageTone::Warning,
+                    super::super::usage_color::UsageTone::Critical,
+                ] {
+                    let pixels = render_colored(
+                        "C",
+                        "90",
+                        Appearance {
+                            size,
+                            color: foreground,
+                        },
+                        tone,
+                    )
+                    .unwrap();
+                    let split = (size * 5 / 16 * size * 4) as usize;
+                    assert!(pixels[..split]
+                        .chunks_exact(4)
+                        .any(|p| p[3] > 0 && p[..3] == foreground));
+                    assert!(pixels[split..]
+                        .chunks_exact(4)
+                        .any(|p| p[3] > 0 && p[..3] == tone.rgb(foreground)));
+                }
+            }
+        }
+    }
+
     #[test]
     fn icon_masks_have_transparency_and_visible_pixels_at_supported_sizes() {
         for size in [16, 20, 24, 32] {

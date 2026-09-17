@@ -1,7 +1,7 @@
 //! Native grayscale text on a premultiplied transparent surface.
 use super::{
     surface::Surface,
-    text_layout::{Alignment, Run},
+    text_layout::{Alignment, Run, TextStyle},
 };
 use windows::{
     core::{w, Result},
@@ -21,7 +21,7 @@ use windows::{
 pub struct Renderer {
     target: ID2D1DCRenderTarget,
     write: IDWriteFactory,
-    format: Option<(u32, IDWriteTextFormat)>,
+    formats: Option<(u32, [IDWriteTextFormat; 2])>,
 }
 impl Renderer {
     pub unsafe fn new() -> Result<Self> {
@@ -40,8 +40,13 @@ impl Renderer {
         Ok(Self {
             target,
             write: DWriteCreateFactory(DWRITE_FACTORY_TYPE_SHARED)?,
-            format: None,
+            formats: None,
         })
+    }
+
+    fn format(&self, style: TextStyle) -> &IDWriteTextFormat {
+        &self.formats.as_ref().expect("text formats initialized").1
+            [if style == TextStyle::Label { 0 } else { 1 }]
     }
 
     pub unsafe fn paint(
@@ -52,25 +57,24 @@ impl Renderer {
         dpi: u32,
         foreground: [u8; 3],
     ) -> Result<()> {
-        if self.format.as_ref().map(|(scale, _)| *scale) != Some(dpi) {
-            // Keep GDI's physical font size and the existing field bounds.
-            // Explicit regular weight matches the opaque Segoe UI reference;
-            // DirectWrite medium made transparent strokes visibly heavier.
-            // D2D operates at 96 DPI here because the shared layout is in pixels.
-            let format = self.write.CreateTextFormat(
-                w!("Segoe UI"),
-                None,
-                DWRITE_FONT_WEIGHT_NORMAL,
-                DWRITE_FONT_STYLE_NORMAL,
-                DWRITE_FONT_STRETCH_NORMAL,
-                (12 * dpi / 96) as f32,
-                w!("en-US"),
-            )?;
-            format.SetWordWrapping(DWRITE_WORD_WRAPPING_NO_WRAP)?;
-            format.SetParagraphAlignment(DWRITE_PARAGRAPH_ALIGNMENT_CENTER)?;
-            self.format = Some((dpi, format));
+        if self.formats.as_ref().map(|(scale, _)| *scale) != Some(dpi) {
+            // D2D uses physical pixels at 96 DPI, matching GDI's font heights.
+            let create = |style: TextStyle| -> Result<IDWriteTextFormat> {
+                let format = self.write.CreateTextFormat(
+                    w!("Segoe UI"),
+                    None,
+                    DWRITE_FONT_WEIGHT_NORMAL,
+                    DWRITE_FONT_STYLE_NORMAL,
+                    DWRITE_FONT_STRETCH_NORMAL,
+                    style.pixels(dpi) as f32,
+                    w!("en-US"),
+                )?;
+                format.SetWordWrapping(DWRITE_WORD_WRAPPING_NO_WRAP)?;
+                format.SetParagraphAlignment(DWRITE_PARAGRAPH_ALIGNMENT_CENTER)?;
+                Ok(format)
+            };
+            self.formats = Some((dpi, [create(TextStyle::Label)?, create(TextStyle::Value)?]));
         }
-        let format = &self.format.as_ref().expect("text format initialized").1;
         self.target.BindDC(
             HDC(dc),
             &RECT {
@@ -92,6 +96,7 @@ impl Renderer {
                 if run.text.is_empty() {
                     continue;
                 }
+                let format = self.format(run.style);
                 format.SetTextAlignment(match run.alignment {
                     Alignment::Left => DWRITE_TEXT_ALIGNMENT_LEADING,
                     Alignment::Center => DWRITE_TEXT_ALIGNMENT_CENTER,

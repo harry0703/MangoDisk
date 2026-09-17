@@ -79,6 +79,10 @@ impl Lease {
                 request.height as u32,
                 request.gap as u32,
                 match (request.edge, super::position::read_environment()) {
+                    (
+                        super::position::Edge::Right,
+                        super::position::Environment::Windows11Centered,
+                    ) => 3,
                     (super::position::Edge::Right, _) => 0,
                     (_, super::position::Environment::Windows11Centered) => 2,
                     _ => 1,

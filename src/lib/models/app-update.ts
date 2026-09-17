@@ -50,6 +50,10 @@ export interface AppUpdateDownloadProgress {
   finished: boolean;
 }
 
-export const APP_UPDATE_CHECK_TIMEOUT_MS = 15_000;
 export const APP_UPDATE_DOWNLOAD_TIMEOUT_MS = 5 * 60_000;
-export const APP_UPDATE_AUTOMATIC_CHECK_DELAY_MS = 3_000;
+export interface AppUpdateNotice {
+  schemaVersion: 1;
+  revision: number;
+  version: string | null;
+  checked: boolean;
+}

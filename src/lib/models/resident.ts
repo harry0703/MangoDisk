@@ -4,7 +4,7 @@ export interface ResidentReading extends ResourceReadings {
   revision: number;
 }
 export interface ResidentPreferences {
-  schemaVersion: 7;
+  schemaVersion: 8;
   revision: number;
   enabled: boolean;
   showIcon: boolean;
@@ -12,6 +12,10 @@ export interface ResidentPreferences {
   taskbarPosition: 'auto' | 'left' | 'right';
   taskbarBackground: boolean;
   taskbarCompact: boolean;
+  menuBarCompact: boolean;
+  usageColors: boolean;
+  usageWarningPercent: number;
+  usageCriticalPercent: number;
   metrics: { id: MetricId; enabled: boolean }[];
   networkInterface: string | null;
   diskVolume: string | null;

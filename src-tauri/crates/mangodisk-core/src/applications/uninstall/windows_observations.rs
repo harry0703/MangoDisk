@@ -698,7 +698,10 @@ mod tests {
         let canonical_candidate =
             fs::canonicalize(&candidate).expect("the observed path fixture should canonicalize");
 
-        assert!(safe_observed_path(&canonical_candidate, &[root.clone()]));
+        assert!(safe_observed_path(
+            &canonical_candidate,
+            std::slice::from_ref(&root)
+        ));
 
         fs::remove_dir_all(root).expect("the observed path fixture should be removed");
     }

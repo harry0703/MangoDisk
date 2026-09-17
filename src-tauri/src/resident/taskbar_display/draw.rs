@@ -3,7 +3,7 @@
 use super::{
     presentation::Column,
     surface::Surface,
-    text_layout::{self, Alignment, Run},
+    text_layout::{self, Alignment, Run, TextStyle},
 };
 use windows_sys::{
     core::w,
@@ -94,32 +94,26 @@ pub unsafe fn text(
     quality: u8,
 ) -> bool {
     SetBkMode(dc, TRANSPARENT as i32);
-    let font = CreateFontW(
-        -((12 * dpi / 96) as i32),
-        0,
-        0,
-        0,
-        500,
-        0,
-        0,
-        0,
-        DEFAULT_CHARSET as _,
-        OUT_DEFAULT_PRECIS as _,
-        CLIP_DEFAULT_PRECIS as _,
-        quality as _,
-        DEFAULT_PITCH as _,
-        w!("Segoe UI"),
-    );
-    if font.is_null() {
+    let fonts = [
+        font(TextStyle::Label, dpi, quality),
+        font(TextStyle::Value, dpi, quality),
+    ];
+    if fonts.iter().any(|font| font.is_null()) {
+        for font in fonts {
+            if !font.is_null() {
+                DeleteObject(font);
+            }
+        }
         return false;
     }
-    let old_font = SelectObject(dc, font);
+    let old_font = SelectObject(dc, fonts[0]);
     for run in runs {
         // Loading rates have no unit. Never pass an empty Vec's dangling pointer
         // to USER32; some DrawText paths inspect the buffer even with count zero.
         if run.text.is_empty() {
             continue;
         }
+        SelectObject(dc, fonts[if run.style == TextStyle::Label { 0 } else { 1 }]);
         // None requests a white coverage mask; transparent painting applies the
         // exact same run colors after rasterization instead of tinting the mask.
         let color = foreground
@@ -150,8 +144,29 @@ pub unsafe fn text(
         );
     }
     SelectObject(dc, old_font);
-    DeleteObject(font);
+    for font in fonts {
+        DeleteObject(font);
+    }
     true
+}
+
+unsafe fn font(style: TextStyle, dpi: u32, quality: u8) -> HFONT {
+    CreateFontW(
+        -(style.pixels(dpi) as i32),
+        0,
+        0,
+        0,
+        500,
+        0,
+        0,
+        0,
+        DEFAULT_CHARSET as _,
+        OUT_DEFAULT_PRECIS as _,
+        CLIP_DEFAULT_PRECIS as _,
+        quality as _,
+        DEFAULT_PITCH as _,
+        w!("Segoe UI"),
+    )
 }
 
 #[cfg(test)]
@@ -169,24 +184,12 @@ mod tests {
             let dc = CreateCompatibleDC(std::ptr::null_mut());
             assert!(!dc.is_null());
             for dpi in [96, 120, 144, 192, 240, 288] {
-                let font = CreateFontW(
-                    -((12 * dpi / 96) as i32),
-                    0,
-                    0,
-                    0,
-                    500,
-                    0,
-                    0,
-                    0,
-                    DEFAULT_CHARSET as _,
-                    OUT_DEFAULT_PRECIS as _,
-                    CLIP_DEFAULT_PRECIS as _,
-                    CLEARTYPE_QUALITY as _,
-                    DEFAULT_PITCH as _,
-                    w!("Segoe UI"),
-                );
-                assert!(!font.is_null());
-                let previous = SelectObject(dc, font);
+                let fonts = [
+                    font(TextStyle::Label, dpi, CLEARTYPE_QUALITY),
+                    font(TextStyle::Value, dpi, CLEARTYPE_QUALITY),
+                ];
+                assert!(fonts.iter().all(|font| !font.is_null()));
+                let previous = SelectObject(dc, fonts[0]);
                 for (id, text, digits) in [
                     (DisplayId::Cpu, "CPU 100%", "100"),
                     (DisplayId::Memory, "MEM 0%", "0"),
@@ -200,6 +203,8 @@ mod tests {
                 ] {
                     let columns = presentation::columns(
                         &[DisplayEntry {
+                            tone: Default::default(),
+                            usage_percent: None,
                             id,
                             marker: String::new(),
                             digits: digits.into(),
@@ -224,6 +229,7 @@ mod tests {
                         if run.text.is_empty() {
                             continue;
                         }
+                        SelectObject(dc, fonts[if run.style == TextStyle::Label { 0 } else { 1 }]);
                         let text: Vec<u16> = run.text.encode_utf16().collect();
                         let mut size = windows_sys::Win32::Foundation::SIZE::default();
                         assert_ne!(
@@ -240,7 +246,9 @@ mod tests {
                     }
                 }
                 SelectObject(dc, previous);
-                DeleteObject(font);
+                for font in fonts {
+                    DeleteObject(font);
+                }
             }
             DeleteDC(dc);
         }
@@ -257,6 +265,7 @@ mod tests {
                 .into_iter()
                 .map(|text| Run {
                     text,
+                    style: TextStyle::Value,
                     bounds: Bounds {
                         left: 0,
                         top: 0,

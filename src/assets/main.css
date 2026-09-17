@@ -69,6 +69,8 @@
   --color-success: var(--success);
   --color-success-foreground: var(--success-foreground);
   --color-warning: var(--warning);
+  --color-usage-warning: var(--usage-warning);
+  --color-usage-critical: var(--usage-critical);
   --color-warning-foreground: var(--warning-foreground);
   --color-border: var(--border);
   --color-input: var(--input);

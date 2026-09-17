@@ -1,13 +1,13 @@
 <script setup lang="ts">
 import { Card } from '@/components/ui/card';
 
-defineProps<{ title?: string }>();
+defineProps<{ title?: string; plain?: boolean }>();
 </script>
 
 <template>
-  <section class="settings-section">
+  <section class="settings-section" :class="{ 'settings-section--plain': plain }">
     <h2 v-if="title">{{ title }}</h2>
-    <Card class="settings-list"><slot /></Card>
+    <component :is="plain ? 'div' : Card" class="settings-list"><slot /></component>
   </section>
 </template>
 
@@ -28,10 +28,10 @@ defineProps<{ title?: string }>();
 /* Inset dividers belong to the group, including feature-owned row wrappers.
    Paint them without borders so row sizing and the full hover surface stay
    consistent. Opacity also keeps the line subtle on older WebKit versions. */
-.settings-section > .settings-list > :deep(* + *) {
+.settings-section:not(.settings-section--plain) > .settings-list > :deep(* + *) {
   position: relative;
 }
-.settings-section > .settings-list > :deep(* + *)::before {
+.settings-section:not(.settings-section--plain) > .settings-list > :deep(* + *)::before {
   content: '';
   position: absolute;
   z-index: 1;
@@ -42,5 +42,19 @@ defineProps<{ title?: string }>();
   background: var(--border);
   opacity: 0.4;
   pointer-events: none;
+}
+/* Dialog sections share the compact heading and unframed field layout. */
+.settings-section--plain > h2 {
+  margin: 0 0 8px;
+  font-size: var(--font-content-secondary);
+  font-weight: 500;
+}
+.settings-section--plain > .settings-list {
+  display: grid;
+  gap: 8px;
+  overflow: visible;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
 }
 </style>

@@ -23,6 +23,7 @@ const RATE_UNIT_WIDTH: f64 = 32.0;
 pub struct Cache {
     columns: Vec<Column>,
     icon: Option<bool>,
+    compact: bool,
     appearance: String,
     button: usize,
 }
@@ -54,9 +55,9 @@ fn rect(x: f64, y: f64, width: f64, height: f64) -> NSRect {
     NSRect::new(NSPoint::new(x, y), NSSize::new(width, height))
 }
 
-fn image(columns: Vec<Column>, icon: bool, dark: bool) -> Retained<NSImage> {
+fn image(columns: Vec<Column>, icon: bool, dark: bool, compact: bool) -> Retained<NSImage> {
     let size = NSSize::new(
-        macos_presentation::width(&columns, icon) as f64,
+        macos_presentation::width(&columns, icon, compact) as f64,
         macos_presentation::HEIGHT as f64,
     );
     let logo = icon
@@ -81,7 +82,7 @@ fn image(columns: Vec<Column>, icon: bool, dark: bool) -> Retained<NSImage> {
             logo.drawInRect(area);
             foreground.set();
             NSRectFillUsingOperation(area, NSCompositingOperation::SourceAtop);
-            x = 24.0;
+            x = 18.0 + macos_presentation::gap(compact) as f64;
         }
         for column in &columns {
             if column.id == super::format::DisplayId::Upload {
@@ -116,7 +117,12 @@ fn image(columns: Vec<Column>, icon: bool, dark: bool) -> Retained<NSImage> {
                     );
                     text(
                         unit,
-                        rect(x + 14.0 + RATE_VALUE_WIDTH, y, RATE_UNIT_WIDTH, 11.0),
+                        rect(
+                            x + (if compact { 12.0 } else { 14.0 }) + RATE_VALUE_WIDTH,
+                            y,
+                            if compact { 18.0 } else { RATE_UNIT_WIDTH },
+                            11.0,
+                        ),
                         10.0,
                         0.0,
                         &foreground,
@@ -124,6 +130,13 @@ fn image(columns: Vec<Column>, icon: bool, dark: bool) -> Retained<NSImage> {
                     );
                 }
             } else {
+                let [r, g, b] = column.tone.rgb(if dark { [255; 3] } else { [0; 3] });
+                let value_color = NSColor::colorWithSRGBRed_green_blue_alpha(
+                    f64::from(r) / 255.0,
+                    f64::from(g) / 255.0,
+                    f64::from(b) / 255.0,
+                    1.0,
+                );
                 text(
                     &column.top,
                     rect(x, 0.0, column.width as f64, 9.0),
@@ -135,13 +148,13 @@ fn image(columns: Vec<Column>, icon: bool, dark: bool) -> Retained<NSImage> {
                 text(
                     &column.bottom,
                     rect(x, 8.0, column.width as f64, 14.0),
-                    12.0,
+                    if compact { 11.0 } else { 12.0 },
                     0.3,
-                    &foreground,
+                    &value_color,
                     false,
                 );
             }
-            x += (column.width + macos_presentation::GAP) as f64;
+            x += (column.width + macos_presentation::gap(compact)) as f64;
         }
         Bool::YES
     });
@@ -154,11 +167,12 @@ pub fn apply(
     tray: &tauri::tray::TrayIcon,
     entries: &[DisplayEntry],
     icon: bool,
+    compact: bool,
     summary: &str,
     cache: &mut Cache,
 ) -> tauri::Result<bool> {
-    let columns = macos_presentation::columns(entries);
-    let changed = cache.columns != columns || cache.icon != Some(icon);
+    let columns = macos_presentation::columns(entries, compact);
+    let changed = cache.columns != columns || cache.icon != Some(icon) || cache.compact != compact;
     let previous_appearance = cache.appearance.clone();
     let previous_button = cache.button;
     let content = columns.clone();
@@ -172,7 +186,12 @@ pub fn apply(
         let redraw = changed || appearance != previous_appearance || identity != previous_button;
         if redraw {
             button.setTitle(&NSString::from_str(""));
-            button.setImage(Some(&image(content, icon, appearance.contains("Dark"))));
+            button.setImage(Some(&image(
+                content,
+                icon,
+                appearance.contains("Dark"),
+                compact,
+            )));
             button.setImagePosition(NSCellImagePosition::ImageOnly);
             // AppKit adds its normal status-item padding around the content image.
             item.setLength(-1.0);
@@ -187,18 +206,19 @@ pub fn apply(
     };
     if cache.icon != Some(icon)
         || cache.appearance != appearance
-        || macos_presentation::width(&cache.columns, icon)
-            != macos_presentation::width(&columns, icon)
+        || macos_presentation::width(&cache.columns, icon, cache.compact)
+            != macos_presentation::width(&columns, icon, compact)
     {
-        log::debug!(
-            "resident_macos_layout columns={} content_width_pt={} dark={}",
+        log::info!(
+            "resident_macos_layout columns={} content_width_pt={} dark={} compact={compact}",
             columns.len(),
-            macos_presentation::width(&columns, icon),
+            macos_presentation::width(&columns, icon, compact),
             appearance.contains("Dark")
         );
     }
     cache.columns = columns;
     cache.icon = Some(icon);
+    cache.compact = compact;
     cache.appearance = appearance;
     cache.button = button;
     Ok(redraw)
@@ -220,16 +240,25 @@ mod tests {
                     .width
             }
         }
-        let column = macos_presentation::columns(&[DisplayEntry {
-            id: super::super::format::DisplayId::Cpu,
-            digits: "100".into(),
-            marker: "C".into(),
-            text: String::new(),
-            tooltip: String::new(),
-        }]);
+        let column = macos_presentation::columns(
+            &[DisplayEntry {
+                tone: Default::default(),
+                usage_percent: None,
+                id: super::super::format::DisplayId::Cpu,
+                digits: "100".into(),
+                marker: "C".into(),
+                text: String::new(),
+                tooltip: String::new(),
+            }],
+            false,
+        );
         let percentage_width = column[0].width as f64;
         // Real AppKit metrics catch regressions that string-length tests miss.
         for value in 0..=100 {
+            assert!(
+                measured(&format!("{value}%"), 11.0, 0.3) <= 34.0,
+                "compact percentage {value} overflows"
+            );
             assert!(
                 measured(&format!("{value}%"), 12.0, 0.3) <= percentage_width,
                 "percentage {value} overflows"

@@ -5,6 +5,7 @@ withDefaults(
     description: string;
     as?: 'div' | 'button';
     disabled?: boolean;
+    compact?: boolean;
     controls?: 'inline' | 'responsive' | 'field';
     labelFor?: string;
     titleId?: string;
@@ -13,6 +14,7 @@ withDefaults(
   {
     as: 'div',
     disabled: false,
+    compact: false,
     controls: 'inline',
     labelFor: undefined,
     titleId: undefined,
@@ -27,16 +29,36 @@ withDefaults(
   <component
     :is="as"
     class="setting-row"
-    :class="[`setting-row--${controls}`, { 'action-row': as === 'button' }]"
+    :class="[
+      `setting-row--${controls}`,
+      {
+        'action-row': as === 'button',
+        'setting-row--compact': compact,
+        'setting-row--without-icon': compact && !$slots.icon,
+      },
+    ]"
     :type="as === 'button' ? 'button' : undefined"
     :disabled="as === 'button' ? disabled : undefined"
   >
-    <span class="section-icon" aria-hidden="true"><slot name="icon" /></span>
-    <component :is="labelFor ? 'label' : 'span'" class="setting-copy" :for="labelFor">
-      <strong :id="titleId"
+    <span v-if="!compact || $slots.icon" class="section-icon" aria-hidden="true"><slot name="icon" /></span>
+    <component
+      :is="labelFor && !$slots.help ? 'label' : 'span'"
+      class="setting-copy"
+      :for="!$slots.help ? labelFor : undefined"
+    >
+      <!-- Help stays outside the label so opening it cannot toggle the control. -->
+      <span v-if="$slots.help" class="setting-title">
+        <component :is="labelFor ? 'label' : 'span'" :for="labelFor">
+          <strong :id="titleId"
+            ><slot name="title">{{ title }}</slot></strong
+          >
+        </component>
+        <slot name="help" />
+      </span>
+      <strong v-else :id="titleId"
         ><slot name="title">{{ title }}</slot></strong
       >
-      <small :id="descriptionId">{{ description }}</small>
+      <small v-if="description" :id="descriptionId">{{ description }}</small>
     </component>
     <span class="setting-controls"><slot /></span>
   </component>
@@ -74,6 +96,17 @@ withDefaults(
   min-width: 0;
   flex-direction: column;
   gap: 2px;
+}
+.setting-title {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+/* Flex removes the inherited inline baseline strut beside the help button. */
+.setting-title > label,
+.setting-title > span {
+  display: flex;
+  align-items: center;
 }
 .setting-copy strong {
   font-size: var(--font-content-primary);
@@ -144,5 +177,25 @@ withDefaults(
       width: 13.75rem;
     }
   }
+}
+.setting-row--compact {
+  grid-template-columns: 24px minmax(0, 1fr) auto;
+  min-height: 36px;
+  gap: 8px;
+  padding: 4px 0;
+}
+.setting-row--compact:hover {
+  background: transparent;
+}
+.setting-row--compact .section-icon {
+  width: 24px;
+  height: 24px;
+}
+.setting-row--compact .setting-copy strong {
+  font-size: var(--font-content-body);
+  font-weight: 400;
+}
+.setting-row--compact.setting-row--without-icon {
+  grid-template-columns: minmax(0, 1fr) auto;
 }
 </style>

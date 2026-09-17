@@ -51,6 +51,8 @@ struct Window {
     text_renderer: Option<directwrite::Renderer>,
     position_failed: bool,
     reservation: Option<super::reservation::Client>,
+    xaml_architecture_matches: Option<bool>,
+    geometry_delayed: bool,
     reservation_failed: Option<super::reservation::Failure>,
     reservation_retry: std::time::Instant,
     placement_policy: Option<(
@@ -128,6 +130,8 @@ pub fn start(service: Arc<Service>) {
                 text_renderer: None,
                 position_failed: false,
                 reservation: None,
+                xaml_architecture_matches: None,
+                geometry_delayed: false,
                 reservation_failed: None,
                 reservation_retry: std::time::Instant::now(),
                 placement_policy: None,
@@ -464,13 +468,33 @@ impl Window {
             .clone();
         // The sampler may still hold the old shell snapshot after a restart.
         // Wait for fresh geometry instead of repeatedly destroying the new child.
-        let Some(geometry) = geometry.filter(|g| {
-            g.shell as HWND == self.shell && g.sampled.elapsed() < Duration::from_secs(3)
-        }) else {
+        let Some(geometry) = geometry.filter(|g| g.shell as HWND == self.shell) else {
             self.hide(hwnd, Visibility::GeometryUnavailable);
             self.service.publish(DisplayStatus::ShellUnavailable);
             return;
         };
+        // UIA can lag under CPU load although the independent layout companion
+        // still validates our reserved area. Reuse only that live lease, with
+        // unchanged DPI/alignment and the live parent bounds checked below.
+        // Gap placement continues to require fresh occupied-control rectangles.
+        let delayed = geometry.sampled.elapsed() >= Duration::from_secs(3);
+        if delayed
+            && !(self.reservation.as_ref().is_some_and(|client| {
+                client.has_recent_layout(self.shell as usize, self.parent as usize)
+            }) && GetDpiForWindow(self.shell).max(96) == geometry.dpi
+                && position::read_environment() == geometry.environment)
+        {
+            self.hide(hwnd, Visibility::GeometryUnavailable);
+            self.service.publish(DisplayStatus::ShellUnavailable);
+            return;
+        }
+        if delayed != self.geometry_delayed {
+            log::info!(
+                "resident_taskbar_geometry_delay delayed={delayed} age_ms={} placement=reserved",
+                geometry.sampled.elapsed().as_millis()
+            );
+            self.geometry_delayed = delayed;
+        }
         if geometry.hidden {
             self.hide(hwnd, Visibility::AutoHidden);
             self.service.publish(DisplayStatus::Taskbar);
@@ -492,6 +516,68 @@ impl Window {
             || current.bottom != geometry.bar.bottom
         {
             self.hide(hwnd, Visibility::ShellMoving);
+            self.service.publish(DisplayStatus::Taskbar);
+            return;
+        }
+        // Classify temporary shell visibility before allocating space. Fullscreen
+        // UIA snapshots can report collapsed gaps; those are not NoSpace failures.
+        // The taskbar bounds identify the monitor even before a strip is placed.
+        let bounds = geometry.bar;
+        let center = POINT {
+            x: (bounds.left + bounds.right) / 2,
+            y: (bounds.top + bounds.bottom) / 2,
+        };
+        let monitor = MonitorFromPoint(center, MONITOR_DEFAULTTONULL);
+        let mut info = MONITORINFO {
+            cbSize: std::mem::size_of::<MONITORINFO>() as _,
+            ..Default::default()
+        };
+        let inside = !monitor.is_null()
+            && GetMonitorInfoW(monitor, &mut info) != 0
+            && bounds.left >= info.rcMonitor.left
+            && bounds.right <= info.rcMonitor.right
+            && bounds.top >= info.rcMonitor.top
+            && bounds.bottom <= info.rcMonitor.bottom;
+        let foreground = GetForegroundWindow();
+        if self.foreground != foreground as usize {
+            self.foreground = foreground as usize;
+            self.shell_surface = is_shell_surface(foreground, shell);
+        }
+        let mut front = RECT::default();
+        let front_available = !foreground.is_null() && GetWindowRect(foreground, &mut front) != 0;
+        let front_bounds = Bounds {
+            left: front.left,
+            top: front.top,
+            right: front.right,
+            bottom: front.bottom,
+        };
+        let covered = foreground != GetShellWindow()
+            && !self.shell_surface
+            && foreground != hwnd
+            && foreground != shell
+            && !foreground.is_null()
+            && front_available
+            && visibility::is_fullscreen(
+                front_bounds,
+                Bounds {
+                    left: info.rcMonitor.left,
+                    top: info.rcMonitor.top,
+                    right: info.rcMonitor.right,
+                    bottom: info.rcMonitor.bottom,
+                },
+                GetWindowLongPtrW(foreground, GWL_STYLE) & (WS_DLGFRAME | WS_THICKFRAME) as isize
+                    != 0,
+                IsZoomed(foreground) != 0,
+            );
+        let hidden = if !inside || IsWindowVisible(shell) == 0 {
+            Some(Visibility::AutoHidden)
+        } else if covered {
+            Some(Visibility::Fullscreen)
+        } else {
+            None
+        };
+        if let Some(reason) = hidden {
+            self.hide(hwnd, reason);
             self.service.publish(DisplayStatus::Taskbar);
             return;
         }
@@ -548,8 +634,19 @@ impl Window {
                 model.position == crate::resident::preference_schema::TaskbarPosition::Auto,
             )
         };
-        // Unknown shell versions retain the conservative, non-mutating adapter.
-        let placed = if geometry.environment == Environment::Unknown {
+        // Unknown environments must not cache support without probing. Defer
+        // the Windows 11 check until a usable snapshot identifies its taskbar,
+        // including when an earlier registry read failed and later recovered.
+        let reservation_supported = match geometry.environment {
+            Environment::Unknown => false,
+            Environment::Windows10 => true,
+            Environment::Windows11Centered | Environment::Windows11LeftAligned => *self
+                .xaml_architecture_matches
+                .get_or_insert_with(|| super::hosting::xaml_architecture_matches(shell)),
+        };
+        // Cross-architecture XAML cannot reserve space, but the embedded child
+        // can still use a collision-checked gap, just like an unknown shell.
+        let placed = if !reservation_supported {
             self.reservation = None;
             find_gap()
         } else {
@@ -680,66 +777,6 @@ impl Window {
         self.columns = columns;
         self.color = color;
         self.dpi = geometry.dpi;
-        // Auto-hide and fullscreen temporarily hide this surface, without turning
-        // the tray set on/off on every animation. A genuine layout failure does fallback.
-        let center = POINT {
-            x: (bounds.left + bounds.right) / 2,
-            y: (bounds.top + bounds.bottom) / 2,
-        };
-        let monitor = MonitorFromPoint(center, MONITOR_DEFAULTTONULL);
-        let mut info = MONITORINFO {
-            cbSize: std::mem::size_of::<MONITORINFO>() as _,
-            ..Default::default()
-        };
-        let inside = !monitor.is_null()
-            && GetMonitorInfoW(monitor, &mut info) != 0
-            && bounds.left >= info.rcMonitor.left
-            && bounds.right <= info.rcMonitor.right
-            && bounds.top >= info.rcMonitor.top
-            && bounds.bottom <= info.rcMonitor.bottom;
-        let foreground = GetForegroundWindow();
-        if self.foreground != foreground as usize {
-            self.foreground = foreground as usize;
-            self.shell_surface = is_shell_surface(foreground, shell);
-        }
-        let mut front = RECT::default();
-        let front_available = !foreground.is_null() && GetWindowRect(foreground, &mut front) != 0;
-        let front_bounds = Bounds {
-            left: front.left,
-            top: front.top,
-            right: front.right,
-            bottom: front.bottom,
-        };
-        let covered = foreground != GetShellWindow()
-            && !self.shell_surface
-            && foreground != hwnd
-            && foreground != shell
-            && !foreground.is_null()
-            && front_available
-            && visibility::is_fullscreen(
-                front_bounds,
-                Bounds {
-                    left: info.rcMonitor.left,
-                    top: info.rcMonitor.top,
-                    right: info.rcMonitor.right,
-                    bottom: info.rcMonitor.bottom,
-                },
-                GetWindowLongPtrW(foreground, GWL_STYLE) & (WS_DLGFRAME | WS_THICKFRAME) as isize
-                    != 0,
-                IsZoomed(foreground) != 0,
-            );
-        let hidden = if !inside || IsWindowVisible(shell) == 0 {
-            Some(Visibility::AutoHidden)
-        } else if covered {
-            Some(Visibility::Fullscreen)
-        } else {
-            None
-        };
-        if let Some(reason) = hidden {
-            self.hide(hwnd, reason);
-            self.service.publish(DisplayStatus::Taskbar);
-            return;
-        }
         // Child visibility follows the taskbar. Never repair global TOPMOST
         // order: doing so would reintroduce Show Desktop/menu races. Only our
         // sibling order is set; Explorer's task buttons keep their original bounds.

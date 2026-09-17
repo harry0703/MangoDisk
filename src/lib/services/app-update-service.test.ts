@@ -1,158 +1,132 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-
-import {
-  APP_DISTRIBUTION_IDS,
-  APP_UPDATE_ACTION_IDS,
-  APP_UPDATE_CHECK_TIMEOUT_MS,
-  APP_UPDATE_DOWNLOAD_TIMEOUT_MS,
-} from '@/lib/models/app-update';
-import { AppUpdateMetadataService } from '@/lib/services/app-update-metadata-service';
+import { APP_DISTRIBUTION_IDS, APP_UPDATE_DOWNLOAD_TIMEOUT_MS } from '@/lib/models/app-update';
 import { AppUpdateService } from '@/lib/services/app-update-service';
 
-const { checkMock, getVersionMock, relaunchMock } = vi.hoisted(() => ({
-  checkMock: vi.fn(),
-  getVersionMock: vi.fn(),
-  relaunchMock: vi.fn(),
+const native = vi.hoisted(() => ({
+  invoke: vi.fn(),
+  download: vi.fn(),
+  install: vi.fn(),
+  close: vi.fn(),
+  relaunch: vi.fn(),
+}));
+vi.mock('@tauri-apps/api/core', () => ({ invoke: native.invoke }));
+vi.mock('@tauri-apps/api/app', () => ({ getVersion: vi.fn() }));
+vi.mock('@tauri-apps/plugin-process', () => ({ relaunch: native.relaunch }));
+vi.mock('@/lib/services/logger-service', () => ({ LoggerService: { warn: vi.fn() } }));
+vi.mock('@tauri-apps/plugin-updater', () => ({
+  Update: class {
+    constructor(metadata: object) {
+      Object.assign(this, metadata);
+    }
+    download = native.download;
+    install = native.install;
+    close = native.close;
+  },
 }));
 
-vi.mock('@tauri-apps/api/app', () => ({ getVersion: getVersionMock }));
-vi.mock('@tauri-apps/plugin-updater', () => ({ check: checkMock }));
-vi.mock('@tauri-apps/plugin-process', () => ({ relaunch: relaunchMock }));
+const installed = APP_DISTRIBUTION_IDS.installed;
+const metadata = {
+  rid: 7,
+  currentVersion: '1.0.0',
+  version: '1.1.0',
+  body: 'Release notes',
+  date: '2026-07-31T00:00:00Z',
+  rawJson: { url: 'https://mangodisk.app/api/updates/1.1.0/windows/x86_64/download?distribution=portable' },
+};
 
 describe('AppUpdateService', () => {
-  const requestHeaders = {
-    'Accept-Language': 'en-US',
-    'x-mangodisk-distribution': 'installed',
-    'x-mangodisk-install-id': '019c0b3d-a9ef-7d11-89a3-d5ea10df4001',
-    'x-mangodisk-os-version': '15.6.1',
-  };
-
   beforeEach(() => {
-    vi.restoreAllMocks();
-    checkMock.mockReset();
-    getVersionMock.mockReset();
-    relaunchMock.mockReset();
-    vi.spyOn(AppUpdateMetadataService, 'createHeaders').mockResolvedValue(requestHeaders);
+    vi.resetAllMocks();
+    native.invoke.mockResolvedValue({ schemaVersion: 1, update: metadata });
+    native.close.mockResolvedValue(undefined);
   });
-
   afterEach(async () => {
     await AppUpdateService.dispose();
   });
 
-  it('uses client metadata when checking for updates', async () => {
-    checkMock.mockResolvedValue(null);
-
-    await expect(AppUpdateService.check('en-US', APP_DISTRIBUTION_IDS.installed)).resolves.toBeNull();
-    expect(AppUpdateMetadataService.createHeaders).toHaveBeenCalledWith('en-US', APP_DISTRIBUTION_IDS.installed);
-    expect(checkMock).toHaveBeenCalledWith({
-      headers: requestHeaders,
-      timeout: APP_UPDATE_CHECK_TIMEOUT_MS,
-    });
-  });
-
-  it('downloads and installs a checked update as separate steps', async () => {
-    const close = vi.fn(async () => undefined);
-    const download = vi.fn(async () => undefined);
-    const install = vi.fn(async () => undefined);
-    checkMock.mockResolvedValue({
-      body: 'Release notes',
-      close,
+  it('acquires a native cached resource without a second updater check', async () => {
+    await expect(AppUpdateService.check(installed, false)).resolves.toMatchObject({
       currentVersion: '1.0.0',
-      date: '2026-07-31T00:00:00.000Z',
-      download,
-      install,
       version: '1.1.0',
-    });
-
-    await expect(AppUpdateService.check('en-US', APP_DISTRIBUTION_IDS.installed)).resolves.toEqual({
-      action: APP_UPDATE_ACTION_IDS.automaticInstall,
-      currentVersion: '1.0.0',
-      date: '2026-07-31T00:00:00.000Z',
       notes: 'Release notes',
-      version: '1.1.0',
+      action: 'automaticInstall',
     });
+    expect(native.invoke).toHaveBeenCalledExactlyOnceWith('acquire_app_update', { refresh: false });
+    await AppUpdateService.check(installed, true);
+    expect(native.invoke).toHaveBeenLastCalledWith('acquire_app_update', { refresh: true });
+    expect(native.close).toHaveBeenCalledOnce();
+  });
+
+  it('shares concurrent resource acquisition', async () => {
+    let resolve!: (value: object) => void;
+    native.invoke.mockReturnValue(
+      new Promise(done => {
+        resolve = done;
+      })
+    );
+    const first = AppUpdateService.check(installed, true);
+    const second = AppUpdateService.check(installed, true);
+    expect(first).toBe(second);
+    resolve({ schemaVersion: 1, update: metadata });
+    await first;
+    expect(native.invoke).toHaveBeenCalledOnce();
+  });
+
+  it('retains the previous resource if native refresh fails', async () => {
+    await AppUpdateService.check(installed, false);
+    native.invoke.mockRejectedValueOnce(new Error('offline'));
+    await expect(AppUpdateService.check(installed, true)).rejects.toThrow('offline');
+    expect(native.close).not.toHaveBeenCalled();
     await AppUpdateService.download(() => undefined);
-
-    expect(download).toHaveBeenCalledWith(expect.any(Function), {
-      headers: requestHeaders,
-      timeout: APP_UPDATE_DOWNLOAD_TIMEOUT_MS,
-    });
-    expect(install).not.toHaveBeenCalled();
-    expect(relaunchMock).not.toHaveBeenCalled();
-
-    await AppUpdateService.installDownloaded();
-
-    expect(install).toHaveBeenCalledOnce();
-    expect(relaunchMock).not.toHaveBeenCalled();
-
-    await AppUpdateService.restartApplication();
-
-    expect(relaunchMock).toHaveBeenCalledOnce();
+    expect(native.download).toHaveBeenCalledOnce();
   });
 
-  it('does not install before the update download completes', async () => {
-    const close = vi.fn(async () => undefined);
-    checkMock.mockResolvedValue({
-      body: '',
-      close,
-      currentVersion: '1.0.0',
-      date: undefined,
-      download: vi.fn(async () => undefined),
-      install: vi.fn(async () => undefined),
-      version: '1.1.0',
-    });
-    await AppUpdateService.check('en-US', APP_DISTRIBUTION_IDS.installed);
-
-    await expect(AppUpdateService.installDownloaded()).rejects.toThrow('No downloaded update');
-  });
-
-  it('returns a manual download without retaining portable update state', async () => {
-    const close = vi.fn(async () => undefined);
-    const download = vi.fn(async () => undefined);
-    checkMock.mockResolvedValue({
-      body: 'Portable release notes',
-      close,
-      currentVersion: '1.0.0',
-      date: '2026-08-20T00:00:00.000Z',
-      download,
-      install: vi.fn(async () => undefined),
-      rawJson: {
-        url: 'https://mangodisk.app/api/updates/1.1.0/windows/x86_64/download?distribution=portable',
-      },
-      version: '1.1.0',
-    });
-
-    await expect(AppUpdateService.check('en-US', APP_DISTRIBUTION_IDS.portable)).resolves.toEqual({
-      action: APP_UPDATE_ACTION_IDS.manualDownload,
-      currentVersion: '1.0.0',
-      date: '2026-08-20T00:00:00.000Z',
-      manualDownloadUrl: 'https://mangodisk.app/api/updates/1.1.0/windows/x86_64/download?distribution=portable',
-      notes: 'Portable release notes',
-      version: '1.1.0',
-    });
-    expect(close).toHaveBeenCalledOnce();
-    expect(download).not.toHaveBeenCalled();
+  it('clears the resource after a successful no-update response', async () => {
+    await AppUpdateService.check(installed, false);
+    native.invoke.mockResolvedValueOnce({ schemaVersion: 1, update: null });
+    expect(await AppUpdateService.check(installed, true)).toBeNull();
+    expect(native.close).toHaveBeenCalledOnce();
     await expect(AppUpdateService.download(() => undefined)).rejects.toThrow('No checked update');
   });
 
-  it('rejects an untrusted portable download URL and releases updater state', async () => {
-    const close = vi.fn(async () => undefined);
-    checkMock.mockResolvedValue({
-      body: '',
-      close,
-      currentVersion: '1.0.0',
-      date: undefined,
-      download: vi.fn(async () => undefined),
-      install: vi.fn(async () => undefined),
-      rawJson: {
-        url: 'https://example.com/MangoDisk.exe',
-      },
-      version: '1.1.0',
-    });
+  it('keeps signed download and installation separate and releases installed resources', async () => {
+    await AppUpdateService.check(installed, false);
+    await expect(AppUpdateService.installDownloaded()).rejects.toThrow('No downloaded update');
+    await AppUpdateService.download(() => undefined);
+    expect(native.download).toHaveBeenCalledWith(expect.any(Function), { timeout: APP_UPDATE_DOWNLOAD_TIMEOUT_MS });
+    expect(native.install).not.toHaveBeenCalled();
+    await AppUpdateService.installDownloaded();
+    expect(native.install).toHaveBeenCalledOnce();
+    expect(native.close).toHaveBeenCalledOnce();
+    expect(native.relaunch).not.toHaveBeenCalled();
+    await AppUpdateService.restartApplication();
+    expect(native.relaunch).toHaveBeenCalledOnce();
+  });
 
-    await expect(AppUpdateService.check('en-US', APP_DISTRIBUTION_IDS.portable)).rejects.toThrow(
+  it('does not report installation failure when releasing an installed resource fails', async () => {
+    await AppUpdateService.check(installed, false);
+    await AppUpdateService.download(() => undefined);
+    native.close.mockRejectedValueOnce(new Error('window resource already closed'));
+    await expect(AppUpdateService.installDownloaded()).resolves.toBeUndefined();
+  });
+
+  it('returns a trusted portable URL without retaining an install resource', async () => {
+    await expect(AppUpdateService.check(APP_DISTRIBUTION_IDS.portable, false)).resolves.toMatchObject({
+      action: 'manualDownload',
+      manualDownloadUrl: metadata.rawJson.url,
+    });
+    expect(native.close).toHaveBeenCalledOnce();
+    await expect(AppUpdateService.download(() => undefined)).rejects.toThrow('No checked update');
+  });
+
+  it('rejects an untrusted portable URL and releases its resource', async () => {
+    native.invoke.mockResolvedValueOnce({
+      schemaVersion: 1,
+      update: { ...metadata, rawJson: { url: 'https://example.com/app.exe' } },
+    });
+    await expect(AppUpdateService.check(APP_DISTRIBUTION_IDS.portable, false)).rejects.toThrow(
       'unsupported download URL'
     );
-    expect(close).toHaveBeenCalledOnce();
+    expect(native.close).toHaveBeenCalledOnce();
   });
 });

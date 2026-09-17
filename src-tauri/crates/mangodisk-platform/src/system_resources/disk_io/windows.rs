@@ -71,7 +71,7 @@ fn values(counter: PDH_HCOUNTER) -> crate::PlatformResult<BTreeMap<String, u64>>
         // Names live inside PDH's returned buffer; bound every read to that allocation.
         let start = item.szName as usize;
         let end = buffer.as_ptr() as usize + buffer.len() * 8;
-        if start < buffer.as_ptr() as usize || start >= end || start % 2 != 0 {
+        if start < buffer.as_ptr() as usize || start >= end || !start.is_multiple_of(2) {
             return Err(unavailable());
         }
         let name = unsafe { std::slice::from_raw_parts(item.szName, (end - start) / 2) };

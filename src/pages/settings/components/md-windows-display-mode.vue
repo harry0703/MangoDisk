@@ -7,7 +7,6 @@ const emit = defineEmits<{
   change: [mode: ResidentPreferences['windowsDisplayMode']];
   position: [position: ResidentPreferences['taskbarPosition']];
   background: [enabled: boolean];
-  compact: [enabled: boolean];
 }>();
 const { t } = useI18n({ useScope: 'global' });
 </script>
@@ -29,7 +28,6 @@ const { t } = useI18n({ useScope: 'global' });
       </div>
     </div>
     <div v-if="preferences.windowsDisplayMode === 'taskbar'" class="taskbar-options">
-      <h3>{{ t('systemStatus.taskbarSettingsTitle') }}</h3>
       <div class="display-field">
         <span id="taskbar-position-label" class="field-label">{{ t('systemStatus.taskbarPosition') }}</span>
         <div class="segmented-choice" role="radiogroup" aria-labelledby="taskbar-position-label">
@@ -54,14 +52,6 @@ const { t } = useI18n({ useScope: 'global' });
         </div>
       </div>
       <div class="background-field">
-        <label for="taskbar-compact">{{ t('systemStatus.taskbarCompact') }}</label>
-        <MdSwitch
-          id="taskbar-compact"
-          :model-value="preferences.taskbarCompact"
-          @update:model-value="emit('compact', $event)"
-        />
-      </div>
-      <div class="background-field">
         <label for="taskbar-background">{{ t('systemStatus.taskbarBackground') }}</label>
         <MdSwitch
           id="taskbar-background"
@@ -78,7 +68,7 @@ const { t } = useI18n({ useScope: 'global' });
 .windows-display-settings {
   @apply text-foreground;
   display: grid;
-  gap: 16px;
+  gap: 8px;
   font-size: var(--font-content-body);
   font-weight: 400;
 }
@@ -97,16 +87,8 @@ const { t } = useI18n({ useScope: 'global' });
   min-width: 0;
 }
 .taskbar-options {
-  @apply border-t border-border/60;
   display: grid;
   gap: 8px;
-  padding-top: 16px;
-}
-.taskbar-options h3 {
-  @apply text-muted-foreground;
-  margin: 0;
-  font-size: var(--font-content-secondary);
-  font-weight: 500;
 }
 .segmented-choice {
   @apply bg-muted rounded-lg;

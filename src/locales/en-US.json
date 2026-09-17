@@ -2429,6 +2429,8 @@
     "versionValue": "Version {version}"
   },
   "updates": {
+    "noticeAvailable": "Update available",
+    "noticeRetry": "Retry opening update",
     "availableTitle": "MangoDisk {version} is available",
     "currentVersionDescription": "Current version {version}",
     "checkDescription": "Check for a newer version",
@@ -3536,7 +3538,12 @@
     "releaseButtonUnsupported": "Unavailable"
   },
   "systemStatus": {
-    "taskbarSettingsTitle": "Taskbar settings",
+    "appearanceTitle": "Appearance",
+    "usageColors": "Color indicators",
+    "usageWarning": "Orange ≥",
+    "usageCritical": "Red ≥",
+    "usageColorsHelp": "CPU, memory and disk values change color at the thresholds and use the default color below them",
+    "menuBarCompactHint": "Tighter spacing, with network units shortened to K, M, G",
     "configureAction": "Configure…",
     "menuBarSettingsTitle": "Menu bar settings",
     "displaySettingsTitle": "Taskbar and system tray settings",
@@ -3578,7 +3585,7 @@
     "networkScope": "Selected interface traffic, including local network transfers",
     "taskbarBackground": "Show background",
     "taskbarCompact": "Compact mode",
-    "taskbarPosition": "Preferred position",
+    "taskbarPosition": "Alignment",
     "taskbarAuto": "Auto",
     "taskbarLeft": "Left",
     "taskbarRight": "Right",

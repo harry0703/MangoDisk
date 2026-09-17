@@ -332,7 +332,7 @@ fn application_uninstall_cancellation_latencies(runs: usize) -> Result<Vec<u64>,
 
 fn median(sorted: &[u64]) -> u64 {
     let middle = sorted.len() / 2;
-    if sorted.len() % 2 == 0 {
+    if sorted.len().is_multiple_of(2) {
         sorted[middle - 1]
             .saturating_add(sorted[middle])
             .saturating_div(2)

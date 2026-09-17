@@ -1,5 +1,7 @@
 #pragma once
 
+#include <algorithm>
+
 // This protocol is private to two instances of the same embedded DLL. Explorer
 // accepts only bounded layout data; it never executes commands or opens a new log.
 namespace taskbar {
@@ -17,9 +19,9 @@ inline std::wstring const& channel_class() {
     return name;
 }
 constexpr UINT release_message = WM_APP + 1;
-enum class Placement : UINT { Right, AfterStart, BarLeft };
+enum class Placement : UINT { Right, AfterStart, BarLeft, BarRight };
 struct Request {
-    UINT version = 1;
+    UINT version = 2;
     DWORD owner = 0;
     UINT width = 0;
     UINT height = 0;
@@ -62,7 +64,7 @@ inline bool same_value(double a, double b) {
     // fractional DPI, exact equality mistakes our own margin for an external
     // update and repeatedly adds the reservation. This tolerance is below one
     // physical pixel even at the largest supported scale and width.
-    return std::abs(a - b) < 1.0 / 64.0;
+    return a == b || std::abs(a - b) < 1.0 / 64.0;
 }
 inline bool equal(ux::Thickness const& a, ux::Thickness const& b) {
     return same_value(a.Left, b.Left) && same_value(a.Top, b.Top) && same_value(a.Right, b.Right) && same_value(a.Bottom, b.Bottom);
@@ -75,7 +77,9 @@ struct Lease {
     winrt::weak_ref<ux::FrameworkElement> root;
     winrt::weak_ref<ux::FrameworkElement> target;
     ux::Thickness original{}, applied{};
-    double original_min = 0, applied_min = 0, amount = 0;
+    double original_min = 0, applied_min = 0, original_max = 0, applied_max = 0, amount = 0;
+    double measured_width = 0, measured_frame_width = 0;
+    ULONGLONG measured_at = 0;
     Placement placement = Placement::Right;
     bool active = false;
     HWND host = nullptr, channel = nullptr;
@@ -96,12 +100,16 @@ struct Lease {
                 auto element = target.get();
                 bool margin_owned = element && equal(element.Margin(), applied);
                 if (margin_owned) element.Margin(original);
+                bool max_owned = element &&
+                    (placement == Placement::BarLeft || placement == Placement::BarRight) &&
+                    same_value(element.MaxWidth(), applied_max);
+                if (max_owned) element.MaxWidth(original_max);
                 if (element && placement == Placement::AfterStart && same_value(element.MinWidth(), applied_min)) {
                     element.MinWidth(original_min);
                 }
                 if (auto frame = root.get()) frame.UpdateLayout();
                 receipt(log_file.c_str(), L"resident_taskbar_xaml_restored owned=" +
-                        std::to_wstring(margin_owned) + L" owner=" + std::to_wstring(owner_id));
+                        std::to_wstring(margin_owned) + L" max_width_owned=" + std::to_wstring(max_owned) + L" owner=" + std::to_wstring(owner_id));
             }
         } catch (...) {
             receipt(log_file.c_str(), L"resident_taskbar_xaml_restore_failed code=" +
@@ -146,8 +154,8 @@ struct Lease {
     }
 
     HRESULT apply(HWND window, Request const& request) {
-        if (request.version != 1 || !request.owner || !request.width || request.width > 32768 ||
-            !request.height || request.height > 32768 || !request.gap || request.gap > 128 || request.placement > Placement::BarLeft ||
+        if (request.version != 2 || !request.owner || !request.width || request.width > 32768 ||
+            !request.height || request.height > 32768 || !request.gap || request.gap > 128 || request.placement > Placement::BarRight ||
             request.log_file[1023] != 0) return E_INVALIDARG;
         auto length = wcsnlen_s(request.log_file, 1024);
         if (length < 13 || wcscmp(request.log_file + length - 13, L"MangoDisk.log") != 0) {
@@ -166,12 +174,56 @@ struct Lease {
             ? L"LaunchListButton" : L"TaskbarFrameRepeater");
         if (!element) return E_NOINTERFACE;
         if (element.ActualWidth() <= 0 || frame.ActualWidth() <= 0) return E_PENDING;
-        if (wanted + 48 >= frame.ActualWidth()) {
+        bool centered = request.placement == Placement::BarLeft || request.placement == Placement::BarRight;
+        // Limit capacity without adding space to the group's desired size.
+        // Margins (even symmetric ones) can trigger Explorer's narrow-taskbar
+        // alignment policy and shift otherwise unconstrained centered buttons.
+        double reserved_width = centered ? wanted * 2 : wanted;
+        if (reserved_width + 48 >= frame.ActualWidth()) {
             restore();
             return HRESULT_FROM_WIN32(ERROR_INSUFFICIENT_BUFFER);
         }
+        double base_max = active && target.get() == element &&
+            (placement == Placement::BarLeft || placement == Placement::BarRight) &&
+            same_value(element.MaxWidth(), applied_max) ? original_max : element.MaxWidth();
+        double centered_room = frame.ActualWidth() - reserved_width;
+        if (request.placement == Placement::BarRight) {
+            RECT bar{}, tray{};
+            HWND notification = FindWindowExW(shell, nullptr, L"TrayNotifyWnd", nullptr);
+            if (!notification || !GetWindowRect(shell, &bar) || !GetWindowRect(notification, &tray)) return E_PENDING;
+            centered_room = 2 * ((tray.left - bar.left) * 96.0 / dpi - wanted) - frame.ActualWidth();
+        }
+        // Measure the natural span without arranging an intermediate layout.
+        // In overflow, DesiredSize reports only visible buttons and recycled
+        // children remain in the tree, so neither is a usable natural width.
+        // Both property changes run synchronously on Explorer's UI thread; only
+        // the final constraint is arranged and presented.
+        double button_width = element.DesiredSize().Width;
+        if (centered && active && target.get() == element &&
+            !same_value(applied_max, original_max) && same_value(element.MaxWidth(), applied_max)) {
+            // The native window ticks faster than the shell geometry sampler.
+            // Do not invalidate Explorer layout on every paint/visibility tick:
+            // that competes with UIA snapshots on crowded taskbars. Geometry or
+            // placement changes bypass the one-second application-change poll.
+            if (GetTickCount64() - measured_at >= 1000 || amount != wanted ||
+                placement != request.placement || measured_frame_width != frame.ActualWidth()) {
+                element.MaxWidth(original_max);
+                element.Measure({static_cast<float>(frame.ActualWidth()), static_cast<float>(frame.ActualHeight())});
+                measured_width = element.DesiredSize().Width;
+                measured_frame_width = frame.ActualWidth();
+                measured_at = GetTickCount64();
+                element.MaxWidth(applied_max);
+                frame.UpdateLayout();
+            }
+            button_width = measured_width;
+        }
+        bool constrain = centered && button_width >= centered_room - 1.0 / 64.0;
+        double wanted_max = constrain ? (std::min)(base_max, frame.ActualWidth() - reserved_width) : base_max;
         if (active && placement == request.placement && amount == wanted && target.get() == element &&
-            equal(element.Margin(), applied)) return locate(window, request, frame);
+            equal(element.Margin(), applied) &&
+            (!centered || (same_value(applied_max, wanted_max) && same_value(element.MaxWidth(), applied_max)))) {
+            return locate(window, request, frame);
+        }
 
         restore();
         log_file = request.log_file;
@@ -180,13 +232,16 @@ struct Lease {
         owner_id = request.owner;
         original = element.Margin();
         original_min = element.MinWidth();
+        original_max = element.MaxWidth();
+        applied_max = wanted_max;
+        measured_width = button_width;
+        measured_frame_width = frame.ActualWidth();
+        measured_at = GetTickCount64();
         applied_min = element.ActualWidth();
         applied = original;
-        // A centered taskbar reserves its outer left edge, not a hole in the
-        // centered button group. Constrain the repeater so uncombined buttons
-        // still overflow inside their own area when the taskbar becomes full.
-        if (request.placement == Placement::BarLeft) applied.Left += wanted;
-        else applied.Right += wanted;
+        // Keep the shell's positioning margins unchanged for centered buttons.
+        // Only layouts that would collide with the monitor enter overflow.
+        if (!centered) applied.Right += wanted;
         amount = wanted;
         placement = request.placement;
         target = winrt::make_weak(element);
@@ -195,6 +250,7 @@ struct Lease {
         // real hit-test width; otherwise UIA reports an empty start-button region
         // and the monitor can cover the still-painted Windows glyph.
         if (placement == Placement::AfterStart) element.MinWidth(applied_min);
+        if (centered) element.MaxWidth(applied_max);
         element.Margin(applied);
         // The acknowledgement is a layout barrier, not merely a property-set
         // receipt. UIA must be able to observe the new button bounds afterward.
@@ -207,8 +263,13 @@ struct Lease {
         }
         receipt(log_file.c_str(), L"resident_taskbar_xaml_reserved edge=" +
                 std::wstring(placement == Placement::BarLeft ? L"BarLeft" :
-                    placement == Placement::AfterStart ? L"AfterStart" : L"Right") + L" width_dip=" +
-                std::to_wstring(wanted) + L" dpi=" + std::to_wstring(dpi) +
+                    placement == Placement::BarRight ? L"BarRight" :
+                    placement == Placement::AfterStart ? L"AfterStart" : L"Right") +
+                L" centered=" + std::to_wstring(centered) + L" constrained=" + std::to_wstring(constrain) +
+                L" buttons_dip=" + std::to_wstring(button_width) +
+                L" frame_dip=" + std::to_wstring(frame.ActualWidth()) +
+                L" width_dip=" +
+                std::to_wstring(wanted) + L" max_width_dip=" + std::to_wstring(centered ? applied_max : original_max) + L" dpi=" + std::to_wstring(dpi) +
                 L" owner=" + std::to_wstring(owner_id));
         return locate(window, request, frame);
     }
