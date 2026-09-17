@@ -16,4 +16,8 @@ export class OperatingSystemService {
   static isWindows(): boolean {
     return this.currentPlatform() === 'windows';
   }
+
+  static isLinux(): boolean {
+    return this.currentPlatform() === 'linux';
+  }
 }

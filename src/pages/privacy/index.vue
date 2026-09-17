@@ -204,7 +204,7 @@ function explainItem(item: PrivacyItem) {
       item,
       t(`privacy.kinds.${item.kind}`),
       store.timeRange,
-      OperatingSystemService.isWindows() ? 'windows' : 'macos'
+      OperatingSystemService.isWindows() ? 'windows' : OperatingSystemService.isLinux() ? 'linux' : 'macos'
     ),
     locale.value
   );

@@ -1,6 +1,8 @@
 mod directories;
 mod inventory;
+mod privacy;
 mod process_control;
+mod startup;
 mod volumes;
 
 use std::{
@@ -11,10 +13,10 @@ use std::{
 use crate::{
     ApplicationComponentAggregate, ApplicationComponentAggregateError, ApplicationDirectories,
     ApplicationProcessCloseMode, ApplicationProcessCloseResult, ApplicationProcessTarget,
-    DirectoryTreeAggregate, DirectoryTreeAggregateError, FastAnalysisQuery, FastAnalysisRecord,
-    FastAnalysisScanError, FastAnalysisSummary, FileSpaceUsage, Platform, PlatformCancellation,
-    PlatformError, PlatformResult, ScanPurpose, SkipReason, SystemInventory, UserDirectories,
-    VolumeInfo,
+    DirectPhysicalDirectoryEnumeration, DirectoryEntryIdentities, DirectoryTreeAggregate,
+    DirectoryTreeAggregateError, FastAnalysisQuery, FastAnalysisRecord, FastAnalysisScanError,
+    FastAnalysisSummary, FileSpaceUsage, Platform, PlatformCancellation, PlatformError,
+    PlatformResult, ScanPurpose, SkipReason, SystemInventory, UserDirectories, VolumeInfo,
 };
 
 pub struct LinuxPlatform;
@@ -99,6 +101,31 @@ impl Platform for LinuxPlatform {
         }
     }
 
+    fn file_has_allocated_content(
+        &self,
+        file: &fs::File,
+        logical_bytes: u64,
+    ) -> PlatformResult<Option<bool>> {
+        use std::os::unix::io::AsRawFd;
+        if logical_bytes == 0 {
+            return Ok(Some(false));
+        }
+        let fd = file.as_raw_fd();
+        let result = unsafe { libc::lseek(fd, 0, libc::SEEK_DATA) };
+        if result >= 0 {
+            return Ok(Some(true));
+        }
+        let errno = std::io::Error::last_os_error();
+        let code = errno.raw_os_error().unwrap_or(0);
+        match code {
+            libc::ENXIO => Ok(Some(false)),
+            libc::EINVAL | libc::ESPIPE => Ok(None),
+            _ => Err(PlatformError::operation_failed(format!(
+                "lseek SEEK_DATA failed: {errno}"
+            ))),
+        }
+    }
+
     fn should_skip(
         &self,
         path: &Path,
@@ -128,6 +155,65 @@ impl Platform for LinuxPlatform {
             ));
         }
         Ok(())
+    }
+
+    fn directory_entry_identities(
+        &self,
+        directory: &Path,
+        _cancellation: &PlatformCancellation,
+    ) -> PlatformResult<Option<DirectoryEntryIdentities>> {
+        use std::collections::HashMap;
+        use std::os::unix::fs::MetadataExt;
+        let mut map = HashMap::new();
+        let entries = fs::read_dir(directory)
+            .map_err(|error| PlatformError::io("read directory for entry identities", &error))?;
+        for entry in entries.flatten() {
+            let metadata = match fs::symlink_metadata(entry.path()) {
+                Ok(m) => m,
+                Err(_) => continue,
+            };
+            map.insert(
+                entry.file_name(),
+                crate::PhysicalFileIdentity {
+                    volume: metadata.dev(),
+                    index: metadata.ino(),
+                },
+            );
+        }
+        Ok(Some(map))
+    }
+
+    fn fast_direct_physical_directories(
+        &self,
+        root: &Path,
+        maximum_entries: usize,
+        _is_cancelled: &(dyn Fn() -> bool + Sync),
+    ) -> Result<Option<DirectPhysicalDirectoryEnumeration>, DirectoryTreeAggregateError> {
+        let mut directories = Vec::new();
+        let mut observed_count = 0usize;
+        let entries = fs::read_dir(root).map_err(|error| {
+            DirectoryTreeAggregateError::Platform(format!(
+                "failed to read directory: {error}"
+            ))
+        })?;
+        for entry in entries.flatten() {
+            observed_count += 1;
+            if observed_count > maximum_entries {
+                break;
+            }
+            let file_type = match entry.file_type() {
+                Ok(ft) => ft,
+                Err(_) => continue,
+            };
+            if file_type.is_dir() && !file_type.is_symlink() {
+                directories.push(entry.path());
+            }
+        }
+        Ok(Some(DirectPhysicalDirectoryEnumeration {
+            directories,
+            observed_count,
+            strategy: "linux-read-dir-d-type",
+        }))
     }
 
     fn fast_directory_tree_aggregate(
@@ -176,27 +262,23 @@ use crate::SystemSettingsPlatform;
 impl PrivacyPlatform for LinuxPlatform {
     fn discover_privacy_sources(
         &self,
-        _cancellation: &PlatformCancellation,
+        cancellation: &PlatformCancellation,
     ) -> PlatformResult<crate::PlatformPrivacyDiscovery> {
-        Ok(crate::PlatformPrivacyDiscovery {
-            browsers: Vec::new(),
-            applications: Vec::new(),
-            system_traces: Vec::new(),
-        })
+        privacy::discover(cancellation)
     }
 
     fn clear_system_privacy_trace(
         &self,
-        _trace: crate::PlatformPrivacySystemTraceKind,
+        trace: crate::PlatformPrivacySystemTraceKind,
     ) -> PlatformResult<bool> {
-        Ok(false)
+        privacy::clear(trace)
     }
 
     fn clear_application_privacy_trace(
         &self,
-        _trace: crate::PlatformPrivacyApplicationNativeTraceKind,
+        trace: crate::PlatformPrivacyApplicationNativeTraceKind,
     ) -> PlatformResult<bool> {
-        Ok(false)
+        privacy::clear_application_trace(trace)
     }
 
     fn system_privacy_trace_details(
@@ -221,20 +303,17 @@ impl PrivacyPlatform for LinuxPlatform {
 impl StartupPlatform for LinuxPlatform {
     fn scan_startup_sources(
         &self,
-        _cancellation: &PlatformCancellation,
+        cancellation: &PlatformCancellation,
     ) -> PlatformResult<Vec<crate::PlatformStartupSourceResult>> {
-        Ok(Vec::new())
+        startup::scan_startup(cancellation)
     }
 
     fn change_startup_item(
         &self,
-        _request: &crate::PlatformStartupChangeRequest,
-        _authorization_prompt: Option<&str>,
+        request: &crate::PlatformStartupChangeRequest,
+        authorization_prompt: Option<&str>,
     ) -> PlatformResult<crate::PlatformStartupChangeResult> {
-        Err(PlatformError::new(
-            crate::PlatformErrorCode::Unsupported,
-            "startup item management is not yet supported on Linux",
-        ))
+        startup::change_startup_item(request, authorization_prompt)
     }
 }
 

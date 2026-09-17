@@ -105,7 +105,7 @@ export interface AiEditorState {
 /** Descriptive metadata, including original startup locations; never executable actions. */
 export interface AiContext {
   schemaVersion: 2;
-  platform: 'macos' | 'windows' | 'unknown';
+  platform: 'macos' | 'windows' | 'linux' | 'unknown';
   title: string;
   description: string;
   subject: AiSubject;

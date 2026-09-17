@@ -25,5 +25,15 @@ describe('OperatingSystemService', () => {
     expect(OperatingSystemService.currentPlatform()).toBe('windows');
     expect(OperatingSystemService.isMacOs()).toBe(false);
     expect(OperatingSystemService.isWindows()).toBe(true);
+    expect(OperatingSystemService.isLinux()).toBe(false);
+  });
+
+  it('uses the official platform value for Linux detection', () => {
+    platformMock.mockReturnValue('linux');
+
+    expect(OperatingSystemService.currentPlatform()).toBe('linux');
+    expect(OperatingSystemService.isMacOs()).toBe(false);
+    expect(OperatingSystemService.isWindows()).toBe(false);
+    expect(OperatingSystemService.isLinux()).toBe(true);
   });
 });
