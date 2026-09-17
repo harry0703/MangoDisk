@@ -1,0 +1,44 @@
+id = "app.vscode-cache"
+schema_version = 3
+rule_version = 1
+platform = "linux"
+category = "application"
+risk = "safe"
+default_selected = true
+required_stopped_processes = ["code", "code-oss", "codium"]
+
+[[applicability]]
+kind = "anyOf"
+items = [
+  { kind = "applicationInstalled", identifiers = ["code", "code-oss", "codium"] },
+  { kind = "anyRootExists" },
+]
+
+[[roots]]
+template = "${home}/.cache/vscode/CachedData"
+
+[[roots]]
+template = "${home}/.cache/vscode/CachedExtensions"
+
+[[roots]]
+template = "${home}/.cache/vscode/CachedExtensionVSIXs"
+
+[[roots]]
+template = "${home}/.cache/vscode/GPUCache"
+
+[[roots]]
+template = "${home}/.cache/vscode/ShaderCache"
+
+[matcher]
+kind = "all"
+
+[execution]
+kind = "deleteMatchingContents"
+requires_app_close = true
+
+[verification]
+lifecycle = "verified"
+evidence = "VS Code stores renderer, GPU, shader, and extension package caches in ~/.cache/vscode; these are regenerable and exclude settings, extensions source, and workspace storage"
+verified_at = "2026-09-17"
+verified_platform = "linux"
+references = ["https://code.visualstudio.com/docs/setup/setup-overview"]

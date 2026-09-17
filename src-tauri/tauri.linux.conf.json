@@ -1,0 +1,27 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "app": {
+    "windows": [
+      {
+        "label": "main",
+        "create": false,
+        "title": "MangoDisk",
+        "width": 1280,
+        "height": 800,
+        "minWidth": 1000,
+        "minHeight": 700,
+        "center": true,
+        "visible": false,
+        "decorations": false
+      }
+    ]
+  },
+  "bundle": {
+    "targets": ["deb", "appimage"],
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png"
+    ]
+  }
+}

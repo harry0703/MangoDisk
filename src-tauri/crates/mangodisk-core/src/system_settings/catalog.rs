@@ -1775,6 +1775,7 @@ pub(super) fn definitions(platform: SystemSettingsPlatform) -> &'static [Setting
     match platform {
         SystemSettingsPlatform::Macos => MACOS_SETTINGS,
         SystemSettingsPlatform::Windows => WINDOWS_SETTINGS,
+        SystemSettingsPlatform::Linux => &[],
     }
 }
 

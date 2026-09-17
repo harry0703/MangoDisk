@@ -34,6 +34,8 @@ const PARALLEL_DELETE_BATCH_SIZE: usize = 8_192;
 const MAX_PARALLEL_DELETE_WORKERS: usize = 2;
 #[cfg(windows)]
 const MAX_PARALLEL_DELETE_WORKERS: usize = 4;
+#[cfg(target_os = "linux")]
+const MAX_PARALLEL_DELETE_WORKERS: usize = 4;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) struct PhysicalPathIdentity {

@@ -405,6 +405,20 @@ fn resolve_root_template(template: &str) -> Result<PathBuf, String> {
                 parts.variable.as_str()
             ));
         }
+        #[cfg(target_os = "linux")]
+        RootVariable::LocalAppData
+        | RootVariable::RoamingAppData
+        | RootVariable::SystemRoot
+        | RootVariable::ProgramFiles
+        | RootVariable::ProgramData
+        | RootVariable::UserLibrary
+        | RootVariable::ApplicationSupport
+        | RootVariable::DarwinUserCache => {
+            return Err(format!(
+                "variable ${{{}}} is not available on Linux",
+                parts.variable.as_str()
+            ));
+        }
     };
     Ok(parts
         .suffix
@@ -417,6 +431,8 @@ fn user_home() -> Result<PathBuf, String> {
     let value = env::var_os("HOME");
     #[cfg(windows)]
     let value = env::var_os("USERPROFILE");
+    #[cfg(target_os = "linux")]
+    let value = env::var_os("HOME");
     value
         .map(PathBuf::from)
         .filter(|path| path.is_absolute())
@@ -461,6 +477,10 @@ const fn current_source_platform() -> SourcePlatform {
     {
         SourcePlatform::Windows
     }
+    #[cfg(target_os = "linux")]
+    {
+        SourcePlatform::Linux
+    }
 }
 
 fn platform_constraint(platform: SourcePlatform) -> Result<PlatformConstraint, String> {
@@ -469,6 +489,8 @@ fn platform_constraint(platform: SourcePlatform) -> Result<PlatformConstraint, S
         SourcePlatform::Macos => Ok(PlatformConstraint::Macos),
         #[cfg(windows)]
         SourcePlatform::Windows => Ok(PlatformConstraint::Windows),
+        #[cfg(target_os = "linux")]
+        SourcePlatform::Linux => Ok(PlatformConstraint::Linux),
         _ => Err(format!(
             "declarative rule platform {} does not match the current build target",
             platform.as_str()

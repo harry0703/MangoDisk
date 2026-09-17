@@ -1,0 +1,35 @@
+id = "app.firefox-cache"
+schema_version = 3
+rule_version = 1
+platform = "linux"
+category = "application"
+risk = "safe"
+default_selected = true
+required_stopped_processes = ["firefox"]
+
+[[applicability]]
+kind = "anyOf"
+items = [
+  { kind = "applicationInstalled", identifiers = ["firefox"] },
+  { kind = "anyRootExists" },
+]
+
+[[roots]]
+template = "${home}/.cache/mozilla/firefox"
+
+[matcher]
+kind = "allOf"
+items = [
+  { kind = "pathSegmentIn", values = ["cache2", "startupCache"] },
+]
+
+[execution]
+kind = "deleteMatchingContents"
+requires_app_close = true
+
+[verification]
+lifecycle = "verified"
+evidence = "Firefox stores HTTP cache and startup cache under ~/.cache/mozilla/firefox; these are regenerable and exclude profiles, bookmarks, passwords, and form data"
+verified_at = "2026-09-17"
+verified_platform = "linux"
+references = ["https://support.mozilla.org/en-US/kb/how-clear-firefox-cache"]

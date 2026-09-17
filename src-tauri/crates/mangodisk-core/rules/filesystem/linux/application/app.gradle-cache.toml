@@ -1,0 +1,32 @@
+id = "app.gradle-cache"
+schema_version = 3
+rule_version = 1
+platform = "linux"
+category = "application"
+risk = "safe"
+default_selected = false
+recommended_selected = true
+required_stopped_processes = []
+
+[[applicability]]
+kind = "anyRootExists"
+
+[[roots]]
+template = "${home}/.gradle/caches"
+
+[matcher]
+kind = "allOf"
+items = [
+  { kind = "pathSegmentIn", values = ["transforms", "build-cache", "generated-gradle-jars"] },
+]
+
+[execution]
+kind = "deleteMatchingContents"
+requires_app_close = false
+
+[verification]
+lifecycle = "verified"
+evidence = "Gradle transform and build caches are intermediate build artifacts; the matcher excludes downloaded dependencies and wrapper distributions to preserve reproducible builds"
+verified_at = "2026-09-17"
+verified_platform = "linux"
+references = ["https://docs.gradle.org/current/userguide/build_cache.html"]

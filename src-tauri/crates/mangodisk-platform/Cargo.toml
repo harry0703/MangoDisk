@@ -27,6 +27,10 @@ objc2-uniform-type-identifiers = { version = "0.3.2", default-features = false, 
 plist = "1.7"
 rusqlite = { version = "0.37", features = ["bundled"] }
 
+[target.'cfg(target_os = "linux")'.dependencies]
+libc = "0.2"
+walkdir = "2"
+
 [target.'cfg(windows)'.dependencies]
 base64 = "0.22"
 getrandom = "0.3"

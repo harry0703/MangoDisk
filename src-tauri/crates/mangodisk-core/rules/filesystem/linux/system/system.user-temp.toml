@@ -1,0 +1,32 @@
+id = "system.user-temp"
+schema_version = 3
+rule_version = 1
+platform = "linux"
+category = "system"
+risk = "safe"
+default_selected = true
+required_stopped_processes = []
+
+[[applicability]]
+kind = "anyRootExists"
+
+[[roots]]
+template = "${temp}"
+
+[matcher]
+kind = "allOf"
+items = [
+  { kind = "olderThan", days = 7 },
+  { kind = "not", item = { kind = "extensionIn", values = ["db", "sqlite", "sqlite3"] } },
+]
+
+[execution]
+kind = "deleteMatchingContents"
+requires_app_close = false
+
+[verification]
+lifecycle = "verified"
+evidence = "The root is the operating system-provided temporary directory; POSIX temporary files are defined as short-lived, and the matcher adds an age gate while excluding database and state files"
+verified_at = "2026-09-17"
+verified_platform = "linux"
+references = ["https://refspecs.linuxfoundation.org/FHS_3.0/fhs/ch03s18.html"]

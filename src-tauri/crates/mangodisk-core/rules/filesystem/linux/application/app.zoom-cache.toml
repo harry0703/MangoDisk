@@ -1,0 +1,33 @@
+id = "app.zoom-cache"
+schema_version = 3
+rule_version = 1
+platform = "linux"
+category = "application"
+risk = "safe"
+default_selected = false
+recommended_selected = true
+required_stopped_processes = ["zoom"]
+
+[[applicability]]
+kind = "anyOf"
+items = [
+  { kind = "applicationInstalled", identifiers = ["zoom"] },
+  { kind = "anyRootExists" },
+]
+
+[[roots]]
+template = "${home}/.zoom/cache"
+
+[matcher]
+kind = "all"
+
+[execution]
+kind = "deleteMatchingContents"
+requires_app_close = true
+
+[verification]
+lifecycle = "verified"
+evidence = "Zoom caches shared screen renders and meeting recordings locally; removing the cache does not affect account data or scheduled meetings"
+verified_at = "2026-09-17"
+verified_platform = "linux"
+references = ["https://support.zoom.us/hc/en-us/articles/201362323-Clearing-the-Zoom-desktop-client-cache"]

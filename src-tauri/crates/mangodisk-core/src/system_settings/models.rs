@@ -9,6 +9,7 @@ pub const SYSTEM_SETTINGS_CHANGE_PLAN_SCHEMA_VERSION: u32 = 3;
 pub enum SystemSettingsPlatform {
     Macos,
     Windows,
+    Linux,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]

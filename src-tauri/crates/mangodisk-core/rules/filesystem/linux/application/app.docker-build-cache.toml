@@ -1,0 +1,33 @@
+id = "app.docker-build-cache"
+schema_version = 3
+rule_version = 1
+platform = "linux"
+category = "application"
+risk = "safe"
+default_selected = false
+recommended_selected = true
+required_stopped_processes = []
+
+[[applicability]]
+kind = "anyOf"
+items = [
+  { kind = "applicationInstalled", identifiers = ["docker"] },
+  { kind = "anyRootExists" },
+]
+
+[[roots]]
+template = "${home}/.cache/docker/buildkit"
+
+[matcher]
+kind = "all"
+
+[execution]
+kind = "deleteMatchingContents"
+requires_app_close = false
+
+[verification]
+lifecycle = "verified"
+evidence = "Docker BuildKit build cache stores intermediate layer snapshots; removing it forces rebuilds but does not affect running containers or pushed images"
+verified_at = "2026-09-17"
+verified_platform = "linux"
+references = ["https://docs.docker.com/engine/reference/commandline/builder_prune/"]

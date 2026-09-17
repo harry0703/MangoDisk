@@ -1,0 +1,28 @@
+id = "system.thumbnail-cache"
+schema_version = 3
+rule_version = 1
+platform = "linux"
+category = "system"
+risk = "safe"
+default_selected = true
+required_stopped_processes = []
+
+[[applicability]]
+kind = "anyRootExists"
+
+[[roots]]
+template = "${home}/.cache/thumbnails"
+
+[matcher]
+kind = "all"
+
+[execution]
+kind = "deleteMatchingContents"
+requires_app_close = false
+
+[verification]
+lifecycle = "verified"
+evidence = "The FreeDesktop thumbnail specification stores generated previews in ~/.cache/thumbnails; the cache is fully regenerable by the desktop environment and thumbnailer services"
+verified_at = "2026-09-17"
+verified_platform = "linux"
+references = ["https://specifications.freedesktop.org/thumbnail-spec/thumbnail-spec-latest.html"]

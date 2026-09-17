@@ -1,0 +1,33 @@
+id = "app.maven-cache"
+schema_version = 3
+rule_version = 1
+platform = "linux"
+category = "application"
+risk = "safe"
+default_selected = false
+recommended_selected = true
+required_stopped_processes = []
+
+[[applicability]]
+kind = "anyRootExists"
+
+[[roots]]
+template = "${home}/.m2/repository"
+
+[matcher]
+kind = "allOf"
+items = [
+  { kind = "extensionIn", values = ["jar", "pom"] },
+  { kind = "olderThan", days = 90 },
+]
+
+[execution]
+kind = "deleteMatchingContents"
+requires_app_close = false
+
+[verification]
+lifecycle = "verified"
+evidence = "Maven local repository caches downloaded artifacts; the age gate preserves recently used dependencies while allowing re-downloading of stale ones"
+verified_at = "2026-09-17"
+verified_platform = "linux"
+references = ["https://maven.apache.org/guides/mini/guide-local-repository.html"]

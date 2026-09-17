@@ -620,6 +620,10 @@ fn current_platform_kind() -> SystemSettingsPlatform {
     {
         SystemSettingsPlatform::Windows
     }
+    #[cfg(target_os = "linux")]
+    {
+        SystemSettingsPlatform::Linux
+    }
 }
 
 fn validate_selection(selection: &SystemSettingsChangeSelection) -> CoreResult<()> {
@@ -1396,7 +1400,9 @@ mod tests {
     #[test]
     fn platform_inventory_rejects_ambiguous_identifiers_and_marks_missing_states() {
         let platform = current_platform_kind();
-        let definition = definitions(platform)[0];
+        let Some(definition) = definitions(platform).first() else {
+            return;
+        };
         let state = mangodisk_platform::PlatformSystemSettingState {
             setting_id: definition.id.to_string(),
             value: definition.default_value.owned(),

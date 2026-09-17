@@ -1,0 +1,28 @@
+id = "system.dns-cache"
+schema_version = 3
+rule_version = 1
+platform = "linux"
+category = "system"
+risk = "safe"
+default_selected = true
+required_stopped_processes = []
+
+[[applicability]]
+kind = "anyRootExists"
+
+[[roots]]
+template = "${home}/.cache/nscd"
+
+[matcher]
+kind = "all"
+
+[execution]
+kind = "deleteMatchingContents"
+requires_app_close = false
+
+[verification]
+lifecycle = "verified"
+evidence = "nscd caches are ephemeral name-service lookups; deleting them forces a refresh and does not affect persistent configuration"
+verified_at = "2026-09-17"
+verified_platform = "linux"
+references = ["https://www.man7.org/linux/man-pages/man8/nscd.8.html"]

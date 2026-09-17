@@ -151,6 +151,10 @@ fn compile_custom_rule(
         {
             PlatformConstraint::Windows
         }
+        #[cfg(target_os = "linux")]
+        {
+            PlatformConstraint::Linux
+        }
     };
     Ok(CompiledRule {
         id: custom_rule_id(&definition.id),

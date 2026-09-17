@@ -1,0 +1,29 @@
+id = "app.pip-cache"
+schema_version = 3
+rule_version = 1
+platform = "linux"
+category = "application"
+risk = "safe"
+default_selected = false
+recommended_selected = true
+required_stopped_processes = []
+
+[[applicability]]
+kind = "anyRootExists"
+
+[[roots]]
+template = "${home}/.cache/pip"
+
+[matcher]
+kind = "all"
+
+[execution]
+kind = "deleteMatchingContents"
+requires_app_close = false
+
+[verification]
+lifecycle = "verified"
+evidence = "pip download cache stores wheel and sdist packages; removing it forces re-downloading but does not affect installed packages or virtual environments"
+verified_at = "2026-09-17"
+verified_platform = "linux"
+references = ["https://pip.pypa.io/en/stable/cli/pip_cache/"]

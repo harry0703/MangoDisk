@@ -300,5 +300,9 @@ mod tests {
         {
             PlatformConstraint::Windows
         }
+        #[cfg(target_os = "linux")]
+        {
+            PlatformConstraint::Linux
+        }
     }
 }

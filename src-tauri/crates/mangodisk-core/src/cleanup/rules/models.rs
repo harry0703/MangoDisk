@@ -14,6 +14,8 @@ pub(crate) enum PlatformConstraint {
     Macos,
     #[cfg(windows)]
     Windows,
+    #[cfg(target_os = "linux")]
+    Linux,
 }
 
 impl PlatformConstraint {
@@ -23,6 +25,8 @@ impl PlatformConstraint {
             Self::Macos => "macos",
             #[cfg(windows)]
             Self::Windows => "windows",
+            #[cfg(target_os = "linux")]
+            Self::Linux => "linux",
         }
     }
 }
@@ -201,6 +205,10 @@ impl CompiledRule {
             #[cfg(windows)]
             {
                 PlatformConstraint::Windows
+            }
+            #[cfg(target_os = "linux")]
+            {
+                PlatformConstraint::Linux
             }
         };
         Self {

@@ -2807,6 +2807,11 @@ const fn current_platform_name() -> &'static str {
     "windows"
 }
 
+#[cfg(target_os = "linux")]
+const fn current_platform_name() -> &'static str {
+    "linux"
+}
+
 #[cfg(windows)]
 fn path_name_eq(left: &str, right: &str) -> bool {
     left.eq_ignore_ascii_case(right)

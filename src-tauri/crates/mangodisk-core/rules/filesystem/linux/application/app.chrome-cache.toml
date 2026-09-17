@@ -1,0 +1,47 @@
+id = "app.chrome-cache"
+schema_version = 3
+rule_version = 1
+platform = "linux"
+category = "application"
+risk = "safe"
+default_selected = true
+required_stopped_processes = ["chrome", "google-chrome", "google-chrome-stable"]
+
+[[applicability]]
+kind = "anyOf"
+items = [
+  { kind = "applicationInstalled", identifiers = ["google-chrome", "google-chrome-stable", "chromium"] },
+  { kind = "anyRootExists" },
+]
+
+[[roots]]
+template = "${home}/.cache/google-chrome/Cache"
+
+[[roots]]
+template = "${home}/.cache/google-chrome/Code Cache"
+
+[[roots]]
+template = "${home}/.cache/google-chrome/GPUCache"
+
+[[roots]]
+template = "${home}/.cache/google-chrome/ShaderCache"
+
+[[roots]]
+template = "${home}/.cache/google-chrome/DawnCache"
+
+[[roots]]
+template = "${home}/.cache/google-chrome/DawnWebGPUCache"
+
+[matcher]
+kind = "all"
+
+[execution]
+kind = "deleteMatchingContents"
+requires_app_close = true
+
+[verification]
+lifecycle = "verified"
+evidence = "Chrome stores renderer, GPU, Dawn, and shader caches in ~/.cache/google-chrome; these are regenerable and exclude session, bookmarks, passwords, and browsing data"
+verified_at = "2026-09-17"
+verified_platform = "linux"
+references = ["https://chromium.googlesource.com/chromium/src/+/main/docs/user_data_dir.md"]
