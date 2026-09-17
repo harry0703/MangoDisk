@@ -1,4 +1,4 @@
-export type SystemSettingsPlatform = 'macos' | 'windows';
+export type SystemSettingsPlatform = 'macos' | 'windows' | 'linux';
 export type SystemSettingCategory = 'performance' | 'productivity' | 'privacy' | 'storage' | 'gaming' | 'appearance';
 export type SystemSettingSelectionKind = 'oneClick' | 'custom';
 export type SystemSettingRiskLevel = 'standard' | 'caution' | 'high';

@@ -65,6 +65,7 @@ const SMART_EXTRAS: Record<SystemSettingsCatalog['platform'], ReadonlySet<string
     'windows.update.enable-microsoft-product-updates',
     'windows.update.enable-restart-notifications',
   ]),
+  linux: new Set(),
 };
 
 /**
@@ -88,6 +89,10 @@ const FOCUSED_EXTRAS: Record<
       'windows.input.disable-windows-ink',
       'windows.taskbar.hide-chat',
     ]),
+  },
+  linux: {
+    performance: new Set(),
+    privacy: new Set(),
   },
 };
 

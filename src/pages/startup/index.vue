@@ -626,7 +626,12 @@ watch(
           @explain="
             (name, artifacts) =>
               aiStore.show(
-                startupAiContext(name, artifacts, t('startup.title'), isWindows ? 'windows' : 'macos'),
+                startupAiContext(
+                  name,
+                  artifacts,
+                  t('startup.title'),
+                  isWindows ? 'windows' : OperatingSystemService.isLinux() ? 'linux' : 'macos'
+                ),
                 locale
               )
           "

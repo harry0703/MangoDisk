@@ -52,7 +52,10 @@ type CleanupNavigationItem =
 const { locale, t } = useI18n({ useScope: 'global' });
 const aiStore = useAiStore();
 function explainRule(rule: PresentedScanRuleResult) {
-  const context = cleanupAiContext(rule, OperatingSystemService.isWindows() ? 'windows' : 'macos');
+  const context = cleanupAiContext(
+    rule,
+    OperatingSystemService.isWindows() ? 'windows' : OperatingSystemService.isLinux() ? 'linux' : 'macos'
+  );
   if (context) void aiStore.show(context, locale.value);
 }
 const props = withDefaults(

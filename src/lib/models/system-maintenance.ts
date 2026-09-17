@@ -1,4 +1,4 @@
-export type SystemMaintenancePlatform = 'macos' | 'windows';
+export type SystemMaintenancePlatform = 'macos' | 'windows' | 'linux';
 export type SystemMaintenanceCategory = 'network' | 'searchAndInterface' | 'systemRepair';
 export type SystemMaintenanceRiskLevel = 'standard' | 'caution';
 export type SystemMaintenanceStatus = 'healthy' | 'recommended' | 'available' | 'unavailable';
