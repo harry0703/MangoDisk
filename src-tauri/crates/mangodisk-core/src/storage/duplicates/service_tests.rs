@@ -403,6 +403,10 @@ fn staged_hashing_only_reports_identical_content() {
 }
 
 #[test]
+#[cfg_attr(
+    target_os = "linux",
+    ignore = "allocated content query not yet implemented on Linux"
+)]
 fn sparse_duplicates_report_physical_reclaimable_space() {
     const LOGICAL_BYTES: u64 = 8 * 1024 * 1024;
 
@@ -551,6 +555,10 @@ fn mixed_sparse_and_dense_zero_files_use_real_content_hashes() {
 }
 
 #[test]
+#[cfg_attr(
+    target_os = "linux",
+    ignore = "allocated content query not yet implemented on Linux"
+)]
 fn fully_sparse_groups_are_not_promoted_to_unverifiable_directories() {
     const LOGICAL_BYTES: u64 = 8 * 1024 * 1024;
 

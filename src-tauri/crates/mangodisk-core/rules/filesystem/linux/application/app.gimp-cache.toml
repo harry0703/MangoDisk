@@ -1,0 +1,36 @@
+id = "app.gimp-cache"
+schema_version = 3
+rule_version = 1
+platform = "linux"
+category = "application"
+risk = "safe"
+default_selected = false
+recommended_selected = true
+required_stopped_processes = ["gimp"]
+
+[[applicability]]
+kind = "anyOf"
+items = [
+  { kind = "applicationInstalled", identifiers = ["gimp"] },
+  { kind = "anyRootExists" },
+]
+
+[[roots]]
+template = "${home}/.cache/GIMP"
+
+[matcher]
+kind = "allOf"
+items = [
+  { kind = "pathSegmentIn", values = ["brushes", "dynamic", "palettes", "patterns"] },
+]
+
+[execution]
+kind = "deleteMatchingContents"
+requires_app_close = true
+
+[verification]
+lifecycle = "verified"
+evidence = "GIMP brush, dynamic, palette, and pattern caches are regenerable thumbnails; the matcher excludes brushes, images, and tool settings"
+verified_at = "2026-09-17"
+verified_platform = "linux"
+references = ["https://docs.gimp.org/2.10/en/gimp-prefs-folders.html"]

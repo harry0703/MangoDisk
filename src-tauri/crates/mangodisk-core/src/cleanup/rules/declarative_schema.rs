@@ -49,6 +49,7 @@ pub(crate) struct DeclarativeRuleSource {
 pub(crate) enum SourcePlatform {
     Macos,
     Windows,
+    Linux,
 }
 
 impl SourcePlatform {
@@ -56,6 +57,7 @@ impl SourcePlatform {
         match self {
             Self::Macos => "macos",
             Self::Windows => "windows",
+            Self::Linux => "linux",
         }
     }
 }
@@ -939,6 +941,7 @@ const fn root_variable_allowed_for_platform(
                 | RootVariable::ProgramFiles
                 | RootVariable::ProgramData
         ),
+        SourcePlatform::Linux => matches!(variable, RootVariable::Home | RootVariable::Temp),
     }
 }
 

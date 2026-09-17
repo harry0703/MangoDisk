@@ -8,6 +8,7 @@ pub const SYSTEM_MAINTENANCE_CATALOG_SCHEMA_VERSION: u32 = 1;
 pub enum SystemMaintenancePlatform {
     Macos,
     Windows,
+    Linux,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]

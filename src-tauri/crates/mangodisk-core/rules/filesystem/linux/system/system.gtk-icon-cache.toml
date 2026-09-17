@@ -1,0 +1,28 @@
+id = "system.gtk-icon-cache"
+schema_version = 3
+rule_version = 1
+platform = "linux"
+category = "system"
+risk = "safe"
+default_selected = true
+required_stopped_processes = []
+
+[[applicability]]
+kind = "anyRootExists"
+
+[[roots]]
+template = "${home}/.cache/icons"
+
+[matcher]
+kind = "all"
+
+[execution]
+kind = "deleteMatchingContents"
+requires_app_close = false
+
+[verification]
+lifecycle = "verified"
+evidence = "GTK icon caches in ~/.cache/icons are regenerated on demand by gtk-update-icon-cache; removing stale entries does not affect installed themes"
+verified_at = "2026-09-17"
+verified_platform = "linux"
+references = ["https://docs.gtk.org/gtk4/gtk-update-icon-cache.html"]

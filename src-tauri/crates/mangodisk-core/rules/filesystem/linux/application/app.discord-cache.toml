@@ -1,0 +1,62 @@
+id = "app.discord-cache"
+schema_version = 3
+rule_version = 2
+platform = "linux"
+category = "application"
+risk = "safe"
+default_selected = true
+required_stopped_processes = ["discord"]
+
+[[applicability]]
+kind = "anyOf"
+items = [
+  { kind = "applicationInstalled", identifiers = ["discord"] },
+  { kind = "anyRootExists" },
+]
+
+[[roots]]
+template = "${home}/.cache/discord/Cache"
+
+[[roots]]
+template = "${home}/.cache/discord/Code Cache"
+
+[[roots]]
+template = "${home}/.cache/discord/GPUCache"
+
+[[roots]]
+template = "${home}/.cache/discord/DawnCache"
+
+[[roots]]
+template = "${home}/.cache/discord/DawnGraphiteCache"
+
+[[roots]]
+template = "${home}/.cache/discord/DawnWebGPUCache"
+
+[[roots]]
+template = "${home}/.cache/discord/GrShaderCache"
+
+[[roots]]
+template = "${home}/.cache/discord/GraphiteDawnCache"
+
+[[roots]]
+template = "${home}/.cache/discord/logs"
+
+[[roots]]
+template = "${home}/.cache/discord/Crashpad/reports"
+
+[matcher]
+kind = "all"
+
+[execution]
+kind = "deleteMatchingContents"
+requires_app_close = true
+
+[verification]
+lifecycle = "verified"
+evidence = "Discord 0.0.388 reproduced renderer, Dawn, shader, and log caches under ~/.cache/discord; fixed roots exclude session, Local Storage, IndexedDB, and downloaded files"
+verified_at = "2026-09-17"
+verified_platform = "linux"
+references = [
+  "https://www.electronjs.org/docs/latest/api/app#appgetpathname",
+  "https://chromium.googlesource.com/chromium/src/+/main/docs/user_data_dir.md",
+]

@@ -1,0 +1,29 @@
+id = "app.yarn-cache"
+schema_version = 3
+rule_version = 1
+platform = "linux"
+category = "application"
+risk = "safe"
+default_selected = false
+recommended_selected = true
+required_stopped_processes = []
+
+[[applicability]]
+kind = "anyRootExists"
+
+[[roots]]
+template = "${home}/.cache/yarn"
+
+[matcher]
+kind = "all"
+
+[execution]
+kind = "deleteMatchingContents"
+requires_app_close = false
+
+[verification]
+lifecycle = "verified"
+evidence = "Yarn cache stores downloaded packages; removing it forces re-downloading but does not affect installed node_modules or project configuration"
+verified_at = "2026-09-17"
+verified_platform = "linux"
+references = ["https://classic.yarnpkg.com/en/docs/cli/cache"]

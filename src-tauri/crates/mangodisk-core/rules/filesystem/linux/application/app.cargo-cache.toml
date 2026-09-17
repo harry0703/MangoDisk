@@ -1,0 +1,38 @@
+id = "app.cargo-cache"
+schema_version = 3
+rule_version = 1
+platform = "linux"
+category = "application"
+risk = "safe"
+default_selected = false
+recommended_selected = true
+required_stopped_processes = []
+
+[[applicability]]
+kind = "anyRootExists"
+
+[[roots]]
+template = "${home}/.cargo/registry/cache"
+verified_rebuildable = true
+
+[[roots]]
+template = "${home}/.cargo/registry/src"
+verified_rebuildable = true
+
+[[roots]]
+template = "${home}/.cargo/git/db"
+verified_rebuildable = true
+
+[matcher]
+kind = "all"
+
+[execution]
+kind = "deleteMatchingContents"
+requires_app_close = false
+
+[verification]
+lifecycle = "verified"
+evidence = "Cargo registry and git caches store downloaded crate sources and git repositories; removing them forces re-downloading but does not affect installed toolchains or project build artifacts"
+verified_at = "2026-09-17"
+verified_platform = "linux"
+references = ["https://doc.rust-lang.org/cargo/guide/cargo-home.html"]

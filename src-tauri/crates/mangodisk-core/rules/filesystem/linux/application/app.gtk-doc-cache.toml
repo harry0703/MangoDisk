@@ -1,0 +1,29 @@
+id = "app.gtk-doc-cache"
+schema_version = 3
+rule_version = 1
+platform = "linux"
+category = "application"
+risk = "safe"
+default_selected = false
+recommended_selected = true
+required_stopped_processes = []
+
+[[applicability]]
+kind = "anyRootExists"
+
+[[roots]]
+template = "${home}/.cache/gtk-doc"
+
+[matcher]
+kind = "all"
+
+[execution]
+kind = "deleteMatchingContents"
+requires_app_close = false
+
+[verification]
+lifecycle = "verified"
+evidence = "GTK-Doc generated HTML documentation cache is fully regenerable from source annotations"
+verified_at = "2026-09-17"
+verified_platform = "linux"
+references = ["https://gi.readthedocs.io/en/latest/"]

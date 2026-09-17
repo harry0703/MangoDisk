@@ -64,6 +64,10 @@ fn executable_candidates(directory: &Path, name: &str) -> Vec<PathBuf> {
     {
         vec![directory.join(name)]
     }
+    #[cfg(target_os = "linux")]
+    {
+        vec![directory.join(name)]
+    }
     #[cfg(windows)]
     {
         let path = Path::new(name);

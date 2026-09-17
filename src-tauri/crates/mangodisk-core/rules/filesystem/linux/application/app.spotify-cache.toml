@@ -1,0 +1,38 @@
+id = "app.spotify-cache"
+schema_version = 3
+rule_version = 1
+platform = "linux"
+category = "application"
+risk = "safe"
+default_selected = true
+required_stopped_processes = ["spotify"]
+
+[[applicability]]
+kind = "anyOf"
+items = [
+  { kind = "applicationInstalled", identifiers = ["spotify"] },
+  { kind = "anyRootExists" },
+]
+
+[[roots]]
+template = "${home}/.cache/spotify/PersistentCache"
+
+[[roots]]
+template = "${home}/.cache/spotify/Data"
+
+[matcher]
+kind = "allOf"
+items = [
+  { kind = "pathSegmentIn", values = ["PersistentCache"] },
+]
+
+[execution]
+kind = "deleteMatchingContents"
+requires_app_close = true
+
+[verification]
+lifecycle = "verified"
+evidence = "Spotify persistent cache stores streaming and playback data; the matcher restricts to PersistentCache which excludes downloaded songs, playlists, and user data"
+verified_at = "2026-09-17"
+verified_platform = "linux"
+references = ["https://community.spotify.com/t5/Spotify-Answers/Cache/ta-p/992614"]

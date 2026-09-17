@@ -1,0 +1,32 @@
+id = "app.electron-cache"
+schema_version = 3
+rule_version = 1
+platform = "linux"
+category = "application"
+risk = "safe"
+default_selected = false
+recommended_selected = true
+required_stopped_processes = []
+
+[[applicability]]
+kind = "anyRootExists"
+
+[[roots]]
+template = "${home}/.cache/electron/Cache"
+
+[[roots]]
+template = "${home}/.cache/electron/GPUCache"
+
+[matcher]
+kind = "all"
+
+[execution]
+kind = "deleteMatchingContents"
+requires_app_close = false
+
+[verification]
+lifecycle = "verified"
+evidence = "Electron shared HTTP cache and GPU cache are regenerable temporary artifacts used by all Electron applications installed on the system"
+verified_at = "2026-09-17"
+verified_platform = "linux"
+references = ["https://www.electronjs.org/docs/latest/api/app#appgetpathname"]

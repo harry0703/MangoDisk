@@ -1,0 +1,41 @@
+id = "app.slack-cache"
+schema_version = 3
+rule_version = 1
+platform = "linux"
+category = "application"
+risk = "safe"
+default_selected = true
+required_stopped_processes = ["slack"]
+
+[[applicability]]
+kind = "anyOf"
+items = [
+  { kind = "applicationInstalled", identifiers = ["slack"] },
+  { kind = "anyRootExists" },
+]
+
+[[roots]]
+template = "${home}/.cache/Slack/Cache"
+
+[[roots]]
+template = "${home}/.cache/Slack/Code Cache"
+
+[[roots]]
+template = "${home}/.cache/Slack/GPUCache"
+
+[[roots]]
+template = "${home}/.cache/Slack/DawnCache"
+
+[matcher]
+kind = "all"
+
+[execution]
+kind = "deleteMatchingContents"
+requires_app_close = true
+
+[verification]
+lifecycle = "verified"
+evidence = "Slack stores Electron renderer, GPU, and Dawn caches in ~/.cache/Slack; these are regenerable and exclude workspace data, channels, and user files"
+verified_at = "2026-09-17"
+verified_platform = "linux"
+references = ["https://slack.com/help/articles/202288908-Resize-or-move-the-Slack-cache"]

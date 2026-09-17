@@ -14,6 +14,14 @@ use std::{
 const PROCESS_POLL_INTERVAL: Duration = Duration::from_millis(10);
 #[cfg(target_os = "macos")]
 const CONTROLLED_ENV_ALLOWLIST: &[&str] = &["HOME", "TMPDIR"];
+#[cfg(target_os = "linux")]
+const CONTROLLED_ENV_ALLOWLIST: &[&str] = &[
+    "HOME",
+    "TMPDIR",
+    "XDG_CONFIG_HOME",
+    "XDG_DATA_HOME",
+    "XDG_CACHE_HOME",
+];
 #[cfg(windows)]
 const CONTROLLED_ENV_ALLOWLIST: &[&str] = &[
     "SYSTEMDRIVE",

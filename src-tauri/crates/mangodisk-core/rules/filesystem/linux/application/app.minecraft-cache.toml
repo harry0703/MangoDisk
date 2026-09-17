@@ -1,0 +1,37 @@
+id = "app.minecraft-cache"
+schema_version = 3
+rule_version = 1
+platform = "linux"
+category = "application"
+risk = "safe"
+default_selected = false
+recommended_selected = true
+required_stopped_processes = ["minecraft", "java"]
+
+[[applicability]]
+kind = "anyOf"
+items = [
+  { kind = "applicationInstalled", identifiers = ["minecraft"] },
+  { kind = "anyRootExists" },
+]
+
+[[roots]]
+template = "${home}/.minecraft/versions"
+
+[matcher]
+kind = "allOf"
+items = [
+  { kind = "nameGlob", values = ["*.log", "crash-reports"] },
+  { kind = "olderThan", days = 30 },
+]
+
+[execution]
+kind = "deleteMatchingContents"
+requires_app_close = true
+
+[verification]
+lifecycle = "verified"
+evidence = "Minecraft log and crash report files are ephemeral diagnostic artifacts; the matcher restricts to old logs and crash reports while preserving version binaries and mods"
+verified_at = "2026-09-17"
+verified_platform = "linux"
+references = ["https://minecraft.fandom.com/wiki/.minecraft"]

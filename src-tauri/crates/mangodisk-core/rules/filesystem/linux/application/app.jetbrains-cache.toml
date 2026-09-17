@@ -1,0 +1,36 @@
+id = "app.jetbrains-cache"
+schema_version = 3
+rule_version = 1
+platform = "linux"
+category = "application"
+risk = "safe"
+default_selected = false
+recommended_selected = true
+required_stopped_processes = ["idea", "pycharm", "clion", "webstorm", "goland", "rustrover"]
+
+[[applicability]]
+kind = "anyOf"
+items = [
+  { kind = "applicationInstalled", identifiers = ["idea", "pycharm", "clion", "webstorm", "goland", "rustrover"] },
+  { kind = "anyRootExists" },
+]
+
+[[roots]]
+template = "${home}/.cache/JetBrains"
+
+[matcher]
+kind = "allOf"
+items = [
+  { kind = "pathSegmentIn", values = ["caches", "index", "log"] },
+]
+
+[execution]
+kind = "deleteMatchingContents"
+requires_app_close = true
+
+[verification]
+lifecycle = "verified"
+evidence = "JetBrains IDEs store index, HTTP, and build system caches under ~/.cache/JetBrains; these are regenerable and exclude projects, settings, and plugins"
+verified_at = "2026-09-17"
+verified_platform = "linux"
+references = ["https://www.jetbrains.com/help/idea/cleaning-system-cache.html"]

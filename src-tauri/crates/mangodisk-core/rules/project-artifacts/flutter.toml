@@ -1,7 +1,7 @@
 id = "project.flutter-build-artifacts"
 schema_version = 1
 rule_version = 1
-platforms = ["macos", "windows"]
+platforms = ["macos", "windows", "linux"]
 category = "development"
 risk = "recoverable"
 default_selected = false

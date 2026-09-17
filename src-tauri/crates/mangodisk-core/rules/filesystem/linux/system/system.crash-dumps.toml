@@ -1,0 +1,32 @@
+id = "system.crash-dumps"
+schema_version = 3
+rule_version = 1
+platform = "linux"
+category = "system"
+risk = "safe"
+default_selected = true
+required_stopped_processes = []
+
+[[applicability]]
+kind = "anyRootExists"
+
+[[roots]]
+template = "${temp}"
+
+[matcher]
+kind = "allOf"
+items = [
+  { kind = "nameGlob", values = ["core.*", "*.crash", "apport.*"] },
+  { kind = "olderThan", days = 7 },
+]
+
+[execution]
+kind = "deleteMatchingContents"
+requires_app_close = false
+
+[verification]
+lifecycle = "verified"
+evidence = "Apport crash dumps and core files are ephemeral diagnostic artifacts; the matcher targets only core dumps, crash reports, and apport staging files older than seven days"
+verified_at = "2026-09-17"
+verified_platform = "linux"
+references = ["https://wiki.ubuntu.com/Apport"]

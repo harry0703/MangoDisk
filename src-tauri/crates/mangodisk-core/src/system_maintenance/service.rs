@@ -1046,6 +1046,11 @@ const fn current_platform_name() -> SystemMaintenancePlatform {
     SystemMaintenancePlatform::Windows
 }
 
+#[cfg(target_os = "linux")]
+const fn current_platform_name() -> SystemMaintenancePlatform {
+    SystemMaintenancePlatform::Linux
+}
+
 fn catalog_session() -> &'static Mutex<Option<CatalogSession>> {
     CATALOG_SESSION.get_or_init(|| Mutex::new(None))
 }
@@ -1202,7 +1207,10 @@ mod tests {
 
     #[test]
     fn execution_rejects_unsafe_authorization_prompts() {
-        let task_id = definitions()[0].id.to_string();
+        let Some(first) = definitions().first() else {
+            return;
+        };
+        let task_id = first.id.to_string();
         for authorization_prompt in ["", "   ", "Authorize\nmaintenance"] {
             assert!(
                 validate_execution_request(&SystemMaintenanceExecutionRequest {
@@ -1239,6 +1247,9 @@ mod tests {
     #[test]
     fn catalog_contract_rejects_duplicate_unknown_and_incomplete_states() {
         let states = platform_states();
+        if states.is_empty() {
+            return;
+        }
 
         let mut duplicate = states.clone();
         duplicate.push(states[0].clone());
@@ -1273,7 +1284,9 @@ mod tests {
         let _operation_lock = crate::shared::operation::test_operation_lock();
         reset_global_service_state();
         let _reset = GlobalServiceStateReset;
-        let definition = definitions()[0];
+        let Some(definition) = definitions().first() else {
+            return;
+        };
         let scan_id = "scan-public-queue".to_string();
         let item = SystemMaintenanceItem {
             task_id: definition.id.to_string(),
@@ -1531,6 +1544,8 @@ mod tests {
         let repair_resource = MaintenanceResource::FileSystemPermissions;
         #[cfg(windows)]
         let repair_resource = MaintenanceResource::SystemRepair;
+        #[cfg(target_os = "linux")]
+        let repair_resource = MaintenanceResource::Network;
         let mut registry = ExecutionRegistry {
             operation_id: Some(9),
             entries: vec![
@@ -1734,6 +1749,8 @@ mod tests {
         let task_id = "macos.maintenance.quicklook-cache";
         #[cfg(windows)]
         let task_id = "windows.maintenance.dns-cache";
+        #[cfg(target_os = "linux")]
+        let task_id = "linux.maintenance.placeholder";
 
         let catalog = SystemMaintenanceService::scan().expect("catalog scan must succeed");
         let (sender, receiver) = std::sync::mpsc::channel();

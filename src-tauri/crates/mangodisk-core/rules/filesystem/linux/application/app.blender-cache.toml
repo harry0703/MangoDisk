@@ -1,0 +1,33 @@
+id = "app.blender-cache"
+schema_version = 3
+rule_version = 1
+platform = "linux"
+category = "application"
+risk = "safe"
+default_selected = false
+recommended_selected = true
+required_stopped_processes = ["blender"]
+
+[[applicability]]
+kind = "anyOf"
+items = [
+  { kind = "applicationInstalled", identifiers = ["blender"] },
+  { kind = "anyRootExists" },
+]
+
+[[roots]]
+template = "${home}/.cache/blender"
+
+[matcher]
+kind = "all"
+
+[execution]
+kind = "deleteMatchingContents"
+requires_app_close = true
+
+[verification]
+lifecycle = "verified"
+evidence = "Blender thumbnail and render preview caches are regenerable; removing them does not affect project files or saved renders"
+verified_at = "2026-09-17"
+verified_platform = "linux"
+references = ["https://docs.blender.org/manual/en/latest/advanced/blender_directory_layout.html"]

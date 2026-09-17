@@ -1,0 +1,29 @@
+id = "app.npm-cache"
+schema_version = 3
+rule_version = 1
+platform = "linux"
+category = "application"
+risk = "safe"
+default_selected = false
+recommended_selected = true
+required_stopped_processes = []
+
+[[applicability]]
+kind = "anyRootExists"
+
+[[roots]]
+template = "${home}/.npm/_cacache"
+
+[matcher]
+kind = "all"
+
+[execution]
+kind = "deleteMatchingContents"
+requires_app_close = false
+
+[verification]
+lifecycle = "verified"
+evidence = "npm content-addressable cache stores downloaded tarballs; removing it forces re-downloading but does not affect installed node_modules or project configuration"
+verified_at = "2026-09-17"
+verified_platform = "linux"
+references = ["https://docs.npmjs.com/cli/v10/commands/npm-cache"]

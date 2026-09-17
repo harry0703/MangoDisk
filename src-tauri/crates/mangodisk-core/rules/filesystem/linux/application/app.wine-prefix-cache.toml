@@ -1,0 +1,30 @@
+id = "app.wine-prefix-cache"
+schema_version = 3
+rule_version = 1
+platform = "linux"
+category = "application"
+risk = "safe"
+default_selected = false
+recommended_selected = true
+required_stopped_processes = []
+
+[[applicability]]
+kind = "anyRootExists"
+
+[[roots]]
+template = "${home}/.wine/drive_c/windows/temp"
+verified_rebuildable = true
+
+[matcher]
+kind = "all"
+
+[execution]
+kind = "deleteMatchingContents"
+requires_app_close = false
+
+[verification]
+lifecycle = "verified"
+evidence = "Wine prefix temp directory contains Windows-compatibility temporary files that are not needed by running Windows applications under Wine"
+verified_at = "2026-09-17"
+verified_platform = "linux"
+references = ["https://wiki.winehq.org/Wine_Users_Guide"]

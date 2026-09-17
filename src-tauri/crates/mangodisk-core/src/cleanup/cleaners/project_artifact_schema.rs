@@ -6,7 +6,7 @@ use std::{
 use serde::Deserialize;
 
 const SUPPORTED_SCHEMA_VERSION: u32 = 1;
-const SUPPORTED_PLATFORMS: &[&str] = &["macos", "windows"];
+const SUPPORTED_PLATFORMS: &[&str] = &["macos", "windows", "linux"];
 const SUPPORTED_RISK: &str = "recoverable";
 const MAX_DESCENDANT_DEPTH: usize = 64;
 
