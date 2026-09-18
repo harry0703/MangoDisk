@@ -174,6 +174,10 @@ pub enum ApplicationInventorySource {
     Steam,
     Scoop,
     Chocolatey,
+    LinuxApt,
+    LinuxSnap,
+    LinuxFlatpak,
+    LinuxPacman,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]

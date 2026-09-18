@@ -23,6 +23,7 @@ use mangodisk_platform::{
 pub enum AiPlatform {
     Macos,
     Windows,
+    Linux,
     Unknown,
 }
 

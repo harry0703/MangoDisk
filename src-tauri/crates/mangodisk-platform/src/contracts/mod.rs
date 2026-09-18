@@ -1,3 +1,4 @@
+mod ai_models;
 mod applications;
 mod directory_aggregate;
 mod disk_cleanup;
@@ -11,6 +12,7 @@ mod system_maintenance;
 mod system_settings;
 mod volumes;
 
+pub use ai_models::{AiModelDiscoveryPlatform, AiModelProvider, InstalledAiModel};
 pub use applications::{
     application_uninstall_diagnostic_id, registered_application_path_is_missing,
     ApplicationComponentAggregate, ApplicationComponentAggregateError, ApplicationInstallScope,

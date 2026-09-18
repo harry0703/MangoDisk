@@ -454,6 +454,14 @@
       "windows_maintenance_time-sync": {
         "name": "同步系统时间",
         "description": "连接时间服务器并立即校准系统时间，解决时钟不准导致的登录或证书问题"
+      },
+      "linux_maintenance_font-cache": {
+        "name": "重新生成字体缓存",
+        "description": "当字体显示异常或应用无法识别新安装的字体时，重新生成字体配置缓存"
+      },
+      "linux_maintenance_package-integrity": {
+        "name": "验证已安装软件包文件",
+        "description": "检查已安装软件包所属的文件是否损坏或被更改"
       }
     }
   },

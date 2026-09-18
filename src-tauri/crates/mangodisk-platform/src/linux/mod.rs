@@ -1,8 +1,11 @@
+mod ai_models;
 mod directories;
 mod inventory;
+mod package_managers;
 mod privacy;
 mod process_control;
 mod startup;
+mod system_maintenance;
 mod volumes;
 
 use std::{
@@ -192,9 +195,7 @@ impl Platform for LinuxPlatform {
         let mut directories = Vec::new();
         let mut observed_count = 0usize;
         let entries = fs::read_dir(root).map_err(|error| {
-            DirectoryTreeAggregateError::Platform(format!(
-                "failed to read directory: {error}"
-            ))
+            DirectoryTreeAggregateError::Platform(format!("failed to read directory: {error}"))
         })?;
         for entry in entries.flatten() {
             observed_count += 1;
@@ -258,6 +259,15 @@ use crate::PrivacyPlatform;
 use crate::StartupPlatform;
 use crate::SystemMaintenancePlatform;
 use crate::SystemSettingsPlatform;
+
+impl crate::AiModelDiscoveryPlatform for LinuxPlatform {
+    fn discover_ai_models(
+        &self,
+        cancellation: &PlatformCancellation,
+    ) -> crate::PlatformResult<Vec<crate::InstalledAiModel>> {
+        ai_models::discover_ollama_models(cancellation)
+    }
+}
 
 impl PrivacyPlatform for LinuxPlatform {
     fn discover_privacy_sources(
@@ -340,22 +350,19 @@ impl SystemSettingsPlatform for LinuxPlatform {
 impl SystemMaintenancePlatform for LinuxPlatform {
     fn scan_system_maintenance(
         &self,
-        _task_ids: &[&str],
-        _cancellation: &PlatformCancellation,
+        task_ids: &[&str],
+        cancellation: &PlatformCancellation,
     ) -> PlatformResult<Vec<crate::PlatformSystemMaintenanceState>> {
-        Ok(Vec::new())
+        system_maintenance::scan(task_ids, cancellation)
     }
 
     fn execute_system_maintenance(
         &self,
-        _task_id: &str,
-        _cancellation: &PlatformCancellation,
-        _authorization_prompt: Option<&str>,
-        _progress: &crate::PlatformSystemMaintenanceProgressSink,
+        task_id: &str,
+        cancellation: &PlatformCancellation,
+        authorization_prompt: Option<&str>,
+        progress: &crate::PlatformSystemMaintenanceProgressSink,
     ) -> PlatformResult<crate::PlatformSystemMaintenanceExecution> {
-        Err(PlatformError::new(
-            crate::PlatformErrorCode::Unsupported,
-            "system maintenance is not yet supported on Linux",
-        ))
+        system_maintenance::execute(task_id, cancellation, authorization_prompt, progress)
     }
 }

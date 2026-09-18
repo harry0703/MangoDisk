@@ -216,6 +216,7 @@ pub fn run() {
             commands::ai::ai_cancel,
             commands::ai::ai_explain,
             commands::ai::ai_get_quota,
+            commands::ai::ai_list_local_models,
             commands::app_distribution::get_app_distribution,
             commands::app_updates::get_app_update_notice,
             commands::app_updates::acquire_app_update,

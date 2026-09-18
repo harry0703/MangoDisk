@@ -15,6 +15,8 @@ pub(super) enum MaintenanceResource {
     Preferences,
     #[cfg(windows)]
     PrintQueue,
+    #[cfg(target_os = "linux")]
+    PackageFiles,
     SearchIndex,
     ShellCache,
     #[cfg(target_os = "macos")]
@@ -236,7 +238,24 @@ const DEFINITIONS: &[MaintenanceDefinition] = &[
 ];
 
 #[cfg(target_os = "linux")]
-const DEFINITIONS: &[MaintenanceDefinition] = &[];
+const DEFINITIONS: &[MaintenanceDefinition] = &[
+    task(
+        "linux.maintenance.font-cache",
+        SystemMaintenanceCategory::SearchAndInterface,
+        SystemMaintenanceRiskLevel::Standard,
+        false,
+        30,
+        &[MaintenanceResource::ShellCache],
+    ),
+    task(
+        "linux.maintenance.package-integrity",
+        SystemMaintenanceCategory::SystemRepair,
+        SystemMaintenanceRiskLevel::Standard,
+        false,
+        120,
+        &[MaintenanceResource::PackageFiles],
+    ),
+];
 
 pub(super) fn definitions() -> &'static [MaintenanceDefinition] {
     DEFINITIONS

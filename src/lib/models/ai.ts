@@ -36,6 +36,15 @@ export interface AiQuota {
   promptVersion: string;
 }
 
+export type LocalModelProvider = 'ollama' | 'openAiCompatible';
+
+export interface InstalledLocalModel {
+  provider: LocalModelProvider;
+  name: string;
+  tag: string | null;
+  installedBytes: number;
+}
+
 export const AI_ERROR_LABELS = {
   disabled: 'ai.errors.disabled',
   freeUnavailable: 'ai.errors.freeUnavailable',

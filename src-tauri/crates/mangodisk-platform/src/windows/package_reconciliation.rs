@@ -306,6 +306,10 @@ const fn inventory_source_code(source: ApplicationInventorySource) -> &'static s
         ApplicationInventorySource::Steam => "steam",
         ApplicationInventorySource::Scoop => "scoop",
         ApplicationInventorySource::Chocolatey => "chocolatey",
+        ApplicationInventorySource::LinuxApt => "apt",
+        ApplicationInventorySource::LinuxSnap => "snap",
+        ApplicationInventorySource::LinuxFlatpak => "flatpak",
+        ApplicationInventorySource::LinuxPacman => "pacman",
     }
 }
 

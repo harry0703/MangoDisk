@@ -454,6 +454,14 @@
       "windows_maintenance_time-sync": {
         "name": "同步系統時間",
         "description": "連線時間伺服器並立即校準系統時間，解決時鐘不準造成的登入或憑證問題"
+      },
+      "linux_maintenance_font-cache": {
+        "name": "重新產生字型快取",
+        "description": "當字型顯示異常或應用程式無法辨識新安裝的字型時，重新產生字型設定快取"
+      },
+      "linux_maintenance_package-integrity": {
+        "name": "驗證已安裝套件檔案",
+        "description": "檢查已安裝套件所屬的檔案是否損毀或被變更"
       }
     }
   },

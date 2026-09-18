@@ -454,6 +454,14 @@
       "windows_maintenance_time-sync": {
         "name": "Synchronize system time",
         "description": "Sync with the time server to resolve clock-related sign-in or certificate errors"
+      },
+      "linux_maintenance_font-cache": {
+        "name": "Rebuild the font cache",
+        "description": "Regenerate the font configuration cache when fonts display incorrectly or applications miss newly installed fonts"
+      },
+      "linux_maintenance_package-integrity": {
+        "name": "Verify installed package files",
+        "description": "Check that files belonging to installed packages have not been corrupted or altered"
       }
     }
   },
