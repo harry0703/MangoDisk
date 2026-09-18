@@ -2,6 +2,7 @@
 mod configuration;
 mod configuration_file;
 mod context;
+mod discovery;
 #[cfg(test)]
 mod evaluation;
 mod language;
@@ -18,6 +19,7 @@ pub use configuration::{
     AiConfiguration, AiConfigurationUpdate, AiServiceMode, AiSettings, ReasoningMode,
 };
 pub use context::{AiContext, AiPlatform, AiSubject};
+pub use discovery::{discover_local_models, InstalledLocalModel, LocalModelProvider};
 pub use official::{official_explain, official_quota, AiClientMetadata, AiQuota};
 pub use preferences::AiPreferences;
 pub use transport::{explain, AiDelta, AiRequest, AiUsage};

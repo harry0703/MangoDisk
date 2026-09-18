@@ -101,6 +101,13 @@ describe('AI IPC sessions', () => {
     await AiService.configuration();
     expect(ipc.invoke).toHaveBeenLastCalledWith('ai_get_configuration');
   });
+
+  it('lists locally installed AI models through the dedicated IPC command', async () => {
+    const fixtures = [{ provider: 'ollama', name: 'llama3', tag: 'latest', installedBytes: 4096 }];
+    ipc.invoke.mockResolvedValue(fixtures);
+    await expect(AiService.listLocalModels()).resolves.toEqual(fixtures);
+    expect(ipc.invoke).toHaveBeenLastCalledWith('ai_list_local_models');
+  });
 });
 
 it('uses a separate versioned preference contract without touching provider configuration', async () => {

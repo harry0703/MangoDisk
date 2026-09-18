@@ -54,6 +54,10 @@ const SPOTLIGHT_QUERY_TIMEOUT: Duration = Duration::from_secs(5);
 
 pub struct MacOsPlatform;
 
+// macOS has no supported local AI model store yet; keep the default empty
+// result so discovery remains available and deterministic.
+impl crate::AiModelDiscoveryPlatform for MacOsPlatform {}
+
 impl PrivacyPlatform for MacOsPlatform {
     fn discover_privacy_sources(
         &self,

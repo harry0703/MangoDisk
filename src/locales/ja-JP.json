@@ -455,6 +455,14 @@
       "windows_maintenance_time-sync": {
         "name": "システム時刻を同期",
         "description": "時刻サーバーに接続して時計を合わせ、時刻のずれによるサインインや証明書の問題を解消します"
+      },
+      "linux_maintenance_font-cache": {
+        "name": "フォント設定キャッシュを再生成",
+        "description": "フォントが正しく表示されない場合や、新しくインストールしたフォントを使えない場合にフォント設定キャッシュを再生成します"
+      },
+      "linux_maintenance_package-integrity": {
+        "name": "インストール済みパッケージのファイルを検証",
+        "description": "インストール済みパッケージに属するファイルが破損・改変されていないかを確認します"
       }
     }
   },

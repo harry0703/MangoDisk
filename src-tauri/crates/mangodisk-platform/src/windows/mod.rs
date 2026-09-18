@@ -55,6 +55,10 @@ use crate::{
 
 pub struct WindowsPlatform;
 
+// Windows has no supported local AI model store yet; keep the default empty
+// result so discovery remains available and deterministic.
+impl crate::AiModelDiscoveryPlatform for WindowsPlatform {}
+
 impl PrivacyPlatform for WindowsPlatform {
     fn discover_privacy_sources(
         &self,

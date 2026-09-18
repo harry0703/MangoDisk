@@ -419,6 +419,10 @@ const fn inventory_source_code(source: ApplicationUninstallInventorySource) -> &
         ApplicationUninstallInventorySource::Steam => "steam",
         ApplicationUninstallInventorySource::Scoop => "scoop",
         ApplicationUninstallInventorySource::Chocolatey => "chocolatey",
+        ApplicationUninstallInventorySource::LinuxApt => "linux_apt",
+        ApplicationUninstallInventorySource::LinuxSnap => "linux_snap",
+        ApplicationUninstallInventorySource::LinuxFlatpak => "linux_flatpak",
+        ApplicationUninstallInventorySource::LinuxPacman => "linux_pacman",
     }
 }
 

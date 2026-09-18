@@ -5,8 +5,8 @@ use std::{
 };
 
 use mangodisk_core::ai::{
-    explain, AiConfiguration, AiConfigurationUpdate, AiDelta, AiError, AiPreferences, AiRequest,
-    AiSettings, AiUsage,
+    discover_local_models, explain, AiConfiguration, AiConfigurationUpdate, AiDelta, AiError,
+    AiPreferences, AiRequest, AiSettings, AiUsage, InstalledLocalModel,
 };
 use tauri::{ipc::Channel, State};
 use tokio::sync::watch;
@@ -324,6 +324,12 @@ pub(crate) async fn ai_get_quota(
         _ = disabled.changed() => Err(AiError::Cancelled),
         result = mangodisk_core::ai::official_quota(metadata) => result,
     }
+}
+
+#[tauri::command]
+pub(crate) async fn ai_list_local_models() -> super::error::CommandResult<Vec<InstalledLocalModel>>
+{
+    super::error::run_blocking("ai_list_local_models", discover_local_models).await
 }
 
 #[cfg(test)]

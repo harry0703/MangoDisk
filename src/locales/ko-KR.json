@@ -455,6 +455,14 @@
       "windows_maintenance_time-sync": {
         "name": "시스템 시간 동기화",
         "description": "시간 서버와 동기화하여 시계 오차로 인한 로그인 또는 인증서 오류를 해결합니다"
+      },
+      "linux_maintenance_font-cache": {
+        "name": "글꼴 캐시 다시 생성",
+        "description": "글꼴이 올바르게 표시되지 않거나 새로 설치한 글꼴을 인식하지 못할 때 글꼴 설정 캐시를 다시 생성합니다"
+      },
+      "linux_maintenance_package-integrity": {
+        "name": "설치된 패키지 파일 검증",
+        "description": "설치된 패키지에 속한 파일이 손상되거나 변경되지 않았는지 확인합니다"
       }
     }
   },

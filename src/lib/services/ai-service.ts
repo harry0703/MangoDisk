@@ -11,6 +11,7 @@ import type {
   AiQuota,
   AiEditorState,
   AiPreferences,
+  InstalledLocalModel,
 } from '@/lib/models/ai';
 import { getVersion } from '@tauri-apps/api/app';
 import { ClientRequestMetadataService } from '@/lib/services/client-request-metadata-service';
@@ -108,5 +109,10 @@ export class AiService {
   }
   static delete(): Promise<void> {
     return invoke('ai_delete_settings');
+  }
+
+  /** Enumerates locally installed AI models (e.g. Ollama repositories). */
+  static listLocalModels(): Promise<InstalledLocalModel[]> {
+    return invoke('ai_list_local_models');
   }
 }

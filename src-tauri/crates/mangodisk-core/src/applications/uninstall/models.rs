@@ -38,6 +38,10 @@ pub enum ApplicationUninstallInventorySource {
     Steam,
     Scoop,
     Chocolatey,
+    LinuxApt,
+    LinuxSnap,
+    LinuxFlatpak,
+    LinuxPacman,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]

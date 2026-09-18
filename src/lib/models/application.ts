@@ -72,7 +72,18 @@ export type ApplicationUninstallPlatform = 'macosBundle' | 'windowsRegistry' | '
 export type ApplicationUninstallInstallerKind =
   'windowsMsi' | 'windowsAppx' | 'windowsScoop' | 'windowsChocolatey' | 'windowsRegistered';
 export type ApplicationUninstallInventorySource =
-  'macosBundle' | 'windowsRegistry' | 'windowsMsi' | 'windowsAppx' | 'winget' | 'steam' | 'scoop' | 'chocolatey';
+  | 'macosBundle'
+  | 'windowsRegistry'
+  | 'windowsMsi'
+  | 'windowsAppx'
+  | 'winget'
+  | 'steam'
+  | 'scoop'
+  | 'chocolatey'
+  | 'linuxApt'
+  | 'linuxSnap'
+  | 'linuxFlatpak'
+  | 'linuxPacman';
 export type ApplicationUninstallExecutionMode = 'silent' | 'interactive' | 'externalClient';
 export interface ApplicationUninstallSourceIdentity {
   source: ApplicationUninstallInventorySource;

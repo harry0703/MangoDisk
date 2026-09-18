@@ -1840,6 +1840,18 @@ fn candidate(
                     ApplicationInventorySource::Chocolatey => {
                         ApplicationUninstallInventorySource::Chocolatey
                     }
+                    ApplicationInventorySource::LinuxApt => {
+                        ApplicationUninstallInventorySource::LinuxApt
+                    }
+                    ApplicationInventorySource::LinuxSnap => {
+                        ApplicationUninstallInventorySource::LinuxSnap
+                    }
+                    ApplicationInventorySource::LinuxFlatpak => {
+                        ApplicationUninstallInventorySource::LinuxFlatpak
+                    }
+                    ApplicationInventorySource::LinuxPacman => {
+                        ApplicationUninstallInventorySource::LinuxPacman
+                    }
                 },
                 identifier: identity.identifier.clone(),
             })
