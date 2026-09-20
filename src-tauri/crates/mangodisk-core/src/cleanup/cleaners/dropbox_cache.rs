@@ -25,11 +25,14 @@ use serde_json::Value;
 use crate::{
     cleanup::measurement::measure_path_filtered,
     filesystem::{
-        metadata::{display_path, is_link_like, modified_ms},
+        metadata::{is_link_like, modified_ms},
         permanent_delete::{delete_path_permanently, prepare_path_for_permanent_delete},
     },
     shared::operation::OperationGuard,
 };
+
+#[cfg(any(windows, target_os = "macos"))]
+use crate::filesystem::metadata::display_path;
 
 #[cfg(any(windows, target_os = "macos"))]
 use crate::{

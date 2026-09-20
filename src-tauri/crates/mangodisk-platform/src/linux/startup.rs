@@ -1,17 +1,13 @@
-use std::{
-    fs,
-    path::PathBuf,
-    time::{SystemTime, UNIX_EPOCH},
-};
+use std::{fs, path::PathBuf, time::UNIX_EPOCH};
 
 use crate::{
-    PlatformCancellation, PlatformError, PlatformStartupArtifact, PlatformStartupChangeRequest,
-    PlatformStartupChangeResult, PlatformStartupConfiguredState, PlatformStartupControlCapability,
-    PlatformStartupCoverageReason, PlatformStartupCoverageStatus, PlatformStartupDiagnosticCode,
+    PlatformCancellation, PlatformError, PlatformResult, PlatformStartupArtifact,
+    PlatformStartupChangeRequest, PlatformStartupChangeResult, PlatformStartupConfiguredState,
+    PlatformStartupControlCapability, PlatformStartupCoverageReason, PlatformStartupCoverageStatus,
     PlatformStartupIdentityConfidence, PlatformStartupOwner, PlatformStartupRuntimeState,
     PlatformStartupScope, PlatformStartupSourceKind, PlatformStartupSourceResult,
     PlatformStartupSummarySource, PlatformStartupTarget, PlatformStartupTargetKind,
-    PlatformStartupTrigger, PlatformStartupTrustState, PlatformResult,
+    PlatformStartupTrigger, PlatformStartupTrustState,
 };
 
 pub(crate) fn scan_startup(
@@ -91,9 +87,17 @@ fn parse_desktop_autostart(path: &PathBuf) -> Option<PlatformStartupArtifact> {
         } else if line.strip_prefix("Hidden=true").is_some() {
             hidden = true;
         } else if let Some(value) = line.strip_prefix("OnlyShowIn=") {
-            only_show_in = value.split(';').filter(|s| !s.is_empty()).map(String::from).collect();
+            only_show_in = value
+                .split(';')
+                .filter(|s| !s.is_empty())
+                .map(String::from)
+                .collect();
         } else if let Some(value) = line.strip_prefix("NotShowIn=") {
-            not_show_in = value.split(';').filter(|s| !s.is_empty()).map(String::from).collect();
+            not_show_in = value
+                .split(';')
+                .filter(|s| !s.is_empty())
+                .map(String::from)
+                .collect();
         }
     }
 
@@ -108,7 +112,11 @@ fn parse_desktop_autostart(path: &PathBuf) -> Option<PlatformStartupArtifact> {
 
     let display_name = name.unwrap_or_default();
     let exec_str = exec.unwrap_or_default();
-    let args: Vec<String> = exec_str.split_whitespace().skip(1).map(String::from).collect();
+    let args: Vec<String> = exec_str
+        .split_whitespace()
+        .skip(1)
+        .map(String::from)
+        .collect();
     let program = exec_str.split_whitespace().next().unwrap_or("").to_string();
 
     let modified_at = fs::metadata(path)
@@ -218,7 +226,11 @@ fn parse_systemd_service(path: &PathBuf, user_scope: bool) -> Option<PlatformSta
     let file_name = path.file_stem()?.to_string_lossy().to_string();
     let display_name = description.unwrap_or_else(|| file_name.clone());
     let exec_str = exec_start.unwrap_or_default();
-    let args: Vec<String> = exec_str.split_whitespace().skip(1).map(String::from).collect();
+    let args: Vec<String> = exec_str
+        .split_whitespace()
+        .skip(1)
+        .map(String::from)
+        .collect();
     let program = exec_str.split_whitespace().next().unwrap_or("").to_string();
 
     let scope = if user_scope {
@@ -239,7 +251,11 @@ fn parse_systemd_service(path: &PathBuf, user_scope: bool) -> Option<PlatformSta
         .map(|d| d.as_millis() as u64);
 
     Some(PlatformStartupArtifact {
-        provider_item_id: format!("systemd:{}:{}", if user_scope { "user" } else { "system" }, file_name),
+        provider_item_id: format!(
+            "systemd:{}:{}",
+            if user_scope { "user" } else { "system" },
+            file_name
+        ),
         source_kind: PlatformStartupSourceKind::Service,
         scope,
         triggers: vec![PlatformStartupTrigger::Boot],

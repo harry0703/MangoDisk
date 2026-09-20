@@ -4,15 +4,15 @@ use std::{
 };
 
 use crate::{
-    PlatformCancellation, PlatformError, PlatformPrivacyApplication,
-    PlatformPrivacyApplicationNativeTraceKind, PlatformPrivacyApplicationTrace,
-    PlatformPrivacyApplicationTraceAvailability, PlatformPrivacyApplicationTraceKind,
+    PlatformCancellation, PlatformError, PlatformPrivacyApplicationNativeTraceKind,
     PlatformPrivacyBrowser, PlatformPrivacyBrowserKind, PlatformPrivacyDiscovery,
-    PlatformPrivacyDetailEntry, PlatformPrivacyProfile, PlatformPrivacySystemTrace,
-    PlatformPrivacySystemTraceKind, PlatformResult,
+    PlatformPrivacyProfile, PlatformPrivacySystemTrace, PlatformPrivacySystemTraceKind,
+    PlatformResult,
 };
 
-pub(crate) fn discover(cancellation: &PlatformCancellation) -> PlatformResult<PlatformPrivacyDiscovery> {
+pub(crate) fn discover(
+    cancellation: &PlatformCancellation,
+) -> PlatformResult<PlatformPrivacyDiscovery> {
     if cancellation.is_cancelled() {
         return Err(PlatformError::operation_failed(
             "privacy discovery was cancelled",
@@ -28,12 +28,32 @@ pub(crate) fn discover(cancellation: &PlatformCancellation) -> PlatformResult<Pl
 
     // Chromium-based browsers
     let chromium_browsers: Vec<(&str, &str, &str, Vec<&str>)> = vec![
-        ("chrome", "Google Chrome", "google-chrome", vec!["google-chrome", "chrome"]),
-        ("edge", "Microsoft Edge", "microsoft-edge", vec!["microsoft-edge", "microsoft-edge-stable"]),
-        ("brave", "Brave", "BraveSoftware/Brave-Browser", vec!["brave-browser", "brave"]),
+        (
+            "chrome",
+            "Google Chrome",
+            "google-chrome",
+            vec!["google-chrome", "chrome"],
+        ),
+        (
+            "edge",
+            "Microsoft Edge",
+            "microsoft-edge",
+            vec!["microsoft-edge", "microsoft-edge-stable"],
+        ),
+        (
+            "brave",
+            "Brave",
+            "BraveSoftware/Brave-Browser",
+            vec!["brave-browser", "brave"],
+        ),
         ("opera", "Opera", "com.operasoftware.Opera", vec!["opera"]),
         ("vivaldi", "Vivaldi", "Vivaldi", vec!["vivaldi"]),
-        ("chromium", "Chromium", "chromium", vec!["chromium", "chromium-browser"]),
+        (
+            "chromium",
+            "Chromium",
+            "chromium",
+            vec!["chromium", "chromium-browser"],
+        ),
     ];
 
     for (key, display, root_rel, processes) in chromium_browsers {
@@ -128,8 +148,9 @@ pub(crate) fn discover(cancellation: &PlatformCancellation) -> PlatformResult<Pl
 pub(crate) fn clear(trace: PlatformPrivacySystemTraceKind) -> PlatformResult<bool> {
     match trace {
         PlatformPrivacySystemTraceKind::ShellHistory => {
-            let home = dirs::home_dir()
-                .ok_or_else(|| PlatformError::operation_failed("unable to determine home directory"))?;
+            let home = dirs::home_dir().ok_or_else(|| {
+                PlatformError::operation_failed("unable to determine home directory")
+            })?;
             let files = [".bash_history", ".zsh_history"];
             for file in &files {
                 let path = home.join(file);
@@ -146,8 +167,9 @@ pub(crate) fn clear(trace: PlatformPrivacySystemTraceKind) -> PlatformResult<boo
             Ok(true)
         }
         PlatformPrivacySystemTraceKind::RecentDocumentHistory => {
-            let home = dirs::home_dir()
-                .ok_or_else(|| PlatformError::operation_failed("unable to determine home directory"))?;
+            let home = dirs::home_dir().ok_or_else(|| {
+                PlatformError::operation_failed("unable to determine home directory")
+            })?;
             let path = home.join(".local/share/recently-used.xbel");
             if path.exists() {
                 fs::remove_file(&path)
@@ -182,12 +204,7 @@ fn discover_chromium_profiles(
 
     // Check if root itself is a profile (Opera compatibility)
     if chromium_profile_has_supported_sources(root) {
-        profiles.push(chromium_profile(
-            browser_key,
-            "Default",
-            root,
-            cache_root,
-        ));
+        profiles.push(chromium_profile(browser_key, "Default", root, cache_root));
         return profiles;
     }
 
@@ -250,15 +267,11 @@ fn chromium_profile(
         cache_root.join(profile_name).join("Code Cache"),
     ];
 
-    let site_storage_dirs = [
-        "Local Storage",
-        "IndexedDB",
-        "Service Worker",
-    ]
-    .iter()
-    .map(|d| profile_root.join(d))
-    .filter(|p| p.exists())
-    .collect();
+    let site_storage_dirs = ["Local Storage", "IndexedDB", "Service Worker"]
+        .iter()
+        .map(|d| profile_root.join(d))
+        .filter(|p| p.exists())
+        .collect();
 
     PlatformPrivacyProfile {
         provider_key: format!("{browser_key}:{profile_name}"),
@@ -376,21 +389,13 @@ fn firefox_display_names(profiles_root: &Path) -> std::collections::BTreeMap<Str
             current_path = Some(path.to_string());
         } else if line.starts_with('[') {
             if let (Some(name), Some(path)) = (current_name.take(), current_path.take()) {
-                let dir_name = path
-                    .split('/')
-                    .next()
-                    .unwrap_or(&path)
-                    .to_string();
+                let dir_name = path.split('/').next().unwrap_or(&path).to_string();
                 map.insert(dir_name, name);
             }
         }
     }
     if let (Some(name), Some(path)) = (current_name, current_path) {
-        let dir_name = path
-            .split('/')
-            .next()
-            .unwrap_or(&path)
-            .to_string();
+        let dir_name = path.split('/').next().unwrap_or(&path).to_string();
         map.insert(dir_name, name);
     }
     map

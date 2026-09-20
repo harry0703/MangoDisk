@@ -6,10 +6,10 @@ use std::{
 
 use mangodisk_platform::{current_platform, Platform};
 
-#[cfg(not(target_os = "windows"))]
+#[cfg(target_os = "macos")]
 use mangodisk_platform::ScanPurpose;
 
-#[cfg(not(target_os = "windows"))]
+#[cfg(target_os = "macos")]
 const METADATA_OBSERVER_BATCH_FILES: u64 = 256;
 
 pub(crate) struct MetadataFingerprintEntry {
@@ -18,7 +18,7 @@ pub(crate) struct MetadataFingerprintEntry {
 }
 
 #[derive(Default)]
-#[cfg(not(target_os = "windows"))]
+#[cfg(target_os = "macos")]
 pub(crate) struct MetadataTreeSnapshot {
     pub(crate) bytes: u64,
     pub(crate) file_count: u64,
@@ -32,7 +32,7 @@ pub(crate) struct MetadataTreeSnapshot {
 /// initial scan so equal-sized replacements cannot pass validation. It avoids
 /// reading file contents because doing so could repeat full-scan I/O for a
 /// large directory immediately before permanent deletion.
-#[cfg(not(target_os = "windows"))]
+#[cfg(target_os = "macos")]
 pub(crate) fn snapshot_metadata_tree(
     path: &Path,
     scan_root: &Path,
@@ -47,7 +47,7 @@ pub(crate) fn snapshot_metadata_tree(
 /// several seconds to fingerprint. Bounded batches keep progress visibly
 /// active without adding an atomic update for every file. Each file is still
 /// reported exactly once, so adapters can aggregate counts without overlap.
-#[cfg(not(target_os = "windows"))]
+#[cfg(target_os = "macos")]
 pub(crate) fn snapshot_metadata_tree_with_observer(
     path: &Path,
     scan_root: &Path,
@@ -266,7 +266,7 @@ pub fn diagnostic_path(path: &Path) -> String {
 
 #[cfg(test)]
 mod tests {
-    #[cfg(not(target_os = "windows"))]
+    #[cfg(target_os = "macos")]
     use std::{fs, thread, time::Duration};
 
     use super::*;
@@ -299,7 +299,7 @@ mod tests {
     }
 
     #[test]
-    #[cfg(not(target_os = "windows"))]
+    #[cfg(target_os = "macos")]
     fn metadata_fingerprint_detects_equal_sized_nested_replacements() {
         let root = std::env::temp_dir().join(format!(
             "mangodisk-fingerprint-{}-{}",
@@ -327,7 +327,7 @@ mod tests {
     }
 
     #[test]
-    #[cfg(not(target_os = "windows"))]
+    #[cfg(target_os = "macos")]
     fn observed_directory_batches_count_each_file_once() {
         use std::sync::Mutex;
 

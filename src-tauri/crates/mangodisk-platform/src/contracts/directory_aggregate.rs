@@ -1,5 +1,6 @@
 use std::path::PathBuf;
 
+#[cfg(not(target_os = "linux"))]
 const PROGRESS_ENTRY_BATCH: u64 = 4_096;
 
 /// Aggregates files that share one direct child of a scanned directory.
@@ -58,6 +59,7 @@ pub enum DirectoryTreeAggregateError {
 /// Coalesces hot-path traversal observations before they reach Core's own
 /// time-based progress throttle. Keeping the entry batch identical on each
 /// platform avoids millions of callbacks while still refreshing long scans.
+#[cfg(not(target_os = "linux"))]
 pub(crate) struct DirectoryAggregateProgress<'a> {
     callback: &'a (dyn Fn(&std::path::Path, u64, u64) + Sync),
     pending_entries: u64,
@@ -65,6 +67,7 @@ pub(crate) struct DirectoryAggregateProgress<'a> {
     pending_bytes: u64,
 }
 
+#[cfg(not(target_os = "linux"))]
 impl<'a> DirectoryAggregateProgress<'a> {
     pub(crate) fn new(callback: &'a (dyn Fn(&std::path::Path, u64, u64) + Sync)) -> Self {
         Self {
@@ -111,7 +114,7 @@ impl<'a> DirectoryAggregateProgress<'a> {
     }
 }
 
-#[cfg(test)]
+#[cfg(all(test, not(target_os = "linux")))]
 pub(crate) fn reference_directory_tree_aggregate(root: &std::path::Path) -> DirectoryTreeAggregate {
     use std::{collections::BTreeMap, fs, time::UNIX_EPOCH};
 
@@ -198,7 +201,7 @@ pub(crate) fn reference_directory_tree_aggregate(root: &std::path::Path) -> Dire
     }
 }
 
-#[cfg(test)]
+#[cfg(all(test, not(target_os = "linux")))]
 mod tests {
     use std::sync::atomic::{AtomicU64, Ordering};
 

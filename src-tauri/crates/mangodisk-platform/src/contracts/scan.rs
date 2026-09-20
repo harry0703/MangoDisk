@@ -142,6 +142,7 @@ pub struct FilesystemChangeMonitor {
 }
 
 impl FilesystemChangeMonitor {
+    #[cfg(not(target_os = "linux"))]
     pub(crate) fn new(backend: Arc<dyn FilesystemChangeMonitorBackend>) -> Self {
         Self { backend }
     }

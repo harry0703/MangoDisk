@@ -141,6 +141,17 @@ impl Platform for LinuxPlatform {
         if directories::is_system_critical(path) {
             return Some(SkipReason::SystemCritical);
         }
+        if matches!(
+            purpose,
+            ScanPurpose::LargeFiles | ScanPurpose::DuplicateFiles
+        ) {
+            if directories::is_package_manager_owned(path) {
+                return Some(SkipReason::SystemCritical);
+            }
+            if directories::is_unwritable_by_current_user(path) {
+                return Some(SkipReason::PermissionDenied);
+            }
+        }
         None
     }
 

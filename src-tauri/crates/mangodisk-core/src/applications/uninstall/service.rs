@@ -22,6 +22,7 @@ use mangodisk_platform::{
 use crate::filesystem::permanent_delete::{
     delete_path_permanently, prepare_path_for_permanent_delete,
 };
+#[cfg(any(target_os = "macos", windows))]
 use crate::shared::operation::OPERATION_CANCELLED_ERROR;
 use crate::{
     applications::{
@@ -71,7 +72,9 @@ const CURRENT_APPLICATION_NAME: &str = "MangoDisk";
 
 struct PreflightCandidate {
     result: ApplicationUninstallResult,
+    #[cfg(any(target_os = "macos", windows))]
     inspection: Option<ApplicationUninstallInspection>,
+    #[cfg(any(target_os = "macos", windows))]
     process_target: Option<ResolvedApplicationCloseTarget>,
 }
 
@@ -767,10 +770,13 @@ fn preview_candidate(
                 None,
                 ApplicationUninstallActionReason::ApplicationUnavailable,
             ),
+            #[cfg(any(target_os = "macos", windows))]
             inspection: None,
+            #[cfg(any(target_os = "macos", windows))]
             process_target: None,
         });
     };
+    #[cfg(any(target_os = "macos", windows))]
     let process_target = Some(close_target(candidate));
     if !candidate.capability.supports_execution() {
         let reason = if candidate.capability == ApplicationUninstallCapability::ApplicationRunning {
@@ -780,7 +786,9 @@ fn preview_candidate(
         };
         return Ok(PreflightCandidate {
             result: preflight::fail_all(plan, Some(candidate.name.clone()), reason),
+            #[cfg(any(target_os = "macos", windows))]
             inspection: None,
+            #[cfg(any(target_os = "macos", windows))]
             process_target,
         });
     }
@@ -801,7 +809,9 @@ fn preview_candidate(
                     Some(candidate.name.clone()),
                     ApplicationUninstallActionReason::ComponentUnavailable,
                 ),
+                #[cfg(any(target_os = "macos", windows))]
                 inspection: None,
+                #[cfg(any(target_os = "macos", windows))]
                 process_target,
             });
         }
@@ -809,7 +819,9 @@ fn preview_candidate(
     let result = preflight::compare(plan, &inspection);
     Ok(PreflightCandidate {
         result,
+        #[cfg(any(target_os = "macos", windows))]
         inspection: Some(inspection),
+        #[cfg(any(target_os = "macos", windows))]
         process_target,
     })
 }
@@ -1727,6 +1739,7 @@ fn catalog_is_actionable(
     }
 }
 
+#[cfg(any(target_os = "macos", windows))]
 fn map_scan_error(error: String) -> CoreError {
     if error == OPERATION_CANCELLED_ERROR {
         CoreError::operation_cancelled()
@@ -2134,9 +2147,9 @@ const fn platform_kind() -> ApplicationUninstallPlatform {
     ApplicationUninstallPlatform::WindowsRegistry
 }
 
-#[cfg(not(any(target_os = "macos", windows)))]
+#[cfg(target_os = "linux")]
 const fn platform_kind() -> ApplicationUninstallPlatform {
-    ApplicationUninstallPlatform::WindowsRegistry
+    ApplicationUninstallPlatform::LinuxPackage
 }
 
 #[cfg(test)]

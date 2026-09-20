@@ -31,6 +31,7 @@ impl UsageTone {
         }
     }
 
+    #[cfg(any(test, windows, target_os = "macos"))]
     pub fn rgb(self, foreground: [u8; 3]) -> [u8; 3] {
         // Darker hues stay legible on light taskbars; lighter hues serve dark
         // surfaces. Normal and unavailable readings keep the system foreground.
@@ -66,6 +67,7 @@ mod tests {
         assert_eq!(Critical.next(Some(0), 1, 2), Normal);
     }
     #[test]
+    #[cfg(any(test, windows, target_os = "macos"))]
     fn normal_colors_follow_the_theme_and_bands_remain_distinct() {
         for foreground in [[32; 3], [245; 3]] {
             assert_eq!(Normal.rgb(foreground), foreground);

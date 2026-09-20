@@ -81,7 +81,7 @@ See [`filesystem/macos/development/dev.pnpm-cache.toml`](filesystem/macos/develo
 
 - `id` must use lowercase ASCII letters, digits, `.`, `-`, or `_`, and the file name must be `<id>.toml`.
 - `rule_version` must be positive. Increment it when a change alters roots, matching, execution, risk, applicability, or verification semantics.
-- `platform` is `macos` or `windows`.
+- `platform` is `macos`, `windows`, or `linux`.
 - `category` is `system`, `browser`, `application`, `development`, `ai`, or `container`.
 - `risk` is `safe`, `recoverable`, or `highImpact`.
 - `default_selected = true` is allowed only for `safe` rules. `recommended_selected` controls the shared recommendation used by the desktop app and the CLI `recommended` selection. A `recoverable` rule may be recommended only when every root has `verified_rebuildable = true`.
@@ -121,6 +121,13 @@ Every root template must begin with one controlled, lowercase variable and use `
 - All platforms: `${home}`, `${temp}`, `${system_root}`
 - macOS: `${user_library}`, `${application_support}`, `${darwin_user_cache}`
 - Windows: `${local_app_data}`, `${roaming_app_data}`, `${program_files}`, `${program_data}`
+
+Linux filesystem rules are limited to user-owned, non-privileged cleanup: their roots
+must resolve under `${home}` or to the current user's `${temp}`, they must not use
+`${system_root}` or other system-owned locations, and `[execution]` must stay on the
+declarative `deleteMatchingContents` verify-only strategy. This keeps every Linux rule
+executable without elevation while shared temporary directories remain guarded by the
+engine's ownership and snapshot checks before deletion.
 
 A static root needs only `template`. Use `kind = "childDirectories"` only when the rule must expand direct child directories through `child_names`, `child_prefixes`, `include_all_children`, or fixed `suffixes`. The validator rejects parent traversal, uncontrolled variables, duplicate roots, protected locations, unsafe expansion, and broad matching outside recognized cache or verified rebuildable boundaries.
 
