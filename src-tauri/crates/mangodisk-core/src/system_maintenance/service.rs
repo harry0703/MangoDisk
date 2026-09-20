@@ -1403,7 +1403,7 @@ mod tests {
         let mut entry = scheduler_entry(
             "running-safe-cancel",
             SystemMaintenanceJobStatus::Running,
-            vec![MaintenanceResource::Network],
+            vec![MaintenanceResource::ShellCache],
             false,
         );
         entry.sink = Arc::new(move |job| {
@@ -1475,25 +1475,37 @@ mod tests {
 
     #[test]
     fn scheduler_starts_two_independent_jobs() {
+        #[cfg(any(target_os = "macos", windows))]
+        let (network_resource, index_resource, shell_cache_resource) = (
+            MaintenanceResource::Network,
+            MaintenanceResource::SearchIndex,
+            MaintenanceResource::ShellCache,
+        );
+        #[cfg(target_os = "linux")]
+        let (network_resource, index_resource, shell_cache_resource) = (
+            MaintenanceResource::ShellCache,
+            MaintenanceResource::PackageFiles,
+            MaintenanceResource::Elevation,
+        );
         let mut registry = ExecutionRegistry {
             operation_id: Some(7),
             entries: vec![
                 scheduler_entry(
                     "network",
                     SystemMaintenanceJobStatus::Queued,
-                    vec![MaintenanceResource::Network],
+                    vec![network_resource],
                     false,
                 ),
                 scheduler_entry(
                     "search",
                     SystemMaintenanceJobStatus::Queued,
-                    vec![MaintenanceResource::SearchIndex],
+                    vec![index_resource],
                     false,
                 ),
                 scheduler_entry(
                     "shell",
                     SystemMaintenanceJobStatus::Queued,
-                    vec![MaintenanceResource::ShellCache],
+                    vec![shell_cache_resource],
                     false,
                 ),
             ],
@@ -1545,7 +1557,7 @@ mod tests {
         #[cfg(windows)]
         let repair_resource = MaintenanceResource::SystemRepair;
         #[cfg(target_os = "linux")]
-        let repair_resource = MaintenanceResource::Network;
+        let repair_resource = MaintenanceResource::PackageFiles;
         let mut registry = ExecutionRegistry {
             operation_id: Some(9),
             entries: vec![
@@ -1558,7 +1570,10 @@ mod tests {
                 scheduler_entry(
                     "dns",
                     SystemMaintenanceJobStatus::Queued,
-                    vec![MaintenanceResource::Network, MaintenanceResource::Elevation],
+                    vec![
+                        MaintenanceResource::ShellCache,
+                        MaintenanceResource::Elevation,
+                    ],
                     true,
                 ),
             ],
@@ -1612,7 +1627,7 @@ mod tests {
         let mut retryable = scheduler_entry(
             "retryable",
             SystemMaintenanceJobStatus::Finished,
-            vec![MaintenanceResource::Network],
+            vec![MaintenanceResource::ShellCache],
             false,
         );
         retryable.public.result = Some(SystemMaintenanceExecutionItemResult {
@@ -1656,7 +1671,7 @@ mod tests {
                     scheduler_entry(
                         &format!("finished-{index}"),
                         SystemMaintenanceJobStatus::Finished,
-                        vec![MaintenanceResource::Network],
+                        vec![MaintenanceResource::ShellCache],
                         false,
                     )
                 })
@@ -1732,7 +1747,7 @@ mod tests {
         let job = scheduler_entry(
             "delivery-panic",
             SystemMaintenanceJobStatus::Running,
-            vec![MaintenanceResource::Network],
+            vec![MaintenanceResource::ShellCache],
             false,
         )
         .public;

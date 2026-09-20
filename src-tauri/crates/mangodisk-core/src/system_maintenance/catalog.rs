@@ -7,7 +7,9 @@ pub(super) enum MaintenanceResource {
     Elevation,
     #[cfg(target_os = "macos")]
     FileSystemPermissions,
+    #[cfg(any(target_os = "macos", windows))]
     AudioService,
+    #[cfg(any(target_os = "macos", windows))]
     Network,
     #[cfg(windows)]
     PerformanceCounters,
@@ -17,6 +19,7 @@ pub(super) enum MaintenanceResource {
     PrintQueue,
     #[cfg(target_os = "linux")]
     PackageFiles,
+    #[cfg(any(target_os = "macos", windows))]
     SearchIndex,
     ShellCache,
     #[cfg(target_os = "macos")]
@@ -273,12 +276,9 @@ mod tests {
 
     #[test]
     fn task_catalog_has_stable_unique_identifiers() {
-        if DEFINITIONS.is_empty() {
+        let Some(first) = DEFINITIONS.first() else {
             return;
-        }
-        let first = DEFINITIONS
-            .first()
-            .expect("each compiled platform must expose a maintenance catalog");
+        };
         assert!(first.id.contains(".maintenance."));
         let mut identifiers = BTreeSet::new();
         for definition in DEFINITIONS {
@@ -291,9 +291,9 @@ mod tests {
 
     #[test]
     fn task_identifiers_match_the_compiled_platform() {
-        if DEFINITIONS.is_empty() {
+        let Some(_first) = DEFINITIONS.first() else {
             return;
-        }
+        };
         #[cfg(target_os = "macos")]
         let prefix = "macos.maintenance.";
         #[cfg(windows)]

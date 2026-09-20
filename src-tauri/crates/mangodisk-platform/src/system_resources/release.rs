@@ -33,6 +33,7 @@ pub fn release_memory_with(options: &ReleaseOptions) -> PlatformResult<()> {
     }
     #[cfg(not(any(target_os = "macos", windows)))]
     {
+        let _ = options;
         Err(crate::PlatformError::new(
             crate::PlatformErrorCode::Unsupported,
             "memory reclamation is unavailable",

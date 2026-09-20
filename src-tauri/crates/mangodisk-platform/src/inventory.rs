@@ -85,6 +85,7 @@ fn executable_candidates(directory: &Path, name: &str) -> Vec<PathBuf> {
     }
 }
 
+#[cfg(not(target_os = "linux"))]
 pub(crate) fn normalize_fact(value: &str) -> String {
     value.trim().to_ascii_lowercase()
 }

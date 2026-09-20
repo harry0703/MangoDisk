@@ -16,11 +16,28 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [windows-latest, macos-latest]
+        os: [windows-latest, macos-latest, ubuntu-24.04]
     runs-on: ${{ matrix.os }}
     steps:
       - name: Check out repository
         uses: actions/checkout@v7
+
+      # Tauri 2 on Linux links against WebKitGTK 4.1 and the GTK tray/taskbar
+      # indicator headers. They must exist before any Rust target compiles.
+      - name: Install Linux system dependencies
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            libwebkit2gtk-4.1-dev \
+            libayatana-appindicator3-dev \
+            libappindicator3-dev \
+            librsvg2-dev \
+            libssl-dev \
+            libxdo-dev \
+            build-essential \
+            curl wget file \
+            patchelf
 
       - name: Install pnpm
         # pnpm/action-setup reads the packageManager field from package.json.

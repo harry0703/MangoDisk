@@ -247,6 +247,7 @@ fn platform_load_png(_query: &IconQuery) -> Option<Vec<u8>> {
 
 #[cfg(test)]
 mod tests {
+    #[cfg(any(target_os = "macos", target_os = "windows"))]
     use std::time::{Instant, SystemTime, UNIX_EPOCH};
 
     use super::*;

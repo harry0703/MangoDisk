@@ -15,6 +15,7 @@ pub const APPLICATION_UNINSTALL_BATCH_PLAN_SCHEMA_VERSION: u32 = 1;
 pub enum ApplicationUninstallPlatform {
     MacosBundle,
     WindowsRegistry,
+    LinuxPackage,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]

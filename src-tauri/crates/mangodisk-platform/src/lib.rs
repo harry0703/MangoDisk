@@ -3,6 +3,7 @@ mod elevation;
 #[cfg(windows)]
 pub use elevation::run_elevation_helper_mode;
 pub mod application_quit;
+#[cfg(not(target_os = "linux"))]
 mod browser_profile;
 mod command;
 mod contracts;
@@ -16,12 +17,37 @@ mod inventory;
 pub mod linux;
 #[cfg(target_os = "macos")]
 mod macos;
+#[cfg(not(target_os = "linux"))]
 mod startup_helper;
+#[cfg(target_os = "linux")]
+mod startup_helper {
+    use std::ffi::OsString;
+
+    const HELPER_FAILURE_EXIT_CODE: i32 = 70;
+
+    /// Linux startup items belong to the user scope and do not need an elevated
+    /// helper. Keep the protocol guard so mixed arguments never start Tauri.
+    pub fn run_startup_helper_mode<I>(arguments: I) -> Option<i32>
+    where
+        I: IntoIterator<Item = OsString>,
+    {
+        let arguments = arguments.into_iter().collect::<Vec<_>>();
+        if arguments
+            .get(1)
+            .and_then(|value| value.to_str())
+            .is_some_and(|value| value.starts_with("--mangodisk-startup-helper-"))
+        {
+            return Some(HELPER_FAILURE_EXIT_CODE);
+        }
+        None
+    }
+}
 #[cfg(windows)]
 mod system_maintenance_helper;
 pub mod system_resources;
 #[cfg(windows)]
 mod system_settings_helper;
+#[cfg(not(target_os = "linux"))]
 mod vscode_history;
 #[cfg(windows)]
 mod windows;
