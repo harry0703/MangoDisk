@@ -16,7 +16,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [windows-latest, macos-latest, ubuntu-24.04]
+        os: [windows-latest, macos-latest, ubuntu-22.04]
     runs-on: ${{ matrix.os }}
     steps:
       - name: Check out repository
@@ -31,7 +31,6 @@ jobs:
           sudo apt-get install -y --no-install-recommends \
             libwebkit2gtk-4.1-dev \
             libayatana-appindicator3-dev \
-            libappindicator3-dev \
             librsvg2-dev \
             libssl-dev \
             libxdo-dev \
@@ -65,3 +64,40 @@ jobs:
       # the Windows WebView2 or macOS WebKit host without producing installers.
       - name: Verify native Tauri build
         run: pnpm tauri:build:check
+
+      # Release binaries must link against the oldest supported Ubuntu base.
+      # Keep unsigned CI artifacts separate from the signed release workflow.
+      - name: Build Linux compatibility bundles
+        if: runner.os == 'Linux' && github.event_name == 'workflow_dispatch'
+        run: pnpm tauri build --bundles deb,appimage --no-sign --config '{"bundle":{"createUpdaterArtifacts":false}}'
+
+      - name: Verify Linux bundle glibc compatibility
+        if: runner.os == 'Linux' && github.event_name == 'workflow_dispatch'
+        shell: bash
+        run: |
+          set -euo pipefail
+          deb=(target/release/bundle/deb/*.deb)
+          appimage=(target/release/bundle/appimage/*.AppImage)
+          test "${#deb[@]}" -eq 1 && test -f "${deb[0]}"
+          test "${#appimage[@]}" -eq 1 && test -f "${appimage[0]}"
+          bundle_dir=$(mktemp -d)
+          trap 'rm -rf "$bundle_dir"' EXIT
+          dpkg-deb -x "${deb[0]}" "$bundle_dir/deb"
+          appimage_path=$(realpath "${appimage[0]}")
+          (cd "$bundle_dir" && "$appimage_path" --appimage-extract usr/bin/MangoDisk >/dev/null)
+          for binary in "$bundle_dir/deb/usr/bin/MangoDisk" "$bundle_dir/squashfs-root/usr/bin/MangoDisk"; do
+            highest=$(objdump -T "$binary" | grep -oE 'GLIBC_[0-9]+\.[0-9]+' | sort -Vu | tail -1)
+            echo "$binary requires at most $highest"
+            test "$(printf '%s\n' GLIBC_2.35 "$highest" | sort -Vu | tail -1)" = GLIBC_2.35
+          done
+
+      - name: Retain Linux compatibility bundles
+        if: runner.os == 'Linux' && github.event_name == 'workflow_dispatch'
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-ubuntu-22.04-bundles
+          path: |
+            target/release/bundle/deb/*.deb
+            target/release/bundle/appimage/*.AppImage
+          retention-days: 7
+          compression-level: 0
