@@ -214,7 +214,7 @@ async fn discover(
         .header("x-mangodisk-locale", &locale)?
         .header(
             "x-mangodisk-os-version",
-            tauri_plugin_os::version().to_string(),
+            super::app_update_os_version::telemetry_os_version(),
         )?
         .header(
             "x-mangodisk-distribution",
