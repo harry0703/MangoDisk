@@ -7,6 +7,9 @@ mod native;
 #[cfg(windows)]
 #[path = "disk/windows.rs"]
 mod native;
+#[cfg(target_os = "linux")]
+#[path = "disk/linux.rs"]
+mod native;
 
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -25,14 +28,14 @@ pub struct VolumeCapacity {
     pub available_bytes: u64,
 }
 
-#[cfg(any(target_os = "macos", windows))]
+#[cfg(any(target_os = "macos", windows, target_os = "linux"))]
 pub use native::{capacity, list};
 
-#[cfg(not(any(target_os = "macos", windows)))]
+#[cfg(not(any(target_os = "macos", windows, target_os = "linux")))]
 pub fn list() -> crate::PlatformResult<Vec<ResourceVolume>> {
     Err(unavailable())
 }
-#[cfg(not(any(target_os = "macos", windows)))]
+#[cfg(not(any(target_os = "macos", windows, target_os = "linux")))]
 pub fn capacity(_volume: &ResourceVolume) -> crate::PlatformResult<VolumeCapacity> {
     Err(unavailable())
 }
@@ -47,7 +50,7 @@ fn unavailable() -> crate::PlatformError {
 #[cfg(test)]
 mod tests {
     #[test]
-    #[cfg(any(target_os = "macos", windows))]
+    #[cfg(any(target_os = "macos", windows, target_os = "linux"))]
     fn system_volume_is_identifiable_and_has_valid_capacity() {
         let volumes = super::list().expect("local volume enumeration must succeed");
         let system: Vec<_> = volumes.iter().filter(|volume| volume.system).collect();

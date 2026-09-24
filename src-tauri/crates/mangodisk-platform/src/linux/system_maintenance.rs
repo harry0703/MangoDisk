@@ -1,12 +1,13 @@
 use std::{path::PathBuf, time::Duration};
 
 use crate::{
-    run_controlled_command, ControlledCommandLimits, ControlledEnvironmentPolicy,
-    ControlledExecutable, PlatformCancellation, PlatformError, PlatformErrorCode, PlatformResult,
-    PlatformSystemMaintenanceCompletion, PlatformSystemMaintenanceDiagnosticCode,
-    PlatformSystemMaintenanceExecution, PlatformSystemMaintenancePhase,
-    PlatformSystemMaintenanceProgress, PlatformSystemMaintenanceProgressSink,
-    PlatformSystemMaintenanceState, PlatformSystemMaintenanceStatus,
+    run_controlled_command, ControlledCommandError, ControlledCommandLimits,
+    ControlledEnvironmentPolicy, ControlledExecutable, PlatformCancellation, PlatformError,
+    PlatformErrorCode, PlatformResult, PlatformSystemMaintenanceCompletion,
+    PlatformSystemMaintenanceDiagnosticCode, PlatformSystemMaintenanceExecution,
+    PlatformSystemMaintenancePhase, PlatformSystemMaintenanceProgress,
+    PlatformSystemMaintenanceProgressSink, PlatformSystemMaintenanceState,
+    PlatformSystemMaintenanceStatus,
 };
 
 const FONT_CACHE_TASK: &str = "linux.maintenance.font-cache";
@@ -45,19 +46,18 @@ pub(crate) fn scan(
     let mut states = Vec::with_capacity(task_ids.len());
     for task_id in task_ids {
         if cancellation.is_cancelled() {
-            return Err(PlatformError::operation_failed(
+            return Err(PlatformError::new(
+                PlatformErrorCode::UserCancelled,
                 "system maintenance scan was cancelled",
             ));
         }
         states.push(match *task_id {
-            FONT_CACHE_TASK => availability_state(
-                FONT_CACHE_TASK,
-                resolve_on_path("fc-cache").is_some(),
-                false,
-            ),
+            FONT_CACHE_TASK => {
+                availability_state(FONT_CACHE_TASK, capture_tool("fc-cache").is_some(), false)
+            }
             PACKAGE_INTEGRITY_TASK => availability_state(
                 PACKAGE_INTEGRITY_TASK,
-                resolve_on_path("pacman").is_some() || resolve_on_path("dpkg").is_some(),
+                package_integrity_tool().is_some(),
                 false,
             ),
             _ => unreachable!("validated maintenance identifier"),
@@ -92,12 +92,7 @@ pub(crate) fn execute(
                 MAINTENANCE_LIMITS,
                 &|| cancellation.is_cancelled(),
             )
-            .map_err(|error| {
-                PlatformError::operation_failed(format!(
-                    "font cache refresh failed reason={}",
-                    error.as_str()
-                ))
-            })?;
+            .map_err(|error| maintenance_command_error(error, true))?;
             let verified = output.status.success();
             Ok(execution(
                 task_id,
@@ -112,11 +107,12 @@ pub(crate) fn execute(
             progress(PlatformSystemMaintenanceProgress::phase(
                 PlatformSystemMaintenancePhase::CheckingSystemFiles,
             ));
-            let (tool, arguments): (&str, &[&str]) = if resolve_on_path("pacman").is_some() {
-                ("pacman", &["-Qk"])
-            } else {
-                ("dpkg", &["--verify"])
-            };
+            let (tool, arguments) = package_integrity_tool().ok_or_else(|| {
+                PlatformError::new(
+                    PlatformErrorCode::Unsupported,
+                    "no supported package manager is installed on this system",
+                )
+            })?;
             let executable = capture_tool(tool).ok_or_else(|| {
                 PlatformError::new(
                     PlatformErrorCode::Unsupported,
@@ -134,12 +130,7 @@ pub(crate) fn execute(
                 MAINTENANCE_LIMITS,
                 &|| cancellation.is_cancelled(),
             )
-            .map_err(|error| {
-                PlatformError::operation_failed(format!(
-                    "package integrity check failed reason={}",
-                    error.as_str()
-                ))
-            })?;
+            .map_err(|error| maintenance_command_error(error, false))?;
             let verified = output.status.success();
             Ok(execution(
                 task_id,
@@ -151,6 +142,52 @@ pub(crate) fn execute(
             ))
         }
         _ => unreachable!("validated maintenance identifier"),
+    }
+}
+
+fn package_integrity_tool() -> Option<(&'static str, &'static [&'static str])> {
+    if PathBuf::from("/var/lib/dpkg/status").is_file() && capture_tool("dpkg").is_some() {
+        Some(("dpkg", &["--verify"]))
+    } else if PathBuf::from("/var/lib/pacman/local").is_dir() && capture_tool("pacman").is_some() {
+        Some(("pacman", &["-Qk"]))
+    } else {
+        None
+    }
+}
+
+fn maintenance_command_error(error: ControlledCommandError, may_mutate: bool) -> PlatformError {
+    let process_never_started = matches!(
+        error,
+        ControlledCommandError::InvalidExecutable
+            | ControlledCommandError::ExecutableChanged
+            | ControlledCommandError::SpawnFailed
+    );
+    let timed_out = error == ControlledCommandError::TimedOut;
+    let platform_error = PlatformError::new(
+        match error {
+            ControlledCommandError::Cancelled => PlatformErrorCode::UserCancelled,
+            ControlledCommandError::InvalidExecutable
+            | ControlledCommandError::ExecutableChanged => PlatformErrorCode::Unsupported,
+            ControlledCommandError::SpawnFailed
+            | ControlledCommandError::ReaderFailed
+            | ControlledCommandError::WaitFailed
+            | ControlledCommandError::TimedOut
+            | ControlledCommandError::OutputLimitExceeded => PlatformErrorCode::OperationFailed,
+        },
+        format!(
+            "Linux system maintenance command could not complete: reason={}",
+            error.as_str()
+        ),
+    );
+    let platform_error = if timed_out {
+        platform_error.with_failure_reason(crate::PlatformFailureReason::TimedOut)
+    } else {
+        platform_error
+    };
+    if may_mutate && !process_never_started {
+        platform_error.with_possible_side_effects()
+    } else {
+        platform_error
     }
 }
 
@@ -260,5 +297,29 @@ mod tests {
     fn resolves_an_executable_from_path() {
         // `sh` is present on every POSIX system that runs these tests.
         assert!(resolve_on_path("sh").is_some());
+    }
+
+    #[test]
+    fn command_cancellation_preserves_code_and_mutation_uncertainty() {
+        let error = maintenance_command_error(ControlledCommandError::Cancelled, true);
+        assert_eq!(error.code(), PlatformErrorCode::UserCancelled);
+        assert_eq!(
+            error.mutation_state(),
+            crate::PlatformMutationState::MayHaveChanged
+        );
+    }
+
+    #[test]
+    fn read_only_timeout_has_a_stable_reason_without_mutation() {
+        let error = maintenance_command_error(ControlledCommandError::TimedOut, false);
+        assert_eq!(error.code(), PlatformErrorCode::OperationFailed);
+        assert_eq!(
+            error.failure_reason(),
+            Some(crate::PlatformFailureReason::TimedOut)
+        );
+        assert_eq!(
+            error.mutation_state(),
+            crate::PlatformMutationState::NotAttempted
+        );
     }
 }

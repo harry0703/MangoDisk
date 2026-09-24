@@ -219,14 +219,18 @@ mod tests {
         )
         .unwrap();
         assert_eq!(result.total_count, 3);
-        assert_eq!(
-            diagnostics.native_directory_reads, 3,
-            "each physical directory should be read once"
-        );
-        assert_eq!(
-            diagnostics.candidate_count, 3,
-            "native discovery must visit each candidate once, before Core result filtering"
-        );
+        #[cfg(any(target_os = "linux", target_os = "macos", target_os = "windows"))]
+        {
+            assert_eq!(diagnostics.fast_path, "used");
+            assert_eq!(
+                diagnostics.native_directory_reads, 3,
+                "each physical directory should be read once"
+            );
+            assert_eq!(
+                diagnostics.candidate_count, 3,
+                "native discovery must visit each candidate once, before Core result filtering"
+            );
+        }
     }
 
     #[test]

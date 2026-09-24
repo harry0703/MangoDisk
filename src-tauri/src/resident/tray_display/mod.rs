@@ -30,6 +30,8 @@ pub struct DisplayState {
     macos: macos::Cache,
     #[cfg(windows)]
     appearance: Option<windows_bitmap::Appearance>,
+    #[cfg(target_os = "linux")]
+    indicator_title: Option<String>,
     failed: bool,
     color_rules: Option<(bool, u8, u8)>,
     color_disk_volume: Option<String>,
@@ -301,6 +303,17 @@ fn render(
             tray.set_tooltip(Some(format!("MangoDisk\n{summary}")))?;
         }
         state.summary = summary.clone();
+    }
+    #[cfg(target_os = "linux")]
+    if state.visible.contains(&DisplayId::App) {
+        let title = format::indicator_title(&entries, preferences.taskbar_compact);
+        if state.indicator_title != title {
+            if let Some(tray) = app.tray_by_id(DisplayId::App.tray_id()) {
+                tray.set_title(title.as_deref())?;
+                state.renders += 1;
+            }
+            state.indicator_title = title;
+        }
     }
     #[cfg(target_os = "macos")]
     if let Some(tray) = app.tray_by_id(DisplayId::App.tray_id()) {

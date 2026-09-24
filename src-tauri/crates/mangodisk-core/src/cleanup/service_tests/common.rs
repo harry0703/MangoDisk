@@ -318,9 +318,15 @@ mod cleanup_matcher_tests {
 
         assert_eq!(result.actions.len(), 1);
         assert!(!matching_file.exists(), "the matching file must be removed");
+        #[cfg(not(target_os = "linux"))]
         assert!(
             !authorized_empty.exists(),
             "an unchanged empty directory authorized by the scan may be removed"
+        );
+        #[cfg(target_os = "linux")]
+        assert!(
+            authorized_empty.exists(),
+            "Linux must retain empty directories until non-reusable identity is available"
         );
         assert!(
             replaced_empty.exists(),

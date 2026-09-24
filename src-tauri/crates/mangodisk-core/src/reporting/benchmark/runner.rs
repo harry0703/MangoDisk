@@ -426,6 +426,16 @@ fn benchmark_analysis(
     expected_files: u64,
     expected_bytes: u64,
 ) -> Result<ModuleBenchmarkReport, String> {
+    let cache_reuse_supported = match current_platform().capture_filesystem_change_token(root) {
+        Ok(token) => token.is_some(),
+        Err(error) => {
+            log::warn!(
+                "engine_benchmark_analysis_cache_probe_failed diagnostic={}",
+                error.diagnostic()
+            );
+            false
+        }
+    };
     let mut results = Vec::with_capacity(runs);
     let mut memory_reuse_samples = Vec::with_capacity(runs);
     let mut cache_validation_samples = Vec::with_capacity(runs);
@@ -469,55 +479,59 @@ fn benchmark_analysis(
         layout_entry_counts.push(diagnostics.layout_entry_count);
         directory_counts.push(diagnostics.directory_count);
         candidate_counts.push(diagnostics.candidate_count);
-        // Scan results intentionally live only for the current process. Measure the navigation
-        // path that product pages actually use instead of simulating a nonexistent persistent
-        // restore.
-        let restore_started = Instant::now();
-        let (restored, restored_diagnostics) =
-            AnalysisService::analyze_with_diagnostics(Some(display_path(root)), false, |_| {})
-                .map_err(|error| error.to_string())?;
-        let restore_elapsed_ms = restore_started.elapsed().as_millis() as u64;
-        let restore_digest = analysis_digest(&restored);
-        if restore_digest != result_digest || restored_diagnostics.traversal_ms != 0 {
-            return Err(
-                "disk-analysis memory reuse missed the snapshot or changed the result".to_string(),
-            );
+        if cache_reuse_supported {
+            // Scan results intentionally live only for the current process. Measure the navigation
+            // path that product pages actually use instead of simulating a nonexistent persistent
+            // restore. Platforms without reliable change history must rescan, so a cache miss is
+            // expected there and is reported as an unsupported capability instead of a scan error.
+            let restore_started = Instant::now();
+            let (restored, restored_diagnostics) =
+                AnalysisService::analyze_with_diagnostics(Some(display_path(root)), false, |_| {})
+                    .map_err(|error| error.to_string())?;
+            let restore_elapsed_ms = restore_started.elapsed().as_millis() as u64;
+            let restore_digest = analysis_digest(&restored);
+            if restore_digest != result_digest || restored_diagnostics.traversal_ms != 0 {
+                return Err(
+                    "disk-analysis memory reuse missed the snapshot or changed the result"
+                        .to_string(),
+                );
+            }
+            memory_reuse_samples.push((
+                restore_elapsed_ms,
+                restored.entries.len() as u64,
+                restored.total_bytes,
+                restore_digest,
+            ));
+            cache_validation_samples.push((
+                restored_diagnostics.cache_validation_ms,
+                restored.entries.len() as u64,
+                restored.total_bytes,
+                analysis_digest(&restored),
+            ));
+            // A repeated request verifies stable current-session reuse after the change monitor has
+            // already been observed once.
+            let session_restore_started = Instant::now();
+            let (session_restored, session_diagnostics) =
+                AnalysisService::analyze_with_diagnostics(Some(display_path(root)), false, |_| {})
+                    .map_err(|error| error.to_string())?;
+            let session_restore_elapsed_ms = session_restore_started.elapsed().as_millis() as u64;
+            let session_digest = analysis_digest(&session_restored);
+            if session_digest != result_digest || session_diagnostics.traversal_ms != 0 {
+                return Err("disk-analysis repeated memory reuse changed the result".to_string());
+            }
+            session_restore_samples.push((
+                session_restore_elapsed_ms,
+                session_restored.entries.len() as u64,
+                session_restored.total_bytes,
+                session_digest.clone(),
+            ));
+            session_validation_samples.push((
+                session_diagnostics.cache_validation_ms,
+                session_restored.entries.len() as u64,
+                session_restored.total_bytes,
+                session_digest,
+            ));
         }
-        memory_reuse_samples.push((
-            restore_elapsed_ms,
-            restored.entries.len() as u64,
-            restored.total_bytes,
-            restore_digest,
-        ));
-        cache_validation_samples.push((
-            restored_diagnostics.cache_validation_ms,
-            restored.entries.len() as u64,
-            restored.total_bytes,
-            analysis_digest(&restored),
-        ));
-        // A repeated request verifies stable current-session reuse after the change monitor has
-        // already been observed once.
-        let session_restore_started = Instant::now();
-        let (session_restored, session_diagnostics) =
-            AnalysisService::analyze_with_diagnostics(Some(display_path(root)), false, |_| {})
-                .map_err(|error| error.to_string())?;
-        let session_restore_elapsed_ms = session_restore_started.elapsed().as_millis() as u64;
-        let session_digest = analysis_digest(&session_restored);
-        if session_digest != result_digest || session_diagnostics.traversal_ms != 0 {
-            return Err("disk-analysis repeated memory reuse changed the result".to_string());
-        }
-        session_restore_samples.push((
-            session_restore_elapsed_ms,
-            session_restored.entries.len() as u64,
-            session_restored.total_bytes,
-            session_digest.clone(),
-        ));
-        session_validation_samples.push((
-            session_diagnostics.cache_validation_ms,
-            session_restored.entries.len() as u64,
-            session_restored.total_bytes,
-            session_digest,
-        ));
         results.push(ModuleBenchmarkRun {
             run_number,
             first_progress_ms: clamp_elapsed(capture.first_progress_ms, elapsed_ms),
@@ -573,21 +587,29 @@ fn benchmark_analysis(
                 .unwrap_or_default(),
         ),
         runs: results,
-        detail_metrics: vec![
-            restore_detail_metric("memoryReuse", &memory_reuse_samples),
-            restore_detail_metric("cacheValidityCheck", &cache_validation_samples),
-            restore_detail_metric("sessionCacheRestore", &session_restore_samples),
-            restore_detail_metric("sessionCacheValidityCheck", &session_validation_samples),
-        ],
+        detail_metrics: if cache_reuse_supported {
+            vec![
+                restore_detail_metric("memoryReuse", &memory_reuse_samples),
+                restore_detail_metric("cacheValidityCheck", &cache_validation_samples),
+                restore_detail_metric("sessionCacheRestore", &session_restore_samples),
+                restore_detail_metric(
+                    "sessionCacheValidityCheck",
+                    &session_validation_samples,
+                ),
+            ]
+        } else {
+            Vec::new()
+        },
         phase_notes: vec![
             "Enumeration and directory aggregation are reported as enumerateAndAggregate. cacheWrite publishes the completed result to the process-scoped memory cache."
                 .to_string(),
-            "memoryReuse measures current-session navigation from the completed in-memory scan result without traversing the filesystem again."
-                .to_string(),
-            "cacheValidityCheck measures platform change-history and volume-identity validation within memoryReuse. It is included in reuse time and is zero on platforms without change tokens."
-                .to_string(),
-            "sessionCacheRestore is a second current-session read after initial history validation establishes a monitor; sessionCacheValidityCheck reads only the final monitor state."
-                .to_string(),
+            if cache_reuse_supported {
+                "memoryReuse and sessionCacheRestore measure current-session navigation after platform change-history validation."
+                    .to_string()
+            } else {
+                "Memory reuse is unavailable because this platform or volume cannot provide a reliable filesystem change token; forced-refresh traversal remains benchmarked."
+                    .to_string()
+            },
             format!(
                 "Platform aggregation strategy: {}; at most {} pages and {} layout records per run, producing {} directories and {} large-file candidates.",
                 if strategies.is_empty() {

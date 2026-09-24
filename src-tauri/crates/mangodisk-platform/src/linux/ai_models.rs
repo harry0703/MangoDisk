@@ -1,4 +1,7 @@
-use std::path::{Path, PathBuf};
+use std::{
+    io::Read,
+    path::{Path, PathBuf},
+};
 
 use crate::{
     AiModelProvider, InstalledAiModel, PlatformCancellation, PlatformError, PlatformResult,
@@ -25,12 +28,15 @@ fn discover_ollama_models_in(
     models_root: &Path,
     cancellation: &PlatformCancellation,
 ) -> PlatformResult<Vec<InstalledAiModel>> {
+    let started = std::time::Instant::now();
     let manifests_root = models_root.join("manifests");
     if !manifests_root.is_dir() {
         return Ok(Vec::new());
     }
 
     let mut models = Vec::new();
+    let mut walk_error_count = 0_u64;
+    let mut invalid_manifest_count = 0_u64;
     let walker = walkdir::WalkDir::new(&manifests_root)
         .follow_links(false)
         .into_iter()
@@ -42,18 +48,22 @@ fn discover_ollama_models_in(
         });
     for entry in walker {
         if cancellation.is_cancelled() {
-            return Err(PlatformError::operation_failed(
+            return Err(PlatformError::new(
+                crate::PlatformErrorCode::UserCancelled,
                 "Ollama model discovery was cancelled",
             ));
         }
         let entry = match entry {
             Ok(entry) => entry,
             Err(error) => {
-                log::warn!(
-                    "ollama_manifest_walk_skipped manifest_root={} reason={}",
-                    manifests_root.display(),
-                    error
-                );
+                walk_error_count = walk_error_count.saturating_add(1);
+                if walk_error_count <= 3 {
+                    log::warn!(
+                        "ollama_manifest_walk_skipped manifest_root={:?} reason={:?}",
+                        manifests_root,
+                        error.to_string()
+                    );
+                }
                 continue;
             }
         };
@@ -62,19 +72,12 @@ fn discover_ollama_models_in(
         }
         let path = entry.path();
         let Some(manifest) = read_model_manifest(path) else {
+            invalid_manifest_count = invalid_manifest_count.saturating_add(1);
             continue;
         };
-        let Some(name) = path
-            .parent()
-            .and_then(Path::file_name)
-            .map(|name| name.to_string_lossy().into_owned())
-        else {
+        let Some((name, tag)) = model_identity(&manifests_root, path) else {
             continue;
         };
-        let tag = path
-            .file_name()
-            .map(|tag| tag.to_string_lossy().into_owned())
-            .unwrap_or_default();
         models.push(InstalledAiModel {
             provider: AiModelProvider::Ollama,
             name,
@@ -83,12 +86,35 @@ fn discover_ollama_models_in(
         });
     }
 
-    models.sort_by(|left, right| {
-        left.name
-            .to_ascii_lowercase()
-            .cmp(&right.name.to_ascii_lowercase())
-    });
+    models.sort_by_cached_key(|model| (model.name.to_lowercase(), model.tag.clone()));
+    log::info!(
+        "linux_ollama_inventory_ready model_count={} invalid_manifest_count={} walk_error_count={} elapsed_ms={}",
+        models.len(),
+        invalid_manifest_count,
+        walk_error_count,
+        started.elapsed().as_millis()
+    );
     Ok(models)
+}
+
+fn model_identity(manifests_root: &Path, manifest: &Path) -> Option<(String, String)> {
+    let relative = manifest.strip_prefix(manifests_root).ok()?;
+    let mut components = relative
+        .components()
+        .map(|component| component.as_os_str().to_string_lossy().into_owned())
+        .collect::<Vec<_>>();
+    if components.len() < 3 {
+        return None;
+    }
+    components.remove(0); // Registry host.
+    let tag = components.pop()?;
+    if components
+        .first()
+        .is_some_and(|namespace| namespace == "library")
+    {
+        components.remove(0);
+    }
+    (!components.is_empty()).then(|| (components.join("/"), tag))
 }
 
 fn ollama_models_root() -> Option<PathBuf> {
@@ -109,16 +135,27 @@ struct OllamaModelManifest {
 }
 
 fn read_model_manifest(path: &Path) -> Option<OllamaModelManifest> {
-    let content = std::fs::read_to_string(path).ok()?;
+    const MAX_MANIFEST_BYTES: u64 = 1024 * 1024;
+    let file = std::fs::File::open(path).ok()?;
+    if file.metadata().ok()?.len() > MAX_MANIFEST_BYTES {
+        return None;
+    }
+    let mut content = String::new();
+    file.take(MAX_MANIFEST_BYTES + 1)
+        .read_to_string(&mut content)
+        .ok()?;
+    if content.len() as u64 > MAX_MANIFEST_BYTES {
+        return None;
+    }
     let value: serde_json::Value = serde_json::from_str(&content).ok()?;
     let mut installed_bytes = 0u64;
     if let Some(config) = value.get("config").and_then(|c| c.get("size")) {
-        installed_bytes += config.as_u64().unwrap_or(0);
+        installed_bytes = installed_bytes.saturating_add(config.as_u64().unwrap_or(0));
     }
     if let Some(layers) = value.get("layers").and_then(|l| l.as_array()) {
         for layer in layers {
             if let Some(size) = layer.get("size").and_then(|s| s.as_u64()) {
-                installed_bytes += size;
+                installed_bytes = installed_bytes.saturating_add(size);
             }
         }
     }
@@ -185,7 +222,7 @@ mod tests {
             .unwrap();
         assert_eq!(llama3_latest.installed_bytes, 1024 + 2_048);
         assert_eq!(llama3_latest.provider, AiModelProvider::Ollama);
-        let custom = models.iter().find(|m| m.name == "mymodel").unwrap();
+        let custom = models.iter().find(|m| m.name == "custom/mymodel").unwrap();
         assert_eq!(custom.tag.as_deref(), Some("q4"));
         std::fs::remove_dir_all(&root).ok();
     }
@@ -215,5 +252,48 @@ mod tests {
         std::fs::write(&path, "not json").unwrap();
         assert!(read_model_manifest(&path).is_none());
         std::fs::remove_dir_all(&root).ok();
+    }
+
+    #[test]
+    fn ignores_unbounded_manifests_and_saturates_declared_sizes() {
+        let root = fixture_root("bounded");
+        let oversized = root.join("oversized");
+        std::fs::create_dir_all(&root).unwrap();
+        std::fs::write(&oversized, vec![b' '; 1024 * 1024 + 1]).unwrap();
+        assert!(read_model_manifest(&oversized).is_none());
+
+        let saturated = root.join("saturated");
+        std::fs::write(
+            &saturated,
+            format!(
+                "{{\"config\":{{\"size\":{}}},\"layers\":[{{\"size\":1}}]}}",
+                u64::MAX
+            ),
+        )
+        .unwrap();
+        assert_eq!(
+            read_model_manifest(&saturated).unwrap().installed_bytes,
+            u64::MAX
+        );
+        std::fs::remove_dir_all(&root).ok();
+    }
+
+    #[test]
+    fn provider_identity_preserves_non_library_namespaces() {
+        let root = Path::new("/models/manifests");
+        assert_eq!(
+            model_identity(
+                root,
+                Path::new("/models/manifests/registry.ollama.ai/team/model/q4")
+            ),
+            Some(("team/model".into(), "q4".into()))
+        );
+        assert_eq!(
+            model_identity(
+                root,
+                Path::new("/models/manifests/registry.ollama.ai/library/llama3/latest")
+            ),
+            Some(("llama3".into(), "latest".into()))
+        );
     }
 }

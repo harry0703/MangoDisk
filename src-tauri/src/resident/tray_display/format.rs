@@ -60,6 +60,35 @@ pub struct DisplayEntry {
     pub tooltip: String,
 }
 
+/// Linux AppIndicator exposes frequently changing status through its title
+/// label. Keep the icon stable and compose only the enabled metric fields.
+#[cfg(target_os = "linux")]
+pub fn indicator_title(entries: &[DisplayEntry], compact: bool) -> Option<String> {
+    let title = entries
+        .iter()
+        .filter_map(|entry| {
+            let text = if compact {
+                match entry.id {
+                    DisplayId::Cpu | DisplayId::Memory | DisplayId::Disk => {
+                        format!("{}{}%", entry.marker, entry.digits)
+                    }
+                    DisplayId::Upload | DisplayId::Download => {
+                        let mut marker = entry.marker.chars();
+                        let direction = marker.next()?;
+                        format!("{direction}{}{}", entry.digits, marker.as_str())
+                    }
+                    DisplayId::App => return None,
+                }
+            } else {
+                entry.text.trim().to_string()
+            };
+            (!text.is_empty()).then_some(text)
+        })
+        .collect::<Vec<_>>()
+        .join(if compact { " " } else { "  " });
+    (!title.is_empty()).then_some(title)
+}
+
 pub fn desired(preferences: &ResidentPreferences) -> Vec<DisplayId> {
     if !preferences.enabled {
         return Vec::new();
@@ -294,6 +323,58 @@ pub fn entries(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[cfg(target_os = "linux")]
+    fn display_entry(id: DisplayId, text: &str) -> DisplayEntry {
+        DisplayEntry {
+            id,
+            tone: Default::default(),
+            usage_percent: None,
+            marker: String::new(),
+            digits: String::new(),
+            text: text.to_string(),
+            tooltip: String::new(),
+        }
+    }
+
+    #[cfg(target_os = "linux")]
+    #[test]
+    fn indicator_title_contains_only_non_empty_enabled_metrics() {
+        assert_eq!(indicator_title(&[], false), None);
+        assert_eq!(
+            indicator_title(
+                &[
+                    display_entry(DisplayId::Cpu, "CPU  12%"),
+                    display_entry(DisplayId::Memory, "MEM  48%"),
+                    display_entry(DisplayId::Disk, ""),
+                ],
+                false,
+            ),
+            Some("CPU  12%  MEM  48%".to_string())
+        );
+    }
+
+    #[cfg(target_os = "linux")]
+    #[test]
+    fn compact_indicator_title_reduces_width_and_keeps_values() {
+        let mut cpu = display_entry(DisplayId::Cpu, "CPU  12%");
+        cpu.marker = "C".into();
+        cpu.digits = "12".into();
+        let mut memory = display_entry(DisplayId::Memory, "MEM  48%");
+        memory.marker = "M".into();
+        memory.digits = "48".into();
+        let mut upload = display_entry(DisplayId::Upload, "↑ 82.0 KB/s");
+        upload.marker = "↑K".into();
+        upload.digits = "82".into();
+
+        let standard =
+            indicator_title(&[cpu.clone(), memory.clone(), upload.clone()], false).unwrap();
+        let compact = indicator_title(&[cpu, memory, upload], true).unwrap();
+
+        assert_eq!(compact, "C12% M48% ↑82K");
+        assert!(compact.len() < standard.len());
+    }
+
     #[test]
     fn all_thirty_two_combinations_have_unique_entries_and_paired_network_directions() {
         for bits in 0..16 {

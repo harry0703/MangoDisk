@@ -1228,6 +1228,14 @@ fn record_empty_directory_authorization(
     measured: &mut HashMap<usize, MeasureResult>,
     empty_directories: &mut HashMap<usize, HashMap<PathBuf, PhysicalPathIdentity>>,
 ) {
+    // Linux filesystems may immediately reuse an inode after an empty directory
+    // is removed. A `(device, inode)` scan snapshot therefore cannot prove that
+    // the current path is the reviewed directory. Leave empty directories in
+    // place until the Linux adapter can retain a non-reusable object identity
+    // across the review and execution boundary.
+    if cfg!(target_os = "linux") {
+        return;
+    }
     let Some(rule_index) = context.task.empty_directory_owner(path, context.rules) else {
         return;
     };

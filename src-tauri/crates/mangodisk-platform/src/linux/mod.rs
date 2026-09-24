@@ -1,4 +1,5 @@
 mod ai_models;
+mod analysis;
 mod directories;
 mod inventory;
 mod package_managers;
@@ -6,7 +7,7 @@ mod privacy;
 mod process_control;
 mod startup;
 mod system_maintenance;
-mod volumes;
+pub(crate) mod volumes;
 
 use std::{
     fs,
@@ -60,12 +61,26 @@ impl Platform for LinuxPlatform {
         inventory::system_inventory()
     }
 
+    fn system_inventory_with_cancellation(
+        &self,
+        cancellation: &PlatformCancellation,
+    ) -> PlatformResult<SystemInventory> {
+        inventory::system_inventory_with_cancellation(cancellation)
+    }
+
     fn system_inventory_revision(&self) -> PlatformResult<String> {
         inventory::system_inventory_revision()
     }
 
     fn running_process_names(&self) -> PlatformResult<Vec<String>> {
-        inventory::running_process_names()
+        inventory::running_process_names(&PlatformCancellation::new(|| false))
+    }
+
+    fn running_process_names_with_cancellation(
+        &self,
+        cancellation: &PlatformCancellation,
+    ) -> PlatformResult<Vec<String>> {
+        inventory::running_process_names(cancellation)
     }
 
     fn close_application_processes(
@@ -81,10 +96,7 @@ impl Platform for LinuxPlatform {
         targets: &[ApplicationProcessTarget],
         mode: ApplicationProcessCloseMode,
     ) -> Vec<PlatformResult<ApplicationProcessCloseResult>> {
-        targets
-            .iter()
-            .map(|target| self.close_application_processes(target, mode))
-            .collect()
+        process_control::close_many(targets, mode)
     }
 
     fn is_link_like(&self, metadata: &fs::Metadata) -> bool {
@@ -174,18 +186,24 @@ impl Platform for LinuxPlatform {
     fn directory_entry_identities(
         &self,
         directory: &Path,
-        _cancellation: &PlatformCancellation,
+        cancellation: &PlatformCancellation,
     ) -> PlatformResult<Option<DirectoryEntryIdentities>> {
         use std::collections::HashMap;
         use std::os::unix::fs::MetadataExt;
         let mut map = HashMap::new();
         let entries = fs::read_dir(directory)
             .map_err(|error| PlatformError::io("read directory for entry identities", &error))?;
-        for entry in entries.flatten() {
-            let metadata = match fs::symlink_metadata(entry.path()) {
-                Ok(m) => m,
-                Err(_) => continue,
-            };
+        for entry in entries {
+            if cancellation.is_cancelled() {
+                return Err(PlatformError::new(
+                    crate::PlatformErrorCode::UserCancelled,
+                    "directory identity enumeration cancelled",
+                ));
+            }
+            let entry = entry
+                .map_err(|error| PlatformError::io("read directory entry for identity", &error))?;
+            let metadata = fs::symlink_metadata(entry.path())
+                .map_err(|error| PlatformError::io("read directory entry identity", &error))?;
             map.insert(
                 entry.file_name(),
                 crate::PhysicalFileIdentity {
@@ -201,22 +219,31 @@ impl Platform for LinuxPlatform {
         &self,
         root: &Path,
         maximum_entries: usize,
-        _is_cancelled: &(dyn Fn() -> bool + Sync),
+        is_cancelled: &(dyn Fn() -> bool + Sync),
     ) -> Result<Option<DirectPhysicalDirectoryEnumeration>, DirectoryTreeAggregateError> {
         let mut directories = Vec::new();
         let mut observed_count = 0usize;
         let entries = fs::read_dir(root).map_err(|error| {
             DirectoryTreeAggregateError::Platform(format!("failed to read directory: {error}"))
         })?;
-        for entry in entries.flatten() {
+        for entry in entries {
+            if is_cancelled() {
+                return Err(DirectoryTreeAggregateError::Cancelled);
+            }
+            let entry = entry.map_err(|error| {
+                DirectoryTreeAggregateError::Platform(format!(
+                    "failed to read directory entry: {error}"
+                ))
+            })?;
             observed_count += 1;
             if observed_count > maximum_entries {
                 break;
             }
-            let file_type = match entry.file_type() {
-                Ok(ft) => ft,
-                Err(_) => continue,
-            };
+            let file_type = entry.file_type().map_err(|error| {
+                DirectoryTreeAggregateError::Platform(format!(
+                    "failed to read directory entry type: {error}"
+                ))
+            })?;
             if file_type.is_dir() && !file_type.is_symlink() {
                 directories.push(entry.path());
             }
@@ -242,6 +269,7 @@ impl Platform for LinuxPlatform {
         _root: &Path,
         _is_cancelled: &(dyn Fn() -> bool + Sync),
         _report_progress: &(dyn Fn(&Path, u64, u64) + Sync),
+        _flag_entry_name: fn(&std::ffi::OsStr) -> bool,
     ) -> Result<Option<DirectoryTreeAggregate>, DirectoryTreeAggregateError> {
         Ok(None)
     }
@@ -257,12 +285,15 @@ impl Platform for LinuxPlatform {
 
     fn fast_analysis_records(
         &self,
-        _query: FastAnalysisQuery<'_>,
-        _is_cancelled: &(dyn Fn() -> bool + Sync),
-        _report_progress: &mut dyn FnMut(&Path, u64, u64),
-        _consumer: &mut dyn FnMut(FastAnalysisRecord) -> Result<(), String>,
+        query: FastAnalysisQuery<'_>,
+        is_cancelled: &(dyn Fn() -> bool + Sync),
+        report_progress: &mut dyn FnMut(&Path, u64, u64),
+        consumer: &mut dyn FnMut(FastAnalysisRecord) -> Result<(), String>,
     ) -> Result<Option<FastAnalysisSummary>, FastAnalysisScanError> {
-        Ok(None)
+        if query.purpose == ScanPurpose::DuplicateFiles {
+            return Ok(None);
+        }
+        analysis::analyze_records(self, query, is_cancelled, report_progress, consumer).map(Some)
     }
 }
 

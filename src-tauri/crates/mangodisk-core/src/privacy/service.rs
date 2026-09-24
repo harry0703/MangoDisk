@@ -2065,7 +2065,7 @@ fn execute_candidate(candidate: &NativePrivacyCandidate) -> Result<u64, PrivacyM
                 kind @ (PlatformPrivacySystemTraceKind::RecentItems
                 | PlatformPrivacySystemTraceKind::RecentDocumentHistory),
             roots,
-            ..
+            has_native_revision,
         } => {
             let mut removed = 0_u64;
             for root in roots {
@@ -2083,6 +2083,7 @@ fn execute_candidate(candidate: &NativePrivacyCandidate) -> Result<u64, PrivacyM
                 }
             }
             let native_verified = if *kind == PlatformPrivacySystemTraceKind::RecentDocumentHistory
+                && *has_native_revision
             {
                 Some(
                     current_platform()

@@ -1,9 +1,9 @@
 id = "app.docker-build-cache"
 schema_version = 3
-rule_version = 1
+rule_version = 2
 platform = "linux"
 category = "application"
-risk = "safe"
+risk = "recoverable"
 default_selected = false
 recommended_selected = true
 required_stopped_processes = []
@@ -17,6 +17,7 @@ items = [
 
 [[roots]]
 template = "${home}/.cache/docker/buildkit"
+verified_rebuildable = true
 
 [matcher]
 kind = "all"

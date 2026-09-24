@@ -1,8 +1,12 @@
 //! System-wide block-device counters. Volume capacity has a separate scope.
+#[cfg(target_os = "linux")]
+mod linux;
 #[cfg(target_os = "macos")]
 mod macos;
 #[cfg(windows)]
 mod windows;
+#[cfg(target_os = "linux")]
+pub use linux::DiskIoReader;
 #[cfg(target_os = "macos")]
 pub use macos::DiskIoReader;
 #[cfg(windows)]
@@ -23,10 +27,10 @@ fn unavailable() -> crate::PlatformError {
     )
 }
 
-#[cfg(not(any(target_os = "macos", windows)))]
+#[cfg(not(any(target_os = "macos", windows, target_os = "linux")))]
 #[derive(Default)]
 pub struct DiskIoReader {}
-#[cfg(not(any(target_os = "macos", windows)))]
+#[cfg(not(any(target_os = "macos", windows, target_os = "linux")))]
 impl DiskIoReader {
     pub fn read(&mut self) -> crate::PlatformResult<Vec<DeviceCounters>> {
         Err(unavailable())
@@ -36,7 +40,7 @@ impl DiskIoReader {
 #[cfg(test)]
 mod tests {
     #[test]
-    #[cfg(any(target_os = "macos", windows))]
+    #[cfg(any(target_os = "macos", windows, target_os = "linux"))]
     fn native_disk_counters_are_available_and_identifiable() {
         let counters = super::DiskIoReader::default()
             .read()
@@ -47,7 +51,7 @@ mod tests {
     }
     #[test]
     #[ignore = "manual native sampler timing probe"]
-    #[cfg(any(target_os = "macos", windows))]
+    #[cfg(any(target_os = "macos", windows, target_os = "linux"))]
     fn disk_sampler_timing_probe() {
         let mut reader = super::DiskIoReader::default();
         for sample in 0..5 {

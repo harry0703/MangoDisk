@@ -8,6 +8,9 @@ mod native;
 #[cfg(windows)]
 #[path = "network/windows.rs"]
 mod native;
+#[cfg(target_os = "linux")]
+#[path = "network/linux.rs"]
+mod native;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -47,6 +50,8 @@ pub struct InterfaceSample {
 pub struct NetworkReader {
     #[cfg(target_os = "macos")]
     native: native::Reader,
+    #[cfg(target_os = "linux")]
+    native: native::Reader,
 }
 impl NetworkReader {
     pub fn read(&mut self) -> crate::PlatformResult<Vec<InterfaceSample>> {
@@ -58,7 +63,11 @@ impl NetworkReader {
         {
             native::read()
         }
-        #[cfg(not(any(target_os = "macos", windows)))]
+        #[cfg(target_os = "linux")]
+        {
+            self.native.read()
+        }
+        #[cfg(not(any(target_os = "macos", windows, target_os = "linux")))]
         {
             Err(crate::PlatformError::new(
                 crate::PlatformErrorCode::Unsupported,
@@ -71,7 +80,7 @@ impl NetworkReader {
 #[cfg(test)]
 mod tests {
     #[test]
-    #[cfg(any(target_os = "macos", windows))]
+    #[cfg(any(target_os = "macos", windows, target_os = "linux"))]
     fn native_interfaces_have_unique_identities_and_readable_active_counters() {
         let rows = super::NetworkReader::default()
             .read()

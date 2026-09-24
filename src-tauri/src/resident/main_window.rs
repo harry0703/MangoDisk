@@ -98,10 +98,14 @@ pub fn open(
             .find(|window| window.label == MAIN_WINDOW_LABEL)
             .ok_or_else(|| std::io::Error::other("main window configuration is missing"))?;
         // The configured window is created only for an explicit foreground request.
-        // Keeping it hidden until Vue is ready also prevents background-start flashes.
+        // WebKitGTK on Ubuntu/Wayland can leave a lazily shown window without
+        // working input after it was created hidden. Linux background launches
+        // do not create the main window, so showing this foreground window
+        // immediately avoids that platform defect without a login flash.
+        let initially_visible = cfg!(target_os = "linux");
         WebviewWindowBuilder::from_config(app, config)?
-            .visible(false)
-            .focused(false)
+            .visible(initially_visible)
+            .focused(initially_visible)
             .build()?;
         // The state plugin also locks its cache in the main-thread window-ready
         // callback. Restoring from this worker can hold that cache while waiting

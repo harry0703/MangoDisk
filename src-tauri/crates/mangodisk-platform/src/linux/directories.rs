@@ -24,12 +24,10 @@ pub(crate) fn user_directories() -> PlatformResult<UserDirectories> {
 
 /// Returns whether a path belongs to a system-critical Linux directory.
 pub(crate) fn is_system_critical(path: &Path) -> bool {
-    let Some(first) = path.components().next() else {
-        return false;
-    };
-    let first_str = first.as_os_str().to_string_lossy();
-
-    matches!(first_str.as_ref(), "/proc" | "/sys" | "/dev" | "/run")
+    path.starts_with("/proc")
+        || path.starts_with("/sys")
+        || path.starts_with("/dev")
+        || path.starts_with("/run")
         || path.starts_with("/etc")
         || path.starts_with("/boot")
         || path.starts_with("/usr/lib")
@@ -79,7 +77,7 @@ pub(crate) fn is_unwritable_by_current_user(path: &Path) -> bool {
         return true;
     };
     // SAFETY: `candidate` is a valid NUL-terminated C string for the lifetime of this call.
-    unsafe { libc::access(candidate.as_ptr(), libc::W_OK) != 0 }
+    unsafe { libc::access(candidate.as_ptr(), libc::W_OK | libc::X_OK) != 0 }
 }
 
 /// Returns whether a path must never be used as a cleanup root.
@@ -101,6 +99,29 @@ mod tests {
     use std::os::unix::fs::PermissionsExt;
 
     use super::*;
+
+    #[test]
+    fn system_critical_paths_use_component_boundaries() {
+        for path in [
+            "/proc/1/status",
+            "/sys/class/block",
+            "/dev/disk/by-id",
+            "/run/user/1000",
+            "/etc/hosts",
+            "/usr/lib/libc.so",
+        ] {
+            assert!(is_system_critical(Path::new(path)), "{path}");
+        }
+        for path in [
+            "/process-data/report",
+            "/system-backup/archive",
+            "/developer/project",
+            "/runtime-notes/file",
+            "/home/user/document",
+        ] {
+            assert!(!is_system_critical(Path::new(path)), "{path}");
+        }
+    }
 
     #[test]
     fn package_manager_scope_covers_snap_and_flatpak_without_matching_similar_names() {

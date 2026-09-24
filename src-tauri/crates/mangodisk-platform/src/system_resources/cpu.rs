@@ -1,12 +1,18 @@
 //! Whole-machine CPU sampling: native Windows percentages or cumulative Mach ticks.
 //! Core validates observations and never publishes an unprimed interval as idle.
 
-use crate::{PlatformError, PlatformErrorCode, PlatformResult};
+use crate::PlatformResult;
+#[cfg(not(target_os = "linux"))]
+use crate::{PlatformError, PlatformErrorCode};
 
 #[cfg(windows)]
 mod windows;
 #[cfg(windows)]
 pub use windows::CpuReader;
+#[cfg(target_os = "linux")]
+mod linux;
+#[cfg(target_os = "linux")]
+pub use linux::CpuReader;
 
 /// Native PDH percentages already represent an interval; never differentiate
 /// them as cumulative ticks or publish its first, unprimed sample as zero.
@@ -23,11 +29,11 @@ impl From<CpuCounters> for CpuSample {
     }
 }
 
-#[cfg(not(windows))]
+#[cfg(not(any(windows, target_os = "linux")))]
 #[derive(Default)]
 pub struct CpuReader;
 
-#[cfg(not(windows))]
+#[cfg(not(any(windows, target_os = "linux")))]
 impl CpuReader {
     pub fn read(&mut self) -> PlatformResult<CpuSample> {
         read().map(CpuSample::Counters)
@@ -113,11 +119,17 @@ pub fn read() -> PlatformResult<CpuCounters> {
     }
 }
 
-#[cfg(not(any(target_os = "macos", windows)))]
+#[cfg(target_os = "linux")]
+pub fn read() -> PlatformResult<CpuCounters> {
+    linux::read()
+}
+
+#[cfg(not(any(target_os = "macos", windows, target_os = "linux")))]
 pub fn read() -> PlatformResult<CpuCounters> {
     Err(unavailable())
 }
 
+#[cfg(not(target_os = "linux"))]
 fn unavailable() -> PlatformError {
     PlatformError::new(
         PlatformErrorCode::OperationFailed,
@@ -128,7 +140,7 @@ fn unavailable() -> PlatformError {
 #[cfg(test)]
 mod tests {
     #[test]
-    #[cfg(any(target_os = "macos", windows))]
+    #[cfg(any(target_os = "macos", windows, target_os = "linux"))]
     fn native_cpu_counters_have_a_nonzero_machine_total() {
         #[cfg(windows)]
         if unsafe { windows_sys::Win32::System::Threading::GetActiveProcessorGroupCount() } > 1 {
