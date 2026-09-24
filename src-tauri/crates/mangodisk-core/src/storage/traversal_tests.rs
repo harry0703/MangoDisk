@@ -182,6 +182,8 @@ fn traversal_cancellation_preserves_the_typed_error_code() {
 
 #[test]
 fn native_worker_shutdown_preserves_the_retryable_busy_code() {
+    // Other tests may hold the process-wide operation slot in parallel.
+    let _operation_lock = crate::shared::operation::test_operation_lock();
     let operation = OperationGuard::start(CoordinatedOperationKind::Analysis)
         .expect("the isolated analysis operation should start");
     let error = analysis_stream_core_error(&operation, AnalysisStreamError::ResourcesReleasing);

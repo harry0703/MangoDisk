@@ -1677,7 +1677,9 @@ fn full_hashing_rejects_equal_size_files_replaced_after_enumeration() {
         identity_source: identity.map(|_| FileIdentitySource::FileHandle),
     };
 
-    fs::remove_file(&path).expect("the original candidate file should be removed");
+    // Keep the original object allocated so a fast replacement cannot reuse its identity.
+    fs::rename(&path, root.join("retained-original.bin"))
+        .expect("the original candidate file should be retained");
     fs::write(&path, vec![2_u8; 1024 * 1024])
         .expect("the equal-size replacement file should be written");
     let operation = OperationGuard::start(CoordinatedOperationKind::DuplicateFiles)
