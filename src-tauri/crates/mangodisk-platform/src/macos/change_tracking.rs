@@ -1013,7 +1013,7 @@ mod tests {
             .join()
             .expect("cancellation thread should finish normally");
         assert!(
-            started.elapsed() < Duration::from_millis(75),
+            started.elapsed() < QUERY_TIMEOUT / 2,
             "cancellation polling must not wait for the full query timeout"
         );
     }

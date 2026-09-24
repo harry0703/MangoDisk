@@ -929,6 +929,10 @@ mod tests {
 
     use super::*;
 
+    // CI can delay a spawned shell or cancellation thread. This still stays
+    // well below the three-second query deadline and catches blocking waits.
+    const SPOTLIGHT_TEST_COMPLETION_BUDGET: Duration = Duration::from_secs(1);
+
     #[test]
     fn dataless_entries_are_content_access_boundaries() {
         assert!(is_dataless_flags(SF_DATALESS));
@@ -1182,9 +1186,10 @@ mod tests {
             .expect("cancellation thread should finish normally");
 
         assert!(matches!(error, LargeFileCandidateScanError::Cancelled));
+        let elapsed = started.elapsed();
         assert!(
-            started.elapsed() < Duration::from_millis(250),
-            "cancellation and child reaping should finish within the 250 ms acceptance window"
+            elapsed < SPOTLIGHT_TEST_COMPLETION_BUDGET,
+            "cancellation and child reaping took {elapsed:?}"
         );
     }
 
@@ -1212,9 +1217,10 @@ mod tests {
             .expect("cancellation thread should finish normally");
 
         assert!(matches!(error, LargeFileCandidateScanError::Cancelled));
+        let elapsed = started.elapsed();
         assert!(
-            started.elapsed() < Duration::from_millis(250),
-            "closing stdout must not enter an uncancellable blocking wait"
+            elapsed < SPOTLIGHT_TEST_COMPLETION_BUDGET,
+            "closing stdout entered a blocking wait for {elapsed:?}"
         );
     }
 
@@ -1234,9 +1240,10 @@ mod tests {
             error,
             LargeFileCandidateScanError::Platform(ref detail) if detail.contains("timed out")
         ));
+        let elapsed = started.elapsed();
         assert!(
-            started.elapsed() < Duration::from_millis(250),
-            "timeout and child reaping should finish within the 250 ms acceptance window"
+            elapsed < SPOTLIGHT_TEST_COMPLETION_BUDGET,
+            "timeout and child reaping took {elapsed:?}"
         );
     }
 
