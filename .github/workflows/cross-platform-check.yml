@@ -51,6 +51,10 @@ jobs:
           node-version: 24
           cache: pnpm
 
+      # Reuse compiled Rust dependencies across runs of the same pull request.
+      - name: Cache Rust dependencies
+        uses: Swatinem/rust-cache@v2
+
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
