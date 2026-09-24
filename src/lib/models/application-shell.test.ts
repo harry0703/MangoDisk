@@ -4,8 +4,10 @@ import {
   APP_SHELL_EXPANDED_MIN_WIDTH_PX,
   createSidebarLayoutState,
   isAppShellExpanded,
+  isPageAvailableOnPlatform,
   PAGE_IDS,
   PRIMARY_NAV_GROUPS,
+  primaryNavGroupsForPlatform,
   resizeSidebarLayout,
   toggleSidebarLayout,
 } from './application-shell';
@@ -69,5 +71,20 @@ describe('application shell layout', () => {
     const systemItems = PRIMARY_NAV_GROUPS[2].items;
     expect(systemItems.find(item => item.id === PAGE_IDS.systemOptimization)?.icon).toBe(ICON_NAMES.systemOptimization);
     expect(systemItems.find(item => item.id === PAGE_IDS.systemMaintenance)?.icon).toBe(ICON_NAMES.systemMaintenance);
+  });
+
+  it('hides Linux workspaces whose platform operations are unavailable', () => {
+    expect(isPageAvailableOnPlatform(PAGE_IDS.applicationUninstall, 'linux')).toBe(false);
+    expect(isPageAvailableOnPlatform(PAGE_IDS.startup, 'linux')).toBe(false);
+    expect(isPageAvailableOnPlatform(PAGE_IDS.systemOptimization, 'linux')).toBe(false);
+    expect(isPageAvailableOnPlatform(PAGE_IDS.systemMaintenance, 'linux')).toBe(true);
+
+    expect(primaryNavGroupsForPlatform('linux')[2]?.items.map(item => item.id)).toEqual([PAGE_IDS.systemMaintenance]);
+  });
+
+  it('keeps the complete navigation on supported desktop platforms', () => {
+    for (const platform of ['macos', 'windows']) {
+      expect(primaryNavGroupsForPlatform(platform)).toEqual(PRIMARY_NAV_GROUPS);
+    }
   });
 });

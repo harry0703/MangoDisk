@@ -10,7 +10,7 @@ import { ICON_NAMES } from '@/lib/models/ui';
 import { ApplicationWindowService } from '@/lib/services/application-window-service';
 
 const props = defineProps<{
-  platform: 'macos' | 'windows';
+  platform: 'linux' | 'macos' | 'windows';
   sidebarExpanded?: boolean;
 }>();
 
@@ -20,7 +20,7 @@ let stopObservingMaximized: (() => void) | undefined;
 let disposed = false;
 
 onMounted(async () => {
-  if (props.platform !== 'windows') return;
+  if (props.platform === 'macos') return;
   const stop = await ApplicationWindowService.observeMaximized(value => {
     maximized.value = value;
   });
@@ -34,7 +34,7 @@ onBeforeUnmount(() => {
 });
 
 function toggleMaximize() {
-  if (props.platform === 'windows') void ApplicationWindowService.toggleMaximize();
+  if (props.platform !== 'macos') void ApplicationWindowService.toggleMaximize();
 }
 
 function minimize() {
@@ -54,7 +54,7 @@ function close() {
       leaving maximize and restore behavior out of sync.
     -->
     <div
-      v-if="platform === 'windows'"
+      v-if="platform !== 'macos'"
       data-tauri-drag-region
       class="window-title"
       :class="{ 'window-title--expanded': sidebarExpanded }"
@@ -65,7 +65,7 @@ function close() {
       <strong data-tauri-drag-region :aria-hidden="!sidebarExpanded">{{ APP_NAME }}</strong>
     </div>
 
-    <div v-if="platform === 'windows'" class="window-controls" @dblclick.stop>
+    <div v-if="platform !== 'macos'" class="window-controls" @dblclick.stop>
       <MdIconAction
         appearance="unstyled"
         class="window-control"
@@ -122,6 +122,7 @@ function close() {
   user-select: none;
 }
 
+.window-titlebar--linux,
 .window-titlebar--windows {
   --window-control-visual-bottom-gap: 8px;
   display: flex;

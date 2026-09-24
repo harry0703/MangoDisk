@@ -8,11 +8,15 @@ import type { MemoryReleaseResult } from '@/lib/models/resident';
 import type { MemoryOverview } from '@/lib/models/system-resources';
 import { ByteSizeService } from '@/lib/services/byte-size-service';
 
-const props = defineProps<{
-  memory: MemoryOverview;
-  releasing?: boolean;
-  releaseResult?: MemoryReleaseResult | null;
-}>();
+const props = withDefaults(
+  defineProps<{
+    memory: MemoryOverview;
+    releasing?: boolean;
+    releaseResult?: MemoryReleaseResult | null;
+    releaseAvailable?: boolean;
+  }>(),
+  { releaseAvailable: true, releaseResult: null, releasing: false }
+);
 defineEmits<{ release: [] }>();
 const { t } = useI18n({ useScope: 'global' });
 const resultMessage = computed(() => {
@@ -69,7 +73,7 @@ const shortLabel = computed(() => {
         <span>/ {{ ByteSizeService.memory(memory.totalBytes) }}</span>
         <span class="memory-percent">{{ memory.usedPercent }}%</span>
       </div>
-      <MdTooltip :text="resultMessage || undefined"
+      <MdTooltip v-if="releaseAvailable" :text="resultMessage || undefined"
         ><button
           class="release-button"
           :disabled="releasing"
@@ -107,7 +111,9 @@ const shortLabel = computed(() => {
       <span>{{ t('monitoring.swap') }} {{ ByteSizeService.memory(memory.swapUsedBytes) }}</span>
     </div>
     <div v-if="$slots.settings" class="memory-settings"><slot name="settings" /></div>
-    <span v-if="resultMessage" class="sr-only" role="status" aria-live="polite">{{ resultMessage }}</span>
+    <span v-if="releaseAvailable && resultMessage" class="sr-only" role="status" aria-live="polite">{{
+      resultMessage
+    }}</span>
   </section>
 </template>
 

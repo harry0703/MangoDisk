@@ -71,6 +71,21 @@ export const PAGE_IDS = {
 
 export type PageId = (typeof PAGE_IDS)[keyof typeof PAGE_IDS];
 
+const LINUX_UNAVAILABLE_PAGES: ReadonlySet<PageId> = new Set([
+  PAGE_IDS.applicationUninstall,
+  PAGE_IDS.startup,
+  PAGE_IDS.systemOptimization,
+]);
+
+/**
+ * Keeps navigation aligned with capabilities that have an actual platform
+ * implementation. Programmatic navigation uses the same boundary so tray and
+ * window events cannot expose a non-functional workspace.
+ */
+export function isPageAvailableOnPlatform(page: PageId, platform: string): boolean {
+  return platform !== 'linux' || !LINUX_UNAVAILABLE_PAGES.has(page);
+}
+
 export const PRIMARY_NAV_GROUPS = [
   {
     id: 'storage',
@@ -98,6 +113,13 @@ export const PRIMARY_NAV_GROUPS = [
     ],
   },
 ] as const;
+
+export function primaryNavGroupsForPlatform(platform: string) {
+  return PRIMARY_NAV_GROUPS.map(group => ({
+    ...group,
+    items: group.items.filter(item => isPageAvailableOnPlatform(item.id, platform)),
+  })).filter(group => group.items.length > 0);
+}
 
 export const SECONDARY_NAV_ITEMS = [
   { id: PAGE_IDS.history, icon: ICON_NAMES.history },

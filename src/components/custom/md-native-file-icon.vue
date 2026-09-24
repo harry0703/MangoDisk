@@ -60,7 +60,7 @@ watch(
     <img :src="dataUrl" alt="" draggable="false" />
   </span>
   <span v-else-if="directory" class="directory-fallback" :class="{ compact }" aria-hidden="true">
-    <MdIcon :name="ICON_NAMES.folder" :size="compact ? 18 : 22" />
+    <MdIcon :name="ICON_NAMES.linuxFolder" :size="compact ? 23 : 27" />
   </span>
   <MdFileTypeIcon v-else :name="name" :compact="compact" />
 </template>
@@ -91,12 +91,6 @@ watch(
 }
 
 .directory-fallback {
-  border-radius: 8px;
-  @apply text-warning-foreground;
-  background: var(--surface-warning-subtle);
-}
-
-.directory-fallback.compact {
-  border-radius: 6px;
+  background: transparent;
 }
 </style>

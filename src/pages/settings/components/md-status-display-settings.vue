@@ -24,7 +24,7 @@ import type { ResidentPreferences, ResidentReading } from '@/lib/models/resident
 import { ResidentService } from '@/lib/services/resident-service';
 import { useResidentSettingsStore } from '@/stores/resident-settings-store';
 
-const props = defineProps<{ isMacOs: boolean }>();
+const props = withDefaults(defineProps<{ isMacOs: boolean; isLinux?: boolean }>(), { isLinux: false });
 const { t } = useI18n({ useScope: 'global' });
 const settings = useResidentSettingsStore();
 const interfaces = ref<NetworkInterface[]>([]);
@@ -35,7 +35,7 @@ const pointerDragging = ref(false);
 const dragRows = ref<ResidentPreferences['metrics'] | null>(null);
 const announcement = ref('');
 const metricRowsElement = ref<HTMLElement | null>(null);
-const canReorder = computed(() => props.isMacOs || settings.draft?.windowsDisplayMode === 'taskbar');
+const canReorder = computed(() => props.isMacOs || props.isLinux || settings.draft?.windowsDisplayMode === 'taskbar');
 const rows = computed(() => dragRows.value ?? settings.draft?.metrics ?? []);
 // Older preferences may have every item cleared. Mirror the native Logo
 // fallback without writing on load, and retain it when the next metric is added.
@@ -361,7 +361,7 @@ onBeforeUnmount(() => {
       />
     </MdSettingsRow>
     <MdWindowsDisplayFeedback
-      v-if="!isMacOs && settings.preferences"
+      v-if="!isMacOs && !isLinux && settings.preferences"
       class="display-feedback"
       :preferences="settings.preferences"
     />
@@ -384,7 +384,7 @@ onBeforeUnmount(() => {
         <div class="min-h-0 overflow-y-auto p-5">
           <div id="resident-display-options" class="display-options">
             <MdWindowsDisplayMode
-              v-if="!isMacOs && settings.draft"
+              v-if="!isMacOs && !isLinux && settings.draft"
               :preferences="settings.draft"
               @position="settings.change({ taskbarPosition: $event })"
               @change="
@@ -396,6 +396,7 @@ onBeforeUnmount(() => {
               v-if="settings.draft"
               :preferences="settings.draft"
               :is-mac-os="isMacOs"
+              :is-linux="isLinux"
               @change="settings.change($event)"
             />
             <div class="status-controls">

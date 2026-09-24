@@ -8,6 +8,7 @@ import MdSettingsRow from '@/components/custom/md-settings-row.vue';
 import { i18n } from '@/i18n';
 import { SCAN_EXCLUSION_PREFERENCES_SCHEMA_VERSION, type ScanExclusionPreferences } from '@/lib/models/storage-scan';
 import { MacOsPermissionService } from '@/lib/services/macos-permission-service';
+import { OperatingSystemService } from '@/lib/services/operating-system-service';
 import { PreferenceStorageService } from '@/lib/services/preference-storage-service';
 import * as AppSettingsUtils from '@/lib/utils/app-settings';
 import { useStorageScanPreferencesStore } from '@/stores/storage-scan-preferences-store';
@@ -17,6 +18,7 @@ import SettingsPage from './index.vue';
 beforeEach(() => {
   setActivePinia(createPinia());
   vi.spyOn(MacOsPermissionService, 'isMacOs').mockReturnValue(false);
+  vi.spyOn(OperatingSystemService, 'isLinux').mockReturnValue(false);
 });
 
 afterEach(() => {

@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import { ref, watch } from 'vue';
+import { computed, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import MdIcon from '@/components/icons/md-icon.vue';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
-import { APP_NAME, PRIMARY_NAV_GROUPS, SECONDARY_NAV_ITEMS } from '@/lib/models/application-shell';
+import { APP_NAME, primaryNavGroupsForPlatform, SECONDARY_NAV_ITEMS } from '@/lib/models/application-shell';
 import type { PageId } from '@/lib/models/application-shell';
 import { ICON_NAMES } from '@/lib/models/ui';
 
@@ -14,6 +14,7 @@ const props = withDefaults(
     currentPage: PageId;
     busyPages: PageId[];
     noticePages: PageId[];
+    platform: string;
     expanded?: boolean;
   }>(),
   {
@@ -24,6 +25,7 @@ const emit = defineEmits<{
   navigate: [page: PageId];
   toggle: [];
 }>();
+const primaryNavGroups = computed(() => primaryNavGroupsForPlatform(props.platform));
 const openTooltipPage = ref<PageId | null>(null);
 
 function updateTooltip(page: PageId, open: boolean) {
@@ -60,7 +62,7 @@ watch(
   <aside class="sidebar" :class="{ expanded }">
     <nav class="nav-list" :aria-label="APP_NAME">
       <div
-        v-for="group in PRIMARY_NAV_GROUPS"
+        v-for="group in primaryNavGroups"
         :key="group.id"
         class="nav-group"
         role="group"

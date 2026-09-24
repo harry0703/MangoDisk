@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-import { flushPromises, mount } from '@vue/test-utils';
+import { flushPromises, mount as mountComponent } from '@vue/test-utils';
 import { createPinia } from 'pinia';
 import { createI18n } from 'vue-i18n';
 import { beforeEach, afterEach, describe, expect, it, vi } from 'vitest';
@@ -26,6 +26,11 @@ vi.mock('@/lib/services/resident-service', () => ({
 }));
 vi.mock('@/lib/services/logger-service', () => ({ LoggerService: { warn: vi.fn() } }));
 vi.mock('@/lib/services/byte-size-service', () => ({ ByteSizeService: { memory: (value: number) => `${value} B` } }));
+// Reka's modal accessibility checks require the rendered content to belong to document.body.
+// Keeping every wrapper attached also prevents aria-hidden from serializing a detached DOM tree
+// to stderr, which can make otherwise fast interaction tests exceed their timeout.
+const mount: typeof mountComponent = ((component, options) =>
+  mountComponent(component, { ...options, attachTo: options?.attachTo ?? document.body })) as typeof mountComponent;
 function global() {
   return {
     // Reka's Teleport wrapper shares Vue's stub name. Preserve its slot so
@@ -95,6 +100,23 @@ describe('status display interactions', () => {
     await openConfiguration(wrapper);
     expect(wrapper.find('#usage-colors').exists()).toBe(true);
     expect(wrapper.find('#menu-bar-compact').exists()).toBe(false);
+  });
+
+  it('uses the Linux tray compact setting without showing Windows display modes', async () => {
+    const wrapper = mount(Settings, { props: { isMacOs: false, isLinux: true }, global: global() });
+    wrappers.push(wrapper);
+    await flushPromises();
+    await openConfiguration(wrapper);
+
+    expect(wrapper.findComponent(WindowsMode).exists()).toBe(false);
+    expect(wrapper.findComponent(WindowsFeedback).exists()).toBe(false);
+    expect(wrapper.find('#linux-tray-compact').exists()).toBe(true);
+
+    await wrapper.get('#linux-tray-compact').trigger('click');
+    await flushPromises();
+    expect(ResidentService.savePreferences).toHaveBeenLastCalledWith(
+      expect.objectContaining({ taskbarCompact: true, metrics: preferencesFixture().metrics })
+    );
   });
 
   it('keeps the page compact and saves dialog edits without toggling residency', async () => {

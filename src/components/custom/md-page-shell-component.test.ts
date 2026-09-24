@@ -1,15 +1,29 @@
 // @vitest-environment happy-dom
 import { mount, flushPromises } from '@vue/test-utils';
 import { defineComponent, h, ref } from 'vue';
-import { expect, it, vi } from 'vitest';
+import { afterEach, expect, it, vi } from 'vitest';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { i18n } from '@/i18n';
 import MdFloatingPanel from './md-floating-panel.vue';
 import MdPageShell from './md-page-shell.vue';
 
-vi.mock('@/lib/services/operating-system-service', () => ({
-  OperatingSystemService: { isWindows: () => false, isMacOs: () => true },
+const { platform } = vi.hoisted(() => ({
+  platform: { linux: false, macos: true, windows: false },
 }));
+
+vi.mock('@/lib/services/operating-system-service', () => ({
+  OperatingSystemService: {
+    isWindows: () => platform.windows,
+    isMacOs: () => platform.macos,
+    isLinux: () => platform.linux,
+  },
+}));
+
+afterEach(() => {
+  platform.linux = false;
+  platform.macos = true;
+  platform.windows = false;
+});
 
 it('updates content spacing with the footer without remounting the floating response', async () => {
   const footer = ref(false);
@@ -41,5 +55,18 @@ it('updates content spacing with the footer without remounting the floating resp
   await flushPromises();
   expect(wrapper.find('.md-page-content-stage--with-footer').exists()).toBe(false);
   expect(wrapper.get('[role="region"]').element).toBe(panel);
+  wrapper.unmount();
+});
+
+it('reserves the shared desktop window-control area on Linux', () => {
+  platform.linux = true;
+  platform.macos = false;
+  const wrapper = mount(MdPageShell, {
+    props: { title: 'Page' },
+    global: { plugins: [i18n] },
+  });
+
+  expect(wrapper.classes()).toContain('md-page-shell--desktop-controls');
+  expect(wrapper.get('.md-page-header').attributes('data-tauri-drag-region')).toBe('');
   wrapper.unmount();
 });

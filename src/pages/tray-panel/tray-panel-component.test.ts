@@ -1,4 +1,6 @@
-vi.mock('@/lib/services/operating-system-service', () => ({ OperatingSystemService: { isWindows: () => false } }));
+vi.mock('@/lib/services/operating-system-service', () => ({
+  OperatingSystemService: { isLinux: vi.fn(() => false), isWindows: () => false },
+}));
 vi.mock('@/lib/services/memory-release-service', () => ({
   MemoryReleaseService: {
     onPreferences: vi.fn().mockResolvedValue(() => {}),
@@ -26,6 +28,8 @@ import ApplicationList from './components/md-application-memory-list.vue';
 import { FileManagerService } from '@/lib/services/file-manager-service';
 import { FileIconService } from '@/lib/services/file-icon-service';
 import { ResidentService } from '@/lib/services/resident-service';
+import { OperatingSystemService } from '@/lib/services/operating-system-service';
+import { ICON_NAMES } from '@/lib/models/ui';
 import { useTrayPanelStore } from '@/stores/tray-panel-store';
 import type { ResidentReading } from '@/lib/models/resident';
 
@@ -115,6 +119,7 @@ function render(
 describe('monitoring panel interactions', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.mocked(OperatingSystemService.isLinux).mockReturnValue(false);
     vi.mocked(FileIconService.peek).mockReturnValue('cached');
     vi.mocked(FileIconService.resolve).mockResolvedValue(null);
     vi.mocked(ResidentService.onReading).mockResolvedValue(vi.fn());
@@ -204,6 +209,16 @@ describe('monitoring panel interactions', () => {
     expect(wrapper.get('.release-button [role="status"]').text()).toBe('monitoring.release');
     expect(wrapper.get('.release-button').attributes('title')).toBeUndefined();
     expect(store.releaseResult).toBeNull();
+  });
+
+  it('keeps Linux memory monitoring while hiding unavailable release controls', async () => {
+    vi.mocked(OperatingSystemService.isLinux).mockReturnValue(true);
+    const { wrapper } = render();
+    await flushPromises();
+
+    expect(wrapper.find('.memory-overview').exists()).toBe(true);
+    expect(wrapper.find('.release-button').exists()).toBe(false);
+    expect(wrapper.find('.release-settings-entry').exists()).toBe(false);
   });
 
   it('cancels the old feedback timeout when another release starts', async () => {
@@ -304,6 +319,7 @@ describe('monitoring panel interactions', () => {
     expect(ResidentService.panelReady).toHaveBeenCalledOnce();
     expect(wrapper.text()).toContain('Browser');
     expect(wrapper.find('.directory-fallback').exists()).toBe(true);
+    expect(wrapper.get('.directory-fallback md-icon-stub').attributes('name')).toBe(ICON_NAMES.linuxFolder);
     expect(wrapper.find('.native-file-icon img').exists()).toBe(false);
     finish('data:image/png;base64,icon');
     await flushPromises();

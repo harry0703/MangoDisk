@@ -14,4 +14,8 @@ describe('UI icon names', () => {
   it('provides the clock icon used by system-owned background work', () => {
     expect(ICON_NAMES.clock).toBe('clock');
   });
+
+  it('provides the Linux folder fallback used when no native icon provider is available', () => {
+    expect(ICON_NAMES.linuxFolder).toBe('linuxFolder');
+  });
 });

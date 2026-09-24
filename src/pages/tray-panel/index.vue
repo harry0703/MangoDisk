@@ -23,7 +23,9 @@ const { t } = useI18n({ useScope: 'global' });
 const store = useTrayPanelStore();
 const appStore = useAppStore();
 const memorySettings = useMemoryReleaseStore();
+const memoryReleaseSupported = !OperatingSystemService.isLinux();
 const automaticReleaseRule = computed(() => {
+  if (!memoryReleaseSupported) return '';
   const preferences = memorySettings.preferences;
   if (!preferences?.automatic) return '';
   const rules = [
@@ -131,7 +133,7 @@ async function connect() {
             // as a new action's state when the user returns to the panel.
             if (!store.releasing) store.releaseResult = null;
             void appStore.loadSettings();
-            void memorySettings.load();
+            if (memoryReleaseSupported) void memorySettings.load();
             // Background sampling no longer wakes the hidden WebView. Rehydrate
             // from the native cache without waiting for the next sampling tick.
             void store.load();
@@ -160,12 +162,14 @@ async function refresh() {
   }
 }
 onMounted(() => {
-  void MemoryReleaseService.onPreferences(value => memorySettings.accept(value))
-    .then(retain)
-    .catch(() => {
-      memorySettings.failed = true;
-    });
-  void memorySettings.load();
+  if (memoryReleaseSupported) {
+    void MemoryReleaseService.onPreferences(value => memorySettings.accept(value))
+      .then(retain)
+      .catch(() => {
+        memorySettings.failed = true;
+      });
+    void memorySettings.load();
+  }
   window.addEventListener('keydown', onKey);
   // Reveal the first rendered frame independently of IPC, samples, and icons.
   // Native icon components progressively fill their placeholders using the shared cache.
@@ -251,9 +255,10 @@ onBeforeUnmount(() => {
             :memory="store.reading.memory.value.memory"
             :releasing="store.releasing"
             :release-result="store.releaseResult"
+            :release-available="memoryReleaseSupported"
             @release="store.releaseMemory()"
           >
-            <template #settings>
+            <template v-if="memoryReleaseSupported" #settings>
               <div class="release-settings-entry">
                 <span v-if="memorySettings.failed" role="alert"
                   >{{ t('memoryRelease.failed') }}

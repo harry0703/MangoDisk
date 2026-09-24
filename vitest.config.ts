@@ -12,6 +12,9 @@ export default defineConfig({
   test: {
     environment: 'node',
     include: ['src/**/*.test.ts'],
+    // Vue and happy-dom suites are CPU- and memory-intensive. Capping file workers keeps
+    // interaction tests within their real five-second contract on high-core development hosts.
+    maxWorkers: 4,
     coverage: {
       provider: 'v8',
       // Include every production TypeScript module so unimported files cannot

@@ -59,6 +59,9 @@
   --file-data: var(--chart-3);
   --file-package: var(--chart-4);
   --file-binary: var(--muted-foreground);
+  --linux-folder-back: oklch(0.82 0.13 80);
+  --linux-folder-front: oklch(0.78 0.15 78);
+  --linux-folder-highlight: oklch(1 0 0);
   --windows-executable-titlebar: oklch(0.64 0.006 250);
   --windows-executable-chrome: oklch(0.91 0 0);
   --windows-executable-surface: oklch(0.98 0 0);

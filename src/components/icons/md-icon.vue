@@ -152,6 +152,7 @@ import { computed, type Component } from 'vue';
 import MdIconAiModel from '@/components/icons/md-icon-ai-model.vue';
 import MdIconGithub from '@/components/icons/md-icon-github.vue';
 import MdIconLark from '@/components/icons/md-icon-lark.vue';
+import MdIconLinuxFolder from '@/components/icons/md-icon-linux-folder.vue';
 import MdIconSimpleBrand from '@/components/icons/md-icon-simple-brand.vue';
 import type { IconName } from '@/lib/models/ui';
 import { LoggerService } from '@/lib/services/logger-service';
@@ -207,6 +208,7 @@ const iconMap: Record<IconName, IconDefinition> = {
   grid: lucide(LayoutGrid),
   list: lucide(List),
   folder: lucide(Folder),
+  linuxFolder: custom(MdIconLinuxFolder),
   folderOpen: lucide(FolderOpen),
   folderPlus: lucide(FolderPlus),
   file: lucide(File),

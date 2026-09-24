@@ -25,6 +25,7 @@ import { isLanguageId, isThemeId, LANGUAGE_OPTIONS, THEME_IDS } from '@/lib/mode
 import type { AppSettings } from '@/lib/models/settings';
 import { FileManagerService } from '@/lib/services/file-manager-service';
 import { MacOsPermissionService } from '@/lib/services/macos-permission-service';
+import { OperatingSystemService } from '@/lib/services/operating-system-service';
 import * as AppUpdateProgressUtils from '@/lib/utils/app-update-progress';
 import { useAppUpdateStore } from '@/stores/app-update-store';
 import { useAiStore } from '@/stores/ai-store';
@@ -74,6 +75,7 @@ watch(
   }
 );
 const isMacOs = MacOsPermissionService.isMacOs();
+const isLinux = OperatingSystemService.isLinux();
 const permissionObservation = ref(MacOsPermissionService.defaultObservation());
 const languageLabel = computed(() => {
   const option = LANGUAGE_OPTIONS.find(candidate => candidate.id === form.language) ?? LANGUAGE_OPTIONS[0];
@@ -213,7 +215,7 @@ function updateTheme(value: unknown) {
         </Select>
       </MdSettingsRow>
       <MdAutostartSettings />
-      <MdStatusDisplaySettings :is-mac-os="isMacOs" />
+      <MdStatusDisplaySettings :is-mac-os="isMacOs" :is-linux="isLinux" />
     </MdSettingsGroup>
 
     <MdSettingsGroup :title="t('settings.scanAnalysisSection')">

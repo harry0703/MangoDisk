@@ -15,11 +15,12 @@ withDefaults(
   }
 );
 
-const isWindows = OperatingSystemService.isWindows();
+const isMacOs = OperatingSystemService.isMacOs();
+const hasDesktopWindowControls = OperatingSystemService.isWindows() || OperatingSystemService.isLinux();
 // Tauri drag regions do not inherit through child elements. Page titles and
 // their surrounding whitespace are marked explicitly so the integrated
 // platform chrome remains draggable while the actions column stays interactive.
-const windowDragRegion = OperatingSystemService.isMacOs() || isWindows ? '' : undefined;
+const windowDragRegion = isMacOs || hasDesktopWindowControls ? '' : undefined;
 </script>
 
 <template>
@@ -28,7 +29,7 @@ const windowDragRegion = OperatingSystemService.isMacOs() || isWindows ? '' : un
     :class="[
       `md-page-shell--${contentMode}`,
       `md-page-shell--${contentWidth}`,
-      { 'md-page-shell--windows': isWindows },
+      { 'md-page-shell--desktop-controls': hasDesktopWindowControls },
     ]"
   >
     <header
@@ -122,12 +123,12 @@ const windowDragRegion = OperatingSystemService.isMacOs() || isWindows ? '' : un
   user-select: none;
 }
 
-/* Windows only reserves the native control area; vertical header geometry is shared across platforms. */
-.md-page-shell--windows .md-page-header {
+/* Custom desktop chrome reserves the control area; vertical header geometry is shared across platforms. */
+.md-page-shell--desktop-controls .md-page-header {
   padding-inline-end: calc(var(--window-controls-width) + 12px);
 }
 
-.md-page-shell--windows.md-page-shell--document .md-page-header {
+.md-page-shell--desktop-controls.md-page-shell--document .md-page-header {
   padding-inline-end: calc(var(--window-controls-width) + var(--layout-scrollbar-width) + 12px);
 }
 

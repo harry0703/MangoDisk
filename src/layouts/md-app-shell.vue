@@ -12,6 +12,7 @@ import type { LargeFileEntry, LargeFileScanMode } from '@/lib/models/large-file'
 import { CLEANUP_OPERATION_IDS, CLEANUP_SCAN_SCOPE_MODES, type CleanupScanScope } from '@/lib/models/cleanup';
 import {
   createSidebarLayoutState,
+  isPageAvailableOnPlatform,
   PAGE_IDS,
   resizeSidebarLayout,
   toggleSidebarLayout,
@@ -164,13 +165,15 @@ const cleanupBusy = computed(
 );
 // Custom title bars keep the application chrome visually continuous. macOS
 // only needs a drag region beneath the native traffic lights, while Windows
-// renders explicit controls because its native decorations are disabled.
+// and Linux render explicit controls because native decorations are hidden.
 const currentPlatform = OperatingSystemService.currentPlatform();
 const isMacOs = currentPlatform === 'macos';
 const isWindows = currentPlatform === 'windows';
-const customTitlebarPlatform = computed<'macos' | 'windows' | null>(() => {
+const isLinux = currentPlatform === 'linux';
+const customTitlebarPlatform = computed<'linux' | 'macos' | 'windows' | null>(() => {
   if (isMacOs) return 'macos';
   if (isWindows) return 'windows';
+  if (isLinux) return 'linux';
   return null;
 });
 const cleanupLoadingMessage = computed(() => {
@@ -250,7 +253,11 @@ function initializePageData(page: PageId): Promise<void> {
 
 function preloadFeaturePages() {
   const preload = () => {
-    void Promise.allSettled(Object.values(pageLoaders).map(loadPage => loadPage()));
+    void Promise.allSettled(
+      Object.entries(pageLoaders)
+        .filter(([page]) => isPageAvailableOnPlatform(page as PageId, currentPlatform))
+        .map(([, loadPage]) => loadPage())
+    );
     // Disk inventory is useful to two feature pages but is not required to
     // render the startup cleanup page. Begin it only after the first frame is
     // interactive, while guarded navigation still waits if users arrive first.
@@ -348,12 +355,13 @@ onBeforeUnmount(() => {
 });
 
 async function navigate(page: PageId) {
+  const destination = isPageAvailableOnPlatform(page, currentPlatform) ? page : PAGE_IDS.cleanup;
   const request = ++navigationRequest;
   try {
-    await Promise.all([pageLoaders[page]?.(), initializePageData(page)]);
+    await Promise.all([pageLoaders[destination]?.(), initializePageData(destination)]);
     if (request === navigationRequest) {
-      store.navigate(page);
-      if (page === PAGE_IDS.settings && appUpdateStore.updateNoticeUnread) {
+      store.navigate(destination);
+      if (destination === PAGE_IDS.settings && appUpdateStore.updateNoticeUnread) {
         settingsFocusRevision.value += 1;
       }
     }
@@ -592,7 +600,7 @@ async function cancelDeepCleanup() {
     :class="{
       'custom-titlebar': customTitlebarPlatform,
       'macos-overlay': isMacOs,
-      'windows-custom-titlebar': isWindows,
+      'desktop-custom-titlebar': isWindows || isLinux,
       'sidebar-expanded': sidebarExpanded,
     }"
   >
@@ -605,6 +613,7 @@ async function cancelDeepCleanup() {
       :current-page="store.currentPage"
       :busy-pages="busyPages"
       :notice-pages="noticePages"
+      :platform="currentPlatform"
       :expanded="sidebarExpanded"
       @navigate="navigate"
       @toggle="toggleSidebar"
@@ -823,7 +832,7 @@ async function cancelDeepCleanup() {
 .macos-overlay {
   --titlebar-height: 34px;
 }
-.windows-custom-titlebar {
+.desktop-custom-titlebar {
   --titlebar-height: var(--layout-page-header-height);
 }
 .custom-titlebar :deep(.sidebar) {

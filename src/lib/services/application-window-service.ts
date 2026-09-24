@@ -49,7 +49,7 @@ export class ApplicationWindowService {
 
     let unlisten: UnlistenFn = () => {};
     try {
-      // Windows can change the window state through the titlebar, taskbar,
+      // Desktop systems can change the window state through the titlebar, taskbar,
       // keyboard shortcuts, or system snap layouts. A resize notification is
       // the common native signal for every path, so the icon always reflects
       // the actual window state instead of the last button interaction.
