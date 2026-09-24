@@ -17,11 +17,19 @@ pub(super) fn display(path: &Path) -> String {
     value.into_owned()
 }
 
-/// Produces a key for Windows path identity without reading the filesystem.
-/// Callers that need physical identity must canonicalize first and then compare the resulting
-/// paths through this function.
+/// Produces a key for Windows path identity. DOS short-name components need
+/// canonicalization because their long names cannot be recovered lexically.
+/// Ordinary paths stay lexical so scan comparisons do not perform filesystem I/O.
 pub(super) fn comparison_key(path: &Path) -> String {
-    let normalized = display(path).replace('/', "\\");
+    let displayed = display(path);
+    let resolved = if has_dos_short_name(&displayed) {
+        resolve_existing_prefix(path)
+            .map(|canonical| display(&canonical))
+            .unwrap_or(displayed)
+    } else {
+        displayed
+    };
+    let normalized = resolved.replace('/', "\\");
     let trimmed = normalized.trim_end_matches('\\');
     let identity = if trimmed.len() == 2
         && trimmed.as_bytes().get(1) == Some(&b':')
@@ -32,6 +40,24 @@ pub(super) fn comparison_key(path: &Path) -> String {
         trimmed.to_string()
     };
     identity.to_lowercase()
+}
+
+fn has_dos_short_name(path: &str) -> bool {
+    path.as_bytes()
+        .windows(2)
+        .any(|pair| pair[0] == b'~' && pair[1].is_ascii_digit())
+}
+
+fn resolve_existing_prefix(path: &Path) -> Option<PathBuf> {
+    // A deleted scan result may no longer exist, but its parent still expands
+    // a short home-directory alias such as RUNNER~1 into the same long path.
+    path.ancestors().find_map(|ancestor| {
+        std::fs::canonicalize(ancestor).ok().and_then(|canonical| {
+            path.strip_prefix(ancestor)
+                .ok()
+                .map(|suffix| canonical.join(suffix))
+        })
+    })
 }
 
 pub(super) fn equal(left: &Path, right: &Path) -> bool {
@@ -145,5 +171,26 @@ mod tests {
             .as_deref(),
             Some(Path::new(r"Example\App.exe"))
         );
+    }
+
+    #[test]
+    fn deleted_file_retains_the_identity_of_its_existing_parent() {
+        let root = std::env::temp_dir().join(format!(
+            "mangodisk-short-path-{}-{}",
+            std::process::id(),
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .expect("system clock should be after the Unix epoch")
+                .as_nanos()
+        ));
+        std::fs::create_dir_all(&root).expect("the path fixture should be created");
+        let file = root.join("removed.bin");
+        std::fs::write(&file, b"fixture").expect("the path fixture file should be written");
+        let canonical = std::fs::canonicalize(&file).expect("the fixture should canonicalize");
+        std::fs::remove_file(&file).expect("the fixture file should be removed");
+
+        assert!(equal(&file, &canonical));
+
+        std::fs::remove_dir_all(root).expect("the path fixture should be removed");
     }
 }

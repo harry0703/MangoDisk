@@ -10,6 +10,7 @@ use mangodisk_platform::{
     SystemInventory,
 };
 
+#[cfg(not(windows))]
 use crate::filesystem::metadata::display_path;
 
 static SYSTEM_INVENTORY: OnceLock<Mutex<Option<CachedSystemInventory>>> = OnceLock::new();
@@ -100,7 +101,7 @@ impl ProcessSnapshot {
             executable_paths
                 .iter()
                 .filter_map(|path| {
-                    let normalized = normalize(&display_path(path).replace('\\', "/"));
+                    let normalized = executable_path_key(path);
                     let display_name =
                         portable_path_file_name(path).unwrap_or_else(|| normalized.clone());
                     let exact_path_match = self.running_executable_paths.contains(&normalized);
@@ -117,7 +118,7 @@ impl ProcessSnapshot {
     }
 
     fn contains_executable_path(&self, path: &std::path::Path) -> bool {
-        let normalized = normalize(&display_path(path).replace('\\', "/"));
+        let normalized = executable_path_key(path);
         self.running_executable_paths.contains(&normalized)
     }
 
@@ -158,7 +159,7 @@ impl ProcessSnapshot {
         let running_executable_paths = processes
             .iter()
             .filter_map(|process| process.executable_path.as_ref())
-            .map(|path| normalize(&display_path(path).replace('\\', "/")))
+            .map(|path| executable_path_key(path))
             .collect();
         let unresolved_process_names = processes
             .iter()
@@ -591,10 +592,25 @@ fn normalize(value: &str) -> String {
     value.trim().to_lowercase()
 }
 
+fn executable_path_key(path: &std::path::Path) -> String {
+    #[cfg(windows)]
+    {
+        // Process APIs may return a canonical path while the inventory still
+        // uses a DOS short name from the user profile or another parent.
+        current_platform().path_identity_key(path)
+    }
+    #[cfg(not(windows))]
+    {
+        normalize(&display_path(path).replace('\\', "/"))
+    }
+}
+
 #[cfg(test)]
 mod icon_tests {
     use std::path::PathBuf;
 
+    #[cfg(windows)]
+    use mangodisk_platform::{current_platform, Platform};
     use mangodisk_platform::{InstalledApplication, RunningProcessIdentity, SystemInventory};
 
     use super::{ApplicationInventory, ProcessSnapshot};
@@ -744,7 +760,7 @@ mod icon_tests {
             .expect("the process executable fixture should canonicalize");
         let snapshot = ProcessSnapshot::from_process_identities(vec![RunningProcessIdentity {
             executable_name: "Example.exe".to_string(),
-            executable_path: Some(canonical),
+            executable_path: Some(canonical.clone()),
         }]);
 
         assert_eq!(
@@ -752,7 +768,12 @@ mod icon_tests {
                 &["Example".to_string()],
                 std::slice::from_ref(&executable),
             ),
-            vec!["Example.exe".to_string()]
+            vec!["Example.exe".to_string()],
+            "display_path={} canonical_path={} display_key={} canonical_key={}",
+            executable.display(),
+            canonical.display(),
+            current_platform().path_identity_key(&executable),
+            current_platform().path_identity_key(&canonical)
         );
 
         std::fs::remove_dir_all(root).expect("the process path fixture should be removed");

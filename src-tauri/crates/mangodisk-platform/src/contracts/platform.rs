@@ -214,8 +214,9 @@ pub trait Platform: Send + Sync {
     fn display_path(&self, path: &Path) -> String {
         path.to_string_lossy().into_owned()
     }
-    /// Produces a stable lexical identity key for sorting, hashing, and deduplication.
-    /// The key is platform-specific and does not resolve links or access the filesystem.
+    /// Produces a stable platform identity key for sorting, hashing, and deduplication.
+    /// The default is lexical; Windows may resolve existing DOS short-name
+    /// components so they compare with paths returned by process APIs.
     fn path_identity_key(&self, path: &Path) -> String {
         let value = self.display_path(path);
         let trimmed = value.trim_end_matches(std::path::MAIN_SEPARATOR);
@@ -225,8 +226,8 @@ pub trait Platform: Send + Sync {
             trimmed.to_string()
         }
     }
-    /// Reports whether two paths identify the same lexical platform location.
-    /// This comparison does not access the filesystem or resolve links.
+    /// Reports whether two paths identify the same platform location.
+    /// It follows the platform's identity-key behavior.
     fn paths_equal(&self, left: &Path, right: &Path) -> bool {
         self.path_identity_key(left) == self.path_identity_key(right)
     }
