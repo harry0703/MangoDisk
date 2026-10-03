@@ -444,7 +444,7 @@ describe('AI configuration dialog', () => {
     }
   });
 
-  it.each(['en-US', 'zh-CN', 'zh-TW', 'ja-JP', 'ko-KR', 'tr-TR', 'pt-BR'] as const)(
+  it.each(['en-US', 'zh-CN', 'zh-TW', 'ja-JP', 'ko-KR', 'tr-TR', 'pt-BR', 'ru-RU'] as const)(
     'shows concise header and temperature help on hover in %s',
     async locale => {
       const previousLocale = i18n.global.locale.value;

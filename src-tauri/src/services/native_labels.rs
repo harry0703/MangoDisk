@@ -27,7 +27,7 @@ impl NativeLabels {
     }
     pub fn for_locale(locale: &str) -> Self {
         let locale = supported_locale(locale);
-        static MESSAGES: OnceLock<[Value; 7]> = OnceLock::new();
+        static MESSAGES: OnceLock<[Value; 8]> = OnceLock::new();
         let values = MESSAGES.get_or_init(|| {
             [
                 include_str!("../../../src/locales/en-US.json"),
@@ -37,6 +37,7 @@ impl NativeLabels {
                 include_str!("../../../src/locales/ko-KR.json"),
                 include_str!("../../../src/locales/tr-TR.json"),
                 include_str!("../../../src/locales/pt-BR.json"),
+                include_str!("../../../src/locales/ru-RU.json"),
             ]
             .map(|text| serde_json::from_str(text).expect("validated locale resource"))
         });
@@ -47,6 +48,7 @@ impl NativeLabels {
             "ko-KR" => 4,
             "tr-TR" => 5,
             "pt-BR" => 6,
+            "ru-RU" => 7,
             _ => 0,
         };
         Self {
@@ -76,6 +78,7 @@ fn supported_locale(locale: &str) -> &'static str {
         ("ko", "ko-KR"),
         ("tr", "tr-TR"),
         ("pt", "pt-BR"),
+        ("ru", "ru-RU"),
         ("en", "en-US"),
     ] {
         if locale == prefix || locale.starts_with(&format!("{prefix}-")) {
@@ -91,7 +94,7 @@ mod tests {
     #[test]
     fn runtime_prompts_are_complete_in_every_supported_locale() {
         for locale in [
-            "en-US", "zh-CN", "zh-TW", "ja-JP", "ko-KR", "tr-TR", "pt-BR",
+            "en-US", "zh-CN", "zh-TW", "ja-JP", "ko-KR", "tr-TR", "pt-BR", "ru-RU",
         ] {
             let labels = NativeLabels::for_locale(locale);
             for key in ["updateRequired", "update", "exit", "openFailed"] {
@@ -110,6 +113,8 @@ mod tests {
             ("zh-SG", "zh-CN"),
             ("ja", "ja-JP"),
             ("ko-KR", "ko-KR"),
+            ("ru-RU", "ru-RU"),
+            ("ru", "ru-RU"),
             ("en-GB", "en-US"),
             ("tr", "tr-TR"),
             (" TR-tr ", "tr-TR"),

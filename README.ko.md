@@ -5,7 +5,7 @@
 <p align="center"><b>macOS</b>, <b>Windows</b>, <b>Linux</b>용 디스크 정리·저장 공간 분석·개인정보 보호 도구</p>
 
 <p align="center">
-  <a href="README.md">English</a> · <a href="README.zh-CN.md">简体中文</a> · <a href="README.zh-TW.md">繁體中文</a> · <a href="README.ja.md">日本語</a> · 한국어
+  <a href="README.md">English</a> · <a href="README.zh-CN.md">简体中文</a> · <a href="README.zh-TW.md">繁體中文</a> · <a href="README.ja.md">日本語</a> · 한국어 · <a href="README.ru.md">Русский</a>
 </p>
 
 앱에서 영어, 중국어 간체·번체, 일본어, 한국어, 튀르키예어, 브라질 포르투갈어를 선택할 수 있습니다.

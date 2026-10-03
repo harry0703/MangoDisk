@@ -22,6 +22,7 @@ import jaJP from '@/locales/ja-JP.json';
 import koKR from '@/locales/ko-KR.json';
 import ptBR from '@/locales/pt-BR.json';
 import trTR from '@/locales/tr-TR.json';
+import ruRU from '@/locales/ru-RU.json';
 
 import TrayPanelPage from './index.vue';
 import MemoryOverview from './components/md-memory-overview.vue';
@@ -492,6 +493,7 @@ describe('monitoring panel interactions', () => {
     ['ko-KR', koKR, '종료'],
     ['tr-TR', trTR, 'Çık'],
     ['pt-BR', ptBR, 'Sair'],
+    ['ru-RU', ruRU, 'Выйти'],
   ] as const)('renders the localized quit action in %s', async (_locale, messages, expected) => {
     const { wrapper } = render(TrayPanelPage, {}, false, messages);
     await flushPromises();

@@ -19,7 +19,7 @@ beforeEach(() => {
   vi.mocked(AiService.setEnabled).mockImplementation(async enabled => ({ schemaVersion: 1, enabled }));
 });
 
-it.each(['zh-CN', 'zh-TW', 'en-US', 'ja-JP', 'ko-KR', 'tr-TR', 'pt-BR'] as const)(
+it.each(['zh-CN', 'zh-TW', 'en-US', 'ja-JP', 'ko-KR', 'tr-TR', 'pt-BR', 'ru-RU'] as const)(
   'keeps only the toggle and removes AI controls, panels and launchers in %s',
   async locale => {
     const previousLocale = i18n.global.locale.value;

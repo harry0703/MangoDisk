@@ -5,7 +5,7 @@
 <p align="center">面向 <b>macOS</b>、<b>Windows</b> 和 <b>Linux</b> 的磁盘清理、空间分析与隐私保护工具</p>
 
 <p align="center">
-  <a href="README.md">English</a> · 简体中文 · <a href="README.zh-TW.md">繁體中文</a> · <a href="README.ja.md">日本語</a> · <a href="README.ko.md">한국어</a>
+  <a href="README.md">English</a> · 简体中文 · <a href="README.zh-TW.md">繁體中文</a> · <a href="README.ja.md">日本語</a> · <a href="README.ko.md">한국어</a> · <a href="README.ru.md">Русский</a>
 </p>
 
 应用界面支持英语、简体中文、繁体中文、日语、韩语、土耳其语和巴西葡萄牙语。

@@ -13,6 +13,7 @@ import ja from '@/locales/ja-JP.json';
 import pt from '@/locales/pt-BR.json';
 import tr from '@/locales/tr-TR.json';
 import ko from '@/locales/ko-KR.json';
+import ru from '@/locales/ru-RU.json';
 import zh from '@/locales/zh-CN.json';
 import tw from '@/locales/zh-TW.json';
 import ApplicationUninstallPage from './index.vue';
@@ -20,7 +21,16 @@ import ApplicationUninstallPage from './index.vue';
 vi.mock('@tauri-apps/plugin-os', () => ({ platform: () => 'windows' }));
 vi.mock('vue-sonner', () => ({ toast: { success: vi.fn(), warning: vi.fn(), error: vi.fn(), info: vi.fn() } }));
 afterEach(() => vi.clearAllMocks());
-const messages = { 'zh-CN': zh, 'zh-TW': tw, 'en-US': en, 'ja-JP': ja, 'ko-KR': ko, 'tr-TR': tr, 'pt-BR': pt };
+const messages = {
+  'zh-CN': zh,
+  'zh-TW': tw,
+  'en-US': en,
+  'ja-JP': ja,
+  'ko-KR': ko,
+  'tr-TR': tr,
+  'pt-BR': pt,
+  'ru-RU': ru,
+};
 
 type Outcome = 'completed' | 'failed' | 'cancelled' | 'continuing' | 'removedWithFailure';
 function result(outcomes: Outcome[], restartRequired = false): ApplicationUninstallBatchResult {

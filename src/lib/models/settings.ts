@@ -5,6 +5,7 @@ export const LANGUAGE_IDS = {
   zhTW: 'zh-TW',
   jaJP: 'ja-JP',
   koKR: 'ko-KR',
+  ruRU: 'ru-RU',
   enUS: 'en-US',
   trTR: 'tr-TR',
   ptBR: 'pt-BR',
@@ -40,6 +41,12 @@ export const LANGUAGE_OPTIONS = [
     id: LANGUAGE_IDS.koKR,
     labelKey: 'settings.languageNames.koKR',
     browserLanguagePrefixes: ['ko'],
+    websitePath: '',
+  },
+  {
+    id: LANGUAGE_IDS.ruRU,
+    labelKey: 'settings.languageNames.ruRU',
+    browserLanguagePrefixes: ['ru'],
     websitePath: '',
   },
   {

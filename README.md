@@ -5,7 +5,7 @@
 <p align="center">Disk cleanup, storage analysis, and privacy protection for <b>macOS</b>, <b>Windows</b>, and <b>Linux</b></p>
 
 <p align="center">
-  English · <a href="README.zh-CN.md">简体中文</a> · <a href="README.zh-TW.md">繁體中文</a> · <a href="README.ja.md">日本語</a> · <a href="README.ko.md">한국어</a>
+  English · <a href="README.zh-CN.md">简体中文</a> · <a href="README.zh-TW.md">繁體中文</a> · <a href="README.ja.md">日本語</a> · <a href="README.ko.md">한국어</a> · <a href="README.ru.md">Русский</a>
 </p>
 
 The app interface supports English, Simplified and Traditional Chinese, Japanese, Korean, Turkish, and Brazilian Portuguese.

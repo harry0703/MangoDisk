@@ -7,6 +7,7 @@ describe('localized project website links', () => {
     ['zh-TW', '/tw'],
     ['ja-JP', '/ja'],
     ['ko-KR', ''],
+    ['ru-RU', ''],
     ['en-US', ''],
     ['tr-TR', ''],
     ['pt-BR', ''],

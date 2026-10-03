@@ -15,6 +15,7 @@ const localePaths = [
   'src/locales/en-US.json',
   'src/locales/ja-JP.json',
   'src/locales/ko-KR.json',
+  'src/locales/ru-RU.json',
   'src/locales/tr-TR.json',
   'src/locales/pt-BR.json',
 ];
