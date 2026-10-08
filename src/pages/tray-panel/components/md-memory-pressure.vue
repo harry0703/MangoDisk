@@ -5,8 +5,9 @@ import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 
 defineOptions({ inheritAttrs: false });
-const props = withDefaults(defineProps<{ pressure: MemoryPressure; status?: MetricStatus }>(), {
+const props = withDefaults(defineProps<{ pressure: MemoryPressure; status?: MetricStatus; active?: boolean }>(), {
   status: 'ready',
+  active: true,
 });
 const { t } = useI18n({ useScope: 'global' });
 const PRESSURE_KEYS: Record<Exclude<MemoryPressure, 'unsupported'> | 'stale', { label: string; hint: string }> = {
@@ -24,7 +25,8 @@ const pressureHint = computed(() => (pressureState.value ? t(PRESSURE_KEYS[press
 </script>
 
 <template>
-  <MdTooltip v-if="pressureState" :text="pressureHint">
+  <!-- Native hide may not dispatch pointerleave; reset the trigger's hover state as well as its content. -->
+  <MdTooltip v-if="pressureState" :key="active ? 'active' : 'inactive'" :text="active ? pressureHint : undefined">
     <template #content>
       <span class="whitespace-pre-line">{{ pressureHint }}</span>
     </template>

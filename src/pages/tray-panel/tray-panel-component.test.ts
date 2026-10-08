@@ -365,6 +365,40 @@ describe('monitoring panel interactions', () => {
     expect(wrapper.findAllComponents(ResourceOverview).every(card => card.props('active') === false)).toBe(true);
   });
 
+  it.each(['network', 'memory'] as const)(
+    'closes pressure hints on native hide and reopens them only on a new hover in %s',
+    async metric => {
+      vi.mocked(ResidentService.panelMetric).mockResolvedValue(metric);
+      vi.mocked(ResidentService.reading).mockResolvedValue({
+        ...snapshot,
+        memory: {
+          ...snapshot.memory,
+          value: { ...snapshot.memory.value!, memory: { ...memory, pressure: 'normal' } },
+        },
+      });
+      const { wrapper } = render(TrayPanelPage, {}, false, enUS);
+      await flushPromises();
+      const visibility = vi.mocked(ResidentService.onPanelVisibility).mock.calls[0]![0];
+      await wrapper.get('.memory-pressure').trigger('pointermove', { pointerType: 'mouse' });
+      await vi.waitFor(() =>
+        expect(document.querySelector('[role="tooltip"]')?.textContent).toContain(enUS.monitoring.pressure.normalHint)
+      );
+      visibility(false);
+      await flushPromises();
+      expect(document.querySelector('[role="tooltip"]')).toBeNull();
+      await wrapper.get('.memory-pressure').trigger('pointermove', { pointerType: 'mouse' });
+      await new Promise(resolve => setTimeout(resolve, 350));
+      expect(document.querySelector('[role="tooltip"]')).toBeNull();
+      visibility(true);
+      await flushPromises();
+      expect(document.querySelector('[role="tooltip"]')).toBeNull();
+      await wrapper.get('.memory-pressure').trigger('pointermove', { pointerType: 'mouse' });
+      await vi.waitFor(() =>
+        expect(document.querySelector('[role="tooltip"]')?.textContent).toContain(enUS.monitoring.pressure.normalHint)
+      );
+    }
+  );
+
   it('renders cached rows when shown before native focus arrives', async () => {
     vi.mocked(ResidentService.onPanelVisibility).mockResolvedValueOnce(vi.fn());
     const { wrapper } = render();

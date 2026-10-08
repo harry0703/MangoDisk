@@ -171,6 +171,7 @@ const rates = computed(() =>
           <MdMemoryPressure
             :pressure="memory.pressure"
             :status="current.status"
+            :active="active"
             @click="interactive && $emit('memory')"
           />
         </span>

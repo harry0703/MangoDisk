@@ -100,7 +100,7 @@ const shortLabel = computed(() => {
     <header class="memory-heading">
       <div class="memory-title">
         <span>{{ t('monitoring.memory') }}</span>
-        <MdMemoryPressure :pressure="memory.pressure" :status="status" />
+        <MdMemoryPressure :pressure="memory.pressure" :status="status" :active="active" />
       </div>
       <strong class="memory-percent">{{ memory.usedPercent }}<small>%</small></strong>
     </header>
