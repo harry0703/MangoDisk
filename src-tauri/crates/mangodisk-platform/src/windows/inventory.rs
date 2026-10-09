@@ -42,6 +42,7 @@ use crate::{
 
 use super::{native_uninstall, package_reconciliation, package_sources, path_identity};
 
+mod process_names;
 mod registry_size;
 
 const UNINSTALL_PATH: &str = r"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall";
@@ -762,6 +763,39 @@ fn package_icon_path(install_location: &Path, declared_icon: &str) -> Option<Pat
 pub(super) fn running_process_names(
     cancellation: &PlatformCancellation,
 ) -> Result<Vec<String>, String> {
+    let started = Instant::now();
+    let native = process_names::capture(cancellation);
+    resolve_process_snapshot(native, cancellation, started)
+}
+
+fn resolve_process_snapshot(
+    native: Result<Vec<String>, String>,
+    cancellation: &PlatformCancellation,
+    started: Instant,
+) -> Result<Vec<String>, String> {
+    if cancellation.is_cancelled() {
+        return Err("windows_process_snapshot_cancelled".into());
+    }
+    match native {
+        Ok(names) => {
+            log::debug!(
+                "windows_process_snapshot_finished source=native process_count={} elapsed_us={}",
+                names.len(),
+                started.elapsed().as_micros()
+            );
+            Ok(names)
+        }
+        Err(error) => {
+            log::warn!(
+                "windows_process_snapshot_fallback source=tasklist native_error={}",
+                crate::diagnostics::text(&error)
+            );
+            tasklist_process_names(cancellation)
+        }
+    }
+}
+
+fn tasklist_process_names(cancellation: &PlatformCancellation) -> Result<Vec<String>, String> {
     let tasklist = super::directories::system_directory()
         .map_err(|error| format!("windows_process_snapshot_resolve_failed error={error}"))?
         .join("System32")
@@ -1663,6 +1697,54 @@ mod tests {
             .expect_err("a pre-cancelled process snapshot must stop");
 
         assert!(error.contains("cancelled"));
+    }
+
+    #[test]
+    fn failed_native_snapshot_falls_back_to_a_complete_tasklist() {
+        let cancellation = crate::PlatformCancellation::new(|| false);
+        let names = super::resolve_process_snapshot(
+            Err("native fixture failure code=6".into()),
+            &cancellation,
+            std::time::Instant::now(),
+        )
+        .unwrap();
+        let executable = std::env::current_exe().unwrap();
+        let name = executable.file_name().unwrap().to_string_lossy();
+        assert!(
+            names.iter().any(|value| value.eq_ignore_ascii_case(&name)),
+            "the fallback must include this live process"
+        );
+    }
+
+    #[test]
+    fn cancelled_native_failure_does_not_run_the_command_fallback() {
+        let error = super::resolve_process_snapshot(
+            Err("native fixture failure code=6".into()),
+            &crate::PlatformCancellation::new(|| true),
+            std::time::Instant::now(),
+        )
+        .unwrap_err();
+        assert!(error.contains("cancelled"));
+    }
+
+    #[test]
+    #[ignore = "measures 22 live process snapshots on Windows"]
+    fn actual_process_name_snapshot_workload() {
+        let cancellation = crate::PlatformCancellation::new(|| false);
+        let started = std::time::Instant::now();
+        let mut count = 0;
+        for _ in 0..22 {
+            let names = running_process_names(&cancellation).unwrap();
+            assert!(
+                !names.is_empty(),
+                "a live system snapshot must not be empty"
+            );
+            count = names.len();
+        }
+        println!(
+            "snapshot_count=22 process_count={count} elapsed_us={}",
+            started.elapsed().as_micros()
+        );
     }
 
     #[test]
