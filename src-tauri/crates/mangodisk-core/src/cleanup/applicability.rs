@@ -12,6 +12,40 @@ pub(crate) enum Applicability {
     Indeterminate,
 }
 
+pub(crate) fn cleanup_rule_application_identifiers(probes: &[ApplicabilityProbe]) -> Vec<String> {
+    fn collect(probe: &ApplicabilityProbe, identifiers: &mut Vec<String>) {
+        match probe {
+            ApplicabilityProbe::ApplicationInstalled(values) => identifiers.extend(values.clone()),
+            ApplicabilityProbe::ApplicationVersion { identifier, .. } => {
+                identifiers.push(identifier.clone());
+            }
+            ApplicabilityProbe::AnyOf(items) | ApplicabilityProbe::AllOf(items) => {
+                for item in items {
+                    collect(item, identifiers);
+                }
+            }
+            // A negated application probe describes something that must not
+            // own the rule, so it cannot be trusted as application ownership data.
+            ApplicabilityProbe::Not(_)
+            | ApplicabilityProbe::AnyRootExists
+            | ApplicabilityProbe::PathExists(_)
+            | ApplicabilityProbe::ExecutableAvailable(_)
+            | ApplicabilityProbe::SystemVersion { .. }
+            | ApplicabilityProbe::FileSystemIn(_)
+            | ApplicabilityProbe::CapabilityAvailable(_)
+            | ApplicabilityProbe::ProcessRunning(_) => {}
+        }
+    }
+
+    let mut identifiers = Vec::new();
+    for probe in probes {
+        collect(probe, &mut identifiers);
+    }
+    identifiers.sort_by_key(|value| value.to_ascii_lowercase());
+    identifiers.dedup_by(|left, right| left.eq_ignore_ascii_case(right));
+    identifiers
+}
+
 pub(crate) fn evaluate_rule(
     inventory: &ApplicationInventory,
     rule: &CompiledRule,

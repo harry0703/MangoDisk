@@ -280,6 +280,7 @@ mod tests {
                 scan_rule("manual", RiskLevel::Safe, false, 90),
             ],
             application_icons: Vec::new(),
+            application_close_identities: Vec::new(),
             warning_count: 0,
             access_limited: false,
             read_failure_count: 0,

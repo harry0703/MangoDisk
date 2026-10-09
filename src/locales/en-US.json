@@ -3140,6 +3140,11 @@
         "description": "Website data saved by Chrome for faster or offline use.",
         "impact": "Passwords, history, and bookmarks are kept. Some sites may download offline content again."
       },
+      "browser.brave-origin-cache": {
+        "name": "Brave Origin cache",
+        "description": "Temporary website and startup files saved by standalone Brave Origin.",
+        "impact": "Passwords, cookies, history, extensions, and bookmarks are kept. Close the browser first."
+      },
       "browser.brave-cache": {
         "name": "Brave cache",
         "description": "Temporary website and startup files saved by Brave.",

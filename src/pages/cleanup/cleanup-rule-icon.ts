@@ -158,6 +158,7 @@ const CLEANUP_RULE_ICONS: Readonly<Record<string, IconName>> = {
   'browser.firefox-cache': ICON_NAMES.brandFirefox,
   'browser.opera-cache': ICON_NAMES.brandOpera,
   'browser.brave-cache': ICON_NAMES.brandBrave,
+  'browser.brave-origin-cache': ICON_NAMES.brandBrave,
   'browser.chromium-cache': ICON_NAMES.brandChrome,
   'browser.duckduckgo-cache': ICON_NAMES.brandDuckDuckGo,
   'browser.gecko-family-cache': ICON_NAMES.cleanupBrowserData,

@@ -50,6 +50,7 @@ const PRIVACY_BROWSER_SOURCE_ORDER: readonly string[] = [
   'opera',
   'samsung_internet',
   'brave',
+  'brave-origin',
   '360_safe_browser',
   'yandex',
   'qq_browser',

@@ -227,6 +227,8 @@ impl CleanupService {
         }
         let rules = registry()?;
         let mut targets = Vec::with_capacity(request.rule_ids.len());
+        #[cfg(windows)]
+        let mut close_inventory = None;
         for rule_id in &request.rule_ids {
             if let Some(executable_names) = cleaners::project_artifact_close_processes(rule_id) {
                 targets.push(ResolvedApplicationCloseTarget {
@@ -249,10 +251,29 @@ impl CleanupService {
                     "the cleanup rule does not define a close requirement",
                 ));
             }
+            #[cfg(windows)]
+            let executable_paths =
+                if crate::applications::process_control::requires_exact_close_identity(
+                    &rule.required_stopped_processes,
+                ) {
+                    let context = close_inventory.get_or_insert_with(ScanContext::capture);
+                    context
+                        .inventory
+                        .application_executable_paths_for_identifiers(
+                            &super::applicability::cleanup_rule_application_identifiers(
+                                &rule.applicability,
+                            ),
+                            &rule.required_stopped_processes,
+                        )
+                } else {
+                    Vec::new()
+                };
+            #[cfg(not(windows))]
+            let executable_paths = Vec::new();
             targets.push(ResolvedApplicationCloseTarget {
                 target_id: rule.id.to_string(),
                 executable_names: rule.required_stopped_processes.clone(),
-                executable_paths: Vec::new(),
+                executable_paths,
             });
         }
         let result = close_resolved_applications(targets, request.mode)?;

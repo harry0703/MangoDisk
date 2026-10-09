@@ -159,6 +159,20 @@ describe('privacy result source groups', () => {
     ]);
   });
 
+  it('keeps Brave and Brave Origin selection independent for equally named profiles', () => {
+    const items = ['brave', 'brave-origin'].map(sourceId => ({
+      ...item(sourceId, 'browserActivity', 1),
+      sourceId,
+      sourceName: sourceId === 'brave' ? 'Brave' : 'Brave Origin',
+      profileId: `${sourceId}:Default`,
+    }));
+    const groups = buildPrivacyResultSourceGroups(items, ['brave-origin']);
+    expect(groups.map(group => [group.id, group.selection, group.profiles[0]?.id])).toEqual([
+      ['brave', 'none', 'brave:brave:Default'],
+      ['brave-origin', 'all', 'brave-origin:brave-origin:Default'],
+    ]);
+  });
+
   it('sorts browser groups by the stable product priority instead of discovery order', () => {
     const sourceNames: Record<string, string> = {
       chrome: 'Google Chrome',
@@ -168,6 +182,7 @@ describe('privacy result source groups', () => {
       opera: 'Opera',
       samsung_internet: 'Samsung Internet',
       brave: 'Brave',
+      'brave-origin': 'Brave Origin',
       '360_safe_browser': '360 Safe Browser',
       yandex: 'Yandex Browser',
       qq_browser: 'QQ Browser',
@@ -181,6 +196,7 @@ describe('privacy result source groups', () => {
       'yandex',
       '360_safe_browser',
       'brave',
+      'brave-origin',
       'samsung_internet',
       'opera',
       'safari',
@@ -203,6 +219,7 @@ describe('privacy result source groups', () => {
       'opera',
       'samsung_internet',
       'brave',
+      'brave-origin',
       '360_safe_browser',
       'yandex',
       'qq_browser',

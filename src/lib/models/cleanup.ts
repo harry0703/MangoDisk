@@ -140,6 +140,14 @@ export interface CleanupApplicationIcon {
   iconPath: string;
 }
 
+/** Added in scan schema 1.13; rule ownership is independent of process filenames. */
+export interface CleanupApplicationCloseIdentity {
+  ruleId: string;
+  applicationId: string;
+  applicationName: string | null;
+  iconPath: string | null;
+}
+
 export interface CleanupRulePresentation {
   name: string;
   categoryLabel: string;
@@ -167,6 +175,7 @@ export interface CleanupScanResult {
   disk: DiskInfo;
   rules: ScanRuleResult[];
   applicationIcons: CleanupApplicationIcon[];
+  applicationCloseIdentities?: CleanupApplicationCloseIdentity[];
   warningCount: number;
   /** Protected macOS app-data reads were denied; privacy settings may help. */
   accessLimited: boolean;

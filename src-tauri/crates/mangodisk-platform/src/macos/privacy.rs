@@ -36,6 +36,7 @@ pub(super) fn discover(
 ) -> PlatformResult<PlatformPrivacyDiscovery> {
     let home = dirs::home_dir()
         .ok_or_else(|| PlatformError::invalid_path("home directory is unavailable"))?;
+    let [brave, brave_origin] = brave_browsers(&home, cancellation)?;
     let browsers = vec![
         chromium_browser(
             "chrome",
@@ -53,14 +54,8 @@ pub(super) fn discover(
             vec!["Microsoft Edge".into(), "Microsoft Edge Helper".into()],
             cancellation,
         )?,
-        chromium_browser(
-            "brave",
-            "Brave",
-            &home.join("Library/Application Support/BraveSoftware/Brave-Browser"),
-            macos_application_path(&home, "Brave Browser.app"),
-            vec!["Brave Browser".into(), "Brave Browser Helper".into()],
-            cancellation,
-        )?,
+        brave,
+        brave_origin,
         chromium_browser(
             "opera",
             "Opera",
@@ -1660,6 +1655,30 @@ fn count_text_records(path: &Path) -> u64 {
         .count() as u64
 }
 
+fn brave_browsers(
+    home: &Path,
+    cancellation: &PlatformCancellation,
+) -> PlatformResult<[PlatformPrivacyBrowser; 2]> {
+    Ok([
+        chromium_browser(
+            "brave",
+            "Brave",
+            &home.join("Library/Application Support/BraveSoftware/Brave-Browser"),
+            macos_application_path(home, "Brave Browser.app"),
+            vec!["Brave Browser".into(), "Brave Browser Helper".into()],
+            cancellation,
+        )?,
+        chromium_browser(
+            "brave-origin",
+            "Brave Origin",
+            &home.join("Library/Application Support/BraveSoftware/Brave-Origin"),
+            macos_application_path(home, "Brave Origin.app"),
+            vec!["Brave Origin".into(), "Brave Origin Helper".into()],
+            cancellation,
+        )?,
+    ])
+}
+
 fn chromium_browser(
     provider_key: &str,
     display_name: &str,
@@ -1901,6 +1920,8 @@ fn chromium_cache_directories(profile_root: &Path) -> Vec<PathBuf> {
         "Code Cache",
         "GPUCache",
         "DawnCache",
+        "DawnGraphiteCache",
+        "DawnWebGPUCache",
         "GrShaderCache",
         "GraphiteDawnCache",
         "Media Cache",
@@ -2807,6 +2828,96 @@ mod tests {
         assert!(trace.roots.is_empty());
         assert!(trace.available);
         assert!(!trace.revision.is_empty());
+        fs::remove_dir_all(home).unwrap();
+    }
+
+    #[test]
+    fn brave_origin_privacy_profiles_are_independent_from_regular_brave() {
+        let home = fixture_home("brave-origin-privacy");
+        let cancellation = PlatformCancellation::new(|| false);
+        let missing = brave_browsers(&home, &cancellation).unwrap();
+        assert!(missing.iter().all(|browser| browser.profiles.is_empty()));
+        for product in ["Brave-Browser", "Brave-Origin"] {
+            let root = home
+                .join("Library/Application Support")
+                .join("BraveSoftware")
+                .join(product);
+            for name in ["Default", "Profile 1", "Other Profile"] {
+                let profile = root.join(name);
+                fs::create_dir_all(profile.join("Network")).unwrap();
+                for file in [
+                    "History",
+                    "Network/Cookies",
+                    "Login Data",
+                    "Web Data",
+                    "Bookmarks",
+                ] {
+                    fs::write(profile.join(file), b"fixture").unwrap();
+                }
+                for cache in ["Cache", "DawnGraphiteCache", "DawnWebGPUCache"] {
+                    fs::create_dir(profile.join(cache)).unwrap();
+                }
+                fs::create_dir(profile.join("Sessions")).unwrap();
+                fs::create_dir(profile.join("Local Storage")).unwrap();
+            }
+        }
+        let browsers = brave_browsers(&home, &cancellation).unwrap();
+        assert_eq!(browsers[0].provider_key, "brave");
+        assert_eq!(browsers[0].display_name, "Brave");
+        assert_eq!(browsers[1].provider_key, "brave-origin");
+        assert_eq!(browsers[1].display_name, "Brave Origin");
+        assert_eq!(
+            browsers[1].process_names,
+            vec!["Brave Origin", "Brave Origin Helper"]
+        );
+        for (browser, product) in browsers.iter().zip(["Brave-Browser", "Brave-Origin"]) {
+            assert_eq!(browser.kind, PlatformPrivacyBrowserKind::Chromium);
+            assert_eq!(browser.profiles.len(), 2);
+            let root = home
+                .join("Library/Application Support")
+                .join("BraveSoftware")
+                .join(product);
+            for profile in &browser.profiles {
+                assert!(profile.root.starts_with(&root));
+                assert!(profile
+                    .provider_key
+                    .starts_with(&format!("{}:", browser.provider_key)));
+                for database in [
+                    &profile.history_database,
+                    &profile.cookie_database,
+                    &profile.saved_password_source,
+                    &profile.autofill_database,
+                ] {
+                    assert!(database.as_ref().unwrap().starts_with(&profile.root));
+                }
+                assert_eq!(
+                    profile.cache_directories,
+                    vec![
+                        profile.root.join("Cache"),
+                        profile.root.join("DawnGraphiteCache"),
+                        profile.root.join("DawnWebGPUCache")
+                    ]
+                );
+                assert_eq!(
+                    profile.session_directories,
+                    vec![profile.root.join("Sessions")]
+                );
+                assert_eq!(
+                    profile.site_storage_directories,
+                    vec![profile.root.join("Local Storage")]
+                );
+                assert_eq!(
+                    fs::read(profile.root.join("Bookmarks")).unwrap(),
+                    b"fixture"
+                );
+            }
+        }
+        assert_eq!(
+            brave_browsers(&home, &PlatformCancellation::new(|| true))
+                .unwrap_err()
+                .code(),
+            PlatformErrorCode::UserCancelled
+        );
         fs::remove_dir_all(home).unwrap();
     }
 

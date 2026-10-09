@@ -3140,6 +3140,11 @@
         "description": "Chrome 为加速访问或离线使用保存的网站数据",
         "impact": "不会删除密码、历史或书签；部分网站之后需要重新下载离线内容。"
       },
+      "browser.brave-origin-cache": {
+        "name": "Brave Origin 缓存",
+        "description": "独立版 Brave Origin 保存的网页和启动临时文件。",
+        "impact": "不会清理 Cookie、密码、历史、扩展或书签；关闭浏览器后清理，下次使用时会按需重建。"
+      },
       "browser.brave-cache": {
         "name": "Brave 缓存",
         "description": "Brave 保存的临时网页和启动文件",

@@ -424,6 +424,73 @@ impl ApplicationInventory {
         }))
     }
 
+    /// Ambiguous aliases cannot establish the owner of a close selection.
+    pub(crate) fn application_for_identifiers(
+        &self,
+        identifiers: &[String],
+    ) -> Option<&InstalledApplication> {
+        let identifiers = identifiers
+            .iter()
+            .map(|value| normalize(value))
+            .collect::<HashSet<_>>();
+        let mut best = None;
+        let mut best_score = 0;
+        let mut ambiguous = false;
+        for application in &self.applications {
+            let score = application_identifier_match_score(application, &identifiers);
+            if score > best_score {
+                best = Some(application);
+                best_score = score;
+                ambiguous = false;
+            } else if score > 0
+                && score == best_score
+                && best.is_some_and(|candidate: &InstalledApplication| {
+                    candidate.primary_identifier != application.primary_identifier
+                })
+            {
+                ambiguous = true;
+            }
+        }
+        if ambiguous {
+            None
+        } else {
+            best
+        }
+    }
+
+    #[cfg(windows)]
+    pub(crate) fn application_executable_paths_for_identifiers(
+        &self,
+        identifiers: &[String],
+        process_names: &[String],
+    ) -> Vec<std::path::PathBuf> {
+        let identifiers = identifiers
+            .iter()
+            .map(|value| normalize(value))
+            .collect::<HashSet<_>>();
+        let names = process_names
+            .iter()
+            .flat_map(|name| process_aliases(name))
+            .collect::<HashSet<_>>();
+        let mut paths = self
+            .applications
+            .iter()
+            .filter(|application| application_identifier_match_score(application, &identifiers) > 0)
+            .flat_map(|application| application.executable_paths.iter())
+            .filter(|path| {
+                portable_path_file_name(path).is_some_and(|name| {
+                    process_aliases(&name)
+                        .iter()
+                        .any(|alias| names.contains(alias))
+                })
+            })
+            .cloned()
+            .collect::<Vec<_>>();
+        paths.sort();
+        paths.dedup();
+        paths
+    }
+
     #[cfg(target_os = "macos")]
     pub(crate) fn has_application_identifier(&self, identifier: &str) -> bool {
         self.application_identifiers
@@ -484,7 +551,7 @@ impl ApplicationInventory {
             .any(|value| self.capabilities.contains(&value))
     }
 
-    #[cfg(all(test, target_os = "macos"))]
+    #[cfg(test)]
     pub(crate) fn fixture(
         applications: Vec<InstalledApplication>,
         applications_complete: bool,
@@ -639,6 +706,71 @@ mod icon_tests {
         }
     }
 
+    #[cfg(windows)]
+    #[test]
+    fn brave_origin_close_paths_exclude_regular_brave_and_other_executables() {
+        let mut origin = application(
+            "Brave Origin",
+            r"C:\Apps\Brave-Origin\brave.exe",
+            "origin.ico",
+        );
+        origin.identifiers.push("BraveOrigin".into());
+        origin
+            .executable_paths
+            .push(PathBuf::from(r"C:\Apps\Brave-Origin\updater.exe"));
+        let inventory = inventory(vec![
+            origin,
+            application("Brave", r"C:\Apps\Brave-Browser\brave.exe", "regular.ico"),
+        ]);
+        assert_eq!(
+            inventory.application_executable_paths_for_identifiers(
+                &["BraveOrigin".into()],
+                &["brave.exe".into()]
+            ),
+            vec![PathBuf::from(r"C:\Apps\Brave-Origin\brave.exe")]
+        );
+        assert!(inventory
+            .application_executable_paths_for_identifiers(
+                &["missing".into()],
+                &["brave.exe".into()]
+            )
+            .is_empty());
+    }
+
+    #[cfg(windows)]
+    #[test]
+    #[ignore = "reads the installed Brave and Brave Origin process registrations"]
+    fn actual_brave_close_paths_keep_product_identity() {
+        let inventory = super::ScanContext::capture().inventory;
+        for (identifiers, product) in [
+            (
+                vec!["Brave Origin".into(), "BraveOrigin".into()],
+                "Brave-Origin",
+            ),
+            (
+                vec!["com.brave.Browser".into(), "Brave".into()],
+                "Brave-Browser",
+            ),
+        ] {
+            let paths = inventory
+                .application_executable_paths_for_identifiers(&identifiers, &["brave.exe".into()]);
+            println!(
+                "product={product} verified_executable_count={}",
+                paths.len()
+            );
+            assert!(
+                !paths.is_empty(),
+                "the installed product must have verified process paths"
+            );
+            assert!(
+                paths
+                    .iter()
+                    .all(|path| path.to_string_lossy().contains(product)),
+                "{paths:?}"
+            );
+        }
+    }
+
     fn inventory(applications: Vec<InstalledApplication>) -> ApplicationInventory {
         ApplicationInventory::from_system(
             SystemInventory {
@@ -648,6 +780,51 @@ mod icon_tests {
             },
             true,
         )
+    }
+
+    #[test]
+    fn close_owner_lookup_keeps_shared_executable_products_separate_without_artwork() {
+        let mut origin = application("Brave Origin", "Brave-Origin/brave.exe", "origin.ico");
+        origin.identifiers.push("BraveOrigin".into());
+        origin.icon_path = None;
+        let inventory = inventory(vec![
+            origin,
+            application("Brave", "Brave-Browser/brave.exe", "regular.ico"),
+        ]);
+        let origin = inventory
+            .application_for_identifiers(&["BraveOrigin".into()])
+            .unwrap();
+        assert_eq!(origin.name, "Brave Origin");
+        assert!(origin.icon_path.is_none());
+        assert_eq!(
+            inventory
+                .application_for_identifiers(&["Brave".into()])
+                .unwrap()
+                .name,
+            "Brave"
+        );
+        assert!(inventory
+            .application_for_identifiers(&["brave.exe".into()])
+            .is_none());
+    }
+
+    #[test]
+    fn close_owner_lookup_rejects_ambiguous_aliases_but_prefers_primary_identity() {
+        let mut first = application("First", "shared.exe", "first.ico");
+        let mut second = application("Second", "shared.exe", "second.ico");
+        first.identifiers.push("shared".into());
+        second.identifiers.push("shared".into());
+        let inventory = inventory(vec![first, second]);
+        assert!(inventory
+            .application_for_identifiers(&["shared".into()])
+            .is_none());
+        assert_eq!(
+            inventory
+                .application_for_identifiers(&["shared".into(), "fixture.First".into()])
+                .unwrap()
+                .name,
+            "First"
+        );
     }
 
     #[test]

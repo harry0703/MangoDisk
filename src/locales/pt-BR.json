@@ -3140,6 +3140,11 @@
         "description": "Dados de sites salvos pelo Chrome para uso mais rápido ou offline.",
         "impact": "Senhas, histórico e favoritos são mantidos. Alguns sites podem baixar conteúdos offline novamente."
       },
+      "browser.brave-origin-cache": {
+        "name": "Cache do Brave Origin",
+        "description": "Arquivos temporários de sites e inicialização salvos pelo Brave Origin independente.",
+        "impact": "Senhas, cookies, histórico, extensões e favoritos são mantidos. Feche o navegador primeiro."
+      },
       "browser.brave-cache": {
         "name": "Cache do Brave",
         "description": "Arquivos temporários de sites e de inicialização salvos pelo Brave.",

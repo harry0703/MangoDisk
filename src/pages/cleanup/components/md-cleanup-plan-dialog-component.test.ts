@@ -103,6 +103,24 @@ describe('cleanup plan dialog component', () => {
     expect(wrapper.emitted('execute')).toHaveLength(1);
     wrapper.unmount();
   });
+  it('authorizes only the checked product when two browsers share an executable name', async () => {
+    const wrapper = mountDialog(2, true);
+    await wrapper.setProps({
+      rules: [1, 2].map(index => ({ ...createRule(index, true), runningProcesses: ['brave.exe'] })),
+      applicationCloseIdentities: [
+        { ruleId: 'fixture.rule-1', applicationId: 'origin', applicationName: 'Brave Origin', iconPath: 'origin.ico' },
+        { ruleId: 'fixture.rule-2', applicationId: 'brave', applicationName: 'Brave', iconPath: 'regular.ico' },
+      ],
+    });
+    const items = wrapper.findComponent(applicationClosePanelStub).props('items');
+    expect(items.map((item: { name: string }) => item.name)).toEqual(['Brave Origin', 'Brave']);
+    await wrapper.get('.application-close-panel-stub button').trigger('click');
+    await wrapper.findAll('button').at(-1)!.trigger('click');
+    expect(wrapper.emitted('closeApplications')).toEqual([[['fixture.rule-1'], 'graceful']]);
+    expect(wrapper.emitted('execute')).toBeUndefined();
+    wrapper.unmount();
+  });
+
   it('keeps a long cleanup plan inside the bounded dialog content scroller', () => {
     const wrapper = mountDialog(12);
 

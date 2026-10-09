@@ -3140,6 +3140,11 @@
         "description": "Chrome が高速化またはオフライン使用のために保存したウェブサイトデータ。",
         "impact": "パスワード、履歴、ブックマークは保持されます。いくつかのサイトではオフラインコンテンツが再度ダウンロードされる場合があります。"
       },
+      "browser.brave-origin-cache": {
+        "name": "Brave Origin のキャッシュ",
+        "description": "単独版 Brave Origin が保存するウェブサイトと起動用の一時ファイル。",
+        "impact": "パスワード、クッキー、履歴、拡張機能、ブックマークは保持されます。ブラウザを先に閉じてください。"
+      },
       "browser.brave-cache": {
         "name": "Brave キャッシュ",
         "description": "Brave が保存した一時的なウェブサイトおよび起動ファイル。",

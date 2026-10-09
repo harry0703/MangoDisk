@@ -201,7 +201,8 @@ mod cleanup_matcher_tests {
         assert_eq!(scan.missing_custom_root_count, 1);
         let json = serde_json::to_value(&scan).expect("serialize missing-root diagnostics");
         assert_eq!(json["missingCustomRootCount"], 1);
-        assert_eq!(json["schemaVersion"], "1.12");
+        assert_eq!(json["schemaVersion"], "1.13");
+        assert_eq!(json["applicationCloseIdentities"], serde_json::json!([]));
         fs::create_dir_all(&root).expect("restore the saved directory");
         fs::write(root.join("cache.tmp"), b"restored").expect("write restored fixture");
         let restored = crate::cleanup::CleanupScanService::scan_with_custom_rules(

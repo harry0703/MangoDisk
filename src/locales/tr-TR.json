@@ -3140,6 +3140,11 @@
         "description": "Daha hızlı veya çevrimdışı kullanım için Chrome tarafından kaydedilen web sitesi verileri.",
         "impact": "Parolalar, geçmiş ve yer imleri korunur. Bazı siteler çevrimdışı içeriği yeniden indirebilir."
       },
+      "browser.brave-origin-cache": {
+        "name": "Brave Origin önbelleği",
+        "description": "Bağımsız Brave Origin tarafından kaydedilen geçici web sitesi ve başlangıç dosyaları.",
+        "impact": "Parolalar, çerezler, geçmiş, uzantılar ve yer imleri korunur. Önce tarayıcıyı kapatın."
+      },
       "browser.brave-cache": {
         "name": "Brave önbelleği",
         "description": "Brave tarafından kaydedilen geçici web sitesi ve başlangıç dosyaları.",

@@ -1,9 +1,14 @@
 import type { ApplicationCloseItem } from '@/lib/models/application-close';
 import type { ApplicationCloseBatchResult } from '@/lib/models/application-close';
-import type { CleanupApplicationIcon, PresentedScanRuleResult } from '@/lib/models/cleanup';
+import type {
+  CleanupApplicationCloseIdentity,
+  CleanupApplicationIcon,
+  PresentedScanRuleResult,
+} from '@/lib/models/cleanup';
 
 export interface CleanupApplicationCloseGroup extends ApplicationCloseItem {
   ruleIds: string[];
+  applicationId?: string;
 }
 
 export interface CleanupApplicationCloseRetry {
@@ -12,26 +17,36 @@ export interface CleanupApplicationCloseRetry {
 }
 
 /**
- * Groups cleanup rules that reference at least one common running process.
+ * Groups cleanup rules by Core-owned application identity. Legacy responses
+ * without ownership retain process grouping until the next scan.
  * Several cache rules may belong to the same application, so presenting one
  * row per rule would ask users to close the same application repeatedly.
  */
 export function cleanupApplicationCloseGroups(
   rules: readonly PresentedScanRuleResult[],
-  applicationIcons: readonly CleanupApplicationIcon[] = []
+  applicationIcons: readonly CleanupApplicationIcon[] = [],
+  applicationIdentities: readonly CleanupApplicationCloseIdentity[] = []
 ): CleanupApplicationCloseGroup[] {
   const iconPaths = new Map(applicationIcons.map(item => [normalizeProcess(item.processName), item.iconPath] as const));
+  const identities = new Map(applicationIdentities.map(identity => [identity.ruleId, identity]));
   const groups: CleanupApplicationCloseGroup[] = [];
   for (const rule of rules.filter(item => item.requiresAppClose && item.runningProcesses.length)) {
+    const identity = identities.get(rule.ruleId);
+    const iconPath = identity
+      ? (identity.iconPath ?? undefined)
+      : rule.runningProcesses.map(process => iconPaths.get(normalizeProcess(process))).find(Boolean);
     const normalized = new Set(rule.runningProcesses.map(normalizeProcess));
     const overlapping = groups.filter(group =>
-      group.processes.some(process => normalized.has(normalizeProcess(process)))
+      identity
+        ? group.applicationId === identity.applicationId
+        : !group.applicationId && group.processes.some(process => normalized.has(normalizeProcess(process)))
     );
     if (!overlapping.length) {
       groups.push({
         id: rule.ruleId,
-        iconPath: rule.runningProcesses.map(process => iconPaths.get(normalizeProcess(process))).find(Boolean),
-        name: rule.name,
+        applicationId: identity?.applicationId,
+        iconPath,
+        name: identity?.applicationName ?? rule.name,
         processes: [...new Set(rule.runningProcesses)],
         ruleIds: [rule.ruleId],
       });
@@ -39,7 +54,7 @@ export function cleanupApplicationCloseGroups(
     }
 
     const primary = overlapping[0];
-    primary.iconPath ??= rule.runningProcesses.map(process => iconPaths.get(normalizeProcess(process))).find(Boolean);
+    primary.iconPath ??= iconPath;
     primary.processes = uniqueCaseInsensitive([...primary.processes, ...rule.runningProcesses]);
     primary.ruleIds = [...new Set([...primary.ruleIds, rule.ruleId])];
     for (const merged of overlapping.slice(1)) {

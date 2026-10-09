@@ -77,6 +77,14 @@ pub(crate) struct ResolvedApplicationCloseTarget {
     pub(crate) executable_paths: Vec<PathBuf>,
 }
 
+/// Brave and standalone Brave Origin share an executable filename on Windows.
+/// A name-only close request cannot distinguish the selected product.
+pub(crate) fn requires_exact_close_identity(names: &[String]) -> bool {
+    names
+        .iter()
+        .any(|name| name.eq_ignore_ascii_case("brave.exe"))
+}
+
 pub(crate) fn close_resolved_applications(
     targets: Vec<ResolvedApplicationCloseTarget>,
     mode: ApplicationCloseMode,
@@ -99,6 +107,10 @@ pub(crate) fn close_resolved_applications(
             },
         )
         .into_iter();
+    // Report only the selected application's verified image state. Cleanup and
+    // privacy preflight separately guard against every potential same-name writer.
+    // Treating those other writers as failed closes would offer an ineffective
+    // force retry for an application that has already stopped.
     let mut results = Vec::with_capacity(targets.len());
 
     for (index, target) in targets.into_iter().enumerate() {
@@ -242,6 +254,17 @@ fn validate_targets(targets: &[ResolvedApplicationCloseTarget]) -> CoreResult<()
                 "the application close target identity is invalid",
             ));
         }
+        if requires_exact_close_identity(&target.executable_names)
+            && target.executable_paths.is_empty()
+        {
+            log::warn!(
+                "application_close_identity_unavailable target_id={}",
+                target.target_id
+            );
+            return Err(CoreError::operation_failed(
+                "the shared browser executable requires a verified application path",
+            ));
+        }
         let identity_count = target.executable_names.len() + target.executable_paths.len();
         if identity_count == 0 || identity_count > MAX_PROCESS_IDENTITIES {
             return Err(CoreError::invalid_input(
@@ -255,6 +278,21 @@ fn validate_targets(targets: &[ResolvedApplicationCloseTarget]) -> CoreResult<()
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn shared_brave_name_requires_verified_executable_paths() {
+        for name in ["brave.exe", "BRAVE.EXE"] {
+            let target = ResolvedApplicationCloseTarget {
+                target_id: "brave-origin".into(),
+                executable_names: vec![name.into()],
+                executable_paths: Vec::new(),
+            };
+            assert!(
+                validate_targets(&[target]).is_err(),
+                "a name shared with regular Brave must not authorize closing both products"
+            );
+        }
+    }
 
     #[test]
     fn duplicate_target_ids_are_rejected() {

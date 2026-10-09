@@ -1,0 +1,60 @@
+id = "browser.brave-origin-cache"
+schema_version = 3
+rule_version = 1
+platform = "windows"
+category = "browser"
+risk = "safe"
+default_selected = true
+required_stopped_processes = ["Brave Origin", "brave.exe"]
+
+[[applicability]]
+kind = "anyOf"
+items = [
+  { kind = "applicationInstalled", identifiers = ["Brave Origin", "BraveOrigin"] },
+  { kind = "anyRootExists" },
+]
+
+[[roots]]
+template = "${local_app_data}/BraveSoftware/Brave-Origin/User Data/ShaderCache"
+
+[[roots]]
+template = "${local_app_data}/BraveSoftware/Brave-Origin/User Data/GrShaderCache"
+
+[[roots]]
+template = "${local_app_data}/BraveSoftware/Brave-Origin/User Data/GraphiteDawnCache"
+
+[[roots]]
+template = "${local_app_data}/BraveSoftware/Brave-Origin/User Data/DawnGraphiteCache"
+
+[[roots]]
+template = "${local_app_data}/BraveSoftware/Brave-Origin/User Data/DawnWebGPUCache"
+
+[[roots]]
+template = "${local_app_data}/BraveSoftware/Brave-Origin/User Data/component_crx_cache"
+
+[[roots]]
+template = "${local_app_data}/BraveSoftware/Brave-Origin/User Data/extensions_crx_cache"
+
+[[roots]]
+template = "${local_app_data}/BraveSoftware/Brave-Origin/User Data"
+kind = "childDirectories"
+child_names = ["Default", "Guest Profile", "System Profile"]
+child_prefixes = ["Profile "]
+suffixes = ["Cache", "Code Cache", "GPUCache", "DawnCache", "DawnGraphiteCache", "DawnWebGPUCache", "GrShaderCache", "GraphiteDawnCache", "Media Cache"]
+
+[matcher]
+kind = "all"
+
+[execution]
+kind = "deleteMatchingContents"
+requires_app_close = true
+
+[verification]
+lifecycle = "verified"
+evidence = "The rule selects only named renderer, shader, media, and extension-package cache directories from standalone Brave Origin's user-data profiles; cookies, history, passwords, bookmarks, installed extensions, and other profile data are excluded"
+verified_at = "2026-10-09"
+verified_platform = "windows"
+references = [
+  "https://github.com/brave/brave-core/blob/master/chromium_src/chrome/install_static/chromium_install_modes.h",
+  "https://support.brave.app/hc/en-us/articles/38561489788173-What-is-Brave-Origin",
+]

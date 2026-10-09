@@ -9,7 +9,7 @@ import MdDialogHeader from '@/components/custom/md-dialog-header.vue';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogDescription, DialogTitle } from '@/components/ui/dialog';
 import type { PresentedScanRuleResult } from '@/lib/models/cleanup';
-import type { CleanupApplicationIcon } from '@/lib/models/cleanup';
+import type { CleanupApplicationCloseIdentity, CleanupApplicationIcon } from '@/lib/models/cleanup';
 import type {
   ApplicationCloseBatchResult,
   ApplicationCloseItem,
@@ -33,6 +33,7 @@ const props = defineProps<{
   closingApplications: boolean;
   closeResult: ApplicationCloseBatchResult | null;
   applicationIcons: CleanupApplicationIcon[];
+  applicationCloseIdentities?: CleanupApplicationCloseIdentity[];
 }>();
 const emit = defineEmits<{
   closeApplications: [ruleIds: string[], mode: ApplicationCloseMode];
@@ -49,7 +50,8 @@ const requiresAppClose = computed(() => props.rules.some(rule => rule.requiresAp
 const closeGroups = computed(() =>
   cleanupApplicationCloseGroups(
     props.rules.filter(rule => !rule.ruleId.startsWith('special.')),
-    props.applicationIcons
+    props.applicationIcons,
+    props.applicationCloseIdentities
   )
 );
 const selectedCloseGroups = computed(() => {

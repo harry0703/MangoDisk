@@ -75,6 +75,7 @@ describe('cleanup rule icons', () => {
       ['app.google-updater-cache', ICON_NAMES.brandGoogle],
       ['app.tencent-meeting-cache', ICON_NAMES.brandTencentMeeting],
       ['browser.brave-cache', ICON_NAMES.brandBrave],
+      ['browser.brave-origin-cache', ICON_NAMES.brandBrave],
       ['browser.uc-cache', ICON_NAMES.brandUcBrowser],
       ['browser.sogou-cache', ICON_NAMES.brandSogou],
       ['app.baidu-netdisk-rendering-cache', ICON_NAMES.brandBaiduNetdisk],

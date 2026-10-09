@@ -605,6 +605,7 @@ watch(
       :closing-applications="closingApplications"
       :close-result="closeResult"
       :application-icons="scan.applicationIcons"
+      :application-close-identities="scan.applicationCloseIdentities"
       @execute="execute"
       @close-applications="closeApplications"
     />

@@ -463,6 +463,10 @@ const fn lifecycle(value: SourceLifecycle) -> RuleLifecycle {
 #[path = "notion_and_claude_code_tests.rs"]
 mod notion_and_claude_code_tests;
 
+#[cfg(all(test, any(target_os = "macos", windows)))]
+#[path = "brave_origin_tests.rs"]
+mod brave_origin_tests;
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -475,6 +479,46 @@ mod tests {
         assert!(specs
             .iter()
             .all(|rule| !rule.verification.evidence.is_empty()));
+    }
+
+    #[test]
+    fn brave_origin_macos_cache_has_its_own_profile_roots() {
+        let parsed = parse_catalog(EMBEDDED_DECLARATIVE_RULE_SOURCES).unwrap();
+        let rule = parsed
+            .iter()
+            .find(|parsed| {
+                parsed.rule.id == "browser.brave-origin-cache"
+                    && parsed.rule.platform == SourcePlatform::Macos
+            })
+            .expect("standalone Brave Origin must have a macOS cache rule");
+        assert!(rule.rule.roots.iter().all(|root| {
+            root.template.contains("/BraveSoftware/Brave-Origin")
+                && !root.template.contains("Brave-Browser")
+        }));
+        assert!(rule
+            .rule
+            .required_stopped_processes
+            .contains(&"Brave Origin".to_string()));
+    }
+
+    #[test]
+    fn brave_origin_windows_cache_has_its_own_profile_roots() {
+        let parsed = parse_catalog(EMBEDDED_DECLARATIVE_RULE_SOURCES)
+            .expect("embedded rules must pass runtime validation");
+        let rule = parsed
+            .iter()
+            .find(|parsed| {
+                parsed.rule.id == "browser.brave-origin-cache"
+                    && parsed.rule.platform == SourcePlatform::Windows
+            })
+            .expect("standalone Brave Origin must have a Windows cache rule");
+        assert!(rule.rule.roots.iter().all(|root| root
+            .template
+            .starts_with("${local_app_data}/BraveSoftware/Brave-Origin/User Data")));
+        assert!(rule
+            .rule
+            .required_stopped_processes
+            .contains(&"brave.exe".to_string()));
     }
 
     #[test]

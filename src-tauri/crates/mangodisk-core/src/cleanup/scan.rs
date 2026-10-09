@@ -1,3 +1,5 @@
+#[cfg(test)]
+use crate::cleanup::rules::ApplicabilityProbe;
 use crate::filesystem::ScanExclusionOptions;
 use std::{
     collections::{BTreeMap, HashMap},
@@ -19,18 +21,21 @@ use mangodisk_platform::{
 
 use crate::{
     applications::catalog::{ApplicationInventory, ProcessSnapshot, ScanContext},
-    cleanup::applicability::{evaluate_rule, rule_requires_process, Applicability},
+    cleanup::applicability::{
+        cleanup_rule_application_identifiers, evaluate_rule, rule_requires_process, Applicability,
+    },
     cleanup::measurement::MeasureResult,
     cleanup::{
         cleaners,
         exclusions::CleanupExclusions,
         rules::{
-            compile_scan_plan, compile_scoped_rules, prepare_custom_scan_rules, ApplicabilityProbe,
-            RootScanTask, RuleRiskLevel, ScanPlan,
+            compile_scan_plan, compile_scoped_rules, prepare_custom_scan_rules, RootScanTask,
+            RuleRiskLevel, ScanPlan,
         },
         source_selection::cleanup_source_path,
-        CleanupApplicationIcon, CleanupGroup, CleanupScanEngineInfo, CleanupScanResult,
-        CleanupSourceDetail, CustomCleanupRule, RiskLevel, ScanItemStatus, ScanRuleResult,
+        CleanupApplicationCloseIdentity, CleanupApplicationIcon, CleanupGroup,
+        CleanupScanEngineInfo, CleanupScanResult, CleanupSourceDetail, CustomCleanupRule,
+        RiskLevel, ScanItemStatus, ScanRuleResult,
     },
     filesystem::{
         metadata::{display_path, is_link_like, latest_timestamp, modified_ms, now_ms},
@@ -51,7 +56,7 @@ const MAX_CLEANUP_SOURCE_DETAILS: usize = 256;
 // unbounded in-memory filesystem index. Overflow fails closed and marks the
 // rule limited instead of authorizing directories that were not retained.
 const MAX_EMPTY_DIRECTORY_AUTHORIZATIONS_PER_RULE: usize = 4_096;
-const CLEANUP_SCAN_SCHEMA_VERSION: &str = "1.12";
+const CLEANUP_SCAN_SCHEMA_VERSION: &str = "1.13";
 
 pub struct CleanupScanService;
 
@@ -592,6 +597,11 @@ impl CleanupScanService {
             )
             .collect::<Vec<_>>();
         rules.extend(cleaner_rules);
+        let application_close_identities = cleanup_application_close_identities(
+            &rules,
+            &scan_context.inventory,
+            &application_identifiers_by_rule,
+        );
         let application_icons = cleanup_application_icons(
             &rules,
             &scan_context.inventory,
@@ -687,6 +697,7 @@ impl CleanupScanService {
             disk,
             rules,
             application_icons,
+            application_close_identities,
             warning_count,
             access_limited,
             read_failure_count,
@@ -722,6 +733,51 @@ impl CleanupScanService {
     pub fn cancel() {
         OperationGuard::cancel(CoordinatedOperationKind::CleanupScan);
     }
+}
+
+fn cleanup_application_close_identities(
+    rules: &[ScanRuleResult],
+    inventory: &ApplicationInventory,
+    identifiers_by_rule: &HashMap<String, Vec<String>>,
+) -> Vec<CleanupApplicationCloseIdentity> {
+    let identities = rules
+        .iter()
+        .filter(|rule| rule.requires_app_close && !rule.running_processes.is_empty())
+        .map(|rule| {
+            let identifiers = identifiers_by_rule
+                .get(&rule.rule_id)
+                .map(Vec::as_slice)
+                .unwrap_or_default();
+            let application = inventory.application_for_identifiers(identifiers);
+            // Declared ownership survives a missing installation or artwork. Unknown
+            // owners remain rule-scoped instead of granting a shared-name close group.
+            let application_id = application
+                .map(|application| format!("application:{}", application.primary_identifier))
+                .unwrap_or_else(|| {
+                    if identifiers.is_empty() {
+                        format!("rule:{}", rule.rule_id)
+                    } else {
+                        let mut aliases = identifiers
+                            .iter()
+                            .map(|value| value.trim().to_lowercase())
+                            .collect::<Vec<_>>();
+                        aliases.sort();
+                        aliases.dedup();
+                        format!("declared:{}", aliases.join("|"))
+                    }
+                });
+            CleanupApplicationCloseIdentity {
+                rule_id: rule.rule_id.clone(),
+                application_id,
+                application_name: application.map(|application| application.name.clone()),
+                icon_path: application
+                    .and_then(|application| application.icon_path.as_ref())
+                    .map(|path| display_path(path)),
+            }
+        })
+        .collect::<Vec<_>>();
+    log::debug!("cleanup_close_identities_resolved rule_count={} application_count={} missing_icon_count={}", identities.len(), identities.iter().map(|identity| &identity.application_id).collect::<std::collections::HashSet<_>>().len(), identities.iter().filter(|identity| identity.icon_path.is_none()).count());
+    identities
 }
 
 fn cleanup_application_icons(
@@ -778,40 +834,6 @@ fn cleanup_application_icons(
         requested_process_count.saturating_sub(icons.len())
     );
     icons
-}
-
-fn cleanup_rule_application_identifiers(probes: &[ApplicabilityProbe]) -> Vec<String> {
-    fn collect(probe: &ApplicabilityProbe, identifiers: &mut Vec<String>) {
-        match probe {
-            ApplicabilityProbe::ApplicationInstalled(values) => identifiers.extend(values.clone()),
-            ApplicabilityProbe::ApplicationVersion { identifier, .. } => {
-                identifiers.push(identifier.clone());
-            }
-            ApplicabilityProbe::AnyOf(items) | ApplicabilityProbe::AllOf(items) => {
-                for item in items {
-                    collect(item, identifiers);
-                }
-            }
-            // A negated application probe describes something that must not
-            // own the rule, so it cannot be trusted as icon association data.
-            ApplicabilityProbe::Not(_)
-            | ApplicabilityProbe::AnyRootExists
-            | ApplicabilityProbe::PathExists(_)
-            | ApplicabilityProbe::ExecutableAvailable(_)
-            | ApplicabilityProbe::SystemVersion { .. }
-            | ApplicabilityProbe::FileSystemIn(_)
-            | ApplicabilityProbe::CapabilityAvailable(_)
-            | ApplicabilityProbe::ProcessRunning(_) => {}
-        }
-    }
-
-    let mut identifiers = Vec::new();
-    for probe in probes {
-        collect(probe, &mut identifiers);
-    }
-    identifiers.sort_by_key(|value| value.to_ascii_lowercase());
-    identifiers.dedup_by(|left, right| left.eq_ignore_ascii_case(right));
-    identifiers
 }
 
 fn cleanup_group(category: crate::cleanup::CleanupCategory, roots: &[PathBuf]) -> CleanupGroup {
@@ -1462,6 +1484,71 @@ mod tests {
         fn drop(&mut self) {
             let _ = fs::remove_dir_all(&self.0);
         }
+    }
+
+    fn running_rule(rule_id: &str) -> ScanRuleResult {
+        ScanRuleResult {
+            rule_id: rule_id.into(),
+            category: crate::cleanup::CleanupCategory::Browser,
+            group: CleanupGroup::UserCache,
+            risk: RiskLevel::Safe,
+            default_selected: true,
+            recommended_selected: true,
+            bytes: 1,
+            file_count: 1,
+            available: true,
+            selectable: true,
+            status: ScanItemStatus::RequiresClose,
+            running_processes: vec!["brave.exe".into()],
+            requires_app_close: true,
+            sources: Vec::new(),
+            source_count: 0,
+            sources_truncated: false,
+            scan_elapsed_ms: 0,
+        }
+    }
+
+    #[test]
+    fn close_identities_preserve_declared_owners_and_isolate_unknown_shared_names() {
+        let inventory = ApplicationInventory::fixture(Vec::new(), true);
+        let mut stopped = running_rule("stopped");
+        stopped.running_processes.clear();
+        let rules = vec![
+            running_rule("origin"),
+            running_rule("origin-render"),
+            running_rule("regular"),
+            running_rule("unknown-a"),
+            running_rule("unknown-b"),
+            stopped,
+        ];
+        let identifiers = HashMap::from([
+            (
+                "origin".into(),
+                vec!["BraveOrigin".into(), "Brave Origin".into()],
+            ),
+            (
+                "origin-render".into(),
+                vec![
+                    "brave origin".into(),
+                    "BRAVEORIGIN".into(),
+                    "BraveOrigin".into(),
+                ],
+            ),
+            ("regular".into(), vec!["Brave".into()]),
+        ]);
+        let result = cleanup_application_close_identities(&rules, &inventory, &identifiers);
+        assert_eq!(result.len(), 5);
+        assert_eq!(result[0].application_id, result[1].application_id);
+        assert_ne!(result[0].application_id, result[2].application_id);
+        assert_ne!(result[3].application_id, result[4].application_id);
+        assert!(result
+            .iter()
+            .all(|identity| identity.icon_path.is_none() && identity.application_name.is_none()));
+        let wire = serde_json::to_value(&result[0]).unwrap();
+        assert_eq!(wire["ruleId"], "origin");
+        assert_eq!(wire["applicationId"], result[0].application_id);
+        assert!(wire["applicationName"].is_null());
+        assert!(wire["iconPath"].is_null());
     }
 
     #[test]

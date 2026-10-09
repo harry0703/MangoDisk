@@ -1,0 +1,60 @@
+id = "browser.brave-origin-cache"
+schema_version = 3
+rule_version = 1
+platform = "macos"
+category = "browser"
+risk = "safe"
+default_selected = true
+required_stopped_processes = ["Brave Origin"]
+
+[[applicability]]
+kind = "anyOf"
+items = [
+  { kind = "applicationInstalled", identifiers = ["com.brave.Browser.origin", "Brave Origin"] },
+  { kind = "anyRootExists" },
+]
+
+[[roots]]
+template = "${user_library}/Caches/BraveSoftware/Brave-Origin"
+
+[[roots]]
+template = "${application_support}/BraveSoftware/Brave-Origin/ShaderCache"
+
+[[roots]]
+template = "${application_support}/BraveSoftware/Brave-Origin/GrShaderCache"
+
+[[roots]]
+template = "${application_support}/BraveSoftware/Brave-Origin/GraphiteDawnCache"
+
+[[roots]]
+template = "${application_support}/BraveSoftware/Brave-Origin/DawnGraphiteCache"
+
+[[roots]]
+template = "${application_support}/BraveSoftware/Brave-Origin/DawnWebGPUCache"
+
+[[roots]]
+template = "${application_support}/BraveSoftware/Brave-Origin/component_crx_cache"
+
+[[roots]]
+template = "${application_support}/BraveSoftware/Brave-Origin/extensions_crx_cache"
+
+[[roots]]
+template = "${application_support}/BraveSoftware/Brave-Origin"
+kind = "childDirectories"
+child_names = ["Default", "Guest Profile", "System Profile"]
+child_prefixes = ["Profile "]
+suffixes = ["Cache", "Code Cache", "GPUCache", "DawnCache", "DawnGraphiteCache", "DawnWebGPUCache", "GrShaderCache", "GraphiteDawnCache", "Media Cache"]
+
+[matcher]
+kind = "all"
+
+[execution]
+kind = "deleteMatchingContents"
+requires_app_close = true
+
+[verification]
+lifecycle = "verified"
+evidence = "The signed Origin bundle declares BraveSoftware/Brave-Origin. Only Library/Caches and named profile cache leaves are selected; regular Brave, history, cookies, passwords, bookmarks, extensions, and site storage remain outside these roots"
+verified_at = "2026-10-09"
+verified_platform = "macos"
+references = ["https://github.com/brave/brave-core/blob/master/app/theme/brave_origin/BRANDING", "https://github.com/brave/brave-browser/releases/tag/v1.97.56"]

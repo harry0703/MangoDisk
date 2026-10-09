@@ -56,12 +56,16 @@ static EXECUTION_PLAN: OnceLock<Mutex<Option<PendingPrivacyPlan>>> = OnceLock::n
 
 #[derive(Clone)]
 struct PrivacyScanSession {
+    #[cfg(windows)]
+    browser_application_paths: BTreeMap<String, PathBuf>,
     public_result: PrivacyScanResult,
     candidates: BTreeMap<String, NativePrivacyCandidate>,
 }
 
 #[derive(Clone)]
 struct PendingPrivacyPlan {
+    #[cfg(windows)]
+    browser_application_paths: BTreeMap<String, PathBuf>,
     public_plan: PrivacyExecutionPlan,
     candidates: Vec<NativePrivacyCandidate>,
     time_range: PrivacyTimeRange,
@@ -199,6 +203,8 @@ impl PrivacyService {
         let mut candidates = BTreeMap::new();
         let mut items = Vec::new();
         let mut coverage = Vec::new();
+        #[cfg(windows)]
+        let mut browser_application_paths = BTreeMap::new();
         let total_sources = (discovery.browsers.len()
             + discovery.applications.len()
             + discovery.system_traces.len()) as u64;
@@ -211,6 +217,10 @@ impl PrivacyService {
                 completed_sources,
                 total_sources,
             });
+            #[cfg(windows)]
+            if let Some(path) = &browser.application_path {
+                browser_application_paths.insert(browser.provider_key.clone(), path.clone());
+            }
             let browser_icon_path = browser
                 .application_path
                 .as_ref()
@@ -750,6 +760,8 @@ impl PrivacyService {
             coverage,
         };
         replace_scan_session(PrivacyScanSession {
+            #[cfg(windows)]
+            browser_application_paths,
             public_result: public_result.clone(),
             candidates,
         })?;
@@ -935,6 +947,8 @@ impl PrivacyService {
                 .collect(),
         };
         replace_pending_plan(PendingPrivacyPlan {
+            #[cfg(windows)]
+            browser_application_paths: session.browser_application_paths,
             public_plan: public_plan.clone(),
             candidates: selected,
             time_range: session.public_result.time_range,
@@ -1460,10 +1474,26 @@ fn resolve_browser_process_targets(
                     "privacy browser process request contains an unknown source",
                 )
             })?;
+            #[cfg(windows)]
+            let executable_paths =
+                if crate::applications::process_control::requires_exact_close_identity(
+                    executable_names,
+                ) {
+                    pending
+                        .browser_application_paths
+                        .get(source_id)
+                        .cloned()
+                        .into_iter()
+                        .collect()
+                } else {
+                    Vec::new()
+                };
+            #[cfg(not(windows))]
+            let executable_paths = Vec::new();
             Ok(ResolvedApplicationCloseTarget {
                 target_id: source_id.clone(),
                 executable_names: executable_names.to_vec(),
-                executable_paths: Vec::new(),
+                executable_paths,
             })
         })
         .collect()
@@ -3433,6 +3463,14 @@ fn take_pending_plan(plan_id: &str) -> CoreResult<PendingPrivacyPlan> {
     Ok(pending)
 }
 
+#[cfg(all(test, windows))]
+#[path = "brave_origin_process_tests.rs"]
+mod brave_origin_process_tests;
+
+#[cfg(all(test, any(target_os = "macos", windows)))]
+#[path = "brave_origin_tests.rs"]
+mod brave_origin_tests;
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -3485,6 +3523,8 @@ mod tests {
         };
         let scan_id = "synthetic-scan".to_string();
         replace_scan_session(PrivacyScanSession {
+            #[cfg(windows)]
+            browser_application_paths: BTreeMap::new(),
             public_result: PrivacyScanResult {
                 schema_version: PRIVACY_SCAN_SCHEMA_VERSION,
                 scan_id: scan_id.clone(),
@@ -3984,6 +4024,8 @@ mod tests {
             browser_process_names: vec!["mangodisk-status-fixture-never-running.exe".into()],
         };
         replace_pending_plan(PendingPrivacyPlan {
+            #[cfg(windows)]
+            browser_application_paths: BTreeMap::new(),
             public_plan: PrivacyExecutionPlan {
                 schema_version: PRIVACY_PLAN_SCHEMA_VERSION,
                 plan_id: plan_id.clone(),

@@ -3140,6 +3140,11 @@
         "description": "Chrome 為加速存取或離線使用儲存的網站資料",
         "impact": "不會刪除密碼、歷史或書籤；部分網站之後需要重新下載離線內容。"
       },
+      "browser.brave-origin-cache": {
+        "name": "Brave Origin 快取",
+        "description": "獨立版 Brave Origin 儲存的網頁及啟動暫存檔案。",
+        "impact": "不會清理 Cookie、密碼、瀏覽紀錄、擴充功能或書籤；請先關閉瀏覽器再清理，下次使用時會視需要重建。"
+      },
       "browser.brave-cache": {
         "name": "Brave 快取",
         "description": "Brave 儲存的暫存網頁和啟動檔案",

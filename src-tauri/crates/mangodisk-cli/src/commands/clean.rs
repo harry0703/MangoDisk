@@ -499,6 +499,7 @@ mod tests {
                 limited_rule,
             ],
             application_icons: Vec::new(),
+            application_close_identities: Vec::new(),
             warning_count: 1,
             access_limited: false,
             read_failure_count: 0,

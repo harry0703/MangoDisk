@@ -245,6 +245,16 @@ pub struct CleanupApplicationIcon {
     pub icon_path: String,
 }
 
+/// Rule-scoped application ownership for close selection; artwork may be unavailable.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CleanupApplicationCloseIdentity {
+    pub rule_id: String,
+    pub application_id: String,
+    pub application_name: Option<String>,
+    pub icon_path: Option<String>,
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub enum CleanupSourceBlockReason {
@@ -301,6 +311,7 @@ pub struct CleanupScanResult {
     pub disk: DiskInfo,
     pub rules: Vec<ScanRuleResult>,
     pub application_icons: Vec<CleanupApplicationIcon>,
+    pub application_close_identities: Vec<CleanupApplicationCloseIdentity>,
     pub warning_count: u64,
     /// Protected macOS app-data reads were denied; privacy settings may help.
     /// This observation does not assert that Full Disk Access is disabled.
