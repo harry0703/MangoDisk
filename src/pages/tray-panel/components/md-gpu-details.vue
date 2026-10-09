@@ -181,13 +181,12 @@ onMounted(() => {
       <template v-if="details">
         <section v-if="memoryRows.length || details.memoryStatus === 'failed'" class="memory-section">
           <h3>
+            <span>{{ t('systemStatus.memory') }}</span>
             <MdTooltip v-if="allocatableCapacity" :text="t('gpuDetails.allocatableMemoryHint')">
-              <button type="button" class="activity-help memory-help">
-                {{ t('systemStatus.memory') }}
+              <button type="button" class="activity-help memory-help" :aria-label="t('systemStatus.memory')">
                 <MdIcon :name="ICON_NAMES.info" :size="12" />
               </button>
             </MdTooltip>
-            <template v-else>{{ t('systemStatus.memory') }}</template>
           </h3>
           <template v-if="memoryRows.length">
             <div v-for="row in memoryRows" :key="row.key" class="memory-item">
@@ -218,9 +217,9 @@ onMounted(() => {
         <section v-if="standard.length" class="activity-section">
           <div class="activity-heading">
             <h3>
+              <span>{{ t('gpuDetails.activities') }}</span>
               <MdTooltip :text="t('gpuDetails.activitiesHint')">
-                <button type="button" class="activity-help">
-                  {{ t('gpuDetails.activities') }}
+                <button type="button" class="activity-help" :aria-label="t('gpuDetails.activities')">
                   <MdIcon :name="ICON_NAMES.info" :size="12" />
                 </button>
               </MdTooltip>
@@ -354,6 +353,9 @@ header small {
   height: 28px;
 }
 h3 {
+  display: flex;
+  align-items: center;
+  gap: 4px;
   font-size: 12px;
   font-weight: 600;
   margin-bottom: 8px;
@@ -438,15 +440,18 @@ b {
   min-width: 0;
 }
 .activity-help {
+  @apply text-muted-foreground;
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  text-align: left;
+  justify-content: center;
+  flex: none;
+  padding: 2px;
+  border-radius: 3px;
   cursor: help;
 }
-.activity-help :deep(svg) {
-  @apply text-muted-foreground;
-  flex: none;
+.activity-help:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
 }
 .activity-help:hover {
   @apply text-primary-text;

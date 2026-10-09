@@ -105,6 +105,20 @@ describe('GPU detail capabilities and selection', () => {
     const tooltip = wrapper.findAllComponents({ name: 'MdTooltip' }).find(item => item.find('.memory-help').exists());
     expect(tooltip?.props('text')).toBe(hint);
     expect(wrapper.text()).not.toContain(hint);
+    const labels = messages[locale as keyof typeof messages];
+    const memoryHelp = wrapper.get('.memory-help');
+    expect(memoryHelp.attributes('aria-label')).toBe(labels.systemStatus.memory);
+    expect(memoryHelp.text()).toBe('');
+    const activityHelp = wrapper.get('.activity-heading .activity-help');
+    expect(activityHelp.attributes('aria-label')).toBe(labels.gpuDetails.activities);
+    expect(activityHelp.text()).toBe('');
+    expect(wrapper.get('.activity-heading h3').text()).toBe(labels.gpuDetails.activities);
+    await activityHelp.trigger('pointermove', { pointerType: 'mouse' });
+    await vi.waitFor(() =>
+      expect(document.querySelector('[role="tooltip"]')?.textContent).toContain(labels.gpuDetails.activitiesHint)
+    );
+    await activityHelp.trigger('pointerleave', { pointerType: 'mouse' });
+    await vi.waitFor(() => expect(document.querySelector('[role="tooltip"]')).toBeNull());
     expect(wrapper.findAll('.memory-section [role="meter"]')).toHaveLength(3);
     const next = structuredClone(value);
     next.gpuDetails.value!.details!.memory!.dedicatedTotalSource = 'reported';
