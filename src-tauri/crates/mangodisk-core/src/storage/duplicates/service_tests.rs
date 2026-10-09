@@ -1041,6 +1041,25 @@ fn paginated_sessions_are_scan_scoped_and_recomputed_after_removal() {
 }
 
 #[test]
+fn duplicate_progress_reports_operation_relative_duration() {
+    let events = Arc::new(Mutex::new(Vec::new()));
+    let captured = Arc::clone(&events);
+    let mut progress = DuplicateProgress::new(1, move |event| {
+        captured.lock().unwrap().push(event);
+    });
+    progress.started_at = Instant::now() - std::time::Duration::from_secs(18);
+    let path = Path::new("/fixture/file.bin");
+    progress.visit(TraversalStage::Analyzing, path, 64);
+    progress.emit(TraversalStage::Analyzing, path, true, 1, 64);
+    let events = events.lock().unwrap();
+    assert_eq!(events.len(), 2);
+    assert!(events
+        .iter()
+        .all(|event| (18_000..19_000).contains(&event.elapsed_ms)));
+    assert!(events[1].elapsed_ms >= events[0].elapsed_ms);
+}
+
+#[test]
 fn multiple_workers_emit_progress_once_per_throttle_window() {
     let callback_count = Arc::new(AtomicUsize::new(0));
     let callback_count_for_progress = Arc::clone(&callback_count);

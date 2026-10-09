@@ -1,13 +1,15 @@
 use std::{
     path::Path,
     sync::atomic::{AtomicU64, Ordering},
+    time::Instant,
 };
 
 use serde::Serialize;
 
-use crate::filesystem::metadata::{display_path, now_ms};
+use crate::filesystem::metadata::display_path;
 
 const PROGRESS_INTERVAL_MS: u64 = 100;
+const UNPUBLISHED: u64 = u64::MAX;
 
 /// Progress crosses adapter boundaries as stable identifiers, never localized text.
 #[derive(Debug, Clone, Copy, Serialize)]
@@ -62,7 +64,7 @@ where
 pub(crate) struct ProgressTracker {
     operation_id: u64,
     callback: Box<dyn ProgressSink>,
-    started_at_ms: u64,
+    started_at: Instant,
     last_emit_ms: AtomicU64,
     items_scanned: AtomicU64,
     bytes_scanned: AtomicU64,
@@ -99,8 +101,8 @@ impl ProgressTracker {
         Self {
             operation_id,
             callback,
-            started_at_ms: now_ms(),
-            last_emit_ms: AtomicU64::new(0),
+            started_at: Instant::now(),
+            last_emit_ms: AtomicU64::new(UNPUBLISHED),
             items_scanned: AtomicU64::new(0),
             bytes_scanned: AtomicU64::new(0),
             completed_steps: AtomicU64::new(0),
@@ -205,7 +207,7 @@ impl ProgressTracker {
     pub(crate) fn reset_scan_observations_for_retry(&self) {
         self.items_scanned.store(0, Ordering::Relaxed);
         self.bytes_scanned.store(0, Ordering::Relaxed);
-        self.last_emit_ms.store(0, Ordering::Relaxed);
+        self.last_emit_ms.store(UNPUBLISHED, Ordering::Relaxed);
     }
 
     /// Replaces path observations with the completed scan's reconciled physical allocation.
@@ -218,9 +220,14 @@ impl ProgressTracker {
     /// Normal progress is throttled to 100 ms. Counters advance before
     /// throttling so a later or final event always contains the latest state.
     pub(crate) fn emit(&self, stage: TraversalStage, path: &Path) {
-        let current_ms = now_ms();
+        self.emit_at(stage, path, self.elapsed_ms());
+    }
+
+    fn emit_at(&self, stage: TraversalStage, path: &Path, current_ms: u64) {
         let previous_ms = self.last_emit_ms.load(Ordering::Relaxed);
-        if previous_ms != 0 && current_ms.saturating_sub(previous_ms) < PROGRESS_INTERVAL_MS {
+        if previous_ms != UNPUBLISHED
+            && current_ms.saturating_sub(previous_ms) < PROGRESS_INTERVAL_MS
+        {
             return;
         }
         if self
@@ -241,9 +248,15 @@ impl ProgressTracker {
     /// The coordinator calls this once after every worker exits. It bypasses
     /// throttling so adapters always observe the completed state.
     pub(crate) fn finish(&self, stage: TraversalStage, path: &Path) {
-        let current_ms = now_ms();
+        let current_ms = self.elapsed_ms();
         self.last_emit_ms.store(current_ms, Ordering::Relaxed);
         self.publish(stage, path, current_ms);
+    }
+
+    fn elapsed_ms(&self) -> u64 {
+        // Durations and throttling must survive wall-clock corrections. Keep
+        // calendar timestamps confined to persisted observations and history.
+        u64::try_from(self.started_at.elapsed().as_millis()).unwrap_or(u64::MAX)
     }
 
     fn publish(&self, stage: TraversalStage, path: &Path, current_ms: u64) {
@@ -257,7 +270,7 @@ impl ProgressTracker {
             total_steps: self.total_steps.load(Ordering::Relaxed),
             found_items: self.found_items.load(Ordering::Relaxed),
             found_bytes: self.found_bytes.load(Ordering::Relaxed),
-            elapsed_ms: current_ms.saturating_sub(self.started_at_ms),
+            elapsed_ms: current_ms,
         });
     }
 }
@@ -319,6 +332,70 @@ mod tests {
     use std::sync::{Arc, Mutex};
 
     use super::*;
+
+    #[test]
+    fn relative_zero_is_a_valid_first_throttle_tick() {
+        let events = Arc::new(Mutex::new(Vec::new()));
+        let captured = Arc::clone(&events);
+        let tracker = ProgressTracker::new(1, move |event| captured.lock().unwrap().push(event), 0);
+        let path = Path::new("/fixture");
+        for elapsed_ms in [0, 0, 99, 100, 100, 199, 200] {
+            tracker.emit_at(TraversalStage::Analyzing, path, elapsed_ms);
+        }
+        let events = events.lock().unwrap();
+        assert_eq!(
+            events
+                .iter()
+                .map(|event| event.elapsed_ms)
+                .collect::<Vec<_>>(),
+            [0, 100, 200],
+            "the zero tick must not disable throttling"
+        );
+    }
+
+    #[test]
+    fn retry_keeps_operation_duration_and_final_progress_bypasses_throttling() {
+        let events = Arc::new(Mutex::new(Vec::new()));
+        let captured = Arc::clone(&events);
+        let mut tracker =
+            ProgressTracker::new(1, move |event| captured.lock().unwrap().push(event), 0);
+        tracker.started_at = Instant::now() - std::time::Duration::from_secs(18);
+        let path = Path::new("/fixture");
+        tracker.visit_file(TraversalStage::Analyzing, path, 64);
+        tracker.reset_scan_observations_for_retry();
+        tracker.visit_file(TraversalStage::Analyzing, path, 32);
+        tracker.finish(TraversalStage::Analyzing, path);
+        let events = events.lock().unwrap();
+        assert_eq!(events.len(), 3);
+        assert!(events
+            .iter()
+            .all(|event| (18_000..19_000).contains(&event.elapsed_ms)));
+        assert!(events
+            .windows(2)
+            .all(|pair| pair[0].elapsed_ms <= pair[1].elapsed_ms));
+        assert_eq!(events[2].items_scanned, 1);
+        assert_eq!(events[2].bytes_scanned, 32);
+    }
+
+    #[test]
+    fn a_new_operation_starts_its_own_duration() {
+        let events = Arc::new(Mutex::new(Vec::new()));
+        for (operation_id, seconds) in [(1, 18), (2, 0)] {
+            let captured = Arc::clone(&events);
+            let mut tracker = ProgressTracker::new(
+                operation_id,
+                move |event| captured.lock().unwrap().push(event),
+                0,
+            );
+            tracker.started_at = Instant::now() - std::time::Duration::from_secs(seconds);
+            tracker.finish(TraversalStage::Analyzing, Path::new("/fixture"));
+        }
+        let events = events.lock().unwrap();
+        assert_eq!(events[0].operation_id, 1);
+        assert!((18_000..19_000).contains(&events[0].elapsed_ms));
+        assert_eq!(events[1].operation_id, 2);
+        assert!(events[1].elapsed_ms < 1000);
+    }
 
     #[test]
     fn frequent_progress_is_coalesced_without_losing_the_final_state() {

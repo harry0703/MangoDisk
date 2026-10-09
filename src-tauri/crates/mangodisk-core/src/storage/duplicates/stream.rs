@@ -1,7 +1,6 @@
-use crate::{
-    filesystem::metadata::now_ms,
-    storage::duplicates::{DuplicateGroup, DuplicateGroupBatch},
-};
+use std::time::Instant;
+
+use crate::storage::duplicates::{DuplicateGroup, DuplicateGroupBatch};
 
 const VISIBLE_GROUP_LIMIT: usize = 40;
 const BATCH_LIMIT: usize = 16;
@@ -13,7 +12,7 @@ const EMIT_INTERVAL_MS: u64 = 100;
 pub(super) struct DuplicateGroupStream {
     operation_id: u64,
     callback: Box<dyn Fn(DuplicateGroupBatch) + Send + Sync>,
-    started_at_ms: u64,
+    started_at: Instant,
     last_emit_ms: u64,
     sequence: u64,
     visible_group_count: usize,
@@ -35,7 +34,7 @@ impl DuplicateGroupStream {
         Self {
             operation_id,
             callback: Box::new(callback),
-            started_at_ms: now_ms(),
+            started_at: Instant::now(),
             last_emit_ms: 0,
             sequence: 0,
             visible_group_count: 0,
@@ -54,9 +53,8 @@ impl DuplicateGroupStream {
         if groups.is_empty() {
             return;
         }
-        let current_ms = now_ms();
-        self.first_group_ms
-            .get_or_insert(current_ms.saturating_sub(self.started_at_ms));
+        let current_ms = self.elapsed_ms();
+        self.first_group_ms.get_or_insert(current_ms);
         for group in groups {
             self.found_group_count = self.found_group_count.saturating_add(1);
             self.found_file_count = self.found_file_count.saturating_add(
@@ -89,7 +87,7 @@ impl DuplicateGroupStream {
         if self.pending.is_empty() {
             return;
         }
-        let current_ms = now_ms();
+        let current_ms = self.elapsed_ms();
         if self.sequence == 0 || current_ms.saturating_sub(self.last_emit_ms) >= EMIT_INTERVAL_MS {
             self.emit_pending(current_ms);
         } else {
@@ -105,6 +103,10 @@ impl DuplicateGroupStream {
             self.emitted_group_count,
             self.first_group_ms,
         )
+    }
+
+    fn elapsed_ms(&self) -> u64 {
+        u64::try_from(self.started_at.elapsed().as_millis()).unwrap_or(u64::MAX)
     }
 
     fn emit_pending(&mut self, current_ms: u64) {
@@ -127,7 +129,7 @@ impl DuplicateGroupStream {
             found_file_count: self.found_file_count,
             found_total_bytes: self.found_total_bytes,
             found_reclaimable_bytes: self.found_reclaimable_bytes,
-            elapsed_ms: current_ms.saturating_sub(self.started_at_ms),
+            elapsed_ms: current_ms,
         });
     }
 }
@@ -162,6 +164,21 @@ mod tests {
                 })
                 .collect(),
         }
+    }
+
+    #[test]
+    fn batch_and_first_group_times_are_operation_relative() {
+        let batches = Arc::new(Mutex::new(Vec::new()));
+        let captured = Arc::clone(&batches);
+        let mut stream = DuplicateGroupStream::new(7, move |batch| {
+            captured.lock().unwrap().push(batch);
+        });
+        stream.started_at = Instant::now() - std::time::Duration::from_secs(18);
+        stream.push(vec![group_fixture(1)]);
+        let batches = batches.lock().unwrap();
+        assert_eq!(batches.len(), 1);
+        assert!((18_000..19_000).contains(&batches[0].elapsed_ms));
+        assert!((18_000..19_000).contains(&stream.metrics().2.unwrap()));
     }
 
     #[test]

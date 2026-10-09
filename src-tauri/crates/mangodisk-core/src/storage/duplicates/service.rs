@@ -251,7 +251,7 @@ impl HashFailureDiagnostics {
 struct DuplicateProgress {
     operation_id: u64,
     callback: Box<dyn Fn(TraversalProgress) + Send + Sync>,
-    started_at_ms: u64,
+    started_at: Instant,
     last_emit_ms: AtomicU64,
     items_scanned: AtomicU64,
     bytes_scanned: AtomicU64,
@@ -370,8 +370,8 @@ impl DuplicateProgress {
         Self {
             operation_id,
             callback: Box::new(callback),
-            started_at_ms: now_ms(),
-            last_emit_ms: AtomicU64::new(0),
+            started_at: Instant::now(),
+            last_emit_ms: AtomicU64::new(u64::MAX),
             items_scanned: AtomicU64::new(0),
             bytes_scanned: AtomicU64::new(0),
             completed_steps: AtomicU64::new(0),
@@ -449,13 +449,14 @@ impl DuplicateProgress {
         found_items: u64,
         found_bytes: u64,
     ) {
-        let current_ms = now_ms();
+        let current_ms = u64::try_from(self.started_at.elapsed().as_millis()).unwrap_or(u64::MAX);
         if force {
             self.last_emit_ms.store(current_ms, Ordering::Release);
         } else if self
             .last_emit_ms
             .try_update(Ordering::AcqRel, Ordering::Acquire, |previous_ms| {
-                (current_ms.saturating_sub(previous_ms) >= PROGRESS_INTERVAL_MS)
+                (previous_ms == u64::MAX
+                    || current_ms.saturating_sub(previous_ms) >= PROGRESS_INTERVAL_MS)
                     .then_some(current_ms)
             })
             .is_err()
@@ -475,7 +476,7 @@ impl DuplicateProgress {
             total_steps: self.total_steps.load(Ordering::Relaxed),
             found_items,
             found_bytes,
-            elapsed_ms: current_ms.saturating_sub(self.started_at_ms),
+            elapsed_ms: current_ms,
         });
     }
 }

@@ -44,7 +44,9 @@ const checkPercent = computed(() => {
   if (!hasDeterminateProgress.value || !props.progress?.totalSteps) return 0;
   return Math.min(100, (props.progress.completedSteps / props.progress.totalSteps) * 100);
 });
-const clockMs = ref(Date.now());
+// Wall-clock corrections, including VM time synchronization, must not count
+// as operation time. Backend elapsed values use the same monotonic contract.
+const clockMs = ref(performance.now());
 const elapsedAnchorMs = ref(0);
 const elapsedAnchorAtMs = ref(clockMs.value);
 let clockTimer: ReturnType<typeof setInterval> | undefined;
@@ -71,18 +73,22 @@ watch(
   [() => props.progress?.operationId, () => props.progress?.elapsedMs],
   ([operationId, backendElapsedMs], [previousOperationId]) => {
     const elapsed = backendElapsedMs ?? 0;
-    if (operationId !== previousOperationId || elapsed >= elapsedAnchorMs.value) {
-      elapsedAnchorMs.value = elapsed;
-      elapsedAnchorAtMs.value = Date.now();
-      clockMs.value = elapsedAnchorAtMs.value;
-    }
+    const now = performance.now();
+    // Transport can deliver a progress sample after the local clock has passed
+    // it. Preserve the displayed duration until a different operation starts.
+    elapsedAnchorMs.value =
+      operationId !== previousOperationId
+        ? elapsed
+        : Math.max(elapsed, elapsedAnchorMs.value + Math.max(0, now - elapsedAnchorAtMs.value));
+    elapsedAnchorAtMs.value = now;
+    clockMs.value = now;
   },
   { immediate: true }
 );
 
 onMounted(() => {
   clockTimer = setInterval(() => {
-    clockMs.value = Date.now();
+    clockMs.value = performance.now();
   }, OPERATION_PROGRESS_CLOCK_INTERVAL_MS);
 });
 
