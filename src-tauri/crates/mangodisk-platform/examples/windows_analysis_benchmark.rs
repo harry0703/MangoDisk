@@ -106,6 +106,7 @@ mod windows_benchmark {
         let started = Instant::now();
         let scan_result = current_platform().fast_analysis_records(
             mangodisk_platform::FastAnalysisQuery {
+                retained_file_limit: 0,
                 name_exclusions: &mangodisk_platform::NameExclusions::default(),
                 excluded_roots: &[],
                 root: &root,

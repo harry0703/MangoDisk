@@ -454,6 +454,7 @@ impl Platform for MacOsPlatform {
         analysis::analyze_records(
             self,
             analysis::AnalysisScanRequest {
+                retained_file_limit: query.retained_file_limit,
                 name_exclusions: query.name_exclusions,
                 excluded_roots: query.excluded_roots,
                 root: query.root,

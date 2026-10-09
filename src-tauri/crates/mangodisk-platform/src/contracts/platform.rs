@@ -20,6 +20,26 @@ use super::{
 };
 
 pub trait Platform: Send + Sync {
+    /// Compares a known scan identity without requiring multiple links to remain.
+    fn matches_file_identity(
+        &self,
+        metadata: &fs::Metadata,
+        identity: super::PhysicalFileIdentity,
+    ) -> bool {
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::MetadataExt;
+            metadata.is_file()
+                && metadata.dev() == identity.volume
+                && metadata.ino() == identity.index
+        }
+        #[cfg(not(unix))]
+        {
+            let _ = (metadata, identity);
+            false
+        }
+    }
+
     /// Returns an identity only when allocation can be shared by multiple directory entries.
     /// Unix metadata already contains these facts, so ordinary traversal adds no filesystem call.
     fn hard_link_identity(&self, metadata: &fs::Metadata) -> Option<super::PhysicalFileIdentity> {

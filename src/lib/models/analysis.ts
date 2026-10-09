@@ -4,6 +4,7 @@ export type AnalysisScanMode = (typeof ANALYSIS_SCAN_MODES)[keyof typeof ANALYSI
 export const ANALYSIS_RESULT_CACHE_LIMIT = 80;
 export const ANALYSIS_CHART_MAX_DEPTH = 6;
 export const ANALYSIS_REMAINDER_SCHEMA_VERSION = 2;
+export const ANALYSIS_DELETE_SCHEMA_VERSION = 1;
 
 export const ANALYSIS_VIEW_IDS = {
   treemap: 'treemap',
@@ -87,10 +88,13 @@ export interface AnalysisRemainderPage {
 }
 
 export interface AnalysisDeleteResult {
+  schemaVersion: typeof ANALYSIS_DELETE_SCHEMA_VERSION;
   requiresRescan: boolean;
   removedPath: string;
   releasedBytes: number;
   removedFileCount: number;
+  updatedResults: AnalysisResult[];
+  invalidatedScanIds: number[];
 }
 
 interface TreemapTileRect {

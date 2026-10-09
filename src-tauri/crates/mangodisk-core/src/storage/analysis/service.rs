@@ -124,7 +124,7 @@ impl AnalysisService {
         let started = Instant::now();
         let is_directory = candidate.is_directory;
         let scan_mode = candidate.scan_mode;
-        let requires_allocation_rescan = candidate.requires_rescan;
+        let has_shared_allocation = candidate.has_shared_allocation;
         let selected_path = std::path::PathBuf::from(&candidate.path);
         log::info!(
             "analysis_permanent_delete_started operation_id={} scan_id={} path={} scan_mode={} entry_kind={}",
@@ -138,7 +138,7 @@ impl AnalysisService {
             Ok(outcome) => outcome,
             Err(error) => {
                 if error.is_partial() {
-                    if let Err(session_error) = invalidate_changed_path(&selected_path) {
+                    if let Err(session_error) = super::session::invalidate_all() {
                         log::error!("analysis_partial_delete_session_invalidation_failed operation_id={} path={} error={}",
                             operation.id(), diagnostic_path(&selected_path), mangodisk_platform::diagnostics::text(&session_error));
                     }
@@ -195,10 +195,9 @@ impl AnalysisService {
         // Staging frees the original name before recursive deletion completes.
         // A concurrently recreated entry belongs to another operation and must
         // remain visible; uncertainty also requires a fresh authoritative scan.
-        outcome.result.requires_rescan =
-            requires_allocation_rescan || original_path_requires_rescan(&outcome.target);
+        outcome.result.requires_rescan = original_path_requires_rescan(&outcome.target);
         if outcome.result.requires_rescan {
-            let invalidation = if requires_allocation_rescan {
+            let invalidation = if has_shared_allocation {
                 super::session::invalidate_all()
             } else {
                 invalidate_changed_path(&outcome.target)
@@ -210,23 +209,54 @@ impl AnalysisService {
                 crate::shared::CoreError::operation_failed(error).with_possible_side_effects()
             })?;
             log::info!(
-                "analysis_delete_rescan_required operation_id={} path={} shared_allocation={} action=rescan",
+                "analysis_delete_rescan_required operation_id={} path={} shared_allocation={} reason=original_path_recreated action=rescan",
                 operation.id(),
                 diagnostic_path(&outcome.target),
-                requires_allocation_rescan
+                has_shared_allocation
             );
         } else {
-            cache::remove_entry_in_mode(
+            let synchronized =
+                synchronize_removed_path(scan_id, &outcome.target)
+                    .map_err(|error| {
+                    if let Err(invalidation_error) = super::session::invalidate_all() {
+                        log::error!("analysis_delete_session_invalidation_failed operation_id={} path={} error={}",
+                            operation.id(), diagnostic_path(&outcome.target), mangodisk_platform::diagnostics::text(&invalidation_error));
+                    }
+                    if let Err(cache_error) = cache::clear_all() {
+                        log::error!("analysis_delete_cache_clear_failed operation_id={} path={} error={}",
+                            operation.id(), diagnostic_path(&outcome.target), mangodisk_platform::diagnostics::text(&cache_error));
+                    }
+                    crate::shared::CoreError::operation_failed(error).with_possible_side_effects()
+                })?;
+            cache::remove_entry_with_allocation_credits(
                 &outcome.target,
                 outcome.removed_usage,
                 outcome.result.removed_file_count,
                 is_directory,
                 scan_mode,
+                Some(&synchronized.credits),
             );
-            synchronize_removed_path(scan_id, &outcome.target, outcome.result.released_bytes)
-                .map_err(|error| {
-                    crate::shared::CoreError::operation_failed(error).with_possible_side_effects()
-                })?;
+            outcome.result.updated_results = synchronized.updated_results;
+            outcome.result.invalidated_scan_ids = synchronized.invalidated_scan_ids;
+            for result in &mut outcome.result.updated_results {
+                match cache::analysis_result(std::path::Path::new(&result.root)) {
+                    Ok(Some(rebuilt)) => *result = super::session::replace_reconciled_result(rebuilt, result.scan_id)
+                        .map_err(|error| {
+                            crate::shared::CoreError::operation_failed(error)
+                                .with_possible_side_effects()
+                        })?,
+                    Ok(None) => {},
+                    Err(error) => log::warn!(
+                        "analysis_delete_projection_rebuild_failed operation_id={} scan_id={} root={} error={} action=retain_reconciled_snapshot",
+                        operation.id(), result.scan_id, diagnostic_path(std::path::Path::new(&result.root)), mangodisk_platform::diagnostics::text(&error)
+                    ),
+                }
+            }
+            log::info!(
+                "analysis_delete_allocation_reconciled operation_id={} path={} updated_sessions={} invalidated_sessions={} promoted_aliases={} action=update_snapshot",
+                operation.id(), diagnostic_path(&outcome.target), outcome.result.updated_results.len(),
+                outcome.result.invalidated_scan_ids.len(), synchronized.credits.len()
+            );
         }
         log::info!(
             "analysis_delete_stage_finished operation_id={} stage=synchronize_cache outcome=completed elapsed_ms={}",
@@ -252,6 +282,10 @@ impl AnalysisService {
 fn original_path_requires_rescan(path: &std::path::Path) -> bool {
     !matches!(std::fs::symlink_metadata(path), Err(error) if error.kind() == std::io::ErrorKind::NotFound)
 }
+
+#[cfg(test)]
+#[path = "delete_validation_tests.rs"]
+mod delete_validation_tests;
 
 #[cfg(test)]
 mod tests {
@@ -415,28 +449,332 @@ mod tests {
 
     #[cfg(unix)]
     #[test]
-    fn deleting_charged_hard_link_requires_reconciliation_of_surviving_alias() {
+    fn deleting_unrelated_entries_preserves_sessions_with_shared_allocation() {
+        let _operation_lock = crate::shared::operation::test_operation_lock();
+        for evict_index in [false, true] {
+            cache::clear_all().unwrap();
+            let fixture = AnalysisFixture::new();
+            fs::write(fixture.root.join("owner.bin"), vec![7; 8192]).unwrap();
+            fs::hard_link(
+                fixture.root.join("owner.bin"),
+                fixture.root.join("alias.bin"),
+            )
+            .unwrap();
+            fs::write(fixture.root.join("ordinary.bin"), vec![1; 4096]).unwrap();
+            fs::create_dir(fixture.root.join("ordinary-folder")).unwrap();
+            fs::write(fixture.root.join("ordinary-folder/empty.bin"), []).unwrap();
+            fs::write(fixture.root.join("ordinary-folder/data.bin"), vec![2; 4096]).unwrap();
+            let result = AnalysisService::analyze_with_progress(
+                Some(fixture.root.to_string_lossy().into_owned()),
+                true,
+                |_| {},
+            )
+            .unwrap();
+            if evict_index {
+                cache::clear_all().unwrap();
+            }
+            for name in ["ordinary.bin", "ordinary-folder"] {
+                let entry = result
+                    .entries
+                    .iter()
+                    .find(|entry| entry.name == name)
+                    .unwrap();
+                let deleted =
+                    AnalysisService::delete_entry_permanently(result.scan_id, entry.path.clone())
+                        .unwrap();
+                assert!(
+                    !deleted.requires_rescan,
+                    "unrelated deletion must not rescan: {name}"
+                );
+                assert!(!std::path::Path::new(&entry.path).exists());
+                assert!(resolve_entry_candidate(result.scan_id, &entry.path).is_err());
+                let owner = result
+                    .entries
+                    .iter()
+                    .find(|entry| entry.name == "owner.bin")
+                    .unwrap();
+                assert!(resolve_entry_candidate(result.scan_id, &owner.path).is_ok());
+            }
+            if !evict_index {
+                let root = fs::canonicalize(&fixture.root).unwrap();
+                let cached = cache::analysis_result(&root).unwrap().unwrap();
+                assert_eq!(cached.entries.len(), 2);
+                assert_eq!(
+                    cached.total_bytes,
+                    result
+                        .entries
+                        .iter()
+                        .filter(|entry| entry.name == "owner.bin" || entry.name == "alias.bin")
+                        .map(|entry| entry.bytes)
+                        .sum::<u64>()
+                );
+            }
+        }
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn repeated_hard_link_deletion_reassigns_allocation_without_scanning() {
+        let _operation_lock = crate::shared::operation::test_operation_lock();
+        for evict_index in [false, true] {
+            cache::clear_all().unwrap();
+            let fixture = AnalysisFixture::new();
+            let owner = fixture.root.join("a.bin");
+            fs::write(&owner, vec![7; 8192]).unwrap();
+            for name in ["b.bin", "c.bin"] {
+                fs::hard_link(&owner, fixture.root.join(name)).unwrap();
+            }
+            let result = AnalysisService::analyze_with_progress(
+                Some(fixture.root.to_string_lossy().into_owned()),
+                true,
+                |_| {},
+            )
+            .unwrap();
+            if evict_index {
+                cache::clear_all().unwrap();
+            }
+            for (index, name) in ["a.bin", "b.bin", "c.bin"].into_iter().enumerate() {
+                let deleted = AnalysisService::delete_entry_permanently(
+                    result.scan_id,
+                    std::path::Path::new(&result.root)
+                        .join(name)
+                        .to_string_lossy()
+                        .into_owned(),
+                )
+                .unwrap();
+                assert!(!deleted.requires_rescan);
+                let updated = deleted
+                    .updated_results
+                    .iter()
+                    .find(|updated| updated.scan_id == result.scan_id)
+                    .unwrap();
+                let expected_bytes = if index == 2 { 0 } else { result.total_bytes };
+                assert_eq!(updated.total_bytes, expected_bytes);
+                assert_eq!(updated.entries.len(), 2 - index);
+                assert_eq!(
+                    updated.entries.iter().map(|entry| entry.bytes).sum::<u64>(),
+                    expected_bytes
+                );
+                assert_eq!(updated.total_entry_count, usize::from(index != 2));
+                if !evict_index {
+                    let cached = cache::analysis_result(&fs::canonicalize(&fixture.root).unwrap())
+                        .unwrap()
+                        .unwrap();
+                    assert_eq!(cached.total_bytes, expected_bytes);
+                    assert_eq!(cached.entries.len(), 2 - index);
+                }
+            }
+        }
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn deleting_zero_charge_alias_keeps_its_owner_and_snapshot() {
         let _operation_lock = crate::shared::operation::test_operation_lock();
         cache::clear_all().unwrap();
         let fixture = AnalysisFixture::new();
-        let owner = fixture.root.join("a.bin");
-        let alias = fixture.root.join("b.bin");
-        fs::write(&owner, vec![7; 8192]).unwrap();
-        fs::hard_link(&owner, &alias).unwrap();
+        fs::write(fixture.root.join("a.bin"), vec![7; 8192]).unwrap();
+        fs::hard_link(fixture.root.join("a.bin"), fixture.root.join("b.bin")).unwrap();
         let result = AnalysisService::analyze_with_progress(
             Some(fixture.root.to_string_lossy().into_owned()),
             true,
             |_| {},
         )
         .unwrap();
+        let alias = result
+            .entries
+            .iter()
+            .find(|entry| entry.name == "b.bin")
+            .unwrap();
+        assert_eq!(alias.bytes, 0);
+        let deleted =
+            AnalysisService::delete_entry_permanently(result.scan_id, alias.path.clone()).unwrap();
+        assert!(!deleted.requires_rescan);
+        assert_eq!(deleted.updated_results[0].total_bytes, result.total_bytes);
+        assert_eq!(deleted.updated_results[0].entries.len(), 1);
+        assert_eq!(deleted.updated_results[0].entries[0].name, "a.bin");
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn deleting_linked_folder_accounts_for_inside_and_outside_survivors() {
+        let _operation_lock = crate::shared::operation::test_operation_lock();
+        for outside_survives in [false, true] {
+            for evict_index in [false, true] {
+                cache::clear_all().unwrap();
+                let fixture = AnalysisFixture::new();
+                let folder = fixture.root.join("a-folder");
+                fs::create_dir(&folder).unwrap();
+                fs::write(folder.join("owner.bin"), vec![7; 8192]).unwrap();
+                fs::hard_link(folder.join("owner.bin"), folder.join("alias.bin")).unwrap();
+                fs::write(fixture.root.join("ordinary.bin"), vec![1; 4096]).unwrap();
+                if outside_survives {
+                    fs::create_dir(fixture.root.join("b-folder")).unwrap();
+                    fs::hard_link(
+                        folder.join("owner.bin"),
+                        fixture.root.join("b-folder/alias.bin"),
+                    )
+                    .unwrap();
+                }
+                let result = AnalysisService::analyze_with_progress(
+                    Some(fixture.root.to_string_lossy().into_owned()),
+                    true,
+                    |_| {},
+                )
+                .unwrap();
+                let folder_entry = result
+                    .entries
+                    .iter()
+                    .find(|entry| entry.name == "a-folder")
+                    .unwrap();
+                if evict_index {
+                    cache::clear_all().unwrap();
+                }
+                let deleted = AnalysisService::delete_entry_permanently(
+                    result.scan_id,
+                    folder_entry.path.clone(),
+                )
+                .unwrap();
+                assert!(!deleted.requires_rescan);
+                let updated = deleted
+                    .updated_results
+                    .iter()
+                    .find(|updated| updated.scan_id == result.scan_id)
+                    .unwrap();
+                let expected = if outside_survives {
+                    result.total_bytes
+                } else {
+                    result.total_bytes - folder_entry.bytes
+                };
+                assert_eq!(updated.total_bytes, expected);
+                assert_eq!(
+                    updated.entries.iter().map(|entry| entry.bytes).sum::<u64>(),
+                    expected
+                );
+                assert!(!folder.exists());
+                if outside_survives {
+                    let survivor = updated
+                        .entries
+                        .iter()
+                        .find(|entry| entry.name == "b-folder")
+                        .unwrap();
+                    assert_eq!(survivor.bytes, folder_entry.bytes);
+                    if !evict_index {
+                        assert_eq!(
+                            updated
+                                .directory_hierarchy
+                                .iter()
+                                .find(|node| node.name == "b-folder")
+                                .unwrap()
+                                .files[0]
+                                .bytes,
+                            folder_entry.bytes
+                        );
+                    }
+                }
+                let fresh =
+                    AnalysisService::analyze_with_progress(Some(result.root.clone()), true, |_| {})
+                        .unwrap();
+                assert_eq!(fresh.total_bytes, updated.total_bytes);
+                assert_eq!(fresh.total_entry_count, updated.total_entry_count);
+            }
+        }
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn promoted_alias_folder_enters_bounded_rows_after_index_eviction() {
+        let _operation_lock = crate::shared::operation::test_operation_lock();
+        cache::clear_all().unwrap();
+        let fixture = AnalysisFixture::new();
+        let owners = fixture.root.join("a-owners");
+        let aliases = fixture.root.join("b-aliases");
+        fs::create_dir(&owners).unwrap();
+        fs::create_dir(&aliases).unwrap();
+        for index in 0..5 {
+            let owner = owners.join(format!("{index}.bin"));
+            fs::write(&owner, vec![7; 16_384]).unwrap();
+            fs::hard_link(&owner, aliases.join(format!("{index}.bin"))).unwrap();
+        }
+        for index in 0..600 {
+            fs::write(fixture.root.join(format!("ordinary-{index}.bin")), [1]).unwrap();
+        }
+        let result = AnalysisService::analyze_with_progress(
+            Some(fixture.root.to_string_lossy().into_owned()),
+            true,
+            |_| {},
+        )
+        .unwrap();
+        assert!(result.truncated);
+        assert!(!result.entries.iter().any(|entry| entry.name == "b-aliases"));
+        let owner = result
+            .entries
+            .iter()
+            .find(|entry| entry.name == "a-owners")
+            .unwrap();
+        cache::clear_all().unwrap();
+        let deleted =
+            AnalysisService::delete_entry_permanently(result.scan_id, owner.path.clone()).unwrap();
+        assert!(!deleted.requires_rescan);
+        let updated = &deleted.updated_results[0];
+        assert_eq!(updated.total_bytes, result.total_bytes);
+        assert_eq!(updated.total_entry_count, result.total_entry_count);
+        assert_eq!(
+            updated.entries.len(),
+            super::super::ANALYSIS_VISIBLE_ENTRY_LIMIT
+        );
+        let promoted = &updated.entries[0];
+        assert_eq!(promoted.name, "b-aliases");
+        assert_eq!(promoted.bytes, owner.bytes);
+        assert_eq!(promoted.file_count, 5);
+        let last = AnalysisService::delete_entry_permanently(result.scan_id, promoted.path.clone())
+            .unwrap();
+        assert!(!last.requires_rescan);
+        assert_eq!(
+            last.updated_results[0].total_bytes,
+            result.total_bytes - owner.bytes
+        );
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn replaced_alias_does_not_receive_another_files_allocation() {
+        let _operation_lock = crate::shared::operation::test_operation_lock();
+        cache::clear_all().unwrap();
+        let fixture = AnalysisFixture::new();
+        fs::write(fixture.root.join("a.bin"), vec![7; 8192]).unwrap();
+        for name in ["b.bin", "c.bin"] {
+            fs::hard_link(fixture.root.join("a.bin"), fixture.root.join(name)).unwrap();
+        }
+        let result = AnalysisService::analyze_with_progress(
+            Some(fixture.root.to_string_lossy().into_owned()),
+            true,
+            |_| {},
+        )
+        .unwrap();
+        fs::remove_file(fixture.root.join("b.bin")).unwrap();
+        fs::write(fixture.root.join("b.bin"), vec![1; 16_384]).unwrap();
+        cache::clear_all().unwrap();
         let owner = result
             .entries
             .iter()
             .find(|entry| entry.name == "a.bin")
             .unwrap();
-        assert_eq!(owner.bytes, result.total_bytes);
+        let deleted =
+            AnalysisService::delete_entry_permanently(result.scan_id, owner.path.clone()).unwrap();
+        assert!(!deleted.requires_rescan);
+        let updated = &deleted.updated_results[0];
         assert_eq!(
-            result
+            updated
+                .entries
+                .iter()
+                .find(|entry| entry.name == "c.bin")
+                .unwrap()
+                .bytes,
+            result.total_bytes
+        );
+        assert_eq!(
+            updated
                 .entries
                 .iter()
                 .find(|entry| entry.name == "b.bin")
@@ -444,25 +782,12 @@ mod tests {
                 .bytes,
             0
         );
-        // The session must retain this fact even if another scan evicts its index.
-        cache::clear_all().unwrap();
-        let deleted =
-            AnalysisService::delete_entry_permanently(result.scan_id, owner.path.clone()).unwrap();
-        assert!(alias.exists());
-        assert!(
-            deleted.requires_rescan,
-            "the surviving link still owns the same allocation"
-        );
-        let refreshed =
-            AnalysisService::analyze_with_progress(Some(result.root), true, |_| {}).unwrap();
-        assert_eq!(refreshed.total_bytes, result.total_bytes);
-        assert_eq!(refreshed.entries.len(), 1);
-        assert_eq!(refreshed.entries[0].name, "b.bin");
+        assert_eq!(fs::read(fixture.root.join("b.bin")).unwrap().len(), 16_384);
     }
 
     #[cfg(unix)]
     #[test]
-    fn deleting_from_cached_child_invalidates_shared_sibling_sessions() {
+    fn deleting_from_cached_child_reconciles_shared_sibling_sessions() {
         let _operation_lock = crate::shared::operation::test_operation_lock();
         for refresh in [false, true] {
             cache::clear_all().unwrap();
@@ -473,7 +798,7 @@ mod tests {
             fs::create_dir(&b).unwrap();
             fs::write(a.join("owner.bin"), vec![7; 8192]).unwrap();
             fs::hard_link(a.join("owner.bin"), b.join("alias.bin")).unwrap();
-            AnalysisService::analyze_with_progress(
+            let parent = AnalysisService::analyze_with_progress(
                 Some(fixture.root.to_string_lossy().into_owned()),
                 true,
                 |_| {},
@@ -498,10 +823,30 @@ mod tests {
                 owner.entries[0].path.clone(),
             )
             .unwrap();
-            assert!(deleted.requires_rescan);
-            assert!(
-                resolve_entry_candidate(sibling.scan_id, &sibling.entries[0].path).is_err(),
-                "the sibling's zero-charge snapshot must expire"
+            assert!(!deleted.requires_rescan);
+            assert!(deleted.invalidated_scan_ids.contains(&parent.scan_id));
+            let updated_sibling = deleted
+                .updated_results
+                .iter()
+                .find(|result| result.scan_id == sibling.scan_id)
+                .unwrap();
+            assert_eq!(updated_sibling.total_bytes, parent.total_bytes);
+            let remaining =
+                resolve_entry_candidate(sibling.scan_id, &sibling.entries[0].path).unwrap();
+            assert_eq!(remaining.expected_displayed_bytes, parent.total_bytes);
+            let last = AnalysisService::delete_entry_permanently(
+                sibling.scan_id,
+                sibling.entries[0].path.clone(),
+            )
+            .unwrap();
+            assert!(!last.requires_rescan);
+            assert_eq!(
+                last.updated_results
+                    .iter()
+                    .find(|result| result.scan_id == sibling.scan_id)
+                    .unwrap()
+                    .total_bytes,
+                0
             );
         }
     }

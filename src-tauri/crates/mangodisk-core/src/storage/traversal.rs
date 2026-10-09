@@ -35,7 +35,9 @@ mod indexed_scopes;
 #[cfg(any(windows, test))]
 mod parallel_analysis;
 
-use index_sink::{AnalysisCandidates, CompletedIndexSink, IndexRecordSink};
+use index_sink::{
+    AnalysisCandidates, CompletedIndexSink, IndexRecordSink, ANALYSIS_FILES_PER_DIRECTORY,
+};
 #[cfg(any(debug_assertions, test))]
 const ANALYSIS_ROOT_ENV: &str = "MANGODISK_ANALYSIS_ROOT";
 #[derive(Debug, Default)]
@@ -935,7 +937,8 @@ fn finish_analysis_directory(
     if purpose != ScanPurpose::LargeFiles && read.aggregate.skipped_count == 0 {
         read.aggregate.fingerprint = Some(finalize_metadata_fingerprint(read.fingerprint_entries));
     }
-    for file in read.analysis_files.into_files() {
+    for mut file in read.analysis_files.into_files() {
+        file.parent_file_count = read.aggregate.direct_file_count;
         sink.push_analysis_file(file);
     }
     if purpose != ScanPurpose::LargeFiles || path == scan_root {
@@ -997,7 +1000,8 @@ fn read_analysis_directory_with_file_queries(
     let mut fingerprint_entries = Vec::new();
     let mut children = Vec::new();
     let mut files = Vec::new();
-    let mut analysis_files = AnalysisCandidates::new(64);
+    aggregate.retained_file_limit = ANALYSIS_FILES_PER_DIRECTORY;
+    let mut analysis_files = AnalysisCandidates::new(ANALYSIS_FILES_PER_DIRECTORY);
 
     for entry in entries {
         if traversal.cancelled.load(Ordering::Relaxed) {
@@ -1104,6 +1108,7 @@ fn measure_analysis_file(
                 child_path.clone(),
                 identity,
                 IndexedFile {
+                    shared_identity: None,
                     bytes: usage.allocated_bytes,
                     logical_bytes: usage.logical_bytes,
                     modified_at_ms: modified_ms(&metadata),
@@ -1129,14 +1134,14 @@ fn measure_analysis_file(
     }
     if traversal.purpose == ScanPurpose::Analysis
         && usage.allocated_bytes > 0
-        && usage.allocated_bytes < LARGE_FILE_CANDIDATE_FLOOR_BYTES
         && current_platform().hard_link_identity(&metadata).is_none()
         && analysis_files.would_retain(usage.allocated_bytes, &child_path)
         && current_platform()
-            .should_skip(&child_path, traversal.scan_root, ScanPurpose::LargeFiles)
+            .should_skip(&child_path, traversal.scan_root, ScanPurpose::Analysis)
             .is_none()
     {
         analysis_files.push(FastAnalysisFile {
+            parent_file_count: 0,
             path: child_path.clone(),
             allocated_bytes: usage.allocated_bytes,
             logical_bytes: usage.logical_bytes,
@@ -1154,6 +1159,7 @@ fn measure_analysis_file(
         traversal.sink.push_large_file(
             child_path,
             IndexedFile {
+                shared_identity: None,
                 bytes: usage.allocated_bytes,
                 logical_bytes: usage.logical_bytes,
                 modified_at_ms: modified_ms(&metadata),
@@ -1178,7 +1184,7 @@ fn read_analysis_file_batch(
         fingerprint_entries: Vec::new(),
         children: Vec::new(),
         files: Vec::new(),
-        analysis_files: AnalysisCandidates::new(64),
+        analysis_files: AnalysisCandidates::new(ANALYSIS_FILES_PER_DIRECTORY),
     };
     let live_directory = fs::symlink_metadata(directory).ok();
     if !live_directory.as_ref().is_some_and(|metadata| {
@@ -1252,9 +1258,8 @@ impl<'a> FastAnalysisStreamValidation<'a> {
                 }
                 if !self.exclusions.matches(&file.path)
                     && current_platform()
-                        .should_skip(&file.path, self.root, ScanPurpose::LargeFiles)
+                        .should_skip(&file.path, self.root, ScanPurpose::Analysis)
                         .is_none()
-                    && file.allocated_bytes < LARGE_FILE_CANDIDATE_FLOOR_BYTES
                 {
                     sink.push_analysis_file(file);
                 }
@@ -1275,6 +1280,7 @@ impl<'a> FastAnalysisStreamValidation<'a> {
                         path,
                         identity,
                         IndexedFile {
+                            shared_identity: None,
                             bytes: allocated_bytes,
                             logical_bytes,
                             modified_at_ms,
@@ -1284,6 +1290,7 @@ impl<'a> FastAnalysisStreamValidation<'a> {
                 Ok(())
             }
             FastAnalysisRecord::Directory {
+                retained_file_limit,
                 path,
                 logical_bytes,
                 allocated_bytes,
@@ -1316,6 +1323,7 @@ impl<'a> FastAnalysisStreamValidation<'a> {
                     return Ok(());
                 }
                 let aggregate = DirectoryAggregate {
+                    retained_file_limit,
                     scan_mode: AnalysisScanMode::Standard,
                     bytes: allocated_bytes,
                     logical_bytes,
@@ -1369,6 +1377,7 @@ impl<'a> FastAnalysisStreamValidation<'a> {
                 sink.push_large_file(
                     path,
                     IndexedFile {
+                        shared_identity: None,
                         bytes: usage.allocated_bytes,
                         logical_bytes: usage.logical_bytes,
                         modified_at_ms: modified_ms(&metadata),
@@ -1511,6 +1520,7 @@ impl<'a> LargeFileStreamValidation<'a> {
         if !sink.insert_large_file_candidate(
             path.clone(),
             IndexedFile {
+                shared_identity: None,
                 bytes: usage.allocated_bytes,
                 logical_bytes: usage.logical_bytes,
                 modified_at_ms: modified_ms(&metadata),
@@ -1606,6 +1616,7 @@ fn stream_complete_large_files(
     )?;
     let summary = current_platform().fast_analysis_records(
         FastAnalysisQuery {
+            retained_file_limit: 0,
             name_exclusions: exclusions.names(),
             excluded_roots: exclusions.roots(),
             root,
@@ -1717,6 +1728,7 @@ fn stream_fast_analysis_once(
     let mut progress_validation = FastAnalysisProgressValidation::new(root, progress);
     let summary = current_platform().fast_analysis_records(
         FastAnalysisQuery {
+            retained_file_limit: ANALYSIS_FILES_PER_DIRECTORY,
             name_exclusions: exclusions.names(),
             excluded_roots: exclusions.roots(),
             root,

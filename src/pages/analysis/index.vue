@@ -172,7 +172,8 @@ const showPrimaryAnalysisProgress = computed(() => props.busy && primaryAnalysis
 const folderNavigationPending = computed(() => props.busy && !primaryAnalysisPending.value);
 // Starting the native request does not imply a scan: Core can still reuse its
 // index for an unvisited child. Only real scan progress replaces stale browser
-// data; cache navigation keeps the mounted list and its sorting state.
+// data; cache navigation keeps the mounted list and its sorting state. Cache
+// projection and transport can exceed the UI delay without scanning anything.
 const showFullAnalysisProgress = computed(
   () => props.busy && (primaryAnalysisPending.value || props.progress !== null)
 );
@@ -338,7 +339,7 @@ function navigateHistory(index: number) {
         :key="showFullAnalysisProgress ? 'full' : 'navigation'"
         class="analysis-overlay"
         :class="{ 'analysis-overlay--full': !result || showFullAnalysisProgress }"
-        :active="busy"
+        :active="busy && (!result || showFullAnalysisProgress)"
         :delay="showFullAnalysisProgress ? 0 : undefined"
         mode="overlay"
         role="status"

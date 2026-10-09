@@ -1,4 +1,4 @@
-import type { AnalysisResult } from '@/lib/models/analysis';
+import type { AnalysisDeleteResult, AnalysisResult } from '@/lib/models/analysis';
 import * as PathUtils from '@/lib/utils/path';
 export function key(path: string): string {
   return PathUtils.comparisonKey(path);
@@ -31,50 +31,22 @@ export function store(
 export function retainExisting(order: readonly string[], cache: Readonly<Record<string, AnalysisResult>>): string[] {
   return order.filter(key => Boolean(cache[key]));
 }
+/** Applies Core-owned snapshots, including hard-link allocation transfers. */
 export function syncAfterDelete(
-  cache: Record<string, AnalysisResult>,
-  removedPath: string,
-  releasedBytes: number,
-  removedFileCount: number,
-  sourceRoot: string
-): Record<string, AnalysisResult> {
-  const removedKey = key(removedPath);
-  const nextCache: Record<string, AnalysisResult> = {};
-  for (const [resultKey, result] of Object.entries(cache)) {
-    if (PathUtils.isSameOrChildKey(resultKey, removedKey)) continue;
-    if (!PathUtils.isSameOrChildKey(removedKey, resultKey)) {
-      nextCache[resultKey] = result;
-      continue;
-    }
-    // Core expires overlapping ancestor sessions after a delete. Retaining their
-    // old scan IDs would make the next action fail against a synthetic snapshot.
-    if (resultKey !== key(sourceRoot)) continue;
-    const snapshotEntry = result.entries.find(entry => key(entry.path) === removedKey);
-    const snapshotBytes = snapshotEntry?.bytes ?? releasedBytes;
-    const entries = result.entries.flatMap(entry => {
-      const entryKey = key(entry.path);
-      if (entryKey === removedKey) return [];
-      if (!PathUtils.isSameOrChildKey(removedKey, entryKey)) return [entry];
-      return [
-        {
-          ...entry,
-          bytes: Math.max(0, entry.bytes - releasedBytes),
-          fileCount: Math.max(0, entry.fileCount - removedFileCount),
-        },
-      ];
-    });
-    nextCache[resultKey] = {
-      ...result,
-      totalBytes: Math.max(0, result.totalBytes - snapshotBytes),
-      totalEntryCount:
-        result.totalEntryCount === undefined
-          ? undefined
-          : Math.max(0, result.totalEntryCount - (snapshotEntry && snapshotBytes > 0 ? 1 : 0)),
-      entries,
-      directoryHierarchy: result.directoryHierarchy?.filter(node => key(node.path) !== removedKey),
-    };
+  cache: Readonly<Record<string, AnalysisResult>>,
+  order: readonly string[],
+  removed: AnalysisDeleteResult,
+  limit: number
+): { cache: Record<string, AnalysisResult>; order: string[] } {
+  const invalidated = new Set(removed.invalidatedScanIds);
+  const retained = Object.fromEntries(Object.entries(cache).filter(([, result]) => !invalidated.has(result.scanId)));
+  let synchronized = { cache: retained, order: retainExisting(order, retained) };
+  // Native sessions can outlive UI eviction. Restored siblings must reenter the
+  // same bounded cache used by navigation rather than creating untracked roots.
+  for (const result of removed.updatedResults) {
+    synchronized = store(synchronized.cache, synchronized.order, result, limit);
   }
-  return nextCache;
+  return synchronized;
 }
 
 /** Drops ancestors and descendants whose snapshot may have changed. */

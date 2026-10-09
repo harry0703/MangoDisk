@@ -18,9 +18,10 @@ import MdAnalysisVisualPane from './components/md-analysis-visual-pane.vue';
 import MdAnalysisScanButton from './components/md-analysis-scan-button.vue';
 import { i18n } from '@/i18n';
 import { Select } from '@/components/ui/select';
-import type { AnalysisResult } from '@/lib/models/analysis';
+import type { AnalysisDeleteResult, AnalysisResult } from '@/lib/models/analysis';
 
 import AnalysisPage from './index.vue';
+import { useAppStore } from '@/stores/app-store';
 import { PreferenceStorageService } from '@/lib/services/preference-storage-service';
 
 vi.mock('@tauri-apps/plugin-os', () => ({ platform: () => 'macos' }));
@@ -43,6 +44,80 @@ beforeEach(() => {
 });
 
 describe('analysis page', () => {
+  it.each([
+    ['macos', 501],
+    ['macos', 30_000],
+    ['linux', 501],
+    ['linux', 30_000],
+    ['windows', 501],
+    ['windows', 30_000],
+  ] as const)('does not show scan progress for a %s cached navigation taking %i ms', async (os, delay) => {
+    vi.useFakeTimers();
+    vi.spyOn(OperatingSystemService, 'isWindows').mockReturnValue(os === 'windows');
+    const wrapper = shallowMount(AnalysisPage, {
+      props: {
+        result,
+        excludedFolders: [],
+        homePath: '/fixture',
+        disk: null,
+        disks: [],
+        progress: null,
+        busy: false,
+        cancelling: false,
+        deleting: false,
+      },
+      global: {
+        plugins: [i18n],
+        stubs: {
+          MdPageShell: { template: '<div><slot /></div>' },
+          MdDelayedOperationWorkspace: false,
+          MdOperationWorkspace: { template: '<div><slot /></div>' },
+        },
+      },
+    });
+    try {
+      const chart = wrapper.getComponent(MdAnalysisVisualPane).vm.$.uid;
+      wrapper.getComponent(MdAnalysisBrowserToolbar).vm.$emit('navigate', '/fixture/child');
+      await wrapper.setProps({ busy: true });
+      await vi.advanceTimersByTimeAsync(delay);
+      expect(wrapper.findComponent(MdOperationProgress).exists()).toBe(false);
+      expect(wrapper.getComponent(MdAnalysisVisualPane).vm.$.uid).toBe(chart);
+      expect(wrapper.getComponent(MdAnalysisBrowserToolbar).props('busy')).toBe(true);
+
+      await wrapper.setProps({ busy: false, result: { ...result, root: '/fixture/child' } });
+      expect(wrapper.findComponent(MdOperationProgress).exists()).toBe(false);
+      expect(wrapper.getComponent(MdAnalysisVisualPane).vm.$.uid).toBe(chart);
+
+      // A cache miss must still expose actual scan progress after the same wait.
+      wrapper.getComponent(MdAnalysisBrowserToolbar).vm.$emit('navigate', '/unscanned');
+      await wrapper.setProps({ busy: true });
+      await vi.advanceTimersByTimeAsync(delay);
+      expect(wrapper.findComponent(MdOperationProgress).exists()).toBe(false);
+      await wrapper.setProps({
+        progress: {
+          operationId: 8,
+          currentStage: 'analyzing',
+          currentPath: '/unscanned',
+          itemsScanned: 0,
+          bytesScanned: 0,
+          completedSteps: 0,
+          totalSteps: 0,
+          foundItems: 0,
+          foundBytes: 0,
+          elapsedMs: 0,
+        },
+      });
+      await vi.advanceTimersByTimeAsync(0);
+      expect(wrapper.findComponent(MdOperationProgress).exists()).toBe(true);
+      expect(wrapper.findComponent(MdAnalysisVisualPane).exists()).toBe(false);
+      await wrapper.setProps({ busy: false, progress: null });
+      expect(wrapper.findComponent(MdOperationProgress).exists()).toBe(false);
+    } finally {
+      wrapper.unmount();
+      vi.useRealTimers();
+    }
+  });
+
   it.each(['standard', 'fast'] as const)('prefixes Windows scan progress with the active %s mode', async mode => {
     vi.spyOn(OperatingSystemService, 'isWindows').mockReturnValue(true);
     useAnalysisStore().scanMode = mode;
@@ -267,6 +342,98 @@ describe('analysis page', () => {
       wrapper.unmount();
     }
   });
+
+  it.each(['treemap', 'sunburst'] as const)(
+    'keeps the %s pane mounted through a linked deletion without scan UI',
+    async viewMode => {
+      const store = useAnalysisStore();
+      useStorageScanPreferencesStore().initialized = true;
+      const owner = {
+        name: 'owner.bin',
+        path: '/fixture/owner.bin',
+        bytes: 64,
+        fileCount: 1,
+        isDirectory: false,
+        modifiedAtMs: null,
+        contentFingerprint: null,
+      };
+      const alias = { ...owner, name: 'alias.bin', path: '/fixture/alias.bin', bytes: 0 };
+      store.result = { ...result, entries: [owner, alias] };
+      store.cache = { '/fixture': store.result };
+      store.homePath = '/fixture';
+      store.viewPreferences = { schemaVersion: 1, viewMode, treemapDepth: 3, sunburstDepth: 4 };
+      let complete: (value: AnalysisDeleteResult) => void = () => undefined;
+      vi.spyOn(AnalysisService, 'deletePermanently').mockImplementation(
+        () =>
+          new Promise(resolve => {
+            complete = resolve;
+          })
+      );
+      const analyze = vi.spyOn(AnalysisService, 'analyze');
+      vi.spyOn(useAppStore(), 'refreshSystemDisk').mockResolvedValue(true);
+      const wrapper = mount(
+        () =>
+          h(AnalysisPage, {
+            result: store.result,
+            excludedFolders: [],
+            homePath: store.homePath,
+            disk: null,
+            disks: [],
+            progress: store.progress,
+            busy: store.pending,
+            cancelling: store.cancelling,
+            deleting: store.deleting,
+            deletingPath: store.deletingPath,
+          }),
+        {
+          global: {
+            plugins: [i18n],
+            stubs: {
+              MdPageShell: { template: '<div><slot /></div>' },
+              MdAnalysisBrowserToolbar: true,
+              MdAnalysisFolderPane: true,
+              MdAnalysisTreemap: true,
+              MdAnalysisSunburst: true,
+              MdDestructiveActionDialog: true,
+              MdTooltip: { template: '<span><slot /></span>' },
+            },
+          },
+        }
+      );
+      try {
+        const pane = wrapper.getComponent(MdAnalysisVisualPane);
+        const uid = pane.vm.$.uid;
+        const request = store.deletePermanently(owner);
+        await flushPromises();
+        expect(store.pending).toBe(false);
+        expect(wrapper.getComponent(MdAnalysisVisualPane).vm.$.uid).toBe(uid);
+        expect(wrapper.find('.analysis-overlay--full').exists()).toBe(false);
+        expect(wrapper.findComponent(MdOperationProgress).exists()).toBe(false);
+        const updated = { ...result, entries: [{ ...alias, bytes: 64 }] };
+        complete({
+          schemaVersion: 1,
+          requiresRescan: false,
+          removedPath: owner.path,
+          releasedBytes: 64,
+          removedFileCount: 1,
+          updatedResults: [updated],
+          invalidatedScanIds: [],
+        });
+        await request;
+        await flushPromises();
+        expect(wrapper.getComponent(MdAnalysisVisualPane).vm.$.uid).toBe(uid);
+        expect(pane.props('viewMode')).toBe(viewMode);
+        expect(store.viewPreferences.treemapDepth).toBe(3);
+        expect(store.viewPreferences.sunburstDepth).toBe(4);
+        expect(store.result).toEqual(updated);
+        expect(store.homePath).toBe('/fixture');
+        expect(analyze).not.toHaveBeenCalled();
+        expect(wrapper.find('.analysis-overlay--full').exists()).toBe(false);
+      } finally {
+        wrapper.unmount();
+      }
+    }
+  );
 
   it('retains chart depth preferences when a new scan replaces the visual pane', async () => {
     const wrapper = shallowMount(AnalysisPage, {

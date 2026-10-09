@@ -1,5 +1,5 @@
 use std::{
-    collections::{HashSet, VecDeque},
+    collections::VecDeque,
     path::Path,
     sync::{
         atomic::{AtomicU64, Ordering},
@@ -78,14 +78,12 @@ pub(super) fn resolve_entry_candidate(
         .ok_or_else(|| "the selected item is not part of the current disk analysis".to_string())?;
     Ok(AnalysisEntryCandidate {
         scan_mode: result.result.scan_mode,
-        requires_rescan: result.result.requires_delete_rescan
-            || sessions.iter().any(|session| {
-                session.result.requires_delete_rescan
-                    && current_platform().path_is_same_or_child(
-                        Path::new(&result.result.root),
-                        Path::new(&session.result.root),
-                    )
-            }),
+        has_shared_allocation: result.result.shared_allocations.iter().any(|group| {
+            group.files.iter().any(|file| {
+                current_platform()
+                    .path_is_same_or_child(Path::new(&file.path), Path::new(&entry.path))
+            })
+        }),
         exclusions: result.exclusions.clone(),
         root: result.result.root.clone(),
         path: entry.path.clone(),
@@ -200,55 +198,91 @@ pub(super) fn invalidate_all() -> Result<(), String> {
     Ok(())
 }
 
-/// Removes the deleted item from its source session and expires overlapping snapshots.
-///
-/// Other cached roots may contain aggregate fingerprints that changed after this deletion.
-/// Expiring them is safer than trying to synthesize a new fingerprint without rescanning.
+pub(super) struct AnalysisDeleteSynchronization {
+    pub(super) updated_results: Vec<AnalysisResult>,
+    pub(super) invalidated_scan_ids: Vec<u64>,
+    pub(super) credits: Vec<DirectoryEntryInfo>,
+}
+
+/// Reconcile the current view and affected sibling snapshots. Ancestors and
+/// descendants expire because their aggregate file counts may have changed.
 pub(super) fn synchronize_removed_path(
     source_scan_id: u64,
     removed_path: &Path,
-    released_bytes: u64,
-) -> Result<(), String> {
+) -> Result<AnalysisDeleteSynchronization, String> {
     let mut sessions = lock_sessions()?;
-    let source_index = sessions
+    let source = sessions
         .iter()
-        .position(|result| result.result.scan_id == source_scan_id)
+        .find(|session| session.result.scan_id == source_scan_id)
         .ok_or_else(|| "the disk-analysis result session expired; scan again".to_string())?;
-    let source_root = sessions[source_index].result.root.clone();
-    let source = &mut sessions[source_index].result;
-    let displayed_bytes = source
-        .entries
-        .iter()
-        .find(|entry| current_platform().paths_equal(Path::new(&entry.path), removed_path))
-        .map(|entry| entry.bytes)
-        .unwrap_or(released_bytes);
-    source
-        .entries
-        .retain(|entry| !current_platform().paths_equal(Path::new(&entry.path), removed_path));
-    source.total_bytes = source.total_bytes.saturating_sub(displayed_bytes);
-    if displayed_bytes > 0 {
-        source.total_entry_count = source.total_entry_count.saturating_sub(1);
-    }
-    source
-        .directory_hierarchy
-        .retain(|node| !current_platform().paths_equal(Path::new(&node.path), removed_path));
-
-    let invalidated = sessions
-        .iter()
-        .filter(|session| {
-            let result = &session.result;
-            if result.scan_id == source_scan_id {
-                return false;
-            }
+    let source_exclusions = source.exclusions.clone();
+    let source_mode = source.result.scan_mode;
+    let mut synchronization = AnalysisDeleteSynchronization {
+        updated_results: Vec::new(),
+        invalidated_scan_ids: Vec::new(),
+        credits: Vec::new(),
+    };
+    for session in sessions.iter_mut() {
+        let result = &mut session.result;
+        if result.scan_id != source_scan_id {
             let root = Path::new(&result.root);
-            current_platform().path_is_same_or_child(root, removed_path)
+            if current_platform().path_is_same_or_child(root, removed_path)
                 || current_platform().path_is_same_or_child(removed_path, root)
-                || current_platform().paths_equal(Path::new(&result.root), Path::new(&source_root))
-        })
-        .map(|session| session.result.scan_id)
-        .collect::<HashSet<_>>();
-    sessions.retain(|session| !invalidated.contains(&session.result.scan_id));
-    Ok(())
+            {
+                synchronization.invalidated_scan_ids.push(result.scan_id);
+                continue;
+            }
+        }
+        let touched = result.shared_allocations.iter().any(|group| {
+            group.files.iter().any(|file| {
+                current_platform().path_is_same_or_child(Path::new(&file.path), removed_path)
+            })
+        });
+        if result.scan_id != source_scan_id && !touched {
+            continue;
+        }
+        // A deletion response belongs to one scan configuration. Returning an
+        // older sibling could revive excluded content or mix byte metrics.
+        if session.exclusions != source_exclusions || result.scan_mode != source_mode {
+            synchronization.invalidated_scan_ids.push(result.scan_id);
+            continue;
+        }
+        let credits = super::allocation::reconcile_shared_allocations(result, removed_path)?;
+        if result.scan_id == source_scan_id {
+            super::allocation::remove_direct_entry(result, removed_path);
+        }
+        super::allocation::apply_allocation_credits(result, &credits);
+        synchronization.credits.extend(credits);
+        synchronization.updated_results.push(result.clone());
+    }
+    sessions.retain(|session| {
+        !synchronization
+            .invalidated_scan_ids
+            .contains(&session.result.scan_id)
+    });
+    synchronization
+        .credits
+        .sort_unstable_by(|left, right| left.path.cmp(&right.path));
+    synchronization
+        .credits
+        .dedup_by(|left, right| left.path == right.path);
+    Ok(synchronization)
+}
+
+/// Rebuilding a projection from the already reconciled index is a direct-child
+/// read, not a recursive scan. It restores omitted rows and bounded chart nodes.
+pub(super) fn replace_reconciled_result(
+    mut result: AnalysisResult,
+    scan_id: u64,
+) -> Result<AnalysisResult, String> {
+    let mut sessions = lock_sessions()?;
+    let session = sessions
+        .iter_mut()
+        .find(|session| session.result.scan_id == scan_id)
+        .ok_or_else(|| "the disk-analysis result session expired; scan again".to_string())?;
+    result.scan_id = scan_id;
+    session.result = result.clone();
+    Ok(result)
 }
 
 #[cfg(test)]
@@ -267,7 +301,9 @@ mod tests {
             skipped_count: 0,
             truncated: false,
             directory_hierarchy: Vec::new(),
-            requires_delete_rescan: false,
+            shared_directories: Default::default(),
+            shared_allocations: Default::default(),
+            shared_entries: Default::default(),
             entries: vec![DirectoryEntryInfo {
                 name: "sample.bin".to_string(),
                 path: path.to_string(),
@@ -368,7 +404,7 @@ mod tests {
         let canonical =
             std::fs::canonicalize(&file).expect("the analysis session file should canonicalize");
 
-        synchronize_removed_path(published.scan_id, &canonical, 12)
+        synchronize_removed_path(published.scan_id, &canonical)
             .expect("the canonical deletion should update the display session");
 
         assert!(resolve_entry_candidate(published.scan_id, &file.to_string_lossy()).is_err());

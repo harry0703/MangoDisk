@@ -9,6 +9,441 @@ use std::time::Duration;
 use super::*;
 
 #[test]
+fn retained_rows_preserve_empty_entries_at_the_visible_limit() {
+    let _operation_lock = crate::shared::operation::test_operation_lock();
+    for count in [499, 500, 501] {
+        let fixture = tempfile::tempdir().unwrap();
+        let root = current_platform()
+            .canonicalize_no_links(fixture.path())
+            .unwrap();
+        fs::write(root.join("empty-file"), []).unwrap();
+        for index in 0..count {
+            fs::write(root.join(format!("file-{index:04}")), [1; 4096]).unwrap();
+        }
+        let progress = Arc::new(ProgressTracker::new(0, |_| {}, 0));
+        let (aggregate, snapshot) = traverse_memory_only(
+            &root,
+            TraversalKind::Analysis(AnalysisScanMode::Standard),
+            now_ms(),
+            None,
+            &progress,
+            &AtomicBool::new(false),
+            None,
+        )
+        .unwrap();
+        let project = |aggregate| {
+            cache::analysis_result_from_snapshot(
+                &root,
+                aggregate,
+                &snapshot.directories,
+                &snapshot.files,
+                &[],
+                &mangodisk_platform::NameExclusions::default(),
+                1,
+            )
+            .unwrap()
+        };
+        let baseline = project(DirectoryAggregate {
+            retained_file_limit: 0,
+            ..aggregate
+        });
+        let retained = project(aggregate);
+        assert_eq!(
+            retained.truncated, baseline.truncated,
+            "positive files={count}; zero-allocation entries still affect truncation"
+        );
+        assert_eq!(
+            serde_json::to_value(retained.entries).unwrap(),
+            serde_json::to_value(baseline.entries).unwrap()
+        );
+        assert_eq!(retained.total_entry_count, baseline.total_entry_count);
+    }
+}
+
+#[test]
+fn retained_directory_rows_preserve_empty_entries_at_the_visible_limit() {
+    let _operation_lock = crate::shared::operation::test_operation_lock();
+    for count in [499, 500, 501] {
+        let fixture = tempfile::tempdir().unwrap();
+        let root = current_platform()
+            .canonicalize_no_links(fixture.path())
+            .unwrap();
+        fs::write(root.join("empty-file"), []).unwrap();
+        for index in 0..count {
+            let child = root.join(format!("directory-{index:04}"));
+            fs::create_dir(&child).unwrap();
+            fs::write(child.join("file"), [1; 4096]).unwrap();
+        }
+        let progress = Arc::new(ProgressTracker::new(0, |_| {}, 0));
+        let (aggregate, snapshot) = traverse_memory_only(
+            &root,
+            TraversalKind::Analysis(AnalysisScanMode::Standard),
+            now_ms(),
+            None,
+            &progress,
+            &AtomicBool::new(false),
+            None,
+        )
+        .unwrap();
+        let result = cache::analysis_result_from_snapshot(
+            &root,
+            aggregate,
+            &snapshot.directories,
+            &snapshot.files,
+            &[],
+            &mangodisk_platform::NameExclusions::default(),
+            1,
+        )
+        .unwrap();
+        assert_eq!(result.total_entry_count, count);
+        assert_eq!(
+            result.truncated,
+            count >= 500,
+            "an omitted empty file still causes truncation at exactly 500 directories"
+        );
+        assert_eq!(result.entries.len(), (count + 1).min(500));
+        assert_eq!(result.entries[0].name, "directory-0000");
+        if count == 499 {
+            assert_eq!(result.entries.last().unwrap().name, "empty-file");
+        }
+    }
+}
+
+#[cfg(target_os = "macos")]
+#[test]
+fn retained_child_navigation_preserves_refresh_and_no_follow_delete_boundaries() {
+    let _operation_lock = crate::shared::operation::test_operation_lock();
+    cache::clear_all().unwrap();
+    let fixture = tempfile::tempdir().unwrap();
+    let child = fixture.path().join("child");
+    fs::create_dir(&child).unwrap();
+    for index in 0..600 {
+        fs::write(child.join(format!("file-{index:04}")), [1; 4096]).unwrap();
+    }
+    crate::AnalysisService::analyze_with_progress(
+        Some(current_platform().display_path(fixture.path())),
+        true,
+        |_| {},
+    )
+    .unwrap();
+    let navigate = || {
+        crate::AnalysisService::analyze_with_progress(
+            Some(current_platform().display_path(&child)),
+            false,
+            |_| {},
+        )
+        .unwrap()
+    };
+    let initial = navigate();
+    let selected = initial.entries[0].path.clone();
+    let outside = fixture.path().join("outside");
+    fs::write(&outside, [2; 8192]).unwrap();
+    fs::remove_file(&selected).unwrap();
+    std::os::unix::fs::symlink(&outside, &selected).unwrap();
+    let cached = navigate();
+    assert!(cached.entries.iter().any(|entry| entry.path == selected));
+    let error = crate::AnalysisService::delete_entry_permanently(cached.scan_id, selected.clone())
+        .expect_err("cached file facts must never authorize following a replacement symlink");
+    assert_eq!(
+        error.mutation_state(),
+        mangodisk_platform::PlatformMutationState::NotAttempted
+    );
+    assert!(fs::symlink_metadata(&selected)
+        .unwrap()
+        .file_type()
+        .is_symlink());
+    assert_eq!(fs::read(&outside).unwrap(), [2; 8192]);
+    let refreshed = crate::AnalysisService::analyze_with_progress(
+        Some(current_platform().display_path(&child)),
+        true,
+        |_| {},
+    )
+    .unwrap();
+    assert!(!refreshed.entries.iter().any(|entry| entry.path == selected));
+    assert_eq!(refreshed.total_entry_count + 1, initial.total_entry_count);
+    cache::clear_all().unwrap();
+}
+
+#[cfg(target_os = "linux")]
+#[test]
+fn retained_rows_match_display_path_order_for_non_utf8_names() {
+    use std::os::unix::ffi::OsStringExt;
+    let _operation_lock = crate::shared::operation::test_operation_lock();
+    let fixture = tempfile::tempdir().unwrap();
+    let root = current_platform()
+        .canonicalize_no_links(fixture.path())
+        .unwrap();
+    for index in 0..501 {
+        fs::write(root.join(format!("é-{index:04}")), [1; 4096]).unwrap();
+    }
+    for index in 0..1500 {
+        let mut name = vec![0x80];
+        name.extend_from_slice(format!("-{index:04}").as_bytes());
+        fs::write(root.join(std::ffi::OsString::from_vec(name)), [1; 4096]).unwrap();
+    }
+    let progress = Arc::new(ProgressTracker::new(0, |_| {}, 0));
+    let (aggregate, snapshot) = traverse_memory_only(
+        &root,
+        TraversalKind::Analysis(AnalysisScanMode::Standard),
+        now_ms(),
+        None,
+        &progress,
+        &AtomicBool::new(false),
+        None,
+    )
+    .unwrap();
+    let project = |aggregate| {
+        cache::analysis_result_from_snapshot(
+            &root,
+            aggregate,
+            &snapshot.directories,
+            &snapshot.files,
+            &[],
+            &mangodisk_platform::NameExclusions::default(),
+            1,
+        )
+        .unwrap()
+    };
+    let live = project(DirectoryAggregate {
+        retained_file_limit: 0,
+        ..aggregate
+    });
+    let cached = project(aggregate);
+    let paths = |result: AnalysisResult| {
+        result
+            .entries
+            .into_iter()
+            .map(|entry| entry.path)
+            .collect::<Vec<_>>()
+    };
+    assert_eq!(paths(cached), paths(live));
+}
+
+#[test]
+fn retained_navigation_rows_match_independent_metadata_and_fall_back_after_eviction() {
+    let _operation_lock = crate::shared::operation::test_operation_lock();
+    let fixture = tempfile::tempdir().unwrap();
+    let root = current_platform()
+        .canonicalize_no_links(fixture.path())
+        .unwrap();
+    fs::create_dir(root.join("empty-dir")).unwrap();
+    fs::create_dir(root.join("child")).unwrap();
+    fs::write(root.join("child/nested"), [1; 4096]).unwrap();
+    fs::write(root.join("empty"), []).unwrap();
+    for index in 0..1100 {
+        fs::write(
+            root.join(format!("file-{index:04}")),
+            vec![3; (index % 19 + 1) * 4096],
+        )
+        .unwrap();
+    }
+    #[cfg(unix)]
+    {
+        fs::hard_link(root.join("file-1099"), root.join("alias")).unwrap();
+        std::os::unix::fs::symlink(root.join("file-0000"), root.join("symlink")).unwrap();
+    }
+    let progress = Arc::new(ProgressTracker::new(0, |_| {}, 0));
+    let (aggregate, mut snapshot) = traverse_memory_only(
+        &root,
+        TraversalKind::Analysis(AnalysisScanMode::Standard),
+        now_ms(),
+        None,
+        &progress,
+        &AtomicBool::new(false),
+        None,
+    )
+    .unwrap();
+    assert_eq!(
+        aggregate.retained_file_limit,
+        super::index_sink::ANALYSIS_FILES_PER_DIRECTORY
+    );
+    let baseline_aggregate = DirectoryAggregate {
+        retained_file_limit: 0,
+        ..aggregate
+    };
+    let project = |aggregate, snapshot: &CompletedIndexSink| {
+        cache::analysis_result_from_snapshot(
+            &root,
+            aggregate,
+            &snapshot.directories,
+            &snapshot.files,
+            &[],
+            &mangodisk_platform::NameExclusions::default(),
+            1,
+        )
+        .unwrap()
+    };
+    let rows = |result: &AnalysisResult| {
+        result
+            .entries
+            .iter()
+            .map(|entry| {
+                (
+                    entry.path.clone(),
+                    entry.bytes,
+                    entry.logical_bytes,
+                    entry.file_count,
+                    entry.is_directory,
+                )
+            })
+            .collect::<Vec<_>>()
+    };
+    let baseline = project(baseline_aggregate, &snapshot);
+    let retained = project(aggregate, &snapshot);
+    assert_eq!(rows(&retained), rows(&baseline));
+    assert_eq!(retained.total_entry_count, baseline.total_entry_count);
+    assert_eq!(retained.total_bytes, baseline.total_bytes);
+    assert_eq!(retained.truncated, baseline.truncated);
+    assert_eq!(
+        retained.entries.len(),
+        crate::storage::analysis::ANALYSIS_VISIBLE_ENTRY_LIMIT
+    );
+    // A read-only cached page stays coherent with its scan even if an external
+    // mutation happens. Refresh and destructive preflight revalidate live state.
+    let selected_file = retained
+        .entries
+        .iter()
+        .find(|entry| !entry.is_directory && !entry.path.ends_with("/alias"))
+        .unwrap();
+    fs::remove_file(&selected_file.path).unwrap();
+    assert_eq!(rows(&project(aggregate, &snapshot)), rows(&retained));
+    // Losing enough retained rows must use real metadata rather than silently
+    // publish an incomplete largest-file prefix or an incorrect remainder count.
+    let removable: Vec<_> = snapshot
+        .files
+        .iter()
+        .filter(|(_, file)| file.shared_identity.is_none())
+        .take(700)
+        .map(|(path, _)| path.clone())
+        .collect();
+    for path in removable {
+        snapshot.files.remove(&path);
+    }
+    let fallback = project(aggregate, &snapshot);
+    let live = project(baseline_aggregate, &snapshot);
+    assert_eq!(rows(&fallback), rows(&live));
+    assert_eq!(fallback.total_entry_count, live.total_entry_count);
+    assert_eq!(fallback.total_entry_count + 1, baseline.total_entry_count);
+}
+
+#[cfg(unix)]
+#[test]
+fn complete_shared_alias_navigation_uses_snapshot_without_reopening_directory() {
+    let _operation_lock = crate::shared::operation::test_operation_lock();
+    cache::clear_all().unwrap();
+    let fixture = tempfile::tempdir().unwrap();
+    let root = current_platform()
+        .canonicalize_no_links(fixture.path())
+        .unwrap();
+    let owners = root.join("a-owners");
+    let aliases = root.join("z-aliases");
+    fs::create_dir(&owners).unwrap();
+    fs::create_dir(&aliases).unwrap();
+    for index in 0..600 {
+        let name = format!("file-{index:04}");
+        fs::write(owners.join(&name), [1; 4096]).unwrap();
+        fs::hard_link(owners.join(&name), aliases.join(&name)).unwrap();
+    }
+    let progress = Arc::new(ProgressTracker::new(0, |_| {}, 0));
+    let (_, snapshot) = traverse_memory_only(
+        &root,
+        TraversalKind::Analysis(AnalysisScanMode::Standard),
+        now_ms(),
+        None,
+        &progress,
+        &AtomicBool::new(false),
+        None,
+    )
+    .unwrap();
+    let project = || {
+        cache::analysis_result_from_snapshot(
+            &aliases,
+            snapshot.directories[&aliases],
+            &snapshot.directories,
+            &snapshot.files,
+            &[],
+            &mangodisk_platform::NameExclusions::default(),
+            1,
+        )
+        .unwrap()
+    };
+    let before = project();
+    assert_eq!(before.total_bytes, 0);
+    assert_eq!(before.total_entry_count, 0);
+    assert_eq!(before.entries.len(), 500);
+    assert!(before.truncated);
+    assert_eq!(before.shared_allocations.len(), 600);
+    // Removing the directory path cannot affect a complete read-only snapshot.
+    // Explicit refresh and destructive preflight still inspect live state.
+    fs::rename(&aliases, root.join("moved-aliases")).unwrap();
+    let after = project();
+    assert_eq!(
+        serde_json::to_value(before.entries).unwrap(),
+        serde_json::to_value(after.entries).unwrap()
+    );
+    cache::clear_all().unwrap();
+}
+
+#[test]
+#[ignore = "requires MANGODISK_TEST_NAVIGATION_ROOT and MANGODISK_TEST_NAVIGATION_CHILD"]
+fn manual_cached_navigation_latency() {
+    struct BenchmarkLogger;
+    impl log::Log for BenchmarkLogger {
+        fn enabled(&self, _: &log::Metadata<'_>) -> bool {
+            true
+        }
+        fn log(&self, record: &log::Record<'_>) {
+            if record.target().starts_with("mangodisk_core::storage") {
+                eprintln!("{}", record.args());
+            }
+        }
+        fn flush(&self) {}
+    }
+    static LOGGER: BenchmarkLogger = BenchmarkLogger;
+    let _ = log::set_logger(&LOGGER);
+    log::set_max_level(log::LevelFilter::Info);
+    let _operation_lock = crate::shared::operation::test_operation_lock();
+    cache::clear_all().unwrap();
+    let root = std::env::var("MANGODISK_TEST_NAVIGATION_ROOT").unwrap();
+    let child = std::env::var("MANGODISK_TEST_NAVIGATION_CHILD").unwrap();
+    let (_, scan) = StorageTraversal::analyze_path_with_diagnostics(Some(root), true, |_| {})
+        .expect("scan the explicit read-only benchmark root");
+    eprintln!("navigation_initial_scan diagnostics={scan:?}");
+    let mut children = vec![child];
+    if let Some(extra) = std::env::var_os("MANGODISK_TEST_NAVIGATION_CHILDREN") {
+        children
+            .extend(std::env::split_paths(&extra).map(|path| path.to_string_lossy().into_owned()));
+    }
+    let iterations = std::env::var("MANGODISK_TEST_NAVIGATION_ITERATIONS")
+        .ok()
+        .map(|value| {
+            value
+                .parse::<usize>()
+                .expect("positive benchmark iteration count")
+        })
+        .unwrap_or(3);
+    assert!(iterations > 0);
+    for child in children {
+        for iteration in 0..iterations {
+            let started = Instant::now();
+            let events = Arc::new(std::sync::atomic::AtomicUsize::new(0));
+            let recorded = Arc::clone(&events);
+            let (result, diagnostics) = StorageTraversal::analyze_path_with_diagnostics(
+                Some(child.clone()),
+                false,
+                move |_| {
+                    recorded.fetch_add(1, Ordering::Relaxed);
+                },
+            )
+            .expect("open the cached child");
+            assert_eq!(diagnostics.fast_path, "cache");
+            assert_eq!(events.load(Ordering::Relaxed), 0);
+            eprintln!("navigation_cached_child child={} iteration={iteration} elapsed_us={} entries={} total_entries={} diagnostics={diagnostics:?}", crate::filesystem::metadata::diagnostic_path(std::path::Path::new(&child)), started.elapsed().as_micros(), result.entries.len(), result.total_entry_count);
+        }
+    }
+}
+
+#[test]
 fn cached_child_navigation_does_not_emit_scan_progress() {
     let _operation_lock = crate::shared::operation::test_operation_lock();
     cache::clear_all().expect("clear the analysis cache before navigation validation");
@@ -832,6 +1267,7 @@ fn fast_analysis_contract_validates_record_counts_before_publish() {
     validation
         .consume(
             FastAnalysisRecord::Directory {
+                retained_file_limit: 0,
                 path: root.join("child"),
                 logical_bytes: 5,
                 allocated_bytes: 5,
@@ -845,6 +1281,7 @@ fn fast_analysis_contract_validates_record_counts_before_publish() {
     validation
         .consume(
             FastAnalysisRecord::Directory {
+                retained_file_limit: 0,
                 path: root.to_path_buf(),
                 logical_bytes: 5,
                 allocated_bytes: 5,
@@ -1023,6 +1460,7 @@ fn large_file_session_supports_switching_from_high_threshold_to_candidate_floor(
             (
                 root.join(name),
                 IndexedFile {
+                    shared_identity: None,
                     bytes,
                     logical_bytes: bytes,
                     modified_at_ms: None,
@@ -1344,6 +1782,40 @@ fn analysis_charges_hard_links_once_with_stable_native_and_fallback_ownership() 
     assert_eq!(aggregate.logical_bytes, 3 * 1024 * 1024);
     assert_eq!(snapshot.files[&root.join("a/owner.bin")].bytes, 0);
     assert_eq!(snapshot.files[&root.join("b/alias.bin")].bytes, 0);
+    let fallback = cache::analysis_result_from_snapshot(
+        &root,
+        aggregate,
+        &snapshot.directories,
+        &snapshot.files,
+        &[],
+        &mangodisk_platform::NameExclusions::default(),
+        1,
+    )
+    .unwrap();
+    let native = cache::analysis_result(&root).unwrap().unwrap();
+    let ownership = |result: &AnalysisResult| {
+        result
+            .shared_allocations
+            .iter()
+            .map(|group| {
+                (
+                    group.owner.clone(),
+                    group.bytes,
+                    group
+                        .files
+                        .iter()
+                        .map(|file| (file.path.clone(), file.bytes))
+                        .collect::<Vec<_>>(),
+                )
+            })
+            .collect::<Vec<_>>()
+    };
+    assert_eq!(ownership(&fallback), ownership(&native));
+    assert_eq!(
+        fallback.shared_directories.len(),
+        native.shared_directories.len()
+    );
+
     let outside = tempfile::tempdir().unwrap();
     fs::hard_link(&owner, outside.path().join("outside.bin")).unwrap();
     // A link outside the selected root does not suppress the allocation inside it.

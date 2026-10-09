@@ -9,12 +9,10 @@ use mangodisk_platform::{
     ScanPurpose,
 };
 
-use crate::storage::large_files::LARGE_FILE_CANDIDATE_FLOOR_BYTES;
-
 use crate::storage::index::cache::{DirectoryAggregate, IndexedFile};
 
-const ANALYSIS_FILES_PER_DIRECTORY: usize = 64;
-const ANALYSIS_FILE_BUDGET: usize = 8192;
+pub(super) const ANALYSIS_FILES_PER_DIRECTORY: usize = 1000;
+const ANALYSIS_FILE_BUDGET: usize = ANALYSIS_FILES_PER_DIRECTORY * 128;
 
 /// Collects one completed scan in memory.
 ///
@@ -38,7 +36,7 @@ pub(super) struct CompletedIndexSink {
 /// Keep a bounded allocation-ranked subset, with deterministic path ties.
 /// The scan-wide budget caps extra retained metadata independently of file count.
 pub(super) struct AnalysisCandidates {
-    files: BinaryHeap<Reverse<FastAnalysisFile>>,
+    files: BinaryHeap<Reverse<(u64, FastAnalysisFile)>>,
     limit: usize,
 }
 impl AnalysisCandidates {
@@ -52,26 +50,34 @@ impl AnalysisCandidates {
         bytes > 0
             && self.limit > 0
             && (self.files.len() < self.limit
-                || self.files.peek().is_some_and(|smallest| {
-                    bytes > smallest.0.allocated_bytes
-                        || (bytes == smallest.0.allocated_bytes && path < smallest.0.path.as_path())
+                || self.files.peek().is_some_and(|Reverse((_, smallest))| {
+                    bytes > smallest.allocated_bytes
+                        || (bytes == smallest.allocated_bytes
+                            && FastAnalysisFile::compare_paths(path, &smallest.path).is_lt())
                 }))
     }
     pub(super) fn push(&mut self, file: FastAnalysisFile) {
         if file.allocated_bytes == 0 || self.limit == 0 {
             return;
         }
+        // Prefer expensive directories before ranking their file rows. A global
+        // size-only budget would evict every row of a huge small-file directory.
+        let candidate = (file.parent_file_count, file);
         if self.files.len() < self.limit {
-            self.files.push(Reverse(file));
-        } else if self.files.peek().is_some_and(|smallest| file > smallest.0) {
+            self.files.push(Reverse(candidate));
+        } else if self
+            .files
+            .peek()
+            .is_some_and(|smallest| candidate > smallest.0)
+        {
             *self
                 .files
                 .peek_mut()
-                .expect("a full candidate heap is nonempty") = Reverse(file);
+                .expect("a full candidate heap is nonempty") = Reverse(candidate);
         }
     }
     pub(super) fn into_files(self) -> impl Iterator<Item = FastAnalysisFile> {
-        self.files.into_iter().map(|file| file.0)
+        self.files.into_iter().map(|Reverse((_, file))| file)
     }
 }
 
@@ -155,8 +161,9 @@ impl IndexRecordSink {
         &mut self,
         path: PathBuf,
         identity: PhysicalFileIdentity,
-        file: IndexedFile,
+        mut file: IndexedFile,
     ) {
+        file.shared_identity = Some(identity);
         self.hard_links
             .entry((identity.volume, identity.index))
             .or_default()
@@ -195,21 +202,21 @@ impl IndexRecordSink {
             // Select charged owners only after all aliases are known. Ordinary files
             // have already been bounded by their native directory reader.
             if let Some((path, file)) = links.first() {
+                // Retain owners too, even below the candidate floor or when the
+                // other links are outside this scan. Cached child sessions must
+                // preserve the same shared-allocation deletion boundary.
+                self.files.insert(path.clone(), *file);
                 if let Some(candidates) =
                     path.parent().and_then(|parent| owner_files.get_mut(parent))
                 {
                     if file.bytes > 0
-                        && file.bytes < LARGE_FILE_CANDIDATE_FLOOR_BYTES
                         && candidates.would_retain(file.bytes, path)
                         && current_platform()
-                            .should_skip(
-                                path,
-                                path.parent().unwrap_or(path),
-                                ScanPurpose::LargeFiles,
-                            )
+                            .should_skip(path, path.parent().unwrap_or(path), ScanPurpose::Analysis)
                             .is_none()
                     {
                         candidates.push(FastAnalysisFile {
+                            parent_file_count: 0,
                             path: path.clone(),
                             allocated_bytes: file.bytes,
                             logical_bytes: file.logical_bytes,
@@ -272,6 +279,7 @@ impl IndexRecordSink {
             *count += 1;
             // Zero-charge aliases remain authoritative even if a candidate was stale.
             self.files.entry(file.path).or_insert(IndexedFile {
+                shared_identity: None,
                 bytes: file.allocated_bytes,
                 logical_bytes: file.logical_bytes,
                 modified_at_ms: file.modified_at_ms,
@@ -289,29 +297,71 @@ impl IndexRecordSink {
 mod tests {
     use super::*;
     #[test]
-    fn supplemental_analysis_files_stay_bounded_and_never_replace_zero_charge_aliases() {
-        let mut sink = IndexRecordSink::memory(None);
-        for index in (0..12_000).rev() {
-            sink.push_analysis_file(FastAnalysisFile {
-                path: format!("/fixture/parent-{}/file-{index:05}", index / 64).into(),
-                allocated_bytes: index + 1,
-                logical_bytes: index + 1,
+    fn global_retention_preserves_heavy_small_file_directories() {
+        let mut candidates = AnalysisCandidates::new(5);
+        for index in 0..10 {
+            candidates.push(FastAnalysisFile {
+                parent_file_count: 10,
+                path: format!("/large/{index}").into(),
+                allocated_bytes: 1_000_000,
+                logical_bytes: 1_000_000,
                 modified_at_ms: None,
             });
         }
-        assert_eq!(sink.analysis_files.files.len(), 8192);
-        let alias = PathBuf::from("/fixture/parent-187/file-11999");
+        for index in 0..3 {
+            candidates.push(FastAnalysisFile {
+                parent_file_count: 223_905,
+                path: format!("/small/{index}").into(),
+                allocated_bytes: 4096,
+                logical_bytes: 4096,
+                modified_at_ms: None,
+            });
+        }
+        let retained: Vec<_> = candidates.into_files().collect();
+        assert_eq!(retained.len(), 5);
+        assert_eq!(
+            retained
+                .iter()
+                .filter(|file| file.path.starts_with("/small"))
+                .count(),
+            3
+        );
+    }
+    #[test]
+    fn supplemental_analysis_files_stay_bounded_and_never_replace_zero_charge_aliases() {
+        let mut sink = IndexRecordSink::memory(None);
+        let candidate_count = ANALYSIS_FILE_BUDGET + ANALYSIS_FILES_PER_DIRECTORY;
+        for index in (0..candidate_count).rev() {
+            sink.push_analysis_file(FastAnalysisFile {
+                parent_file_count: 0,
+                path: format!(
+                    "/fixture/parent-{}/file-{index:05}",
+                    index / ANALYSIS_FILES_PER_DIRECTORY
+                )
+                .into(),
+                allocated_bytes: (index + 1) as u64,
+                logical_bytes: (index + 1) as u64,
+                modified_at_ms: None,
+            });
+        }
+        assert_eq!(sink.analysis_files.files.len(), ANALYSIS_FILE_BUDGET);
+        let last_index = candidate_count - 1;
+        let alias = PathBuf::from(format!(
+            "/fixture/parent-{}/file-{last_index:05}",
+            last_index / ANALYSIS_FILES_PER_DIRECTORY
+        ));
         sink.push_large_file(
             alias.clone(),
             IndexedFile {
+                shared_identity: None,
                 bytes: 0,
-                logical_bytes: 12000,
+                logical_bytes: candidate_count as u64,
                 modified_at_ms: None,
             },
         )
         .unwrap();
         let snapshot = sink.finish_analysis().unwrap();
-        assert_eq!(snapshot.files.len(), 8192);
+        assert_eq!(snapshot.files.len(), ANALYSIS_FILE_BUDGET);
         assert_eq!(snapshot.files[&alias].bytes, 0);
         assert!(!snapshot
             .files

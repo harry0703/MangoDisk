@@ -543,6 +543,7 @@ fn read_directory(
                 && !should_skip(&path, ScanPurpose::LargeFiles, false)
             {
                 analysis_files.push(FastAnalysisFile {
+                    parent_file_count: 0,
                     path: path.clone(),
                     allocated_bytes,
                     logical_bytes,
@@ -634,6 +635,7 @@ fn emit_directory(
 ) -> Result<(), FastAnalysisScanError> {
     let started = Instant::now();
     consumer(FastAnalysisRecord::Directory {
+        retained_file_limit: 0,
         path: path.to_path_buf(),
         logical_bytes: totals.logical_bytes,
         allocated_bytes: totals.allocated_bytes,
@@ -739,6 +741,7 @@ mod tests {
         let summary = analyze_records(
             &LinuxPlatform,
             FastAnalysisQuery {
+                retained_file_limit: 0,
                 name_exclusions: &crate::NameExclusions::default(),
                 excluded_roots: &[],
                 root: &root,
@@ -785,6 +788,7 @@ mod tests {
         let result = analyze_records(
             &LinuxPlatform,
             FastAnalysisQuery {
+                retained_file_limit: 0,
                 name_exclusions: &crate::NameExclusions::default(),
                 excluded_roots: &[],
                 root: &root,
@@ -814,6 +818,7 @@ mod tests {
             let result = analyze_records(
                 &LinuxPlatform,
                 FastAnalysisQuery {
+                    retained_file_limit: 0,
                     name_exclusions: &crate::NameExclusions::default(),
                     excluded_roots: &[],
                     root: &scan_root,

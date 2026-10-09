@@ -398,30 +398,28 @@ export const useAnalysisStore = defineStore('analysis', {
         const removed = await AnalysisService.deletePermanently(this.result.scanId, entry.path);
 
         if (removed.requiresRescan) {
-          // Shared allocation can move to a sibling outside the deleted path.
-          // Core may expire every session; never retain their old scan IDs.
+          // A recreated original path cannot be represented by the deleted snapshot.
           this.cache = {};
           this.cacheOrder = [];
           this.deleting = false;
           this.deletingPath = null;
           await this.refreshAfterDelete(sourceResult.root, entry.path, false);
         } else {
-          // Reconcile the current scan and expire overlapping snapshots so
-          // navigation cannot revive deleted entries or expired scan IDs.
+          // Core owns allocation transfers and the validity of every scan ID.
           const synchronized = AnalysisCacheUtils.syncAfterDelete(
             this.cache,
-            removed.removedPath,
-            removed.releasedBytes,
-            removed.removedFileCount,
-            sourceResult.root
+            this.cacheOrder,
+            removed,
+            ANALYSIS_RESULT_CACHE_LIMIT
           );
-          for (const result of Object.values(synchronized)) markRaw(result);
-          this.cache = synchronized;
-          this.cacheOrder = AnalysisCacheUtils.retainExisting(this.cacheOrder, this.cache);
+          for (const result of Object.values(synchronized.cache)) markRaw(result);
+          this.cache = synchronized.cache;
+          this.cacheOrder = synchronized.order;
           // Refresh the currently visible result rather than the path where the
           // operation started, preserving correctness if a future UI can navigate.
           const visibleResultKey = this.result ? AnalysisCacheUtils.key(this.result.root) : null;
           this.result = visibleResultKey ? (this.cache[visibleResultKey] ?? null) : null;
+          this.invalidateResultForExclusionChange();
           LoggerService.info(LOG_DOMAINS.analysis, LOG_EVENTS.analysisCacheSyncedAfterDelete, {
             path: removed.removedPath,
             releasedBytes: removed.releasedBytes,
@@ -434,6 +432,9 @@ export const useAnalysisStore = defineStore('analysis', {
           appStore.reportError(error);
           this.deleting = false;
           this.deletingPath = null;
+          // Partial deletion may move shared allocation into a sibling root.
+          this.cache = {};
+          this.cacheOrder = [];
           await this.refreshAfterDelete(sourceResult.root, entry.path, true);
           await appStore.refreshSystemDisk();
         } else {

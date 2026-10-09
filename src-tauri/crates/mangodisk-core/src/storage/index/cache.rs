@@ -25,12 +25,17 @@ use crate::{
 };
 
 const ANALYSIS_CACHE_ROOT_LIMIT: usize = 2;
+pub(super) const HIERARCHY_MAX_DEPTH: usize = 6;
+pub(super) const HIERARCHY_MAX_CHILDREN: usize = 64;
+pub(super) const HIERARCHY_MAX_NODES: usize = 2048;
 const ANALYSIS_CACHE_UNAVAILABLE_ERROR: &str = "the analysis cache is unavailable";
 
 static ANALYSIS_CACHE: OnceLock<Mutex<AnalysisCache>> = OnceLock::new();
 
 #[derive(Clone, Copy, Default)]
 pub(crate) struct DirectoryAggregate {
+    /// Proven scan-time file retention bound, independent of later global eviction.
+    pub(crate) retained_file_limit: usize,
     pub(crate) scan_mode: AnalysisScanMode,
     /// Bytes in this snapshot's declared metric; logical scans never claim allocation.
     pub(crate) bytes: u64,
@@ -46,6 +51,8 @@ pub(crate) struct DirectoryAggregate {
 
 #[derive(Clone, Copy)]
 pub(crate) struct IndexedFile {
+    /// Retained explicitly: empty and sparse files can also have zero allocation.
+    pub(crate) shared_identity: Option<mangodisk_platform::PhysicalFileIdentity>,
     pub(crate) bytes: u64,
     pub(crate) logical_bytes: u64,
     pub(crate) modified_at_ms: Option<u64>,
@@ -53,6 +60,7 @@ pub(crate) struct IndexedFile {
 
 #[derive(Default)]
 struct AnalysisCache {
+    navigation: super::navigation::NavigationIndex,
     directories: HashMap<PathBuf, DirectoryAggregate>,
     files: HashMap<PathBuf, IndexedFile>,
     scan_roots: HashMap<PathBuf, ScanPurpose>,
@@ -306,7 +314,8 @@ fn large_file_entry(path: &Path, root: &Path, file: IndexedFile) -> LargeFileEnt
 }
 
 pub(crate) fn analysis_result(root: &Path) -> Result<Option<AnalysisResult>, String> {
-    let (root_aggregate, excluded_roots) = {
+    let started = std::time::Instant::now();
+    let (root_aggregate, excluded_roots, cached_entries, revision) = {
         let cache = cache()
             .lock()
             .map_err(|_| ANALYSIS_CACHE_UNAVAILABLE_ERROR.to_string())?;
@@ -319,28 +328,74 @@ pub(crate) fn analysis_result(root: &Path) -> Result<Option<AnalysisResult>, Str
             .and_then(|scan_root| cache.scan_exclusions.get(scan_root))
             .cloned()
             .unwrap_or_default();
-        (aggregate, excluded_roots)
+        let cached_entries = aggregate.and_then(|aggregate| {
+            let (directories, files) =
+                cache
+                    .navigation
+                    .direct_snapshot(root, &cache.directories, &cache.files);
+            cached_navigation_entries(root, aggregate, &directories, &files)
+        });
+        let revision = (cache.mutation_revision, cache.publish_generations.clone());
+        (aggregate, excluded_roots, cached_entries, revision)
     };
     let Some(root_aggregate) = root_aggregate else {
         return Ok(None);
     };
 
-    let children = read_analysis_children(root, &excluded_roots.0, &excluded_roots.1)?;
+    let children = if cached_entries.is_some() {
+        Vec::new()
+    } else {
+        read_analysis_children(root, &excluded_roots.0, &excluded_roots.1)?
+    };
+    let projected_rows = cached_entries
+        .as_ref()
+        .map_or(children.len(), |(entries, _)| entries.len());
+    let metadata_ms = started.elapsed().as_millis();
     let cache = cache()
         .lock()
         .map_err(|_| ANALYSIS_CACHE_UNAVAILABLE_ERROR.to_string())?;
-    let mut result = build_analysis_result(
-        root,
-        root_aggregate,
-        children,
-        |path| cache.directories.get(path).copied(),
-        |path| cache.files.get(path).copied(),
-    );
-    result.directory_hierarchy = build_directory_hierarchy(root, &cache.directories, &cache.files);
-    result.requires_delete_rescan = cache
+    if revision != (cache.mutation_revision, cache.publish_generations.clone()) {
+        log::info!(
+            "analysis_cache_projection_changed root={} outcome=cache_miss",
+            crate::filesystem::metadata::diagnostic_path(root)
+        );
+        return Ok(None);
+    }
+    let scope = cache
         .scan_roots
         .keys()
-        .any(|scan_root| root.starts_with(scan_root) && has_shared_allocation(&cache, scan_root));
+        .filter(|scope| root.starts_with(scope))
+        .max_by_key(|scope| scope.components().count())
+        .map_or(root, |scope| scope.as_path());
+    let shared = match cache.navigation.leaf_shared_identities(root, &cache.files) {
+        Some(identities) => {
+            shared_allocations_for_identities(root, scope, &cache.files, Some(identities))
+        }
+        None => shared_allocations(root, scope, &cache.files),
+    };
+    let shared_ms = started.elapsed().as_millis().saturating_sub(metadata_ms);
+    let snapshot_rows = cached_entries.is_some();
+    let mut result = if let Some((entries, count)) = cached_entries {
+        build_analysis_result_from_entries(root, root_aggregate, entries, shared, count)
+    } else {
+        build_analysis_result(
+            root,
+            root_aggregate,
+            children,
+            |path| cache.directories.get(path).copied(),
+            |path| cache.files.get(path).copied(),
+            shared,
+        )
+    };
+    retain_shared_directories(&mut result, &cache.directories, Some(&cache.navigation));
+    let rows_ms = started
+        .elapsed()
+        .as_millis()
+        .saturating_sub(metadata_ms + shared_ms);
+    result.directory_hierarchy = cache
+        .navigation
+        .hierarchy(root, &cache.directories, &cache.files);
+    log::info!("analysis_cache_projection_finished root={} projected_rows={} positive_children={} visible_rows={} snapshot_rows={} indexed_directories={} indexed_files={} metadata_ms={} shared_ms={} rows_ms={} hierarchy_ms={} elapsed_ms={}", crate::filesystem::metadata::diagnostic_path(root), projected_rows, result.total_entry_count, result.entries.len(), snapshot_rows, cache.directories.len(), cache.files.len(), metadata_ms, shared_ms, rows_ms, started.elapsed().as_millis().saturating_sub(metadata_ms + shared_ms + rows_ms), started.elapsed().as_millis());
     Ok(Some(result))
 }
 
@@ -438,6 +493,20 @@ pub(crate) fn analysis_result_from_snapshot(
     excluded_names: &mangodisk_platform::NameExclusions,
     workers: usize,
 ) -> Result<AnalysisResult, String> {
+    if let Some((entries, count)) =
+        cached_navigation_entries(root, root_aggregate, directories, files)
+    {
+        let mut result = build_analysis_result_from_entries(
+            root,
+            root_aggregate,
+            entries,
+            shared_allocations(root, root, files),
+            count,
+        );
+        retain_shared_directories(&mut result, directories, None);
+        result.directory_hierarchy = build_directory_hierarchy(root, directories, files);
+        return Ok(result);
+    }
     let children = read_analysis_children_with_metadata(
         root,
         excluded_roots,
@@ -460,11 +529,10 @@ pub(crate) fn analysis_result_from_snapshot(
             }
             files.get(path).copied()
         },
+        shared_allocations(root, root, files),
     );
+    retain_shared_directories(&mut result, directories, None);
     result.directory_hierarchy = build_directory_hierarchy(root, directories, files);
-    result.requires_delete_rescan = files
-        .iter()
-        .any(|(path, file)| path.starts_with(root) && file.bytes == 0);
     Ok(result)
 }
 
@@ -507,6 +575,7 @@ fn measure_snapshot_files(
                             (
                                 path.clone(),
                                 IndexedFile {
+                                    shared_identity: None,
                                     bytes: usage.allocated_bytes,
                                     logical_bytes: usage.logical_bytes,
                                     modified_at_ms: modified_ms(metadata),
@@ -535,18 +604,96 @@ fn measure_snapshot_files(
 }
 
 fn file_snapshot_matches(file: &IndexedFile, metadata: &fs::Metadata) -> bool {
-    file.bytes == 0
+    // Shared allocation is reconciled in the original scan metric. Remeasuring
+    // one surviving name would mix live bytes with unchanged directory totals.
+    file.shared_identity
+        .is_some_and(|identity| current_platform().matches_file_identity(metadata, identity))
+        || file.bytes == 0
         || (file.logical_bytes == metadata.len() && file.modified_at_ms == modified_ms(metadata))
 }
 
-fn build_directory_hierarchy(
+/// Retain only shared-file ancestors, including zero-charge branches. This is
+/// enough to restore allocation transfers after the larger index is evicted.
+fn retain_shared_directories(
+    result: &mut AnalysisResult,
+    directories: &HashMap<PathBuf, DirectoryAggregate>,
+    navigation: Option<&super::navigation::NavigationIndex>,
+) {
+    if result.shared_allocations.is_empty() {
+        return;
+    }
+    let root = Path::new(&result.root);
+    let mut paths = HashSet::new();
+    for file in result
+        .shared_allocations
+        .iter()
+        .flat_map(|group| &group.files)
+    {
+        let Some(parent) = Path::new(&file.path).parent() else {
+            continue;
+        };
+        if parent == root {
+            continue;
+        }
+        let Ok(relative) = parent.strip_prefix(root) else {
+            continue;
+        };
+        let mut ancestor = root.to_path_buf();
+        // Parse each relative path once instead of repeatedly stripping every
+        // ancestor. One extra level preserves the depth-six chart's child counts.
+        for component in relative.components().take(HIERARCHY_MAX_DEPTH + 1) {
+            ancestor.push(component);
+            paths.insert(ancestor.clone());
+        }
+    }
+    let mut counts: HashMap<PathBuf, u64> = paths
+        .iter()
+        .filter_map(|path| {
+            directories
+                .get(path)
+                .map(|aggregate| (path.clone(), aggregate.direct_file_count))
+        })
+        .collect();
+    if let Some(navigation) = navigation {
+        for (path, count) in &mut counts {
+            *count += navigation.directory_count(path, directories);
+        }
+    } else {
+        for (path, aggregate) in directories {
+            if aggregate.bytes > 0 {
+                if let Some(count) = path.parent().and_then(|parent| counts.get_mut(parent)) {
+                    *count += 1;
+                }
+            }
+        }
+    }
+    result.shared_directories = std::sync::Arc::new(
+        paths
+            .into_iter()
+            .filter_map(|path| {
+                let aggregate = directories.get(&path)?;
+                Some(AnalysisDirectoryNode {
+                    name: path.file_name()?.to_string_lossy().into_owned(),
+                    path: display_path(&path),
+                    bytes: aggregate.bytes,
+                    file_count: aggregate.file_count,
+                    total_entry_count: counts.get(&path).copied().unwrap_or(0),
+                    children: Vec::new(),
+                    files: Vec::new(),
+                })
+            })
+            .collect(),
+    );
+}
+
+pub(crate) fn build_directory_hierarchy(
     root: &Path,
     directories: &HashMap<PathBuf, DirectoryAggregate>,
     files: &HashMap<PathBuf, IndexedFile>,
 ) -> Vec<AnalysisDirectoryNode> {
-    const MAX_DEPTH: usize = 6;
-    const MAX_CHILDREN: usize = 64;
-    const MAX_NODES: usize = 2048;
+    const MAX_DEPTH: usize = HIERARCHY_MAX_DEPTH;
+    const MAX_CHILDREN: usize = HIERARCHY_MAX_CHILDREN;
+    const MAX_NODES: usize = HIERARCHY_MAX_NODES;
     enum HierarchyEntry<'a> {
         Directory(&'a DirectoryAggregate),
         File(&'a IndexedFile),
@@ -761,21 +908,145 @@ fn read_analysis_children_with_metadata(
         .collect())
 }
 
+/// Reuse the active scan's largest file rows for file-heavy directories. Global
+/// retention can remove a directory's tail, so the recorded native limit alone
+/// is insufficient: verify that enough ordinary rows still survive. Shared
+/// aliases are retained independently and their charged owners count separately.
+/// More positive files than the visible limit also proves that omitted ordinary
+/// zero-allocation files cannot affect the published rows or truncation flag.
+/// Explicit refresh and destructive preflight remain the freshness boundaries.
+fn cached_navigation_entries(
+    root: &Path,
+    aggregate: DirectoryAggregate,
+    directories: &HashMap<PathBuf, DirectoryAggregate>,
+    files: &HashMap<PathBuf, IndexedFile>,
+) -> Option<(Vec<DirectoryEntryInfo>, usize)> {
+    let direct_files: Vec<_> = files
+        .iter()
+        .filter(|(path, _)| path.parent() == Some(root))
+        .collect();
+    // More than the visible limit of positive children proves omitted empty
+    // files cannot change the prefix or truncation. A complete direct snapshot
+    // also preserves zero-charge aliases below that boundary.
+    let complete_files = aggregate.file_count == direct_files.len() as u64;
+    let positive_directories = directories
+        .iter()
+        .filter(|(path, directory)| path.parent() == Some(root) && directory.bytes > 0)
+        .count();
+    let total_entry_count = aggregate.direct_file_count as usize + positive_directories;
+    if !complete_files && total_entry_count <= ANALYSIS_VISIBLE_ENTRY_LIMIT {
+        return None;
+    }
+    let shared_owners = direct_files
+        .iter()
+        .filter(|(_, file)| file.bytes > 0 && file.shared_identity.is_some())
+        .count();
+    let ordinary_count = aggregate
+        .direct_file_count
+        .saturating_sub(shared_owners as u64);
+    let retained_ordinary = direct_files
+        .iter()
+        .filter(|(_, file)| file.bytes > 0 && file.shared_identity.is_none())
+        .count();
+    if retained_ordinary < ordinary_count.min(ANALYSIS_VISIBLE_ENTRY_LIMIT as u64) as usize
+        || (retained_ordinary < ordinary_count as usize
+            && aggregate.retained_file_limit < ANALYSIS_VISIBLE_ENTRY_LIMIT)
+    {
+        return None;
+    }
+    let mut entries: Vec<_> = direct_files
+        .into_iter()
+        .map(|(path, file)| DirectoryEntryInfo {
+            name: path
+                .file_name()
+                .unwrap_or_default()
+                .to_string_lossy()
+                .into_owned(),
+            path: display_path(path),
+            bytes: file.bytes,
+            logical_bytes: file.logical_bytes,
+            file_count: 1,
+            is_directory: false,
+            modified_at_ms: file.modified_at_ms,
+            content_fingerprint: None,
+        })
+        .collect();
+    for (path, directory) in directories {
+        if path.parent() != Some(root) {
+            continue;
+        }
+        entries.push(DirectoryEntryInfo {
+            name: path
+                .file_name()
+                .unwrap_or_default()
+                .to_string_lossy()
+                .into_owned(),
+            path: display_path(path),
+            bytes: directory.bytes,
+            logical_bytes: directory.logical_bytes,
+            file_count: directory.file_count,
+            is_directory: true,
+            modified_at_ms: None,
+            content_fingerprint: directory.fingerprint.map(display_fingerprint),
+        });
+    }
+    Some((entries, total_entry_count))
+}
+
 fn build_analysis_result(
     root: &Path,
     root_aggregate: DirectoryAggregate,
     children: Vec<(fs::DirEntry, PathBuf, fs::Metadata)>,
     directory_aggregate: impl FnMut(&Path) -> Option<DirectoryAggregate>,
     indexed_file: impl FnMut(&Path) -> Option<IndexedFile>,
+    shared_allocations: std::sync::Arc<Vec<crate::storage::analysis::SharedAllocation>>,
 ) -> AnalysisResult {
-    let mut entries = build_analysis_entries(
+    let entries = build_analysis_entries(
         children,
         root_aggregate.scan_mode,
         directory_aggregate,
         indexed_file,
     );
     let total_entry_count = entries.iter().filter(|entry| entry.bytes > 0).count();
-    let truncated = entries.len() > ANALYSIS_VISIBLE_ENTRY_LIMIT;
+    build_analysis_result_from_entries(
+        root,
+        root_aggregate,
+        entries,
+        shared_allocations,
+        total_entry_count,
+    )
+}
+
+fn build_analysis_result_from_entries(
+    root: &Path,
+    root_aggregate: DirectoryAggregate,
+    mut entries: Vec<DirectoryEntryInfo>,
+    shared_allocations: std::sync::Arc<Vec<crate::storage::analysis::SharedAllocation>>,
+    total_entry_count: usize,
+) -> AnalysisResult {
+    let shared_paths: HashSet<_> = shared_allocations
+        .iter()
+        .flat_map(|group| &group.files)
+        .filter_map(|file| {
+            let path = Path::new(&file.path);
+            if path.parent() == Some(root) {
+                return Some(file.path.clone());
+            }
+            let relative = path.strip_prefix(root).ok()?;
+            Some(display_path(
+                &root.join(relative.components().next()?.as_os_str()),
+            ))
+        })
+        .collect();
+    let shared_entries = std::sync::Arc::new(
+        entries
+            .iter()
+            .filter(|entry| shared_paths.contains(&entry.path))
+            .cloned()
+            .collect(),
+    );
+    let truncated = entries.len() > ANALYSIS_VISIBLE_ENTRY_LIMIT
+        || total_entry_count > ANALYSIS_VISIBLE_ENTRY_LIMIT;
     rank_visible_analysis_entries(&mut entries);
 
     AnalysisResult {
@@ -789,7 +1060,9 @@ fn build_analysis_result(
         truncated,
         entries,
         directory_hierarchy: Vec::new(),
-        requires_delete_rescan: false,
+        shared_allocations,
+        shared_entries,
+        shared_directories: Default::default(),
     }
 }
 
@@ -807,7 +1080,7 @@ fn build_analysis_entries(
             } else {
                 let usage = indexed_file(&path)
                     // Reopened read-only lists must reflect changed ordinary files.
-                    // Zero-charge aliases keep scan ownership until a shared-allocation rescan.
+                    // Zero-charge aliases keep ownership until deletion reconciles their group.
                     .filter(|file| file_snapshot_matches(file, &metadata))
                     .map(|file| mangodisk_platform::FileSpaceUsage {
                         logical_bytes: file.logical_bytes,
@@ -987,6 +1260,8 @@ pub(crate) fn store_memory_only(
         }
         cache.directories.extend(scanned_directories);
         cache.files.extend(scanned_files);
+        cache.navigation =
+            super::navigation::NavigationIndex::build(&cache.directories, &cache.files);
         cache
             .scan_roots
             .insert(root.to_path_buf(), publication.purpose);
@@ -1042,6 +1317,24 @@ pub(crate) fn remove_entry_in_mode(
     is_directory: bool,
     scan_mode: AnalysisScanMode,
 ) {
+    remove_entry_with_allocation_credits(
+        target,
+        removed_usage,
+        file_count,
+        is_directory,
+        scan_mode,
+        None,
+    );
+}
+
+pub(crate) fn remove_entry_with_allocation_credits(
+    target: &Path,
+    removed_usage: FileSpaceUsage,
+    file_count: u64,
+    is_directory: bool,
+    scan_mode: AnalysisScanMode,
+    credits: Option<&[DirectoryEntryInfo]>,
+) {
     let removed_monitors = {
         let Ok(mut cache) = cache().lock() else {
             log::warn!("analysis_cache_update_failed reason=poisoned_lock");
@@ -1070,7 +1363,7 @@ pub(crate) fn remove_entry_in_mode(
             .scan_roots
             .keys()
             .filter(|root| target.starts_with(root.as_path()))
-            .filter(|root| has_shared_allocation(&cache, root))
+            .filter(|_| credits.is_none() && has_shared_allocation(&cache, target))
             .cloned()
             .collect();
         let mut shared_monitors = incompatible_monitors;
@@ -1116,6 +1409,7 @@ pub(crate) fn remove_entry_in_mode(
             cache.files.remove(target);
             Vec::new()
         };
+        cache.navigation.remove(target, is_directory);
         for (directory, aggregate) in &mut cache.directories {
             if target.starts_with(directory) {
                 aggregate.bytes = aggregate
@@ -1132,6 +1426,26 @@ pub(crate) fn remove_entry_in_mode(
                     aggregate.direct_file_count = aggregate.direct_file_count.saturating_sub(1);
                 }
                 aggregate.fingerprint = None;
+            }
+        }
+        for credit in credits.into_iter().flatten() {
+            let path = Path::new(&credit.path);
+            let Some(file) = cache.files.get_mut(path) else {
+                continue;
+            };
+            // Independently refreshed roots may already charge this alias.
+            if file.bytes > 0 || credit.bytes == 0 {
+                continue;
+            }
+            file.bytes = credit.bytes;
+            for (directory, aggregate) in &mut cache.directories {
+                if path.starts_with(directory) {
+                    aggregate.bytes = aggregate.bytes.saturating_add(credit.bytes);
+                    if path.parent() == Some(directory.as_path()) {
+                        aggregate.direct_file_count += 1;
+                    }
+                    aggregate.fingerprint = None;
+                }
             }
         }
         shared_monitors.extend(removed_monitors);
@@ -1281,6 +1595,7 @@ fn touch_root(cache: &mut AnalysisCache, root: &Path) {
 /// Nested roots cannot outlive their owner because the flattened directory and file maps contain
 /// overlapping keys. Distinct roots remain available and preserve their relative recency.
 fn evict_cached_root(cache: &mut AnalysisCache, root: &Path) -> Vec<FilesystemChangeMonitor> {
+    cache.navigation.remove(root, true);
     cache.directories.retain(|path, _| !path.starts_with(root));
     cache.files.retain(|path, _| !path.starts_with(root));
     cache.scan_roots.retain(|path, _| !path.starts_with(root));
@@ -1304,11 +1619,178 @@ fn has_shared_allocation(cache: &AnalysisCache, root: &Path) -> bool {
     cache
         .files
         .iter()
-        .any(|(path, file)| path.starts_with(root) && file.bytes == 0)
+        .any(|(path, file)| path.starts_with(root) && file.shared_identity.is_some())
+}
+
+/// Retain complete known groups, including owners outside a cached child view.
+fn shared_allocations(
+    root: &Path,
+    scope: &Path,
+    files: &HashMap<PathBuf, IndexedFile>,
+) -> std::sync::Arc<Vec<crate::storage::analysis::SharedAllocation>> {
+    // Child navigation needs complete aliases only for identities in that child.
+    // Select them before allocating rows: a small page must not rebuild every
+    // unrelated hard-link group from a large parent scan.
+    let selected_identities: Option<HashSet<_>> = (root != scope).then(|| {
+        files
+            .iter()
+            .filter_map(|(path, file)| {
+                file.shared_identity
+                    .filter(|_| path.starts_with(root))
+                    .map(|identity| (identity.volume, identity.index))
+            })
+            .collect()
+    });
+    shared_allocations_for_identities(root, scope, files, selected_identities)
+}
+
+fn shared_allocations_for_identities(
+    root: &Path,
+    scope: &Path,
+    files: &HashMap<PathBuf, IndexedFile>,
+    selected_identities: Option<HashSet<(u64, u64)>>,
+) -> std::sync::Arc<Vec<crate::storage::analysis::SharedAllocation>> {
+    use crate::storage::analysis::SharedAllocation;
+    if selected_identities.as_ref().is_some_and(HashSet::is_empty) {
+        return Default::default();
+    }
+    let mut groups: HashMap<(u64, u64), SharedAllocation> = HashMap::new();
+    for (path, file) in files {
+        let Some(identity) = file.shared_identity else {
+            continue;
+        };
+        if selected_identities
+            .as_ref()
+            .is_some_and(|selected| !selected.contains(&(identity.volume, identity.index)))
+        {
+            continue;
+        }
+        if !path.starts_with(scope) {
+            continue;
+        }
+        let group = groups
+            .entry((identity.volume, identity.index))
+            .or_insert_with(|| SharedAllocation {
+                identity,
+                owner: display_path(path),
+                bytes: 0,
+                files: Vec::new(),
+            });
+        if file.bytes > group.bytes {
+            group.bytes = file.bytes;
+            group.owner = display_path(path);
+        }
+        group.files.push(DirectoryEntryInfo {
+            name: path
+                .file_name()
+                .map(|name| name.to_string_lossy().into_owned())
+                .unwrap_or_default(),
+            path: display_path(path),
+            bytes: file.bytes,
+            logical_bytes: file.logical_bytes,
+            file_count: 1,
+            is_directory: false,
+            modified_at_ms: file.modified_at_ms,
+            content_fingerprint: None,
+        });
+    }
+    let mut groups: Vec<_> = groups
+        .into_values()
+        .filter(|group| {
+            group
+                .files
+                .iter()
+                .any(|file| Path::new(&file.path).starts_with(root))
+        })
+        .collect();
+    for group in &mut groups {
+        group
+            .files
+            .sort_unstable_by(|left, right| left.path.cmp(&right.path));
+    }
+    groups.sort_unstable_by(|left, right| left.owner.cmp(&right.owner));
+    std::sync::Arc::new(groups)
 }
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn cached_child_shared_groups_preserve_sibling_owners_among_unrelated_groups() {
+        use super::*;
+        let scope = std::env::temp_dir().join("mangodisk-navigation-groups");
+        let child = scope.join("selected");
+        let sibling = scope.join("sibling");
+        let mut files = HashMap::new();
+        for index in 0..20_000 {
+            let identity = mangodisk_platform::PhysicalFileIdentity { volume: 1, index };
+            for (parent, bytes) in [(&sibling, 4096), (&scope, 0)] {
+                files.insert(
+                    parent.join(format!("unrelated-{index}.bin")),
+                    IndexedFile {
+                        shared_identity: Some(identity),
+                        bytes,
+                        logical_bytes: 4096,
+                        modified_at_ms: None,
+                    },
+                );
+            }
+        }
+        let identity = mangodisk_platform::PhysicalFileIdentity {
+            volume: 1,
+            index: 20_000,
+        };
+        for (parent, bytes) in [(&sibling, 4096), (&child, 0)] {
+            files.insert(
+                parent.join("shared.bin"),
+                IndexedFile {
+                    shared_identity: Some(identity),
+                    bytes,
+                    logical_bytes: 4096,
+                    modified_at_ms: None,
+                },
+            );
+        }
+        let started = std::time::Instant::now();
+        for _ in 0..5 {
+            let groups = shared_allocations(&child, &scope, &files);
+            assert_eq!(groups.len(), 1);
+            assert_eq!(groups[0].identity, identity);
+            assert_eq!(groups[0].bytes, 4096);
+            assert_eq!(groups[0].owner, display_path(&sibling.join("shared.bin")));
+            assert_eq!(groups[0].files.len(), 2);
+        }
+        eprintln!(
+            "navigation_group_projection files={} iterations=5 elapsed_us={}",
+            files.len(),
+            started.elapsed().as_micros()
+        );
+        let empty = scope.join("ordinary");
+        assert!(shared_allocations(&empty, &scope, &files).is_empty());
+    }
+
+    #[test]
+    fn empty_and_sparse_files_do_not_form_shared_allocation_groups() {
+        use super::*;
+        let root = std::env::temp_dir().join("mangodisk-shared-allocation-fixture");
+        let ordinary = IndexedFile {
+            shared_identity: None,
+            bytes: 0,
+            logical_bytes: 0,
+            modified_at_ms: None,
+        };
+        let files = HashMap::from([
+            (root.join("empty.bin"), ordinary),
+            (
+                root.join("sparse.bin"),
+                IndexedFile {
+                    logical_bytes: 8192,
+                    ..ordinary
+                },
+            ),
+        ]);
+        assert!(shared_allocations(&root, &root, &files).is_empty());
+    }
+
     #[test]
     fn bounded_analysis_ranking_matches_full_sort_at_limits_and_equal_byte_ties() {
         for count in [0, 1, 499, 500, 501, 30_000] {
@@ -1471,6 +1953,7 @@ mod tests {
             (
                 root.path().join("file-0000"),
                 IndexedFile {
+                    shared_identity: None,
                     bytes: 0,
                     logical_bytes: 1,
                     modified_at_ms: None,
@@ -1479,6 +1962,7 @@ mod tests {
             (
                 root.path().join("file-0001"),
                 IndexedFile {
+                    shared_identity: None,
                     bytes: 9999,
                     logical_bytes: 9999,
                     modified_at_ms: None,
@@ -1527,11 +2011,13 @@ mod tests {
                 |path| {
                     let bytes = path.file_stem()?.to_str()?.parse().ok()?;
                     Some(IndexedFile {
+                        shared_identity: None,
                         bytes,
                         logical_bytes: 0,
                         modified_at_ms: modified_ms(&fs::metadata(path).unwrap()),
                     })
                 },
+                Default::default(),
             )
         };
         let exact = build();
@@ -1698,6 +2184,7 @@ mod tests {
         let mut files = HashMap::from([(
             file,
             IndexedFile {
+                shared_identity: None,
                 bytes: LARGE_FILE_CANDIDATE_FLOOR_BYTES,
                 logical_bytes: LARGE_FILE_CANDIDATE_FLOOR_BYTES,
                 modified_at_ms: Some(5),
@@ -1707,6 +2194,7 @@ mod tests {
         files.insert(
             root.join("chart-candidate.bin"),
             IndexedFile {
+                shared_identity: None,
                 bytes: 4096,
                 logical_bytes: 4096,
                 modified_at_ms: None,
@@ -1915,6 +2403,7 @@ mod tests {
             HashMap::from([(
                 stale_file.clone(),
                 IndexedFile {
+                    shared_identity: None,
                     bytes: 1,
                     logical_bytes: 1,
                     modified_at_ms: None,

@@ -92,10 +92,23 @@ pub struct AnalysisResult {
     pub entries: Vec<DirectoryEntryInfo>,
     /// Up to six directory levels, bounded independently of the full scan index.
     pub directory_hierarchy: Vec<AnalysisDirectoryNode>,
-    /// Zero-charge aliases require allocation to be reassigned after deletion.
-    /// Keep this with the authoritative session even when the index is evicted.
+    /// Shared ownership survives index eviction and is never trusted from the UI.
     #[serde(skip)]
-    pub(crate) requires_delete_rescan: bool,
+    pub(crate) shared_allocations: std::sync::Arc<Vec<SharedAllocation>>,
+    /// Direct shared-allocation rows omitted by the bounded UI projection.
+    #[serde(skip)]
+    pub(crate) shared_entries: std::sync::Arc<Vec<DirectoryEntryInfo>>,
+    /// Shallow metadata for shared ancestors omitted from the bounded chart.
+    #[serde(skip)]
+    pub(crate) shared_directories: std::sync::Arc<Vec<AnalysisDirectoryNode>>,
+}
+
+#[derive(Debug, Clone)]
+pub(crate) struct SharedAllocation {
+    pub(crate) identity: mangodisk_platform::PhysicalFileIdentity,
+    pub(crate) owner: String,
+    pub(crate) bytes: u64,
+    pub(crate) files: Vec<DirectoryEntryInfo>,
 }
 
 /// Reads omitted direct children without extending destructive-operation authority.
@@ -140,7 +153,7 @@ pub(crate) struct AnalysisRemainderParent {
 #[derive(Debug, Clone)]
 pub(crate) struct AnalysisEntryCandidate {
     pub(crate) scan_mode: AnalysisScanMode,
-    pub(crate) requires_rescan: bool,
+    pub(crate) has_shared_allocation: bool,
     pub(crate) exclusions: crate::filesystem::ScanExclusionOptions,
     pub(crate) root: String,
     pub(crate) path: String,
@@ -153,8 +166,9 @@ pub(crate) struct AnalysisEntryCandidate {
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct AnalysisDeleteResult {
+    pub schema_version: u8,
     pub removed_path: String,
-    /// The original path changed or shared allocation must be reassigned.
+    /// The original path was recreated or could not be verified after deletion.
     /// Clients must discard navigation snapshots before refreshing this result.
     pub requires_rescan: bool,
     /// Scan-time bytes in the source result's metric to remove from the snapshot.
@@ -162,4 +176,34 @@ pub struct AnalysisDeleteResult {
     pub released_bytes: u64,
     /// Scan-time file count used only for snapshot reconciliation.
     pub removed_file_count: u64,
+    /// Authoritative snapshots reconciled without starting another scan.
+    pub updated_results: Vec<AnalysisResult>,
+    pub invalidated_scan_ids: Vec<u64>,
+}
+
+impl AnalysisDeleteResult {
+    pub const SCHEMA_VERSION: u8 = 1;
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn deletion_response_has_a_version_and_authoritative_snapshots() {
+        let result = AnalysisDeleteResult {
+            schema_version: AnalysisDeleteResult::SCHEMA_VERSION,
+            removed_path: "/fixture/deleted.bin".into(),
+            requires_rescan: false,
+            released_bytes: 4,
+            removed_file_count: 1,
+            updated_results: Vec::new(),
+            invalidated_scan_ids: vec![8],
+        };
+        let value = serde_json::to_value(result).unwrap();
+        assert_eq!(value["schemaVersion"], 1);
+        assert_eq!(value["invalidatedScanIds"], serde_json::json!([8]));
+        assert!(value["updatedResults"].is_array());
+        assert_eq!(value["requiresRescan"], false);
+    }
 }

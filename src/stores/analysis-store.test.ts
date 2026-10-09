@@ -3,7 +3,12 @@ import { createPinia, setActivePinia } from 'pinia';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { PAGE_IDS } from '@/lib/models/application-shell';
-import type { AnalysisResult, DirectoryEntryInfo } from '@/lib/models/analysis';
+import {
+  ANALYSIS_RESULT_CACHE_LIMIT,
+  type AnalysisDeleteResult,
+  type AnalysisResult,
+  type DirectoryEntryInfo,
+} from '@/lib/models/analysis';
 import { AnalysisService } from '@/lib/services/analysis-service';
 import { OperatingSystemService } from '@/lib/services/operating-system-service';
 import * as AnalysisCacheUtils from '@/lib/utils/analysis-cache';
@@ -263,6 +268,9 @@ describe('analysis store', () => {
 
   it('refreshes a recreated original path instead of removing its new contents from view', async () => {
     vi.spyOn(AnalysisService, 'deletePermanently').mockResolvedValue({
+      schemaVersion: 1,
+      updatedResults: [],
+      invalidatedScanIds: [],
       requiresRescan: true,
       removedPath: entry.path,
       releasedBytes: entry.bytes,
@@ -280,27 +288,151 @@ describe('analysis store', () => {
     expect(store.deletingPath).toBeNull();
   });
 
-  it('drops sibling snapshots when deletion requires allocation reconciliation', async () => {
+  it('applies hard-link allocation transfers without scanning or clearing the visible result', async () => {
+    const updated = { ...result, entries: [], totalBytes: 0 };
+    const sibling = { ...result, scanId: 9, root: '/sibling', entries: [{ ...entry, path: '/sibling/alias.bin' }] };
     vi.spyOn(AnalysisService, 'deletePermanently').mockResolvedValue({
-      requiresRescan: true,
+      schemaVersion: 1,
+      updatedResults: [updated, sibling],
+      invalidatedScanIds: [8],
+      requiresRescan: false,
       removedPath: entry.path,
       releasedBytes: 64,
       removedFileCount: 1,
     });
-    const refreshed = { ...result, scanId: 99, entries: [] };
-    vi.spyOn(AnalysisService, 'analyze').mockResolvedValue(refreshed);
+    const analyze = vi.spyOn(AnalysisService, 'analyze');
     vi.spyOn(useAppStore(), 'refreshSystemDisk').mockResolvedValue(true);
     const store = useAnalysisStore();
     store.result = { ...result, entries: [entry] };
-    store.cache = { '/fixture': store.result, '/sibling': { ...result, root: '/sibling', totalBytes: 0 } };
+    store.cache = {
+      '/fixture': store.result,
+      '/': { ...result, scanId: 8, root: '/' },
+      '/sibling': { ...sibling, entries: [{ ...sibling.entries[0]!, bytes: 0 }], totalBytes: 0 },
+    };
+    store.cacheOrder = Object.keys(store.cache);
+    const observed: (AnalysisResult | null)[] = [];
+    const stop = store.$subscribe(() => observed.push(store.result), { flush: 'sync' });
+    await store.deletePermanently(entry);
+    stop();
+    expect(analyze).not.toHaveBeenCalled();
+    expect(observed).not.toContain(null);
+    expect(store.pending).toBe(false);
+    expect(store.result).toEqual(updated);
+    expect(store.cache['/sibling']).toEqual(sibling);
+    expect(store.cache['/']).toBeUndefined();
+    expect(store.cacheOrder).not.toContain('/');
+  });
+
+  it('keeps returned authority for sequential deletes and cached sibling navigation', async () => {
+    const siblingEntry = { ...entry, path: '/sibling/alias.bin', name: 'alias.bin' };
+    const sibling = { ...result, scanId: 9, root: '/sibling', entries: [siblingEntry] };
+    const updated = { ...result, entries: [], totalBytes: 0 };
+    const remove = vi
+      .spyOn(AnalysisService, 'deletePermanently')
+      .mockResolvedValueOnce({
+        schemaVersion: 1,
+        requiresRescan: false,
+        removedPath: entry.path,
+        releasedBytes: 64,
+        removedFileCount: 1,
+        updatedResults: [updated, sibling],
+        invalidatedScanIds: [],
+      })
+      .mockResolvedValueOnce({
+        schemaVersion: 1,
+        requiresRescan: false,
+        removedPath: siblingEntry.path,
+        releasedBytes: 64,
+        removedFileCount: 1,
+        updatedResults: [{ ...sibling, entries: [], totalBytes: 0 }],
+        invalidatedScanIds: [],
+      });
+    const analyze = vi.spyOn(AnalysisService, 'analyze');
+    vi.spyOn(useAppStore(), 'refreshSystemDisk').mockResolvedValue(true);
+    const store = useAnalysisStore();
+    store.result = { ...result, entries: [entry] };
+    store.cache = { '/fixture': store.result, '/sibling': { ...sibling, totalBytes: 0 } };
     store.cacheOrder = Object.keys(store.cache);
     await store.deletePermanently(entry);
-    expect(Object.keys(store.cache)).toEqual(['/fixture']);
-    expect(store.result).toEqual(refreshed);
+    await store.analyze('/sibling');
+    expect(store.result).toEqual(sibling);
+    expect(isReactive(store.result)).toBe(false);
+    await store.deletePermanently(siblingEntry);
+    expect(remove).toHaveBeenNthCalledWith(1, 7, entry.path);
+    expect(remove).toHaveBeenNthCalledWith(2, 9, siblingEntry.path);
+    expect(analyze).not.toHaveBeenCalled();
+    expect(store.pending).toBe(false);
+    expect(store.result?.totalBytes).toBe(0);
+  });
+
+  it('bounds restored sibling snapshots and tracks every cached root', async () => {
+    const store = useAnalysisStore();
+    store.result = { ...result, entries: [entry] };
+    store.cache = Object.fromEntries(
+      Array.from({ length: ANALYSIS_RESULT_CACHE_LIMIT - 1 }, (_, index) => {
+        const root = `/older/${index}`;
+        return [root, { ...result, root, scanId: index + 20 }];
+      })
+    );
+    store.cache['/fixture'] = store.result;
+    store.cacheOrder = Object.keys(store.cache);
+    const sibling = { ...result, scanId: 999, root: '/restored-sibling' };
+    vi.spyOn(AnalysisService, 'deletePermanently').mockResolvedValue({
+      schemaVersion: 1,
+      requiresRescan: false,
+      removedPath: entry.path,
+      releasedBytes: 64,
+      removedFileCount: 1,
+      updatedResults: [{ ...result, entries: [], totalBytes: 0 }, sibling],
+      invalidatedScanIds: [],
+    });
+    const analyze = vi.spyOn(AnalysisService, 'analyze');
+    vi.spyOn(useAppStore(), 'refreshSystemDisk').mockResolvedValue(true);
+    await store.deletePermanently(entry);
+    expect(Object.keys(store.cache)).toHaveLength(ANALYSIS_RESULT_CACHE_LIMIT);
+    expect([...store.cacheOrder].sort()).toEqual(Object.keys(store.cache).sort());
+    expect(store.cache['/fixture']?.scanId).toBe(result.scanId);
+    expect(store.cache['/restored-sibling']).toEqual(sibling);
+    expect(analyze).not.toHaveBeenCalled();
+  });
+
+  it('does not revive snapshots if exclusions change during deletion', async () => {
+    let complete: (response: AnalysisDeleteResult) => void = () => undefined;
+    vi.spyOn(AnalysisService, 'deletePermanently').mockImplementation(
+      () =>
+        new Promise(resolve => {
+          complete = resolve;
+        })
+    );
+    const analyze = vi.spyOn(AnalysisService, 'analyze');
+    vi.spyOn(useAppStore(), 'refreshSystemDisk').mockResolvedValue(true);
+    const store = useAnalysisStore();
+    store.result = { ...result, entries: [entry] };
+    store.cache = { '/fixture': store.result };
+    const request = store.deletePermanently(entry);
+    useStorageScanPreferencesStore().folders = [{ path: '/fixture/cache', scopes: ['analysis'] }];
+    complete({
+      schemaVersion: 1,
+      requiresRescan: false,
+      removedPath: entry.path,
+      releasedBytes: 64,
+      removedFileCount: 1,
+      updatedResults: [{ ...result, entries: [], totalBytes: 0 }],
+      invalidatedScanIds: [],
+    });
+    await request;
+    expect(store.cache).toEqual({});
+    expect(store.result).toBeNull();
+    expect(store.scanExcludedFolders).toEqual(['/fixture/cache']);
+    expect(analyze).not.toHaveBeenCalled();
   });
 
   it('refreshes shared disk capacity after a completed deletion', async () => {
+    const analyze = vi.spyOn(AnalysisService, 'analyze');
     vi.spyOn(AnalysisService, 'deletePermanently').mockResolvedValue({
+      schemaVersion: 1,
+      updatedResults: [{ ...result, entries: [], totalBytes: 0 }],
+      invalidatedScanIds: [],
       requiresRescan: false,
       removedPath: entry.path,
       releasedBytes: entry.bytes,
@@ -316,7 +448,9 @@ describe('analysis store', () => {
     await analysisStore.deletePermanently(entry);
 
     expect(refreshDisk).toHaveBeenCalledOnce();
+    expect(analyze).not.toHaveBeenCalled();
     expect(analysisStore.result?.entries).toEqual([]);
+    expect(analysisStore.result?.scanId).toBe(result.scanId);
   });
 
   it('explains when a cancelled native scan is still releasing resources', async () => {
@@ -335,12 +469,7 @@ describe('analysis store', () => {
     expect(analysisStore.pending).toBe(false);
   });
   it('marks only the requested path busy and rejects duplicate deletion requests', async () => {
-    let finish: (value: {
-      requiresRescan: boolean;
-      removedPath: string;
-      releasedBytes: number;
-      removedFileCount: number;
-    }) => void = () => undefined;
+    let finish: (value: AnalysisDeleteResult) => void = () => undefined;
     const remove = vi.spyOn(AnalysisService, 'deletePermanently').mockImplementation(
       () =>
         new Promise(resolve => {
@@ -356,13 +485,21 @@ describe('analysis store', () => {
     expect(store.deleting).toBe(true);
     await store.deletePermanently(entry);
     expect(remove).toHaveBeenCalledOnce();
-    finish({ requiresRescan: false, removedPath: entry.path, releasedBytes: 64, removedFileCount: 1 });
+    finish({
+      schemaVersion: 1,
+      updatedResults: [{ ...result, entries: [], totalBytes: 0 }],
+      invalidatedScanIds: [],
+      requiresRescan: false,
+      removedPath: entry.path,
+      releasedBytes: 64,
+      removedFileCount: 1,
+    });
     await request;
     expect(store.deletingPath).toBeNull();
     expect(store.deleting).toBe(false);
   });
 
-  it('refreshes a partial deletion and expires ancestor and descendant snapshots', async () => {
+  it('refreshes a partial deletion and expires all potentially shared snapshots', async () => {
     const failure = {
       code: 'operationFailed',
       retryable: true,
@@ -381,7 +518,7 @@ describe('analysis store', () => {
     store.result = { ...result, entries: [entry] };
     store.cache = {
       '/fixture': store.result,
-      '/': { ...result, root: '/' },
+      '/': { ...result, scanId: 8, root: '/' },
       [entry.path]: { ...result, root: entry.path },
       '/unrelated': { ...result, root: '/unrelated' },
     };
@@ -390,7 +527,7 @@ describe('analysis store', () => {
     await vi.waitFor(() => expect(scan).toHaveBeenCalledOnce());
     expect(store.deletingPath).toBeNull();
     expect(store.pending).toBe(true);
-    expect(Object.keys(store.cache)).toEqual(['/unrelated']);
+    expect(Object.keys(store.cache)).toEqual([]);
     const refreshed = { ...result, scanId: 8, entries: [{ ...entry, bytes: 20 }], totalBytes: 20 };
     finishRefresh(refreshed);
     await request;
@@ -454,6 +591,9 @@ describe('analysis store', () => {
 
   it('reports when deletion succeeds but its result cannot be refreshed', async () => {
     vi.spyOn(AnalysisService, 'deletePermanently').mockResolvedValue({
+      schemaVersion: 1,
+      updatedResults: [],
+      invalidatedScanIds: [],
       requiresRescan: true,
       removedPath: entry.path,
       releasedBytes: entry.bytes,
@@ -492,6 +632,9 @@ describe('analysis store', () => {
 
   it('does not retain an ancestor scan ID that Core expires after successful deletion', async () => {
     vi.spyOn(AnalysisService, 'deletePermanently').mockResolvedValue({
+      schemaVersion: 1,
+      updatedResults: [{ ...result, entries: [], totalBytes: 0 }],
+      invalidatedScanIds: [8],
       requiresRescan: false,
       removedPath: entry.path,
       releasedBytes: 64,
@@ -502,7 +645,7 @@ describe('analysis store', () => {
     store.result = { ...result, entries: [entry] };
     store.cache = {
       '/fixture': store.result,
-      '/': { ...result, root: '/' },
+      '/': { ...result, scanId: 8, root: '/' },
       '/unrelated': { ...result, root: '/unrelated' },
     };
     await store.deletePermanently(entry);

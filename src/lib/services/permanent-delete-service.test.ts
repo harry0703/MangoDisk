@@ -49,6 +49,17 @@ describe('permanent delete services', () => {
   });
 
   it('binds disk-analysis deletion to the active native scan session', async () => {
+    invokeMock.mockResolvedValueOnce({
+      schemaVersion: 1,
+      requiresRescan: false,
+      removedPath: candidate.path,
+      releasedBytes: 64,
+      removedFileCount: 1,
+      updatedResults: [
+        { scanId: 23, root: '/fixture', scannedAtMs: 1, totalBytes: 0, skippedCount: 0, truncated: false, entries: [] },
+      ],
+      invalidatedScanIds: [],
+    });
     await AnalysisService.deletePermanently(23, candidate.path);
 
     expect(invokeMock).toHaveBeenCalledWith('delete_analysis_entry_permanently', {

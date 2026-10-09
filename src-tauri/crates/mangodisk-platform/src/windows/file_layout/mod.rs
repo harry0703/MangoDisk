@@ -419,6 +419,7 @@ fn collect_analysis(
             .expect("a prevalidated directory must have completed totals");
         consumer(FastAnalysisRecord::Directory {
             path,
+            retained_file_limit: 0,
             logical_bytes: totals.logical_bytes,
             allocated_bytes: totals.allocated_bytes,
             file_count: totals.file_count,
@@ -443,6 +444,7 @@ fn collect_analysis(
                 .is_none()
             {
                 consumer(FastAnalysisRecord::AnalysisFile(FastAnalysisFile {
+                    parent_file_count: 0,
                     path,
                     allocated_bytes,
                     logical_bytes,

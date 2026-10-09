@@ -244,6 +244,8 @@ pub enum ProjectMarkerCandidateScanError {
 /// protection boundaries. Keeping the query typed prevents the analysis and duplicate adapters
 /// from silently drifting as native traversal evolves.
 pub struct FastAnalysisQuery<'a> {
+    /// Requested bound for scan-time file facts; implementations report their retained limit.
+    pub retained_file_limit: usize,
     pub name_exclusions: &'a super::NameExclusions,
     /// Canonical subtrees to skip before opening their directories.
     pub excluded_roots: &'a [PathBuf],
@@ -277,10 +279,22 @@ impl FileSpaceUsage {
 /// These bounded chart candidates are not live-validated large-file discovery results.
 #[derive(Debug)]
 pub struct FastAnalysisFile {
+    /// Positive direct file count measured in the same directory read; zero when unknown.
+    pub parent_file_count: u64,
     pub path: PathBuf,
     pub allocated_bytes: u64,
     pub logical_bytes: u64,
     pub modified_at_ms: Option<u64>,
+}
+
+impl FastAnalysisFile {
+    /// Match chart row ordering even for native names that need lossy conversion.
+    /// The native tie-break keeps distinct paths ordered when their display text collides.
+    pub fn compare_paths(left: &std::path::Path, right: &std::path::Path) -> std::cmp::Ordering {
+        left.to_string_lossy()
+            .cmp(&right.to_string_lossy())
+            .then_with(|| left.cmp(right))
+    }
 }
 
 impl PartialEq for FastAnalysisFile {
@@ -298,7 +312,7 @@ impl Ord for FastAnalysisFile {
     fn cmp(&self, other: &Self) -> std::cmp::Ordering {
         self.allocated_bytes
             .cmp(&other.allocated_bytes)
-            .then_with(|| other.path.cmp(&self.path))
+            .then_with(|| Self::compare_paths(&other.path, &self.path))
     }
 }
 
@@ -319,6 +333,8 @@ pub enum FastAnalysisRecord {
         modified_at_ms: Option<u64>,
     },
     Directory {
+        /// Zero means navigation must use its metadata fallback for this directory.
+        retained_file_limit: usize,
         path: PathBuf,
         logical_bytes: u64,
         allocated_bytes: u64,

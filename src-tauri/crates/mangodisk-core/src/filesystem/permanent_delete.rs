@@ -460,10 +460,13 @@ pub(crate) fn delete_analysis_candidate_permanently(
         target,
         removed_usage,
         result: AnalysisDeleteResult {
+            schema_version: AnalysisDeleteResult::SCHEMA_VERSION,
             requires_rescan: false,
             removed_path: candidate.path,
             released_bytes: candidate.expected_displayed_bytes,
             removed_file_count: candidate.expected_file_count,
+            updated_results: Vec::new(),
+            invalidated_scan_ids: Vec::new(),
         },
     })
 }
@@ -2257,7 +2260,7 @@ mod permanent_delete_tests {
             .expect("write the new analysis fixture");
         let candidate = AnalysisEntryCandidate {
             scan_mode: Default::default(),
-            requires_rescan: false,
+            has_shared_allocation: false,
             exclusions: Default::default(),
             root: sandbox.0.to_string_lossy().into_owned(),
             path: path.to_string_lossy().into_owned(),

@@ -505,6 +505,7 @@ impl NativeCandidateCollector<'_> {
         let mut pruned_roots = HashSet::<PathBuf>::new();
         let summary = current_platform().fast_analysis_records(
             FastAnalysisQuery {
+                retained_file_limit: 0,
                 name_exclusions: self.exclusions.names(),
                 excluded_roots: self.exclusions.roots(),
                 root,

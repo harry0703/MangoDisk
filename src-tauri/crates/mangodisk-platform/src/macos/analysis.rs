@@ -150,6 +150,7 @@ struct EntryPolicy<'a> {
 /// Groups one native analysis request so the platform boundary remains explicit as scan options
 /// evolve. The consumer stays separate because it owns the streamed result lifetime.
 pub(super) struct AnalysisScanRequest<'a> {
+    pub(super) retained_file_limit: usize,
     pub(super) name_exclusions: &'a crate::NameExclusions,
     pub(super) excluded_roots: &'a [PathBuf],
     pub(super) root: &'a Path,
@@ -162,6 +163,7 @@ pub(super) struct AnalysisScanRequest<'a> {
 
 #[derive(Clone)]
 struct DirectoryReadPolicy {
+    retained_file_limit: usize,
     name_exclusions: crate::NameExclusions,
     excluded_roots: Arc<[PathBuf]>,
     root: Arc<PathBuf>,
@@ -184,6 +186,7 @@ struct DirectoryReadAccumulator {
 
 #[derive(Debug)]
 struct PendingDirectory {
+    retained_file_limit: usize,
     path: PathBuf,
     parent_id: Option<usize>,
     totals: DirectoryTotals,
@@ -255,6 +258,7 @@ impl<'a> AnalysisCoordinator<'a> {
     ) -> Self {
         Self {
             pending_nodes: vec![Some(PendingDirectory {
+                retained_file_limit: 0,
                 path: root.to_path_buf(),
                 parent_id: None,
                 totals: DirectoryTotals::default(),
@@ -306,7 +310,9 @@ impl<'a> AnalysisCoordinator<'a> {
         for record in result.hard_links {
             (self.consumer)(record).map_err(FastAnalysisScanError::Consumer)?;
         }
-        for file in result.analysis_files.into_files() {
+        let retained_file_limit = result.analysis_files.limit();
+        for mut file in result.analysis_files.into_files() {
+            file.parent_file_count = result.direct_totals.direct_file_count;
             (self.consumer)(FastAnalysisRecord::AnalysisFile(file))
                 .map_err(FastAnalysisScanError::Consumer)?;
         }
@@ -320,6 +326,7 @@ impl<'a> AnalysisCoordinator<'a> {
             .get_mut(result.task.node_id)
             .and_then(Option::as_mut)
             .ok_or_else(|| platform_error("directory_node_missing"))?;
+        node.retained_file_limit = retained_file_limit;
         node.totals = result.direct_totals;
         node.pending_children = child_count;
         node.has_been_read = true;
@@ -328,6 +335,7 @@ impl<'a> AnalysisCoordinator<'a> {
         for path in result.child_directories {
             let node_id = self.pending_nodes.len();
             self.pending_nodes.push(Some(PendingDirectory {
+                retained_file_limit: 0,
                 path: path.clone(),
                 parent_id: Some(result.task.node_id),
                 totals: DirectoryTotals::default(),
@@ -366,6 +374,7 @@ pub(super) fn analyze_records(
 ) -> Result<FastAnalysisSummary, FastAnalysisScanError> {
     ensure_worker_pool_available(&ACTIVE_ANALYSIS_REAPERS)?;
     let AnalysisScanRequest {
+        retained_file_limit,
         name_exclusions,
         excluded_roots,
         root,
@@ -396,6 +405,7 @@ pub(super) fn analyze_records(
     let task_queue = Arc::new(DirectoryTaskQueue::default());
     let abort = Arc::new(AtomicBool::new(false));
     let read_policy = DirectoryReadPolicy {
+        retained_file_limit,
         name_exclusions: name_exclusions.clone(),
         excluded_roots: Arc::from(excluded_roots),
         root: Arc::new(root.to_path_buf()),
@@ -643,6 +653,7 @@ fn read_directory(
         }
         Err(error) => return Err(platform_io_error("open_root_directory", &error)),
     };
+    let retained_file_limit = policy.retained_file_limit;
     let policy = EntryPolicy {
         name_exclusions: &policy.name_exclusions,
         excluded_roots: &policy.excluded_roots,
@@ -653,7 +664,10 @@ fn read_directory(
         should_prune_directory: policy.should_prune_directory,
         large_file_minimum_bytes: policy.large_file_minimum_bytes,
     };
-    let mut accumulator = DirectoryReadAccumulator::default();
+    let mut accumulator = DirectoryReadAccumulator {
+        analysis_files: AnalysisFileCandidates::new(retained_file_limit),
+        ..DirectoryReadAccumulator::default()
+    };
     let mut page_count = 0_u64;
     let mut entry_count_total = 0_u64;
     let mut returned_bytes = 0_u64;
@@ -785,16 +799,16 @@ fn process_entry(
             if policy.purpose == ScanPurpose::Analysis
                 && entry.link_count <= 1
                 && entry.allocated_bytes > 0
-                && entry.allocated_bytes < policy.large_file_minimum_bytes
                 && accumulator
                     .analysis_files
                     .would_retain(entry.allocated_bytes, &path)
                 && policy
                     .platform
-                    .should_skip(&path, policy.root, ScanPurpose::LargeFiles)
+                    .should_skip(&path, policy.root, ScanPurpose::Analysis)
                     .is_none()
             {
                 accumulator.analysis_files.push(FastAnalysisFile {
+                    parent_file_count: 0,
                     path: path.clone(),
                     allocated_bytes: entry.allocated_bytes,
                     logical_bytes: entry.logical_bytes,
@@ -830,7 +844,13 @@ fn finalize_directory_chain(
         if !node.has_been_read || node.pending_children != 0 {
             return Err(platform_error("directory_finalized_before_children"));
         }
-        emit_directory(&node.path, node.totals, consumer, diagnostics)?;
+        emit_directory(
+            &node.path,
+            node.totals,
+            node.retained_file_limit,
+            consumer,
+            diagnostics,
+        )?;
         let Some(parent_id) = node.parent_id else {
             *root_totals = Some(node.totals);
             return Ok(());
@@ -854,11 +874,13 @@ fn finalize_directory_chain(
 fn emit_directory(
     path: &Path,
     totals: DirectoryTotals,
+    retained_file_limit: usize,
     consumer: &mut dyn FnMut(FastAnalysisRecord) -> Result<(), String>,
     diagnostics: &mut AnalysisDiagnostics,
 ) -> Result<(), FastAnalysisScanError> {
     let started = Instant::now();
     consumer(FastAnalysisRecord::Directory {
+        retained_file_limit,
         path: path.to_path_buf(),
         logical_bytes: totals.logical_bytes,
         allocated_bytes: totals.allocated_bytes,
@@ -1052,6 +1074,7 @@ mod tests {
         let summary = analyze_records(
             &MacOsPlatform,
             AnalysisScanRequest {
+                retained_file_limit: 64,
                 name_exclusions: &crate::NameExclusions::default(),
                 excluded_roots: &[],
                 root: &root,
@@ -1157,6 +1180,7 @@ mod tests {
         let summary = analyze_records(
             &MacOsPlatform,
             AnalysisScanRequest {
+                retained_file_limit: 64,
                 name_exclusions: &crate::NameExclusions::default(),
                 excluded_roots: &[],
                 root: &root,
@@ -1184,6 +1208,7 @@ mod tests {
         analyze_records(
             &MacOsPlatform,
             AnalysisScanRequest {
+                retained_file_limit: 64,
                 name_exclusions: &crate::NameExclusions::default(),
                 excluded_roots: &[],
                 root: &root,
@@ -1214,6 +1239,7 @@ mod tests {
         let result = analyze_records(
             &MacOsPlatform,
             AnalysisScanRequest {
+                retained_file_limit: 64,
                 name_exclusions: &crate::NameExclusions::default(),
                 excluded_roots: &[],
                 root: Path::new("/does-not-need-to-exist"),
@@ -1238,6 +1264,7 @@ mod tests {
         let result = analyze_records(
             &MacOsPlatform,
             AnalysisScanRequest {
+                retained_file_limit: 64,
                 name_exclusions: &crate::NameExclusions::default(),
                 excluded_roots: &[],
                 root: &root,
