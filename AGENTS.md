@@ -66,6 +66,8 @@ pnpm check
 cargo test --manifest-path src-tauri/Cargo.toml -p mangodisk-core
 ```
 
+`pnpm build` runs frontend and Core tests before producing assets; Tauri packaging uses this gate through `beforeBuildCommand`. `pnpm check` also includes Core tests. `pnpm build:frontend` is the asset-only step used after tests by the validation pipeline; it is not a release validation entry point.
+
 Cross-platform work must also run the same applicable checks in a Windows environment. When a required platform is unavailable, state that limitation in the change description. Performance changes require a reproducible before-and-after measurement appropriate to the affected path, but raw machine reports and private datasets must remain outside the repository.
 
 Tests are required for high-risk logic, protocol compatibility, persistence migrations, safety boundaries, and regressions. Ordinary presentation-only changes may rely on type, build, and interaction checks when an automated test would not add meaningful confidence.

@@ -19,7 +19,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vue-tsc --build --force && vite build && node ./scripts/check-build-output.mjs",
+    "build": "pnpm test && pnpm rust:test && pnpm build:frontend",
     "preview": "vite preview",
     "type-check": "vue-tsc --build --force",
     "test": "vitest run",
@@ -35,7 +35,7 @@
     "check:style-system": "node ./scripts/check-style-system.mjs",
     "check:identity": "node ./scripts/check-product-identity.mjs",
     "check:i18n": "node ./scripts/check-i18n-usage.mjs",
-    "check:frontend": "pnpm check:source-architecture && pnpm check:i18n && pnpm check:style-system && pnpm lint && pnpm format:check && pnpm test:coverage && pnpm build",
+    "check:frontend": "pnpm check:source-architecture && pnpm check:i18n && pnpm check:style-system && pnpm lint && pnpm format:check && pnpm test:coverage && pnpm build:frontend",
     "tauri": "tauri",
     "tauri:dev": "tauri dev",
     "tauri:build": "tauri build",
@@ -53,7 +53,9 @@
     "rust:fmt:check": "cargo fmt --all -- --check",
     "rust:clippy": "cargo clippy --workspace --all-targets -- -D warnings",
     "rust:check": "cargo check --workspace --all-targets",
-    "check": "pnpm check:rule-sources && pnpm check:source-language && pnpm check:generated-ui && pnpm check:identity && pnpm check:frontend && pnpm rust:fmt:check && pnpm rust:clippy && pnpm rust:check"
+    "check": "pnpm check:rule-sources && pnpm check:source-language && pnpm check:generated-ui && pnpm check:identity && pnpm check:frontend && pnpm rust:fmt:check && pnpm rust:clippy && pnpm rust:check && pnpm rust:test",
+    "build:frontend": "vue-tsc --build --force && vite build && node ./scripts/check-build-output.mjs",
+    "rust:test": "cargo test --manifest-path src-tauri/Cargo.toml -p mangodisk-core"
   },
   "dependencies": {
     "@lucide/vue": "^1.24.0",
