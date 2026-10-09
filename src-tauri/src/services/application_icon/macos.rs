@@ -107,15 +107,16 @@ fn collect_declared_icon_names(dictionary: &plist::Dictionary, names: &mut Vec<S
             names.push(name.to_string());
         }
     }
-    for key in ["CFBundleIconFiles"] {
-        if let Some(values) = dictionary.get(key).and_then(plist::Value::as_array) {
-            names.extend(
-                values
-                    .iter()
-                    .filter_map(plist::Value::as_string)
-                    .map(str::to_string),
-            );
-        }
+    if let Some(values) = dictionary
+        .get("CFBundleIconFiles")
+        .and_then(plist::Value::as_array)
+    {
+        names.extend(
+            values
+                .iter()
+                .filter_map(plist::Value::as_string)
+                .map(str::to_string),
+        );
     }
     for key in ["CFBundleIcons", "CFBundleIcons~ipad"] {
         let Some(icon_dictionary) = dictionary.get(key).and_then(plist::Value::as_dictionary)

@@ -8,49 +8,51 @@ rust-version.workspace = true
 linux-desktop-icons = ["dep:gdk-pixbuf", "dep:gio", "dep:glib", "dep:gtk"]
 
 [dependencies]
-blake3 = "1"
-dirs = "6"
-log = "0.4.33"
-serde = { version = "1", features = ["derive"] }
-serde_json = "1"
+blake3 = "1.8.7"
+dirs = "7.0.0"
+log = "0.4.34"
+serde = { version = "1.0.229", features = ["derive"] }
+serde_json = "1.0.151"
 # Keep OS sampling behind the platform boundary and match the workspace MSRV.
-sysinfo = { version = "0.37.2", default-features = false, features = ["system"] }
+sysinfo = { version = "0.39.6", default-features = false, features = ["system"] }
 
 [target.'cfg(target_os = "macos")'.dependencies]
-core-foundation = "0.9.4"
-system-configuration = "0.7.0"
+core-foundation = "0.10.1"
+system-configuration = "0.8.0"
 dispatch2 = { version = "0.3.1", default-features = false, features = ["std"] }
-libc = "0.2"
-objc2 = "0.6.4"
+libc = "0.2.190"
+objc2 = "0.6.5"
 objc2-app-kit = { version = "0.3.2", default-features = false, features = ["libc", "NSBitmapImageRep", "NSGraphics", "NSGraphicsContext", "NSImage", "NSImageRep", "NSPasteboard", "NSPasteboardItem", "NSRunningApplication", "NSWorkspace", "objc2-core-foundation", "objc2-uniform-type-identifiers"] }
 objc2-core-foundation = { version = "0.3.2", default-features = false, features = ["std", "CFArray", "CFDate", "CFString", "CFUUID"] }
 objc2-core-services = { version = "0.3.2", default-features = false, features = ["std", "dispatch2", "FSEvents", "libc"] }
 objc2-foundation = { version = "0.3.2", default-features = false, features = ["std", "NSArray", "NSData", "NSDictionary", "NSError", "NSString", "NSURL"] }
 objc2-uniform-type-identifiers = { version = "0.3.2", default-features = false, features = ["std", "UTCoreTypes", "UTType"] }
-plist = "1.7"
-rusqlite = { version = "0.37", features = ["bundled"] }
+plist = "1.10.1"
+rusqlite = { version = "0.40.2", features = ["bundled"] }
 
 [target.'cfg(target_os = "linux")'.dependencies]
+# Match the GTK 3 bindings used by Tauri to avoid conflicting native links.
 gdk-pixbuf = { version = "0.18", optional = true }
 gio = { version = "0.18", optional = true }
 glib = { version = "0.18", optional = true }
 gtk = { version = "0.18", optional = true }
-libc = "0.2"
-walkdir = "2"
+libc = "0.2.190"
+walkdir = "2.5.0"
 
 [target.'cfg(windows)'.dependencies]
-base64 = "0.22"
-getrandom = "0.3"
-png = "0.18"
-rusqlite = { version = "0.37", features = ["bundled"] }
-winreg = { version = "0.55", features = ["transactions"] }
-windows = { version = "0.61.3", features = ["ApplicationModel_DataTransfer", "Foundation", "Win32_Foundation", "Win32_Graphics_Dxgi", "Win32_Security_Cryptography", "Win32_Security_WinTrust", "Win32_Storage_FileSystem", "Win32_System_Com", "Win32_System_Ole", "Win32_System_Registry", "Win32_System_Services", "Win32_System_SystemInformation", "Win32_System_TaskScheduler", "Win32_System_Variant", "Win32_UI_LegacyWindowsEnvironmentFeatures", "Win32_UI_Shell"] }
-windows-core = "0.61.2"
-windows-sys = { version = "0.61", features = ["Wdk_Graphics_Direct3D", "Win32_Devices_Display", "Win32_Foundation", "Win32_Graphics_Gdi", "Win32_NetworkManagement_IpHelper", "Win32_NetworkManagement_Ndis", "Win32_Networking_WinSock", "Win32_Security", "Win32_Security_Authorization", "Win32_Storage_FileSystem", "Win32_System_ApplicationInstallationAndServicing", "Win32_System_Com", "Win32_System_DataExchange", "Win32_System_Diagnostics_Debug", "Win32_System_Diagnostics_ToolHelp", "Win32_System_Environment", "Win32_System_IO", "Win32_System_Ioctl", "Win32_System_LibraryLoader", "Win32_System_Performance", "Win32_System_ProcessStatus", "Win32_System_Registry", "Win32_System_SystemInformation", "Win32_System_SystemServices", "Win32_System_Threading", "Win32_System_WindowsProgramming", "Win32_UI_Shell", "Win32_UI_WindowsAndMessaging"] }
+base64 = "0.23.1"
+getrandom = "0.4.3"
+png = "0.18.1"
+rusqlite = { version = "0.40.2", features = ["bundled"] }
+winreg = { version = "0.56.0", features = ["transactions"] }
+windows = { version = "0.62.2", features = ["ApplicationModel_DataTransfer", "Foundation", "Win32_Foundation", "Win32_Graphics_Dxgi", "Win32_Security_Cryptography", "Win32_Security_WinTrust", "Win32_Storage_FileSystem", "Win32_System_Com", "Win32_System_Ole", "Win32_System_Registry", "Win32_System_Services", "Win32_System_SystemInformation", "Win32_System_TaskScheduler", "Win32_System_Variant", "Win32_UI_LegacyWindowsEnvironmentFeatures", "Win32_UI_Shell"] }
+# COM types must match the windows crate's windows-core version.
+windows-core = "0.62.2"
+windows-sys = { version = "0.61.2", features = ["Wdk_Graphics_Direct3D", "Win32_Devices_Display", "Win32_Foundation", "Win32_Graphics_Gdi", "Win32_NetworkManagement_IpHelper", "Win32_NetworkManagement_Ndis", "Win32_Networking_WinSock", "Win32_Security", "Win32_Security_Authorization", "Win32_Storage_FileSystem", "Win32_System_ApplicationInstallationAndServicing", "Win32_System_Com", "Win32_System_DataExchange", "Win32_System_Diagnostics_Debug", "Win32_System_Diagnostics_ToolHelp", "Win32_System_Environment", "Win32_System_IO", "Win32_System_Ioctl", "Win32_System_LibraryLoader", "Win32_System_Performance", "Win32_System_ProcessStatus", "Win32_System_Registry", "Win32_System_SystemInformation", "Win32_System_SystemServices", "Win32_System_Threading", "Win32_System_WindowsProgramming", "Win32_UI_Shell", "Win32_UI_WindowsAndMessaging"] }
 
 [dev-dependencies]
-png = "0.18"
-tempfile = "3"
+png = "0.18.1"
+tempfile = "3.27.0"
 
 [target.'cfg(windows)'.dev-dependencies]
-windows-sys = { version = "0.61", features = ["Win32_System_ProcessStatus", "Win32_System_Threading"] }
+windows-sys = { version = "0.61.2", features = ["Win32_System_ProcessStatus", "Win32_System_Threading"] }

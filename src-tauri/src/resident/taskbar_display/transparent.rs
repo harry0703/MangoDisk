@@ -110,7 +110,7 @@ pub unsafe fn paint(
     GdiFlush();
     let pixels = std::slice::from_raw_parts_mut(bits.cast::<u8>(), length);
     let hovered = hover.and_then(|index| surface.cells.get(index));
-    for (index, pixel) in pixels.chunks_exact_mut(4).enumerate() {
+    for (index, pixel) in pixels.as_chunks_mut::<4>().0.iter_mut().enumerate() {
         let x = (index % surface.width as usize) as i32;
         let y = (index / surface.width as usize) as i32;
         let glyph = [pixel[0], pixel[1], pixel[2], pixel[3]];

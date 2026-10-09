@@ -106,7 +106,9 @@ fn decode_table(bytes: &[u8], divisor: f64) -> Option<Vec<f64>> {
         return None;
     }
     let values: Option<Vec<f64>> = bytes
-        .chunks_exact(8)
+        .as_chunks::<8>()
+        .0
+        .iter()
         .map(|chunk| {
             let mhz = f64::from(u32::from_le_bytes(chunk[..4].try_into().ok()?)) / divisor;
             valid_mhz(mhz).filter(|value| *value >= 100.0)

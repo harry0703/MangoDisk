@@ -35,6 +35,20 @@ export default defineConfig({
         codeSplitting: {
           groups: [
             {
+              // Keep stateless icon data independent from the application entry.
+              name: 'icons',
+              test: /\/node_modules\/(?:@lucide\/vue|@tabler\/icons-vue|simple-icons)\//u,
+            },
+            {
+              // Explicit runtime boundaries keep upgrades within the parse-size budget.
+              name: 'vue-runtime',
+              test: /\/node_modules\/(?:@vue\/[^/]+|vue|pinia|@vueuse\/[^/]+)\//u,
+            },
+            {
+              name: 'ui-primitives',
+              test: /\/node_modules\/(?:reka-ui|vue-sonner)\//u,
+            },
+            {
               // Keep optional AI rich-text dependencies out of the main entry when
               // the monitoring window changes the shared-chunk graph.
               name: 'rich-text',

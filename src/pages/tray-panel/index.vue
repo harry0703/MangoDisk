@@ -114,6 +114,9 @@ function moveTab(direction: number) {
 function navigate(destination: ResidentDestination) {
   void act(() => ResidentService.openMain(destination));
 }
+function quit() {
+  void act(() => ResidentService.quit());
+}
 function onKey(event: KeyboardEvent) {
   if (event.key === 'Escape' && !event.defaultPrevented && !settingsOpen.value) {
     if (event.target instanceof Element && event.target.closest('[role="dialog"], [role="menu"], [role="listbox"]'))
@@ -373,7 +376,7 @@ onBeforeUnmount(() => {
         <MdIcon :name="ICON_NAMES.settings" :size="16" />
       </button>
       <MdMainShortcut @error="store.fail('monitoring_action_failed')" />
-      <button class="quit-shortcut" @click="act(() => ResidentService.quit())">
+      <button class="quit-shortcut" @click="quit">
         {{ t('monitoring.quit') }}
       </button>
     </footer>

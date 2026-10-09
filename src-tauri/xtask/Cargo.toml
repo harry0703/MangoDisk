@@ -7,7 +7,7 @@ rust-version.workspace = true
 publish = false
 
 [dependencies]
-blake3 = "1"
+blake3 = "1.8.7"
 mangodisk-core = { path = "../crates/mangodisk-core" }
 mangodisk-platform = { path = "../crates/mangodisk-platform" }
-serde_json = "1"
+serde_json = "1.0.151"

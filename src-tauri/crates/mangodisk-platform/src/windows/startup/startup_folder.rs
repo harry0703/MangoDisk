@@ -231,7 +231,7 @@ pub(super) fn change(
             .set_raw_value(
                 file_name,
                 &RegValue {
-                    bytes,
+                    bytes: bytes.into(),
                     vtype: REG_BINARY,
                 },
             )
@@ -479,7 +479,7 @@ fn resolve_link(path: &Path) -> windows_core::Result<LinkTarget> {
     let description = unsafe { link.GetDescription(&mut description_buffer) }
         .ok()
         .and_then(|()| wide_buffer_string(&description_buffer));
-    let target = wide_buffer_string(&target).ok_or_else(windows_core::Error::from_win32)?;
+    let target = wide_buffer_string(&target).ok_or_else(windows_core::Error::from_thread)?;
     let arguments = wide_buffer_string(&argument_buffer)
         .map(|arguments| split_command_line(&arguments))
         .unwrap_or_default();
@@ -730,7 +730,7 @@ mod tests {
         path: std::path::PathBuf,
         approval: RegKey,
         file_name: String,
-        previous_approval: Option<RegValue>,
+        previous_approval: Option<RegValue<'static>>,
     }
 
     impl Drop for ShortcutToggleFixtureGuard {

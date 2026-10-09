@@ -388,7 +388,7 @@ fn interleave_tasks_by_rule(tasks: Vec<RootScanTask>) -> Vec<RootScanTask> {
             .push(task);
     }
     for tasks in groups.values_mut() {
-        tasks.sort_by(|left, right| path_identity(&left.root).cmp(&path_identity(&right.root)));
+        tasks.sort_by_key(|task| path_identity(&task.root));
     }
     let mut groups = groups
         .into_iter()

@@ -18,8 +18,10 @@ fn overlay_png_preserves_low_nonzero_alpha_without_visible_artwork() {
     assert_eq!(info.color_type, png::ColorType::Rgba);
     assert_eq!(info.bit_depth, png::BitDepth::Eight);
     assert!(pixels[..info.buffer_size()]
-        .chunks_exact(4)
-        .all(|pixel| pixel == [0, 0, 0, 1]));
+        .as_chunks::<4>()
+        .0
+        .iter()
+        .all(|pixel| *pixel == [0, 0, 0, 1]));
 }
 
 #[cfg(windows)]
@@ -87,12 +89,16 @@ fn windows_loads_and_blends_overlay_at_shell_icon_sizes() {
                 let drawn = DrawIconEx(dc, 0, 0, icon, size, size, 0, ptr::null_mut(), DI_NORMAL);
                 GdiFlush();
                 let min = pixels
-                    .chunks_exact(4)
+                    .as_chunks::<4>()
+                    .0
+                    .iter()
                     .flat_map(|pixel| &pixel[..3])
                     .min()
                     .copied();
                 let max = pixels
-                    .chunks_exact(4)
+                    .as_chunks::<4>()
+                    .0
+                    .iter()
                     .flat_map(|pixel| &pixel[..3])
                     .max()
                     .copied();

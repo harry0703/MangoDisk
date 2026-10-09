@@ -382,7 +382,9 @@ fn notepad_document_path(bytes: &[u8]) -> Option<String> {
     let byte_count = usize::try_from(character_count).ok()?.checked_mul(2)?;
     let encoded = bytes.get(start..start.checked_add(byte_count)?)?;
     let units = encoded
-        .chunks_exact(2)
+        .as_chunks::<2>()
+        .0
+        .iter()
         .map(|pair| u16::from_le_bytes([pair[0], pair[1]]))
         .collect::<Vec<_>>();
     let path = String::from_utf16(&units).ok()?;

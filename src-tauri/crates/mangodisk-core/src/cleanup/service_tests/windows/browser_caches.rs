@@ -1022,7 +1022,7 @@
             hasher.update(relative.as_bytes());
             hasher.update(fs::read(file).expect("the preserved WPS file must remain readable"));
         }
-        format!("{:x}", hasher.finalize())
+        hasher.finalize().iter().map(|byte| format!("{byte:02x}")).collect::<String>()
     }
 
     fn digest_tree(path: &Path) -> String {
@@ -1058,5 +1058,5 @@
             hasher.update(relative.as_bytes());
             hasher.update(fs::read(file).expect("the preserved Signal file must remain readable"));
         }
-        format!("{:x}", hasher.finalize())
+        hasher.finalize().iter().map(|byte| format!("{byte:02x}")).collect::<String>()
     }

@@ -1807,7 +1807,9 @@ fn parse_app_execution_alias(buffer: &[u8]) -> Option<AppExecutionAlias> {
         return None;
     }
     let units = fields_data
-        .chunks_exact(2)
+        .as_chunks::<2>()
+        .0
+        .iter()
         .map(|bytes| u16::from_le_bytes([bytes[0], bytes[1]]))
         .collect::<Vec<_>>();
     let fields = units

@@ -95,11 +95,11 @@ unsafe fn inspect(automation: &IUIAutomation) -> windows::core::Result<Geometry>
     let sampled = Instant::now();
     let shell = FindWindowW(w!("Shell_TrayWnd"), ptr::null());
     if shell.is_null() {
-        return Err(windows::core::Error::from_win32());
+        return Err(windows::core::Error::from_thread());
     }
     let mut bar = RECT::default();
     if GetWindowRect(shell, &mut bar) == 0 {
-        return Err(windows::core::Error::from_win32());
+        return Err(windows::core::Error::from_thread());
     }
     let bounds = Bounds {
         left: bar.left,
@@ -115,7 +115,7 @@ unsafe fn inspect(automation: &IUIAutomation) -> windows::core::Result<Geometry>
         ..Default::default()
     };
     if GetMonitorInfoW(monitor, &mut info) == 0 {
-        return Err(windows::core::Error::from_win32());
+        return Err(windows::core::Error::from_thread());
     }
     let environment = super::position::read_environment();
     let hidden = !bounds.fits_in(Bounds {

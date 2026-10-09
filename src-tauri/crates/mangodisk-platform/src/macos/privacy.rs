@@ -1435,7 +1435,7 @@ fn clear_macos_office_recent_documents(home: &Path, application: &str) -> Platfo
         // MRU document nodes are expected to be leaves. Refusing an unknown nested shape prevents
         // a future Office schema change from broadening deletion beyond the reviewed record.
         for entry in &entries {
-            let child_count: u64 = transaction
+            let child_count: i64 = transaction
                 .query_row(
                     "SELECT COUNT(*) FROM HKEY_CURRENT_USER WHERE parent_id = ?1",
                     [entry.node_id],
@@ -2456,7 +2456,7 @@ mod tests {
             true,
         )
         .unwrap();
-        let remaining: u64 = connection
+        let remaining: i64 = connection
             .query_row(
                 "SELECT COUNT(*) FROM HKEY_CURRENT_USER WHERE name = 'pinned-record'",
                 [],

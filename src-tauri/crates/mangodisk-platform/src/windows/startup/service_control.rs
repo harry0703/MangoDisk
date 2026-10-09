@@ -390,7 +390,7 @@ mod tests {
         service: ServiceHandle,
         key: RegKey,
         original: super::super::services::ServiceConfig,
-        backup: Option<winreg::RegValue>,
+        backup: Option<winreg::RegValue<'static>>,
     }
     impl Drop for ExistingRestore {
         fn drop(&mut self) {

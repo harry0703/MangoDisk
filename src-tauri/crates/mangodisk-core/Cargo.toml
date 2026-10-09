@@ -5,35 +5,36 @@ edition.workspace = true
 rust-version.workspace = true
 
 [dependencies]
-blake3 = "1"
-fs2 = "0.4"
+blake3 = "1.8.7"
+fs2 = "0.4.3"
 mangodisk-platform = { path = "../mangodisk-platform" }
-log = "0.4.33"
-rusqlite = { version = "0.37", features = ["bundled"] }
-quick-xml = "0.41"
-serde = { version = "1", features = ["derive", "rc"] }
-serde_json = "1"
-reqwest = { version = "0.13.4", features = ["json"] }
-tokio = { version = "1", features = ["sync", "time", "macros"] }
-tempfile = "3"
-sha2 = "0.10"
-hmac = "0.12"
-base64 = "0.22"
-uuid = { version = "1", features = ["v4"] }
-toml = "0.9"
-chrono = { version = "0.4", default-features = false, features = ["clock"] }
+log = "0.4.34"
+rusqlite = { version = "0.40.2", features = ["bundled"] }
+# Keep byte-oriented parsing for Windows catalogs with mixed UTF-8 and GBK attributes.
+quick-xml = "0.41.0"
+serde = { version = "1.0.229", features = ["derive", "rc"] }
+serde_json = "1.0.151"
+reqwest = { version = "0.13.5", features = ["json"] }
+tokio = { version = "1.53.2", features = ["sync", "time", "macros"] }
+tempfile = "3.27.0"
+sha2 = "0.11.0"
+hmac = "0.13.0"
+base64 = "0.23.1"
+uuid = { version = "1.27.0", features = ["v4"] }
+toml = "1.1.7"
+chrono = { version = "0.4.45", default-features = false, features = ["clock"] }
 
 [build-dependencies]
-serde = { version = "1", features = ["derive"] }
-toml = "0.9"
+serde = { version = "1.0.229", features = ["derive"] }
+toml = "1.1.7"
 
 [target.'cfg(windows)'.dependencies]
-encoding_rs = "0.8"
-winreg = "0.55"
-windows-sys = { version = "0.61", features = ["Win32_Foundation", "Win32_Storage_FileSystem", "Win32_System_IO", "Win32_System_Ioctl"] }
+encoding_rs = "0.8.42"
+winreg = "0.56.0"
+windows-sys = { version = "0.61.2", features = ["Win32_Foundation", "Win32_Storage_FileSystem", "Win32_System_IO", "Win32_System_Ioctl"] }
 
 [target.'cfg(unix)'.dependencies]
-libc = "0.2"
+libc = "0.2.190"
 
 [target.'cfg(target_os = "macos")'.dependencies]
-plist = "1.10"
+plist = "1.10.1"

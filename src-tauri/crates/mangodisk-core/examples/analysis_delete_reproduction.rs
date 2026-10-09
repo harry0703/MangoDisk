@@ -139,7 +139,7 @@ mod probe {
                         libc::close(fd);
                     }
                     created += 1;
-                    if created % 128 == 0 {
+                    if created.is_multiple_of(128) {
                         thread::yield_now();
                     }
                 }

@@ -201,7 +201,12 @@ fn render_icon_on_background(icon: HICON, background: u8) -> Option<Vec<u8>> {
 fn reconstruct_rgba(black: &[u8], white: &[u8]) -> Vec<u8> {
     debug_assert_eq!(black.len(), white.len());
     let mut rgba = Vec::with_capacity(black.len());
-    for (black_pixel, white_pixel) in black.chunks_exact(4).zip(white.chunks_exact(4)) {
+    for (black_pixel, white_pixel) in black
+        .as_chunks::<4>()
+        .0
+        .iter()
+        .zip(white.as_chunks::<4>().0.iter())
+    {
         // For a source channel C and alpha A:
         // black = A*C, white = A*C + (1-A)*255.
         // The largest channel delta is resilient to integer rounding in GDI.

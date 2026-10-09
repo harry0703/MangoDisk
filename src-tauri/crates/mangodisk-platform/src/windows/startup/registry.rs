@@ -265,7 +265,7 @@ pub(super) fn change(
                     .set_raw_value(
                         &value_name,
                         &RegValue {
-                            bytes,
+                            bytes: bytes.into(),
                             vtype: REG_BINARY,
                         },
                     )
@@ -382,11 +382,11 @@ pub(super) fn desired_configured_state(
 }
 
 pub(super) fn changed_startup_approved_bytes(
-    existing: Option<&RegValue>,
+    existing: Option<&RegValue<'_>>,
     desired: PlatformStartupDesiredState,
 ) -> PlatformResult<Vec<u8>> {
     let mut bytes = existing
-        .map(|value| value.bytes.clone())
+        .map(|value| value.bytes.to_vec())
         .unwrap_or_else(|| vec![0; 12]);
     if bytes.len() < 12 {
         return Err(PlatformError::new(
@@ -711,7 +711,7 @@ mod tests {
     #[test]
     fn startup_approved_change_preserves_native_payload() {
         let original = RegValue {
-            bytes: vec![0x02, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0, 11],
+            bytes: vec![0x02, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0, 11].into(),
             vtype: REG_BINARY,
         };
 
@@ -726,7 +726,7 @@ mod tests {
     #[test]
     fn startup_approved_change_rejects_truncated_payload() {
         let original = RegValue {
-            bytes: vec![0x02, 0],
+            bytes: vec![0x02, 0].into(),
             vtype: REG_BINARY,
         };
 
@@ -877,7 +877,7 @@ mod tests {
                     bytes: {
                         let mut bytes = vec![0x02; 12];
                         bytes[0] = 0x03;
-                        bytes
+                        bytes.into()
                     },
                     vtype: REG_BINARY,
                 },
@@ -1082,8 +1082,8 @@ mod tests {
 
     struct RegistryFixtureGuard {
         value_name: String,
-        previous_run: Option<RegValue>,
-        previous_approval: Option<RegValue>,
+        previous_run: Option<RegValue<'static>>,
+        previous_approval: Option<RegValue<'static>>,
     }
 
     impl Drop for RegistryFixtureGuard {
@@ -1108,7 +1108,7 @@ mod tests {
         }
     }
 
-    fn restore_registry_value(key: &RegKey, name: &str, previous: Option<&RegValue>) {
+    fn restore_registry_value(key: &RegKey, name: &str, previous: Option<&RegValue<'_>>) {
         if let Some(previous) = previous {
             let _ = key.set_raw_value(name, previous);
         } else {

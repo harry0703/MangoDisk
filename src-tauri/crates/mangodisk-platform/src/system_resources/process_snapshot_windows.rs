@@ -182,7 +182,9 @@ fn parse_rows(bytes: &[u8]) -> PlatformResult<Vec<ProcessReading>> {
             let name_bytes = checked_name(bytes, offset, row_end, &header)?;
             let name = String::from_utf16_lossy(
                 &name_bytes
-                    .chunks_exact(2)
+                    .as_chunks::<2>()
+                    .0
+                    .iter()
                     .map(|pair| u16::from_le_bytes([pair[0], pair[1]]))
                     .collect::<Vec<_>>(),
             );

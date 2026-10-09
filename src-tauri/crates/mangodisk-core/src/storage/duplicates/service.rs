@@ -454,7 +454,7 @@ impl DuplicateProgress {
             self.last_emit_ms.store(current_ms, Ordering::Release);
         } else if self
             .last_emit_ms
-            .fetch_update(Ordering::AcqRel, Ordering::Acquire, |previous_ms| {
+            .try_update(Ordering::AcqRel, Ordering::Acquire, |previous_ms| {
                 (current_ms.saturating_sub(previous_ms) >= PROGRESS_INTERVAL_MS)
                     .then_some(current_ms)
             })

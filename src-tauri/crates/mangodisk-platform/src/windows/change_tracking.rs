@@ -48,7 +48,7 @@ const SUPPORTED_USN_MAJOR_VERSION: u16 = 2;
 // CLOSE is only the commit boundary for aggregated reasons and does not affect analysis results
 // by itself. Read every other reason, including security, attribute, and reparse-point changes,
 // because conservative invalidation is safer than missing an event that affects a path or size.
-const RELEVANT_REASONS: u32 = u32::MAX & !USN_REASON_CLOSE;
+const RELEVANT_REASONS: u32 = !USN_REASON_CLOSE;
 const MAX_PAGES: usize = 16_384;
 const MAX_RECORDS: u64 = 10_000_000;
 const MAX_PARENT_CACHE_ENTRIES: usize = 100_000;
@@ -101,7 +101,9 @@ impl UsnEvent<'_> {
     fn decoded_name(self) -> OsString {
         let units = self
             .name_bytes
-            .chunks_exact(size_of::<u16>())
+            .as_chunks::<{ size_of::<u16>() }>()
+            .0
+            .iter()
             .map(|unit| u16::from_le_bytes([unit[0], unit[1]]))
             .collect::<Vec<_>>();
         OsString::from_wide(&units)
@@ -998,7 +1000,9 @@ fn valid_file_name_bytes(name: &[u8]) -> bool {
     {
         return false;
     }
-    name.chunks_exact(size_of::<u16>())
+    name.as_chunks::<{ size_of::<u16>() }>()
+        .0
+        .iter()
         .map(|unit| u16::from_le_bytes([unit[0], unit[1]]))
         .all(|unit| !matches!(unit, 0 | 0x2f | 0x3a | 0x5c))
 }

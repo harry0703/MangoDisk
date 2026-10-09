@@ -1109,7 +1109,8 @@ mod platform {
                 .to_file_xml(signature_directory.join("CodeResources"))
                 .expect("signature manifest should be written");
 
-            let discovered = discover_signed_executables(&bundle, &[main.clone()], &|| false);
+            let discovered =
+                discover_signed_executables(&bundle, std::slice::from_ref(&main), &|| false);
             assert!(discovered.contains(&fs::canonicalize(main).expect("main should resolve")));
             assert!(discovered
                 .contains(&fs::canonicalize(nested_code).expect("nested code should resolve")));

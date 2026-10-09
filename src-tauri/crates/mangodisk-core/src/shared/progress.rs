@@ -125,7 +125,7 @@ impl ProgressTracker {
         let total_steps = self.total_steps.load(Ordering::Relaxed);
         let advanced = self
             .completed_steps
-            .fetch_update(Ordering::Relaxed, Ordering::Relaxed, |completed| {
+            .try_update(Ordering::Relaxed, Ordering::Relaxed, |completed| {
                 (completed < total_steps).then_some(completed + 1)
             })
             .is_ok();
@@ -179,12 +179,12 @@ impl ProgressTracker {
     fn remove_scan_observations(&self, file_count: u64, bytes: u64) {
         let _ = self
             .items_scanned
-            .fetch_update(Ordering::Relaxed, Ordering::Relaxed, |current| {
+            .try_update(Ordering::Relaxed, Ordering::Relaxed, |current| {
                 Some(current.saturating_sub(file_count))
             });
         let _ = self
             .bytes_scanned
-            .fetch_update(Ordering::Relaxed, Ordering::Relaxed, |current| {
+            .try_update(Ordering::Relaxed, Ordering::Relaxed, |current| {
                 Some(current.saturating_sub(bytes))
             });
     }

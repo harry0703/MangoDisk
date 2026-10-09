@@ -680,7 +680,8 @@ fn enrich_spotlight_metadata(
         return;
     }
 
-    for ((application_index, _), values) in indexed.into_iter().zip(lines.chunks_exact(2)) {
+    for ((application_index, _), values) in indexed.into_iter().zip(lines.as_chunks::<2>().0.iter())
+    {
         let application = &mut applications[application_index];
         let spotlight_bytes = metadata_value(&values[0], "kMDItemFSSize")
             .and_then(|value| value.parse().ok())

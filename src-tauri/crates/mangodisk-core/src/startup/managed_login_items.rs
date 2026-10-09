@@ -607,7 +607,7 @@ mod tests {
         let directory = tempfile::tempdir().unwrap();
         let item = item(directory.path().join("Removed.app"));
         let document = directory.path().join("managed-login-items.json");
-        write(&document, &[item.clone()]).unwrap();
+        write(&document, std::slice::from_ref(&item)).unwrap();
         let mut orphan = native(&item, PlatformStartupConfiguredState::Disabled);
         orphan.items[0].control_capability = PlatformStartupControlCapability::RemoveOnly;
         let mut sources = vec![orphan.clone()];
@@ -764,7 +764,7 @@ mod tests {
         let mut item = item(app);
         item.restore_pending = true;
         let document = directory.path().join("managed-login-items.json");
-        write(&document, &[item.clone()]).unwrap();
+        write(&document, std::slice::from_ref(&item)).unwrap();
         let mut sources = vec![native(&item, PlatformStartupConfiguredState::Enabled)];
 
         merge_results_at(&document, &mut sources, false, None).unwrap();
@@ -817,7 +817,7 @@ mod tests {
         let app = directory.path().join("Example.app");
         fs::create_dir(&app).unwrap();
         let item = item(app);
-        write(&document, &[item.clone()]).unwrap();
+        write(&document, std::slice::from_ref(&item)).unwrap();
         let mut login_item = native(&item, PlatformStartupConfiguredState::Enabled);
         login_item.source_id = "macos.login_items".to_owned();
         login_item.status = PlatformStartupCoverageStatus::Partial;
@@ -840,7 +840,7 @@ mod tests {
         let mut item = item(app);
         item.restore_pending = true;
         let document = directory.path().join("managed-login-items.json");
-        write(&document, &[item.clone()]).unwrap();
+        write(&document, std::slice::from_ref(&item)).unwrap();
 
         mark_restore_pending_at(&document, &item.artifact(), false).unwrap();
         let mut sources = vec![native(&item, PlatformStartupConfiguredState::Enabled)];

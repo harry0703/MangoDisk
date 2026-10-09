@@ -178,8 +178,10 @@ pub fn render_colored(
         let mask = std::slice::from_raw_parts(bits.cast::<u8>(), count);
         let mut rgba = vec![0; count];
         for (index, (source, destination)) in mask
-            .chunks_exact(4)
-            .zip(rgba.chunks_exact_mut(4))
+            .as_chunks::<4>()
+            .0
+            .iter()
+            .zip(rgba.as_chunks_mut::<4>().0.iter_mut())
             .enumerate()
         {
             let color = if index / size as usize >= split as usize {
@@ -218,10 +220,14 @@ mod tests {
                     .unwrap();
                     let split = (size * 5 / 16 * size * 4) as usize;
                     assert!(pixels[..split]
-                        .chunks_exact(4)
+                        .as_chunks::<4>()
+                        .0
+                        .iter()
                         .any(|p| p[3] > 0 && p[..3] == foreground));
                     assert!(pixels[split..]
-                        .chunks_exact(4)
+                        .as_chunks::<4>()
+                        .0
+                        .iter()
                         .any(|p| p[3] > 0 && p[..3] == tone.rgb(foreground)));
                 }
             }
@@ -242,8 +248,8 @@ mod tests {
                 )
                 .unwrap();
                 assert_eq!(pixels.len(), (size * size * 4) as usize);
-                assert!(pixels.chunks_exact(4).any(|pixel| pixel[3] > 0));
-                assert!(pixels.chunks_exact(4).any(|pixel| pixel[3] == 0));
+                assert!(pixels.as_chunks::<4>().0.iter().any(|pixel| pixel[3] > 0));
+                assert!(pixels.as_chunks::<4>().0.iter().any(|pixel| pixel[3] == 0));
             }
         }
     }

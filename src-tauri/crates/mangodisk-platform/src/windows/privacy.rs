@@ -1551,7 +1551,7 @@ fn windows_system_executable(name: &str) -> Option<PathBuf> {
 fn clipboard_history_trace() -> PlatformPrivacySystemTrace {
     use windows::ApplicationModel::DataTransfer::{Clipboard, ClipboardHistoryItemsResultStatus};
 
-    let result = Clipboard::GetHistoryItemsAsync().and_then(|operation| operation.get());
+    let result = Clipboard::GetHistoryItemsAsync().and_then(|operation| operation.join());
     let (available, item_count, revision) = match result {
         Ok(result) if result.Status().ok() == Some(ClipboardHistoryItemsResultStatus::Success) => {
             match result.Items() {
@@ -2284,7 +2284,7 @@ impl RegistryDetailPage {
     }
 }
 
-fn registry_detail_label(fallback: &str, value: &RegValue) -> String {
+fn registry_detail_label(fallback: &str, value: &RegValue<'_>) -> String {
     let text = String::from_reg_value(value).unwrap_or_default();
     let label = if text.trim().is_empty() {
         fallback
@@ -2963,7 +2963,7 @@ mod tests {
                 "0",
                 &RegValue {
                     vtype: winreg::enums::REG_BINARY,
-                    bytes: vec![1, 2, 3, 4],
+                    bytes: vec![1, 2, 3, 4].into(),
                 },
             )
             .unwrap();
@@ -2973,7 +2973,7 @@ mod tests {
                 "1",
                 &RegValue {
                     vtype: winreg::enums::REG_BINARY,
-                    bytes: vec![5, 6, 7, 8],
+                    bytes: vec![5, 6, 7, 8].into(),
                 },
             )
             .unwrap();

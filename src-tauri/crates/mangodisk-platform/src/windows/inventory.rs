@@ -926,13 +926,11 @@ fn read_uninstall_view(
         identifiers.sort_by_key(|value| value.to_ascii_lowercase());
         identifiers.dedup_by(|left, right| left.eq_ignore_ascii_case(right));
         let mut additional_source_identities = Vec::new();
-        for (value_name, source) in [(
-            "WinGetPackageIdentifier",
-            ApplicationInventorySource::Winget,
-        )] {
-            if let Some(identifier) = string_value(&entry, value_name) {
-                additional_source_identities.push(ApplicationSourceIdentity { source, identifier });
-            }
+        if let Some(identifier) = string_value(&entry, "WinGetPackageIdentifier") {
+            additional_source_identities.push(ApplicationSourceIdentity {
+                source: ApplicationInventorySource::Winget,
+                identifier,
+            });
         }
         if let Some(identifier) = string_value(&entry, "ScoopPackageName") {
             additional_source_identities.push(ApplicationSourceIdentity {

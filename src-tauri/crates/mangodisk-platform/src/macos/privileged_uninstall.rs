@@ -246,7 +246,7 @@ fn finalize_command_response(
         PrivilegedCommandResponse::Failed(status) if target_present && !staging_present => {
             log::warn!(
                 "macos_privileged_application_removal_failed reason=shell_status shell_status={}",
-                status.map_or(-1, |code| code)
+                status.unwrap_or(-1)
             );
             Err(PlatformError::operation_failed(
                 "administrator-authorized application removal failed",

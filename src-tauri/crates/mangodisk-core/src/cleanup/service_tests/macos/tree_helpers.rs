@@ -78,7 +78,7 @@
                 hasher.update(b"directory");
             }
         }
-        format!("{:x}", hasher.finalize())
+        hasher.finalize().iter().map(|byte| format!("{byte:02x}")).collect()
     }
 
     fn digest_macos_tree(path: &Path, excluded_direct_children: &[&str]) -> String {
@@ -131,5 +131,5 @@
                 fs::read(file).expect("the preserved application file must remain readable"),
             );
         }
-        format!("{:x}", hasher.finalize())
+        hasher.finalize().iter().map(|byte| format!("{byte:02x}")).collect()
     }

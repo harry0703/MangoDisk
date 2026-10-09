@@ -104,7 +104,7 @@ fn registry_link_markers_are_never_followed_by_removal_preflight() {
             "SymbolicLinkValue",
             &winreg::RegValue {
                 vtype: REG_LINK,
-                bytes: vec![0, 0],
+                bytes: vec![0, 0].into(),
             },
         )
         .unwrap();

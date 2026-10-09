@@ -124,6 +124,7 @@ let copyFeedbackTimer: ReturnType<typeof setTimeout> | null = null;
 let changeDispatchTimer: ReturnType<typeof setTimeout> | null = null;
 const isWindows = OperatingSystemService.isWindows();
 const isMacOs = OperatingSystemService.isMacOs();
+const startupPlatform = isWindows ? 'windows' : OperatingSystemService.isLinux() ? 'linux' : 'macos';
 const showSystemItems = ref(false);
 
 const artifactsById = computed(() => indexStartupArtifacts(props.catalog?.artifacts ?? []));
@@ -625,15 +626,7 @@ watch(
           :copied-action-key="copiedActionKey"
           @explain="
             (name, artifacts) =>
-              aiStore.show(
-                startupAiContext(
-                  name,
-                  artifacts,
-                  t('startup.title'),
-                  isWindows ? 'windows' : OperatingSystemService.isLinux() ? 'linux' : 'macos'
-                ),
-                locale
-              )
+              aiStore.show(startupAiContext(name, artifacts, t('startup.title'), startupPlatform), locale)
           "
           @toggle-expanded="expandedGroupId = expandedGroupId === group.groupId ? null : group.groupId"
           @toggle-group="requestGroupChange(group)"

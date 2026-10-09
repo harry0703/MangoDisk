@@ -547,7 +547,9 @@ fn read_utf16_os(bytes: &[u8], offset: usize, byte_length: usize) -> Option<OsSt
     let end = offset.checked_add(byte_length)?;
     let raw = bytes.get(offset..end)?;
     let units = raw
-        .chunks_exact(2)
+        .as_chunks::<2>()
+        .0
+        .iter()
         .map(|pair| u16::from_le_bytes([pair[0], pair[1]]))
         .collect::<Vec<_>>();
     // NTFS name lengths exclude a terminator. A NUL inside the returned range
