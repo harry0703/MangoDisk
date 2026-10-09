@@ -4168,5 +4168,13 @@
     "efficiency": "Verimlilik çekirdekleri",
     "performance": "Performans çekirdekleri",
     "cached": "Önbellek"
+  },
+  "cpuTemperature": {
+    "label": "CPU sıcaklığı",
+    "coreAverageHint": "Okunabilen {count} CPU çekirdek sensörünün ortalama sıcaklığı",
+    "packageHint": "CPU paket sıcaklığı; {count} sensörün en yüksek değeri",
+    "coreMaximumHint": "{count} CPU çekirdek sensörünün en yüksek sıcaklığı",
+    "unsupportedHint": "MangoDisk bu cihazda doğrulanmış bir CPU sıcaklık sensörünü okuyamıyor",
+    "trend": "Son bir dakikadaki CPU sıcaklığı, Santigrat derece"
   }
 }

@@ -145,6 +145,114 @@ describe('status display interactions', () => {
     await openConfiguration(wrapper);
     expect(wrapper.find('#usage-colors').exists()).toBe(true);
     expect(wrapper.find('#menu-bar-compact').exists()).toBe(false);
+    expect(wrapper.find('#status-cpuTemperature').exists()).toBe(false);
+  });
+
+  it('saves macOS temperature independently of CPU utilization and preserves a temperature-only entry', async () => {
+    const saved = preferencesFixture();
+    saved.showIcon = false;
+    saved.metrics.forEach(row => (row.enabled = row.id === 'cpuTemperature'));
+    vi.mocked(ResidentService.preferences).mockResolvedValue(saved);
+    const wrapper = mount(Settings, { props: { isMacOs: true }, global: global() });
+    wrappers.push(wrapper);
+    await flushPromises();
+    await openConfiguration(wrapper);
+    expect(wrapper.get('#status-cpuTemperature').attributes('disabled')).toBeDefined();
+    expect(wrapper.get('#status-app-icon').attributes('data-state')).toBe('unchecked');
+    await wrapper.get('#status-app-icon').trigger('click');
+    await flushPromises();
+    expect(wrapper.get('#status-cpuTemperature').attributes('disabled')).toBeUndefined();
+    await wrapper.get('#status-cpuTemperature').trigger('click');
+    await flushPromises();
+    expect(ResidentService.savePreferences).toHaveBeenLastCalledWith(
+      expect.objectContaining({ showIcon: true, metrics: saved.metrics.map(row => ({ ...row, enabled: false })) })
+    );
+    await wrapper.get('#status-cpuTemperature').trigger('click');
+    await flushPromises();
+    expect(ResidentService.savePreferences).toHaveBeenLastCalledWith(
+      expect.objectContaining({ metrics: saved.metrics })
+    );
+  });
+
+  it('retains the visible fallback logo when temperature is enabled', async () => {
+    const saved = preferencesFixture();
+    saved.showIcon = false;
+    saved.metrics.forEach(row => (row.enabled = false));
+    vi.mocked(ResidentService.preferences).mockResolvedValue(saved);
+    const wrapper = mount(Settings, { props: { isMacOs: true }, global: global() });
+    wrappers.push(wrapper);
+    await flushPromises();
+    await openConfiguration(wrapper);
+    expect(wrapper.get('#status-app-icon').attributes('data-state')).toBe('checked');
+    await wrapper.get('#status-cpuTemperature').trigger('click');
+    await flushPromises();
+    expect(ResidentService.savePreferences).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        showIcon: true,
+        metrics: saved.metrics.map(row => ({ ...row, enabled: row.id === 'cpuTemperature' })),
+      })
+    );
+  });
+
+  it('reorders temperature with the keyboard, restores failed writes and reloads the saved order', async () => {
+    const wrapper = mount(Settings, { props: { isMacOs: true }, global: global() });
+    wrappers.push(wrapper);
+    await flushPromises();
+    await openConfiguration(wrapper);
+    expect(wrapper.find('#menu-bar-cpu-temperature').exists()).toBe(false);
+    expect(wrapper.findAll('.drag-handle')).toHaveLength(6);
+    expect(wrapper.get('[data-metric="cpuTemperature"] label').text()).toBe('cpuTemperature.label');
+    const handle = wrapper.get('[data-metric="cpuTemperature"] .drag-handle');
+    await handle.trigger('keydown', { key: ' ' });
+    for (let step = 0; step < 5; step++) await handle.trigger('keydown', { key: 'ArrowUp' });
+    await handle.trigger('keydown', { key: 'Enter' });
+    await flushPromises();
+    const saved = vi.mocked(ResidentService.savePreferences).mock.calls.at(-1)![0];
+    expect(saved.metrics[0]?.id).toBe('cpuTemperature');
+    expect(saved.metrics.find(row => row.id === 'cpuTemperature')?.enabled).toBe(false);
+    vi.mocked(ResidentService.preferences).mockResolvedValue(saved);
+    vi.mocked(ResidentService.savePreferences).mockRejectedValueOnce(new Error('save failed'));
+    await handle.trigger('keydown', { key: ' ' });
+    await handle.trigger('keydown', { key: 'ArrowDown' });
+    await handle.trigger('keydown', { key: 'Enter' });
+    await flushPromises();
+    expect(wrapper.findAll('.metric-row')[0]!.attributes('data-metric')).toBe('cpuTemperature');
+    expect(wrapper.find('[role="status"]').text()).toContain('systemStatus.saveFailed');
+    vi.mocked(ResidentService.preferences).mockResolvedValue(saved);
+    wrapper.unmount();
+    const reloaded = mount(Settings, { props: { isMacOs: true }, global: global() });
+    wrappers.push(reloaded);
+    await flushPromises();
+    await openConfiguration(reloaded);
+    expect(reloaded.findAll('.metric-row')[0]!.attributes('data-metric')).toBe('cpuTemperature');
+  });
+
+  it('drags the temperature row independently and saves its enabled state and order', async () => {
+    const wrapper = mount(Settings, { props: { isMacOs: true }, global: global() });
+    wrappers.push(wrapper);
+    await flushPromises();
+    await openConfiguration(wrapper);
+    await wrapper.get('#status-cpuTemperature').trigger('click');
+    await flushPromises();
+    wrapper.findAll('.metric-row').forEach((row, index) => {
+      vi.spyOn(row.element, 'getBoundingClientRect').mockReturnValue(new DOMRect(0, index * 42, 400, 42));
+    });
+    const hit = vi.spyOn(document, 'elementFromPoint').mockReturnValue(wrapper.findAll('.metric-row')[0]!.element);
+    await wrapper.get('[data-metric="cpuTemperature"] .drag-handle').trigger('pointerdown', {
+      pointerId: 1,
+      button: 0,
+      clientX: 10,
+      clientY: 230,
+    });
+    window.dispatchEvent(new PointerEvent('pointermove', { pointerId: 1, clientX: 10, clientY: 20 }));
+    await flushPromises();
+    window.dispatchEvent(new PointerEvent('pointerup', { pointerId: 1, clientX: 10, clientY: 20 }));
+    hit.mockRestore();
+    await flushPromises();
+    expect(ResidentService.savePreferences).toHaveBeenCalledTimes(2);
+    const saved = vi.mocked(ResidentService.savePreferences).mock.calls.at(-1)![0];
+    expect(saved.metrics[0]).toEqual({ id: 'cpuTemperature', enabled: true });
+    expect(saved.metrics.find(row => row.id === 'cpu')?.enabled).toBe(false);
   });
 
   it('shows only Linux tray controls and reorders the visible metrics', async () => {
@@ -160,6 +268,7 @@ describe('status display interactions', () => {
     expect(wrapper.findComponent(WindowsMode).exists()).toBe(false);
     expect(wrapper.findComponent(WindowsFeedback).exists()).toBe(false);
     expect(wrapper.find('#linux-tray-compact').exists()).toBe(true);
+    expect(wrapper.find('#status-cpuTemperature').exists()).toBe(false);
     expect(wrapper.get('#resident-enabled-hint').text()).toBe('systemStatus.linuxDisplayHint');
     expect(wrapper.find('#taskbar-background').exists()).toBe(false);
     expect(wrapper.find('[data-metric="gpu"]').exists()).toBe(false);
@@ -371,7 +480,7 @@ describe('status display interactions', () => {
     await wrapper.get('input[name="taskbar-position"][value="auto"]').setValue(true);
     await flushPromises();
     expect(ResidentService.savePreferences).toHaveBeenLastCalledWith(
-      expect.objectContaining({ schemaVersion: 10, taskbarPosition: 'auto' })
+      expect.objectContaining({ schemaVersion: 11, taskbarPosition: 'auto' })
     );
     await wrapper.get('input[name="windows-display-mode"][value="tray"]').setValue(true);
     await flushPromises();

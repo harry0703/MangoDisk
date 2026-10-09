@@ -74,7 +74,7 @@ export const useTrayPanelStore = defineStore('tray-panel', {
     accept(reading: ResidentReading) {
       // A cached IPC response can arrive after a newer native event. Never move
       // backwards or show an incompatible protocol as a plausible measurement.
-      if (reading.schemaVersion !== 15 || (reading.memory.value && reading.memory.value.schemaVersion !== 4)) {
+      if (reading.schemaVersion !== 16 || (reading.memory.value && reading.memory.value.schemaVersion !== 4)) {
         this.error = true;
         return;
       }

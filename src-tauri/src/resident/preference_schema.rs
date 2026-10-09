@@ -19,10 +19,35 @@ pub enum TaskbarPosition {
     Right,
 }
 
+/// Display selection is independent of the five resource sampling workers.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum DisplayMetricId {
+    Cpu,
+    CpuTemperature,
+    Gpu,
+    Memory,
+    Disk,
+    Network,
+}
+
+impl DisplayMetricId {
+    pub fn metric(self) -> Option<MetricId> {
+        match self {
+            Self::Cpu => Some(MetricId::Cpu),
+            Self::CpuTemperature => None,
+            Self::Gpu => Some(MetricId::Gpu),
+            Self::Memory => Some(MetricId::Memory),
+            Self::Disk => Some(MetricId::Disk),
+            Self::Network => Some(MetricId::Network),
+        }
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct DisplayMetric {
-    pub id: MetricId,
+    pub id: DisplayMetricId,
     pub enabled: bool,
 }
 
@@ -47,18 +72,19 @@ pub struct ResidentPreferences {
     pub gpu_adapter: Option<String>,
 }
 
-const DISPLAY_ORDER: [MetricId; 5] = [
-    MetricId::Cpu,
-    MetricId::Gpu,
-    MetricId::Memory,
-    MetricId::Disk,
-    MetricId::Network,
+const DISPLAY_ORDER: [DisplayMetricId; 6] = [
+    DisplayMetricId::Cpu,
+    DisplayMetricId::CpuTemperature,
+    DisplayMetricId::Gpu,
+    DisplayMetricId::Memory,
+    DisplayMetricId::Disk,
+    DisplayMetricId::Network,
 ];
 
 impl Default for ResidentPreferences {
     fn default() -> Self {
         Self {
-            schema_version: 10,
+            schema_version: 11,
             revision: 0,
             enabled: true,
             show_icon: true,
@@ -74,7 +100,7 @@ impl Default for ResidentPreferences {
                 .into_iter()
                 .map(|id| DisplayMetric {
                     id,
-                    enabled: matches!(id, MetricId::Cpu | MetricId::Memory),
+                    enabled: matches!(id, DisplayMetricId::Cpu | DisplayMetricId::Memory),
                 })
                 .collect(),
             network_interface: None,
@@ -88,15 +114,27 @@ impl ResidentPreferences {
     pub fn shows(&self, id: MetricId) -> bool {
         self.metrics
             .iter()
-            .any(|metric| metric.id == id && metric.enabled)
+            .any(|metric| metric.id.metric() == Some(id) && metric.enabled)
     }
 
     pub fn effective_icon(&self) -> bool {
-        self.show_icon || !self.metrics.iter().any(|metric| metric.enabled)
+        self.show_icon
+            || !self.metrics.iter().any(|metric| {
+                metric.enabled
+                    && (metric.id != DisplayMetricId::CpuTemperature || cfg!(target_os = "macos"))
+            })
+    }
+
+    pub fn shows_cpu_temperature(&self) -> bool {
+        cfg!(target_os = "macos")
+            && self
+                .metrics
+                .iter()
+                .any(|metric| metric.id == DisplayMetricId::CpuTemperature && metric.enabled)
     }
 
     pub fn normalize(mut self) -> Result<Self, &'static str> {
-        if self.schema_version != 10 {
+        if self.schema_version != 11 {
             return Err("preferences_version");
         }
         if self.usage_warning_percent < 1
@@ -124,7 +162,12 @@ impl ResidentPreferences {
             seen.push(metric.id);
             true
         });
-        for id in DISPLAY_ORDER {
+        // Append newly introduced items without changing any saved relative order.
+        for id in DISPLAY_ORDER
+            .into_iter()
+            .filter(|id| *id != DisplayMetricId::CpuTemperature)
+            .chain([DisplayMetricId::CpuTemperature])
+        {
             if !seen.contains(&id) {
                 self.metrics.push(DisplayMetric { id, enabled: false });
             }
@@ -135,6 +178,18 @@ impl ResidentPreferences {
 
 pub fn decode(mut value: serde_json::Value) -> Result<ResidentPreferences, &'static str> {
     let version = value.get("schemaVersion").and_then(|v| v.as_u64());
+    if matches!(version, Some(2..=10))
+        && value
+            .get("metrics")
+            .and_then(|v| v.as_array())
+            .is_some_and(|metrics| {
+                metrics.iter().any(|metric| {
+                    metric.get("id").and_then(|id| id.as_str()) == Some("cpuTemperature")
+                })
+            })
+    {
+        return Err("preferences_invalid");
+    }
     if matches!(version, Some(2..=9)) {
         if value.get("gpuAdapter").is_some() {
             return Err("preferences_invalid");
@@ -204,7 +259,7 @@ pub fn decode(mut value: serde_json::Value) -> Result<ResidentPreferences, &'sta
                 ..Default::default()
             };
             for metric in &mut migrated.metrics {
-                metric.enabled = metric.id == MetricId::Memory && previous.show_memory;
+                metric.enabled = metric.id == DisplayMetricId::Memory && previous.show_memory;
             }
             Ok(migrated)
         }
@@ -217,7 +272,7 @@ pub fn decode(mut value: serde_json::Value) -> Result<ResidentPreferences, &'sta
             {
                 return Err("preferences_invalid");
             }
-            value["schemaVersion"] = 10.into();
+            value["schemaVersion"] = 11.into();
             value["taskbarBackground"] = true.into();
             value["windowsDisplayMode"] = "tray".into();
             value["taskbarPosition"] = "right".into();
@@ -229,7 +284,7 @@ pub fn decode(mut value: serde_json::Value) -> Result<ResidentPreferences, &'sta
             if value.get("taskbarPosition").is_some() || value.get("taskbarBackground").is_some() {
                 return Err("preferences_invalid");
             }
-            value["schemaVersion"] = 10.into();
+            value["schemaVersion"] = 11.into();
             value["taskbarBackground"] = true.into();
             value["taskbarPosition"] = "right".into();
             serde_json::from_value::<ResidentPreferences>(value)
@@ -248,7 +303,7 @@ pub fn decode(mut value: serde_json::Value) -> Result<ResidentPreferences, &'sta
             }
             // Existing installations keep the opaque presentation until the
             // user explicitly selects transparency.
-            value["schemaVersion"] = 10.into();
+            value["schemaVersion"] = 11.into();
             value["taskbarBackground"] = true.into();
             serde_json::from_value::<ResidentPreferences>(value)
                 .map_err(|_| "preferences_invalid")?
@@ -263,19 +318,19 @@ pub fn decode(mut value: serde_json::Value) -> Result<ResidentPreferences, &'sta
             ) {
                 return Err("preferences_invalid");
             }
-            value["schemaVersion"] = 10.into();
+            value["schemaVersion"] = 11.into();
             serde_json::from_value::<ResidentPreferences>(value)
                 .map_err(|_| "preferences_invalid")?
                 .normalize()
         }
         Some(6) => {
-            value["schemaVersion"] = 10.into();
+            value["schemaVersion"] = 11.into();
             serde_json::from_value::<ResidentPreferences>(value)
                 .map_err(|_| "preferences_invalid")?
                 .normalize()
         }
-        Some(7..=10) => {
-            value["schemaVersion"] = 10.into();
+        Some(7..=11) => {
+            value["schemaVersion"] = 11.into();
             serde_json::from_value::<ResidentPreferences>(value)
                 .map_err(|_| "preferences_invalid")?
                 .normalize()
@@ -288,8 +343,76 @@ pub fn decode(mut value: serde_json::Value) -> Result<ResidentPreferences, &'sta
 mod tests {
     use super::*;
 
-    fn legacy_preferences() -> serde_json::Value {
+    #[test]
+    fn version_ten_preserves_choices_and_appends_disabled_temperature() {
+        let mut old = legacy_current_preferences();
+        old["schemaVersion"] = 10.into();
+        old["revision"] = 42.into();
+        old["metrics"].as_array_mut().unwrap().reverse();
+        let migrated = decode(old.clone()).unwrap();
+        assert_eq!(migrated.schema_version, 11);
+        assert_eq!(migrated.revision, 42);
+        let mut expected = old["metrics"].clone();
+        expected
+            .as_array_mut()
+            .unwrap()
+            .push(serde_json::json!({"id":"cpuTemperature","enabled":false}));
+        assert_eq!(
+            serde_json::to_value(&migrated).unwrap()["metrics"],
+            expected
+        );
+        assert!(!migrated.shows_cpu_temperature());
+        old["metrics"]
+            .as_array_mut()
+            .unwrap()
+            .push(serde_json::json!({"id":"cpuTemperature","enabled":true}));
+        assert!(decode(old).is_err());
+        let mut selected = migrated;
+        let last = selected.metrics.pop().unwrap();
+        selected.metrics.insert(
+            1,
+            DisplayMetric {
+                enabled: true,
+                ..last
+            },
+        );
+        assert_eq!(
+            decode(serde_json::to_value(&selected).unwrap()).unwrap(),
+            selected
+        );
+        let mut invalid = serde_json::to_value(selected).unwrap();
+        invalid["metrics"][1]["enabled"] = "true".into();
+        assert!(decode(invalid).is_err());
+    }
+
+    #[test]
+    fn temperature_only_suppresses_logo_fallback_only_on_macos() {
+        let mut prefs = ResidentPreferences {
+            show_icon: false,
+            ..Default::default()
+        };
+        for metric in &mut prefs.metrics {
+            metric.enabled = metric.id == DisplayMetricId::CpuTemperature;
+        }
+        assert_eq!(prefs.effective_icon(), !cfg!(target_os = "macos"));
+        prefs
+            .metrics
+            .iter_mut()
+            .for_each(|metric| metric.enabled = false);
+        assert!(prefs.effective_icon());
+    }
+
+    fn legacy_current_preferences() -> serde_json::Value {
         let mut value = serde_json::to_value(ResidentPreferences::default()).unwrap();
+        value["metrics"]
+            .as_array_mut()
+            .unwrap()
+            .retain(|metric| metric["id"] != "cpuTemperature");
+        value
+    }
+
+    fn legacy_preferences() -> serde_json::Value {
+        let mut value = legacy_current_preferences();
         value.as_object_mut().unwrap().remove("gpuAdapter");
         value["schemaVersion"] = 7.into();
         value["metrics"]
@@ -309,12 +432,12 @@ mod tests {
 
     #[test]
     fn version_nine_defaults_to_automatic_gpu_and_preserves_current_choices() {
-        let mut old = serde_json::to_value(ResidentPreferences::default()).unwrap();
+        let mut old = legacy_current_preferences();
         old["schemaVersion"] = 9.into();
         old["networkInterface"] = "wifi".into();
         old.as_object_mut().unwrap().remove("gpuAdapter");
         let migrated = decode(old.clone()).unwrap();
-        assert_eq!(migrated.schema_version, 10);
+        assert_eq!(migrated.schema_version, 11);
         assert_eq!(migrated.network_interface.as_deref(), Some("wifi"));
         assert!(migrated.gpu_adapter.is_none());
         old["gpuAdapter"] = "unexpected".into();
@@ -336,7 +459,7 @@ mod tests {
     }
     #[test]
     fn version_eight_appends_disabled_gpu_without_changing_saved_choices() {
-        let mut old = serde_json::to_value(ResidentPreferences::default()).unwrap();
+        let mut old = legacy_current_preferences();
         old["schemaVersion"] = 8.into();
         old.as_object_mut().unwrap().remove("gpuAdapter");
         old["revision"] = 42.into();
@@ -345,7 +468,7 @@ mod tests {
             {"id":"network", "enabled":true}, {"id":"disk", "enabled":false}
         ]);
         let migrated = decode(old).unwrap();
-        assert_eq!(migrated.schema_version, 10);
+        assert_eq!(migrated.schema_version, 11);
         assert_eq!(migrated.revision, 42);
         assert_eq!(
             migrated
@@ -354,11 +477,12 @@ mod tests {
                 .map(|metric| metric.id)
                 .collect::<Vec<_>>(),
             vec![
-                MetricId::Memory,
-                MetricId::Cpu,
-                MetricId::Network,
-                MetricId::Disk,
-                MetricId::Gpu
+                DisplayMetricId::Memory,
+                DisplayMetricId::Cpu,
+                DisplayMetricId::Network,
+                DisplayMetricId::Disk,
+                DisplayMetricId::Gpu,
+                DisplayMetricId::CpuTemperature
             ]
         );
         assert!(!migrated.shows(MetricId::Gpu));
@@ -367,7 +491,7 @@ mod tests {
         selected
             .metrics
             .iter_mut()
-            .find(|metric| metric.id == MetricId::Gpu)
+            .find(|metric| metric.id == DisplayMetricId::Gpu)
             .unwrap()
             .enabled = true;
         assert_eq!(
@@ -375,7 +499,7 @@ mod tests {
             selected
         );
         let mut future = serde_json::to_value(selected).unwrap();
-        future["schemaVersion"] = 11.into();
+        future["schemaVersion"] = 12.into();
         assert!(decode(future).is_err());
     }
 
@@ -408,8 +532,12 @@ mod tests {
             .as_array_mut()
             .unwrap()
             .push(serde_json::json!({"id":"gpu", "enabled":false}));
+        order
+            .as_array_mut()
+            .unwrap()
+            .push(serde_json::json!({"id":"cpuTemperature", "enabled":false}));
         let migrated = decode(old).unwrap();
-        assert_eq!(migrated.schema_version, 10);
+        assert_eq!(migrated.schema_version, 11);
         assert!(!migrated.menu_bar_compact);
         assert!(migrated.usage_colors);
         assert_eq!(serde_json::to_value(migrated).unwrap()["metrics"], order);
@@ -434,11 +562,12 @@ mod tests {
         assert_eq!(
             migrated.metrics.iter().map(|m| m.id).collect::<Vec<_>>(),
             [
-                MetricId::Cpu,
-                MetricId::Memory,
-                MetricId::Disk,
-                MetricId::Network,
-                MetricId::Gpu
+                DisplayMetricId::Cpu,
+                DisplayMetricId::Memory,
+                DisplayMetricId::Disk,
+                DisplayMetricId::Network,
+                DisplayMetricId::Gpu,
+                DisplayMetricId::CpuTemperature
             ]
         );
         assert!(migrated.shows(MetricId::Network));
@@ -480,7 +609,7 @@ mod tests {
             old.as_object_mut().unwrap().remove("taskbarCompact");
             old["taskbarPosition"] = position.into();
             let migrated = decode(old).unwrap();
-            assert_eq!(migrated.schema_version, 10);
+            assert_eq!(migrated.schema_version, 11);
             assert_eq!(
                 serde_json::to_value(migrated).unwrap()["taskbarPosition"],
                 position
@@ -526,7 +655,7 @@ mod tests {
                 .filter(|metric| metric.enabled)
                 .map(|metric| metric.id)
                 .collect::<Vec<_>>(),
-            vec![MetricId::Cpu, MetricId::Memory]
+            vec![DisplayMetricId::Cpu, DisplayMetricId::Memory]
         );
         assert!(preferences.network_interface.is_none() && preferences.disk_volume.is_none());
     }
@@ -542,7 +671,7 @@ mod tests {
             ..Default::default()
         };
         for metric in &mut saved.metrics {
-            metric.enabled = matches!(metric.id, MetricId::Network | MetricId::Disk);
+            metric.enabled = matches!(metric.id, DisplayMetricId::Network | DisplayMetricId::Disk);
         }
         assert_eq!(
             decode(serde_json::to_value(&saved).unwrap()).unwrap(),
@@ -564,7 +693,7 @@ mod tests {
                 assert_eq!(migrated.shows(MetricId::Memory), memory);
                 assert!(migrated.show_icon);
                 assert!(!migrated.shows(MetricId::Cpu));
-                assert_eq!(migrated.schema_version, 10);
+                assert_eq!(migrated.schema_version, 11);
             }
         }
     }
@@ -641,11 +770,11 @@ mod tests {
         let preferences = ResidentPreferences {
             metrics: vec![
                 DisplayMetric {
-                    id: MetricId::Network,
+                    id: DisplayMetricId::Network,
                     enabled: true,
                 },
                 DisplayMetric {
-                    id: MetricId::Network,
+                    id: DisplayMetricId::Network,
                     enabled: false,
                 },
             ],
@@ -653,8 +782,8 @@ mod tests {
         }
         .normalize()
         .unwrap();
-        assert_eq!(preferences.metrics.len(), 5);
-        assert_eq!(preferences.metrics[0].id, MetricId::Network);
+        assert_eq!(preferences.metrics.len(), 6);
+        assert_eq!(preferences.metrics[0].id, DisplayMetricId::Network);
         assert!(preferences.shows(MetricId::Network));
         assert!(!preferences.shows(MetricId::Memory));
     }
@@ -685,7 +814,10 @@ mod tests {
                 for (index, metric) in preferences.metrics.iter_mut().enumerate() {
                     metric.enabled = bits & (1 << index) != 0;
                 }
-                assert_eq!(preferences.effective_icon(), show_icon || bits == 0);
+                assert_eq!(
+                    preferences.effective_icon(),
+                    show_icon || (bits == 0 || (!cfg!(target_os = "macos") && bits == 2))
+                );
                 assert!(
                     preferences.effective_icon()
                         || preferences.metrics.iter().any(|metric| metric.enabled)

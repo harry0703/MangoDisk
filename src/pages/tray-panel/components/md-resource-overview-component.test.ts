@@ -46,6 +46,25 @@ describe('resource details', () => {
     wrapper.unmount();
   });
 
+  it('opens CPU details when the temperature target is clicked', async () => {
+    const reading = emptyReadings();
+    reading.observedAtMs = 1000;
+    reading.cpuTemperature = {
+      status: 'ready',
+      sampledAtMs: 1000,
+      value: { celsius: 48, kind: 'coreAverage', source: 'appleSmc', sensorCount: 16 },
+    };
+    const wrapper = mount(Overview, {
+      props: { metric: 'cpu', reading, interactive: true },
+      global: { plugins: [createI18n({ legacy: false, locale: 'en', messages: { en } })] },
+    });
+    await wrapper.get('.temperature-value').trigger('click');
+    expect(wrapper.emitted('cpu')).toHaveLength(1);
+    await wrapper.setProps({ showCpuTemperature: false });
+    expect(wrapper.find('.cpu-temperature').exists()).toBe(false);
+    wrapper.unmount();
+  });
+
   it.each(['loading', 'unsupported', 'failed', 'stale'] as const)(
     'never presents %s GPU data as a valid zero',
     status => {

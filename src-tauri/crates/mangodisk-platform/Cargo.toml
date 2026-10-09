@@ -31,6 +31,7 @@ plist = "1.10.1"
 rusqlite = { version = "0.40.2", features = ["bundled"] }
 
 [target.'cfg(target_os = "linux")'.dependencies]
+sysinfo = { version = "0.39.6", default-features = false, features = ["component"] }
 # Match the GTK 3 bindings used by Tauri to avoid conflicting native links.
 gdk-pixbuf = { version = "0.18", optional = true }
 gio = { version = "0.18", optional = true }

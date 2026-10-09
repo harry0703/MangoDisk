@@ -5,13 +5,14 @@ use mangodisk_core::system_resources::{
 };
 use serde::Serialize;
 
-use crate::resident::preferences::ResidentPreferences;
+use crate::resident::{preference_schema::DisplayMetricId, preferences::ResidentPreferences};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub enum DisplayId {
     App,
     Cpu,
+    CpuTemperature,
     Gpu,
     Memory,
     Upload,
@@ -20,9 +21,10 @@ pub enum DisplayId {
 }
 
 impl DisplayId {
-    pub const ALL: [Self; 7] = [
+    pub const ALL: [Self; 8] = [
         Self::App,
         Self::Cpu,
+        Self::CpuTemperature,
         Self::Gpu,
         Self::Memory,
         Self::Upload,
@@ -33,6 +35,7 @@ impl DisplayId {
         match self {
             Self::App => "resident",
             Self::Cpu => "resident-cpu",
+            Self::CpuTemperature => "resident-cpu-temperature",
             Self::Gpu => "resident-gpu",
             Self::Memory => "resident-memory",
             Self::Upload => "resident-upload",
@@ -43,7 +46,7 @@ impl DisplayId {
     pub fn metric(self) -> Option<MetricId> {
         match self {
             Self::App => None,
-            Self::Cpu => Some(MetricId::Cpu),
+            Self::Cpu | Self::CpuTemperature => Some(MetricId::Cpu),
             Self::Gpu => Some(MetricId::Gpu),
             Self::Memory => Some(MetricId::Memory),
             Self::Upload | Self::Download => Some(MetricId::Network),
@@ -81,7 +84,7 @@ pub fn indicator_title(entries: &[DisplayEntry], compact: bool) -> Option<String
                         let direction = marker.next()?;
                         format!("{direction}{}{}", entry.digits, marker.as_str())
                     }
-                    DisplayId::App => return None,
+                    DisplayId::App | DisplayId::CpuTemperature => return None,
                 }
             } else {
                 entry.text.trim().to_string()
@@ -99,9 +102,12 @@ pub fn desired(preferences: &ResidentPreferences) -> Vec<DisplayId> {
     }
     DisplayId::ALL
         .into_iter()
-        .filter(|id| match id.metric() {
-            Some(metric) => preferences.shows(metric),
-            None => preferences.effective_icon(),
+        .filter(|id| match id {
+            DisplayId::CpuTemperature => preferences.shows_cpu_temperature(),
+            id => match id.metric() {
+                Some(metric) => preferences.shows(metric),
+                None => preferences.effective_icon(),
+            },
         })
         .collect()
 }
@@ -176,7 +182,16 @@ pub fn entries(
         if !metric.enabled {
             continue;
         }
-        let (ids, status) = match metric.id {
+        if metric.id == DisplayMetricId::CpuTemperature {
+            if preferences.shows_cpu_temperature() {
+                entries.push(temperature_entry(values, labels));
+            }
+            continue;
+        }
+        let Some(metric_id) = metric.id.metric() else {
+            continue;
+        };
+        let (ids, status) = match metric_id {
             MetricId::Cpu => (vec![DisplayId::Cpu], values.cpu.status),
             MetricId::Gpu => (vec![DisplayId::Gpu], values.gpu.status),
             MetricId::Memory => (vec![DisplayId::Memory], values.memory.status),
@@ -224,19 +239,19 @@ pub fn entries(
                         .as_ref()
                         .map(|value| value.received_bytes_per_second),
                 ),
-                DisplayId::App => unreachable!(),
+                DisplayId::App | DisplayId::CpuTemperature => unreachable!(),
             };
             // Invalid samples must not become NaN%, infinity, or a misleading
             // valid-looking rate. Keep the normal unavailable presentation.
             let status = if status == MetricStatus::Ready
                 && value.is_some_and(|value| {
-                    !value.is_finite() || (metric.id == MetricId::Network && value < 0.0)
+                    !value.is_finite() || (metric_id == MetricId::Network && value < 0.0)
                 }) {
                 MetricStatus::Failed
             } else {
                 status
             };
-            let name = labels.metric(metric.id);
+            let name = labels.metric(metric_id);
             if status != MetricStatus::Ready || value.is_none() {
                 entries.push(DisplayEntry {
                     tone: Default::default(),
@@ -259,7 +274,7 @@ pub fn entries(
                 continue;
             }
             let value = value.unwrap_or_default();
-            let entry = if metric.id == MetricId::Network {
+            let entry = if metric_id == MetricId::Network {
                 let (digits, unit) = compact_rate(value, base);
                 let speed = byte_text(value, base);
                 let interface = values
@@ -281,7 +296,7 @@ pub fn entries(
                 // Display and threshold classification must share one rounded value.
                 let percent = value.clamp(0.0, 100.0).round() as u8;
                 let digits = percent.to_string();
-                let details = match metric.id {
+                let details = match metric_id {
                     MetricId::Gpu => values
                         .gpu
                         .value
@@ -329,7 +344,7 @@ pub fn entries(
                         .unwrap_or_default(),
                     _ => String::new(),
                 };
-                let short = match metric.id {
+                let short = match metric_id {
                     MetricId::Cpu => "CPU",
                     MetricId::Gpu => "GPU",
                     MetricId::Memory => "MEM",
@@ -351,9 +366,213 @@ pub fn entries(
     entries
 }
 
+fn temperature_entry(values: &ResourceReadings, labels: &super::labels::Labels) -> DisplayEntry {
+    use mangodisk_platform::system_resources::cpu::temperature::TEMPERATURE_FRESHNESS_MS;
+    let reading = &values.cpu_temperature;
+    let value = reading.value.as_ref().filter(|value| {
+        reading.status == MetricStatus::Ready
+            && reading.sampled_at_ms.is_some_and(|sampled| {
+                sampled <= values.observed_at_ms
+                    && values.observed_at_ms - sampled <= TEMPERATURE_FRESHNESS_MS
+            })
+            && value.celsius.is_finite()
+            && value.celsius > 0.0
+            && value.celsius <= 150.0
+            && value.sensor_count > 0
+    });
+    let digits = value
+        // Match the panel's positive half-degree rounding instead of Rust's
+        // formatting rule, which rounds ties to the nearest even integer.
+        .map(|value| format!("{:.0}", value.celsius.round()))
+        .unwrap_or_else(|| "—".into());
+    let tooltip = if let Some(value) = value {
+        format!(
+            "{} {digits}°C · {}",
+            labels.temperature("label"),
+            labels.temperature_scope(value)
+        )
+    } else {
+        let status = if reading.status == MetricStatus::Ready {
+            MetricStatus::Stale
+        } else {
+            reading.status
+        };
+        format!(
+            "{} · {}",
+            labels.temperature("label"),
+            labels.status(status)
+        )
+    };
+    DisplayEntry {
+        id: DisplayId::CpuTemperature,
+        tone: Default::default(),
+        // Celsius is not a utilization percentage and has no generic alert threshold.
+        usage_percent: None,
+        marker: "°C".into(),
+        text: if value.is_some() {
+            format!("CPU {digits}°C")
+        } else {
+            "CPU —".into()
+        },
+        digits,
+        tooltip,
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn temperature_rounding_matches_panel_at_half_degree_boundaries() {
+        use mangodisk_core::system_resources::metrics::MetricReading;
+        use mangodisk_platform::system_resources::cpu::temperature::{
+            CpuTemperature, CpuTemperatureKind, CpuTemperatureSource,
+        };
+        let labels = super::super::labels::Labels::for_locale("en-US");
+        for (celsius, expected) in [(48.5, "49"), (49.5, "50"), (50.5, "51"), (148.5, "149")] {
+            let readings = ResourceReadings {
+                observed_at_ms: 1_000,
+                cpu_temperature: MetricReading::ready(
+                    CpuTemperature {
+                        celsius,
+                        kind: CpuTemperatureKind::CoreAverage,
+                        source: CpuTemperatureSource::AppleSmc,
+                        sensor_count: 16,
+                    },
+                    1_000,
+                ),
+                ..Default::default()
+            };
+            let entry = temperature_entry(&readings, &labels);
+            assert_eq!(entry.digits, expected, "celsius={celsius}");
+            assert!(entry.tooltip.contains(&format!("{expected}°C")));
+        }
+    }
+
+    #[test]
+    fn temperature_formatting_rejects_expired_invalid_and_future_samples() {
+        use mangodisk_core::system_resources::metrics::MetricReading;
+        use mangodisk_platform::system_resources::cpu::temperature::{
+            CpuTemperature, CpuTemperatureKind, CpuTemperatureSource,
+        };
+        let mut readings = ResourceReadings {
+            observed_at_ms: 5_000,
+            cpu_temperature: MetricReading::ready(
+                CpuTemperature {
+                    celsius: 49.4,
+                    kind: CpuTemperatureKind::CoreAverage,
+                    source: CpuTemperatureSource::AppleSmc,
+                    sensor_count: 16,
+                },
+                1_000,
+            ),
+            ..Default::default()
+        };
+        let labels = super::super::labels::Labels::for_locale("en-US");
+        let ready = temperature_entry(&readings, &labels);
+        assert_eq!(ready.digits, "49");
+        assert!(ready.tooltip.contains("16 readable CPU core sensors"));
+        assert!(ready.usage_percent.is_none());
+        assert_eq!(ready.tone, Default::default());
+        for status in [
+            MetricStatus::Stale,
+            MetricStatus::Failed,
+            MetricStatus::Loading,
+            MetricStatus::Unsupported,
+        ] {
+            readings.cpu_temperature.status = status;
+            assert_eq!(temperature_entry(&readings, &labels).digits, "—");
+        }
+        readings.cpu_temperature.status = MetricStatus::Ready;
+        for timestamp in [0, 999, 11_001] {
+            readings.observed_at_ms = timestamp;
+            assert_eq!(temperature_entry(&readings, &labels).digits, "—");
+        }
+        readings.observed_at_ms = 11_000;
+        assert_eq!(temperature_entry(&readings, &labels).digits, "49");
+        for celsius in [f64::NAN, f64::INFINITY, 0.0, -1.0, 151.0] {
+            readings.cpu_temperature.value.as_mut().unwrap().celsius = celsius;
+            assert_eq!(temperature_entry(&readings, &labels).digits, "—");
+        }
+        readings.cpu_temperature.value.as_mut().unwrap().celsius = 49.0;
+        readings
+            .cpu_temperature
+            .value
+            .as_mut()
+            .unwrap()
+            .sensor_count = 0;
+        assert_eq!(temperature_entry(&readings, &labels).digits, "—");
+    }
+
+    #[test]
+    fn temperature_selection_is_platform_gated_and_independent_of_cpu() {
+        let mut prefs = ResidentPreferences {
+            show_icon: false,
+            ..Default::default()
+        };
+        for metric in &mut prefs.metrics {
+            metric.enabled = metric.id == DisplayMetricId::CpuTemperature;
+        }
+        prefs.metrics.reverse();
+        let ids = desired(&prefs);
+        if cfg!(target_os = "macos") {
+            assert_eq!(ids, [DisplayId::CpuTemperature]);
+            let display = entries(
+                &prefs,
+                &ResourceReadings::default(),
+                &super::super::labels::Labels::for_locale("zh-CN"),
+                1024.0,
+            );
+            assert_eq!(display.len(), 1);
+            assert_eq!(display[0].id.metric(), Some(MetricId::Cpu));
+            assert!(display[0].tooltip.starts_with(
+                super::super::labels::Labels::for_locale("zh-CN").temperature("label")
+            ));
+        } else {
+            assert_eq!(ids, [DisplayId::App]);
+            assert!(entries(
+                &prefs,
+                &ResourceReadings::default(),
+                &super::super::labels::Labels::for_locale("en-US"),
+                1024.0
+            )
+            .is_empty());
+        }
+    }
+
+    #[cfg(target_os = "macos")]
+    #[test]
+    fn temperature_entries_follow_saved_order_including_without_cpu_usage() {
+        let labels = super::super::labels::Labels::for_locale("en-US");
+        let mut prefs = ResidentPreferences::default();
+        for metric in &mut prefs.metrics {
+            metric.enabled = matches!(
+                metric.id,
+                DisplayMetricId::CpuTemperature | DisplayMetricId::Memory | DisplayMetricId::Cpu
+            );
+        }
+        prefs.metrics.reverse();
+        let ids = entries(&prefs, &ResourceReadings::default(), &labels, 1024.0)
+            .into_iter()
+            .map(|entry| entry.id)
+            .collect::<Vec<_>>();
+        assert_eq!(
+            ids,
+            [DisplayId::Memory, DisplayId::CpuTemperature, DisplayId::Cpu]
+        );
+        prefs
+            .metrics
+            .iter_mut()
+            .find(|metric| metric.id == DisplayMetricId::Cpu)
+            .unwrap()
+            .enabled = false;
+        let ids = entries(&prefs, &ResourceReadings::default(), &labels, 1024.0)
+            .into_iter()
+            .map(|entry| entry.id)
+            .collect::<Vec<_>>();
+        assert_eq!(ids, [DisplayId::Memory, DisplayId::CpuTemperature]);
+    }
 
     #[cfg(target_os = "linux")]
     fn display_entry(id: DisplayId, text: &str) -> DisplayEntry {
@@ -408,7 +627,7 @@ mod tests {
 
     #[test]
     fn all_sixty_four_combinations_have_unique_entries_and_paired_network_directions() {
-        for bits in 0..(1 << MetricId::ALL.len()) {
+        for bits in 0..(1 << ResidentPreferences::default().metrics.len()) {
             for show_icon in [false, true] {
                 let mut prefs = ResidentPreferences {
                     show_icon,
@@ -423,7 +642,7 @@ mod tests {
                     ids.len()
                 );
                 assert!(!ids.is_empty());
-                assert!(ids.len() <= 7);
+                assert!(ids.len() <= 8);
                 assert_eq!(
                     ids.contains(&DisplayId::Upload),
                     prefs.shows(MetricId::Network)
@@ -432,7 +651,7 @@ mod tests {
                     ids.contains(&DisplayId::Download),
                     prefs.shows(MetricId::Network)
                 );
-                assert_eq!(ids.contains(&DisplayId::App), show_icon || bits == 0);
+                assert_eq!(ids.contains(&DisplayId::App), prefs.effective_icon());
                 prefs.enabled = false;
                 assert!(desired(&prefs).is_empty());
             }
@@ -462,7 +681,7 @@ mod tests {
         };
         let mut preferences = ResidentPreferences::default();
         for metric in &mut preferences.metrics {
-            metric.enabled = metric.id == MetricId::Disk;
+            metric.enabled = metric.id == DisplayMetricId::Disk;
         }
         for locale in [
             "en-US", "zh-CN", "zh-TW", "ja-JP", "ko-KR", "tr-TR", "pt-BR",
@@ -485,7 +704,7 @@ mod tests {
 
     #[test]
     fn taskbar_fallback_restores_all_metrics_and_never_loses_the_last_entry() {
-        for bits in 0..(1 << MetricId::ALL.len()) {
+        for bits in 0..(1 << ResidentPreferences::default().metrics.len()) {
             for show_icon in [false, true] {
                 let mut prefs = ResidentPreferences {
                     show_icon,
@@ -496,7 +715,7 @@ mod tests {
                 }
                 assert_eq!(windows_desired(&prefs, false), desired(&prefs));
                 let active = windows_desired(&prefs, true);
-                assert_eq!(active.contains(&DisplayId::App), show_icon || bits == 0);
+                assert_eq!(active.contains(&DisplayId::App), prefs.effective_icon());
                 assert!(active.len() <= 1);
                 prefs.enabled = false;
                 assert!(windows_desired(&prefs, true).is_empty());
@@ -510,7 +729,13 @@ mod tests {
         for metric in &mut prefs.metrics {
             metric.enabled = true;
         }
-        assert_eq!(desired(&prefs), DisplayId::ALL);
+        assert_eq!(
+            desired(&prefs),
+            DisplayId::ALL
+                .into_iter()
+                .filter(|id| *id != DisplayId::CpuTemperature || cfg!(target_os = "macos"))
+                .collect::<Vec<_>>()
+        );
         assert_eq!(DisplayId::Upload.metric(), DisplayId::Download.metric());
         prefs.enabled = false;
         assert!(desired(&prefs).is_empty());
@@ -520,7 +745,7 @@ mod tests {
         use mangodisk_core::system_resources::metrics::{CpuUsage, MetricReading};
         let mut preferences = ResidentPreferences::default();
         for metric in &mut preferences.metrics {
-            metric.enabled = metric.id == MetricId::Cpu;
+            metric.enabled = metric.id == DisplayMetricId::Cpu;
         }
         let labels = super::super::labels::Labels::for_locale("en-US");
         for value in [f64::NAN, f64::INFINITY, f64::NEG_INFINITY] {

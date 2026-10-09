@@ -2,6 +2,7 @@
 //! Core validates observations and never publishes an unprimed interval as idle.
 
 pub mod details;
+pub mod temperature;
 
 use crate::PlatformResult;
 #[cfg(not(target_os = "linux"))]

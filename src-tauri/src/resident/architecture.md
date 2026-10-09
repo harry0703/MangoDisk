@@ -36,7 +36,7 @@ returns that reserved slot directly, so centered buttons do not send the monitor
 to an unrelated outer gap. Unknown environments prefer right,
 and collision checks still apply. These defaults do not replace saved choices.
 
-Resident preferences use schema version 10; resource snapshots use version 9.
+Resident preferences use schema version 11; resource readings use version 16.
 Versions 1–8 preferences preserve every saved selection and order, appending GPU
 display disabled. New installations also leave GPU display unselected. Resource
 version 9 adds the GPU catalogue. Version 9 preferences migrate GPU selection to automatic; version 10 persists fixed selection. Frontends reject mismatched envelopes.
@@ -51,7 +51,7 @@ to 34/55 DIP (percentage/network), with abbreviated network units
 (B/K/M/G/T) and unchanged numeric precision. Taskbar labels and values use 13 DIP Segoe UI. The shared size converts to physical pixels with nearest-pixel
 rounding at the monitor DPI; paint and hit testing share those bounds.
 Unknown persisted
-versions are rejected for writes. Memory snapshots use version 3; release results retain their separate version 1 contract.
+versions are rejected for writes. Memory snapshots use version 4; release results retain their separate version 1 contract.
 
 CPU overview samples every 2 seconds on both platforms, whether visible or hidden. Memory samples every
 3 seconds, network every 1 and disk every 30.
@@ -102,7 +102,7 @@ Each native trend retains at most 96 points over 80 seconds for the 60-second vi
 axis even when the latest valid sample is older than the current snapshot.
 
 Application rankings are immutable shared snapshots in Rust. Cloning a reading
-shares their allocations without changing the version 10 JSON contract. Unchanged
+shares their allocations without changing the resource-reading JSON contract. Unchanged
 coordinator ticks only check freshness; they do not rebuild histories or lists.
 Query logs separate each sensor's bounded timing samples and discarded generations.
 
@@ -412,7 +412,7 @@ shared tray text and tooltips keep their existing precision.
 
 ### Overview history and disk activity
 
-Resource readings use schema version 15 and nested `SystemResourceSnapshot` payloads use version 4; frontend adapters reject mismatched versions. Memory history records occupancy from the existing three-second sampler. CPU, GPU and memory use a fixed 0–100% scale. Network and disk activity share a symmetric scale: upload/write above zero, download/read below it. Gaps remain blank. The frontend buffers one sampling interval plus 250 ms before revealing each completed segment from the right; numeric readings remain live. Core retains up to 80 seconds / 96 samples so a reopened chart can reconstruct the buffered minute and offscreen endpoints. The frontend retains two additional intervals at the left edge. During a brief delivery delay, the playhead waits for completed data and catches up at no more than 1.1× speed; genuinely expired data still scrolls out. Pausing demand preserves existing readings and history with their original timestamps, while source changes clear the corresponding history. Rate scales hold their range for 30 seconds before a substantial reduction, and range changes ease over 600 ms using a shared SVG group. Continuous SVG updates are capped at 30 frames per second regardless of display refresh rate, without changing sample cadence or live numeric updates. Horizontal scrolling uses that group’s native transform instead of a composited CSS bitmap, preserving vector strokes at fractional positions. Reduced-motion mode applies scale changes immediately and disables continuous scrolling; hidden or fully expired charts stop their frame loop.
+Resource readings use schema version 16 and nested `SystemResourceSnapshot` payloads use version 4; frontend adapters reject mismatched versions. Memory history records occupancy from the existing three-second sampler. CPU, GPU and memory use a fixed 0–100% scale. Network and disk activity share a symmetric scale: upload/write above zero, download/read below it. Gaps remain blank. The frontend buffers one sampling interval plus 250 ms before revealing each completed segment from the right; numeric readings remain live. Core retains up to 80 seconds / 96 samples so a reopened chart can reconstruct the buffered minute and offscreen endpoints. The frontend retains two additional intervals at the left edge. During a brief delivery delay, the playhead waits for completed data and catches up at no more than 1.1× speed; genuinely expired data still scrolls out. Pausing demand preserves existing readings and history with their original timestamps, while source changes clear the corresponding history. Rate scales hold their range for 30 seconds before a substantial reduction, and range changes ease over 600 ms using a shared SVG group. Continuous SVG updates are capped at 30 frames per second regardless of display refresh rate, without changing sample cadence or live numeric updates. Horizontal scrolling uses that group’s native transform instead of a composited CSS bitmap, preserving vector strokes at fractional positions. Reduced-motion mode applies scale changes immediately and disables continuous scrolling; hidden or fully expired charts stop their frame loop.
 
 Memory pressure is independent of occupancy. macOS reads `kern.memorystatus_vm_pressure_level` in the existing three-second memory sample and decodes dispatch flags 1/2/4 as normal/warning/critical. Unknown flags, unexpected lengths and read errors publish unavailable; Windows and Linux publish unsupported. The panel hides unsupported pressure and marks non-ready samples as not updated. Diagnostics record the first observation, transitions, failures and recovery rather than every sample.
 
@@ -594,7 +594,7 @@ instantaneous values.
 CPU and memory share icon identity, disclosure, and file-manager navigation. CPU is
 view-only: normal app-wide quit and memory exclusions remain in the memory list.
 Resource version 9 replaces the ephemeral IPC protocol; readers reject other
-versions. Resident preferences migrate independently to version 10.
+versions. Resident preferences migrate independently to version 11.
 
 Linux process rows request path-specific icons rather than sharing an extensionless
 file-type icon. The GUI enables the platform's `linux-desktop-icons` feature;
@@ -699,7 +699,7 @@ telemetry to `gpuDetails`. `gpuDetailAdapterId` identifies the source of
 `gpuDetailHistory`, `gpuRendererHistory` and `gpuTilerHistory`.
 `gpu` retains a summary with no embedded details. An incompatible frontend
 rejects the snapshot rather than presenting partial measurements. Preferences
-remain version 10; the existing stable device selection is shared by both views.
+use version 11; the existing stable device selection is shared by both views.
 
 Only a visible GPU tab requests detail observations. Windows temporarily adds
 adapter-wide Dedicated Usage and Shared Usage counters to its persistent PDH
@@ -775,3 +775,49 @@ with unsupported retries and diagnostic state preserved across metadata refreshe
 on stderr without mixing them into its JSON observation protocol. Combining
 `--lifecycle --details --diagnostics` also exercises detail demand transitions
 before a reader release, without injecting hardware failures.
+
+### CPU temperature observations
+
+CPU temperature is independent of utilization and frequency. A visible overview
+or CPU detail panel requests a reading at most once every four seconds on the
+existing CPU worker. Hidden panels issue temperature queries only when macOS
+menu-bar temperature display is enabled; changing
+demand or resuming discards native sensor handles and starts a fresh observation.
+Failed queries retry after 30 seconds. Values expire after ten seconds, and the
+frontend checks sample age before displaying a number. The Celsius trend uses
+a separate fixed 0–150 degree scale and bounded Core history; this range is not
+a health threshold. Failures and changed sensor sets clear temperature history.
+
+macOS reads only mapped CPU SMC keys, caches their metadata, and requires all
+selected sensors to be valid before publishing a reading. Apple Silicon
+M1–M5 mappings distinguish CPU keys from GPU, PMU, battery and proximity sensors;
+unknown chips are unsupported. Apple Silicon publishes the selected cores' average.
+Intel prefers the CPU package key TCAD. When absent, machines with one to eight
+physical cores can use the highest TC1C–TC8C core temperature, bounded by
+`hw.physicalcpu_max` and requiring the complete selected set. Unused slots are
+excluded because they can expose plausible-looking sentinel values. A core maximum
+is explicitly labeled as such, never as a package reading. These private
+interfaces require per-chip and OS validation; available readings do not establish
+support for every Mac. Linux recognizes coretemp package/core sensors and k10temp
+Tdie, excluding Tctl offsets and anonymous thermal zones. Windows currently has
+no verified CPU temperature provider: public ACPI zone readings are intentionally
+unsupported rather than mislabeled. No helper, driver or privilege elevation is
+installed. Unsupported overview values are hidden, while CPU details explain the
+limitation; failed or stale values display an em dash rather than a cached number.
+
+## macOS menu-bar CPU temperature
+
+Preference schema 11 adds `cpuTemperature` to the ordered `metrics` display
+items. It is disabled by default and appended to migrated preferences without
+changing existing selections or relative order. macOS exposes the same checkbox
+and drag/keyboard reordering as other items, independently of CPU utilization.
+Display item IDs are separate from the five resource worker IDs. The temperature
+tooltip identifies the sensor aggregation and count; temperature does not use
+utilization warning colors.
+The column keeps a fixed width and displays `—` for unavailable or expired data.
+
+Enabling the column keeps the existing CPU worker's four-second temperature
+sampling active while the detail panel is closed. Disabling it restores
+panel-only demand; disabling resident mode releases the reader. No extra worker
+or process is created. Windows and Linux hide and ignore this macOS display item.
+Windows CPU temperature remains unsupported; no third-party driver is installed.

@@ -63,6 +63,15 @@ pub fn columns(entries: &[DisplayEntry], compact: bool) -> Vec<Column> {
                     if compact { 54 } else { 70 },
                 ),
                 DisplayId::Download | DisplayId::App => return None,
+                DisplayId::CpuTemperature => (
+                    "TEMP".into(),
+                    if entry.digits == "—" {
+                        "—".into()
+                    } else {
+                        format!("{}°C", entry.digits)
+                    },
+                    if compact { 43 } else { 46 },
+                ),
                 id => (
                     match id {
                         DisplayId::Cpu => "CPU",
@@ -123,6 +132,20 @@ pub fn width(columns: &[Column], icon: bool, compact: bool) -> u32 {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn temperature_columns_keep_celsius_and_fixed_width_without_percentage_colors() {
+        for compact in [false, true] {
+            let maximum = columns(&[entry(DisplayId::CpuTemperature, "150", "°C")], compact);
+            assert_eq!(maximum[0].top, "TEMP");
+            assert_eq!(maximum[0].bottom, "150°C");
+            assert_eq!(maximum[0].tone, Default::default());
+            for digits in ["9", "99", "100", "—"] {
+                let current = columns(&[entry(DisplayId::CpuTemperature, digits, "°C")], compact);
+                assert_eq!(current[0].width, maximum[0].width);
+                assert!(!current[0].bottom.contains('%'));
+            }
+        }
+    }
     fn entry(id: DisplayId, digits: &str, marker: &str) -> DisplayEntry {
         DisplayEntry {
             tone: Default::default(),

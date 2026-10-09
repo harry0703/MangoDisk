@@ -4168,5 +4168,13 @@
     "efficiency": "효율 코어",
     "performance": "성능 코어",
     "cached": "캐시"
+  },
+  "cpuTemperature": {
+    "label": "CPU 온도",
+    "coreAverageHint": "읽을 수 있는 CPU 코어 센서 {count}개의 평균 온도",
+    "packageHint": "CPU 패키지 온도: 센서 {count}개의 최댓값",
+    "coreMaximumHint": "CPU 코어 센서 {count}개의 최고 온도",
+    "unsupportedHint": "MangoDisk가 이 기기에서 확인된 CPU 온도 센서를 읽을 수 없습니다",
+    "trend": "최근 1분간 CPU 온도(섭씨)"
   }
 }

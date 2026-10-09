@@ -4,6 +4,7 @@
 pub struct Demand {
     pub active: bool,
     pub detailed: bool,
+    pub temperature: bool,
     pub catalogue_only: bool,
     pub selection: Option<String>,
 }

@@ -19,8 +19,8 @@ import { SelectTrigger } from 'reka-ui';
 import MdWindowsDisplayMode from './md-windows-display-mode.vue';
 import MdStatusAppearance from './md-status-appearance.vue';
 import { ICON_NAMES } from '@/lib/models/ui';
-import type { MetricId, NetworkInterface, ResourceVolume } from '@/lib/models/system-resources';
-import type { ResidentPreferences, ResidentReading } from '@/lib/models/resident';
+import type { NetworkInterface, ResourceVolume } from '@/lib/models/system-resources';
+import type { ResidentPreferences, ResidentReading, ResidentDisplayMetricId } from '@/lib/models/resident';
 import { ResidentService } from '@/lib/services/resident-service';
 import { useResidentSettingsStore } from '@/stores/resident-settings-store';
 import { LoggerService } from '@/lib/services/logger-service';
@@ -46,14 +46,17 @@ const interfaces = ref<NetworkInterface[]>([]);
 const volumes = ref<ResourceVolume[]>([]);
 const gpuAdapters = ref<{ id: string; name: string }[]>([]);
 const catalogueError = ref(false);
-const dragging = ref<MetricId | null>(null);
+const dragging = ref<ResidentDisplayMetricId | null>(null);
 const pointerDragging = ref(false);
 const dragRows = ref<ResidentPreferences['metrics'] | null>(null);
 const announcement = ref('');
 const metricRowsElement = ref<HTMLElement | null>(null);
 const canReorder = computed(() => props.isMacOs || props.isLinux || settings.draft?.windowsDisplayMode === 'taskbar');
 const rows = computed(() => dragRows.value ?? settings.draft?.metrics ?? []);
-const visibleRows = computed(() => rows.value.filter(row => !props.isLinux || row.id !== 'gpu'));
+const displayLabelKeys = { ...METRIC_LABEL_KEYS, cpuTemperature: 'cpuTemperature.label' };
+const visibleRows = computed(() =>
+  rows.value.filter(row => (props.isMacOs || row.id !== 'cpuTemperature') && (!props.isLinux || row.id !== 'gpu'))
+);
 // Older preferences may have every item cleared. Mirror the native Logo
 // fallback without writing on load, and retain it when the next metric is added.
 const showIcon = computed(() => (settings.draft?.showIcon ?? true) || !visibleRows.value.some(row => row.enabled));
@@ -102,7 +105,7 @@ function restoreConfigurationFocus(event: Event) {
   event.preventDefault();
   document.getElementById(displayEnabled.value ? 'resident-configure' : 'resident-enabled')?.focus();
 }
-function setSelectionOpen(id: MetricId, open: boolean) {
+function setSelectionOpen(id: ResidentDisplayMetricId, open: boolean) {
   if (id !== 'network' && id !== 'disk' && id !== 'gpu') return;
   if (open) expandedSelection.value = id;
   else if (expandedSelection.value === id) expandedSelection.value = null;
@@ -144,13 +147,13 @@ let disposed = false;
 let unlisten: (() => void) | null = null;
 let revision = -1;
 function accept(value: ResidentReading) {
-  if (disposed || value.schemaVersion !== 15 || value.revision < revision) return;
+  if (disposed || value.schemaVersion !== 16 || value.revision < revision) return;
   revision = value.revision;
   interfaces.value = value.interfaces;
   volumes.value = value.volumes;
   gpuAdapters.value = value.gpuAdapters;
 }
-function enable(id: MetricId, enabled: boolean) {
+function enable(id: ResidentDisplayMetricId, enabled: boolean) {
   if (!enabled && selectionLocked(rows.value.some(row => row.id === id && row.enabled))) return;
   cancelDrag();
   void settings.change({
@@ -158,13 +161,13 @@ function enable(id: MetricId, enabled: boolean) {
     metrics: rows.value.map(metric => (metric.id === id ? { ...metric, enabled } : { ...metric })),
   });
 }
-function begin(id: MetricId) {
+function begin(id: ResidentDisplayMetricId) {
   if (!canReorder.value || !settings.draft) return;
   dragging.value = id;
   dragRows.value = settings.draft.metrics.map(metric => ({ ...metric }));
   announce();
 }
-function move(target: MetricId) {
+function move(target: ResidentDisplayMetricId) {
   if (!dragRows.value || !dragging.value || target === dragging.value) return;
   const from = dragRows.value.findIndex(row => row.id === dragging.value);
   const to = dragRows.value.findIndex(row => row.id === target);
@@ -176,7 +179,7 @@ function move(target: MetricId) {
   if (!pointer) restoreHandleFocus(dragging.value);
   announce();
 }
-function restoreHandleFocus(id: MetricId) {
+function restoreHandleFocus(id: ResidentDisplayMetricId) {
   // WebKit drops focus when Vue moves a keyed row. Restore it after the DOM
   // update so subsequent arrows, Enter and Escape still reach the same handle.
   void nextTick(() =>
@@ -187,13 +190,13 @@ function restoreHandleFocus(id: MetricId) {
 }
 function announce() {
   announcement.value = t('systemStatus.moveAnnouncement', {
-    name: t(METRIC_LABEL_KEYS[dragging.value!]),
+    name: t(displayLabelKeys[dragging.value!]),
     position: visibleRows.value.findIndex(row => row.id === dragging.value) + 1,
     count: visibleRows.value.length,
   });
 }
 let pointer: {
-  id: MetricId;
+  id: ResidentDisplayMetricId;
   pointerId: number;
   x: number;
   y: number;
@@ -230,7 +233,7 @@ function escapePointerDrag(event: KeyboardEvent) {
     cancelDrag();
   }
 }
-function pointerDown(event: PointerEvent, id: MetricId) {
+function pointerDown(event: PointerEvent, id: ResidentDisplayMetricId) {
   if (!canReorder.value || event.button !== 0) return;
   cancelDrag();
   const handle = event.currentTarget as HTMLElement;
@@ -306,7 +309,7 @@ function commit() {
     void settings.change({ metrics });
   }
 }
-function key(event: KeyboardEvent, id: MetricId) {
+function key(event: KeyboardEvent, id: ResidentDisplayMetricId) {
   if (!canReorder.value) return;
   if (event.key === 'Escape') {
     event.preventDefault();
@@ -476,7 +479,7 @@ onBeforeUnmount(() => {
                       <button
                         v-if="canReorder"
                         class="drag-handle"
-                        :aria-label="t('systemStatus.reorder', { name: t(METRIC_LABEL_KEYS[row.id]) })"
+                        :aria-label="t('systemStatus.reorder', { name: t(displayLabelKeys[row.id]) })"
                         :aria-pressed="dragging === row.id"
                         @pointerdown="pointerDown($event, row.id)"
                         @dragstart.prevent
@@ -496,7 +499,7 @@ onBeforeUnmount(() => {
                             ? t('systemStatus.cpuShort')
                             : row.id === 'disk'
                               ? t('systemStatus.volume')
-                              : t(METRIC_LABEL_KEYS[row.id])
+                              : t(displayLabelKeys[row.id])
                         }}
                       </label>
                       <Select

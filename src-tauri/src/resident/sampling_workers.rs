@@ -175,7 +175,7 @@ impl Sensor {
         Ok(match self {
             Self::Cpu { reader, details } => Observation::Cpu {
                 sample: reader.read(),
-                details: details.read(demand.detailed),
+                details: details.read(demand.detailed, demand.temperature),
             },
             Self::Gpu(reader) if demand.catalogue_only => {
                 Observation::GpuCatalogue(reader.catalogue()?)

@@ -6,6 +6,7 @@ import { ICON_NAMES } from '@/lib/models/ui';
 import { computed } from 'vue';
 import MdResourceTrend from './md-resource-trend.vue';
 import MdMemoryPressure from './md-memory-pressure.vue';
+import MdCpuTemperature from './md-cpu-temperature.vue';
 import { useI18n } from 'vue-i18n';
 import {
   METRIC_LABEL_KEYS,
@@ -17,10 +18,17 @@ import { ByteSizeService } from '@/lib/services/byte-size-service';
 import { OperatingSystemService } from '@/lib/services/operating-system-service';
 
 const props = withDefaults(
-  defineProps<{ metric: MetricId; reading: ResourceReadings; active?: boolean; interactive?: boolean }>(),
+  defineProps<{
+    metric: MetricId;
+    reading: ResourceReadings;
+    active?: boolean;
+    interactive?: boolean;
+    showCpuTemperature?: boolean;
+  }>(),
   {
     active: true,
     interactive: false,
+    showCpuTemperature: true,
   }
 );
 defineEmits<{ cleanup: []; memory: []; cpu: []; gpu: [] }>();
@@ -161,6 +169,14 @@ const rates = computed(() =>
           <span class="gpu-source">{{ reading.gpu.value?.adapterName }}</span>
         </MdTooltip>
         <span v-else>{{ t('systemStatus.lastMinute') }}</span>
+        <MdCpuTemperature
+          v-if="metric === 'cpu' && showCpuTemperature"
+          compact
+          :interactive="interactive"
+          :reading="reading.cpuTemperature"
+          :observed-at-ms="reading.observedAtMs"
+          @activate="$emit('cpu')"
+        />
       </template>
       <template v-else-if="metric === 'memory'">
         <span v-if="ready && memory">

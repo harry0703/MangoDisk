@@ -3,8 +3,10 @@ import type { MetricId, ResourceReadings } from '@/lib/models/system-resources';
 export interface ResidentReading extends ResourceReadings {
   revision: number;
 }
+export type ResidentDisplayMetricId = MetricId | 'cpuTemperature';
+
 export interface ResidentPreferences {
-  schemaVersion: 10;
+  schemaVersion: 11;
   revision: number;
   enabled: boolean;
   showIcon: boolean;
@@ -16,7 +18,7 @@ export interface ResidentPreferences {
   usageColors: boolean;
   usageWarningPercent: number;
   usageCriticalPercent: number;
-  metrics: { id: MetricId; enabled: boolean }[];
+  metrics: { id: ResidentDisplayMetricId; enabled: boolean }[];
   networkInterface: string | null;
   diskVolume: string | null;
   gpuAdapter: string | null;

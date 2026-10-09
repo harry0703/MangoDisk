@@ -7,7 +7,7 @@ import { ResourceTrendScale } from './resource-trend-scale';
 
 const props = withDefaults(
   defineProps<{
-    metric: 'cpu' | 'gpu' | 'memory' | 'network' | 'disk';
+    metric: 'cpu' | 'gpu' | 'memory' | 'network' | 'disk' | 'temperature';
     history: TrendPoint[];
     observedAtMs: number;
     label: string;
@@ -22,7 +22,9 @@ const ceiling = ref(1);
 const scale = new ResourceTrendScale();
 const amplitude = ref(1);
 const bidirectional = computed(() => props.metric === 'network' || props.metric === 'disk');
-const interval = computed(() => (props.metric === 'memory' ? 3000 : props.metric === 'network' ? 1000 : 2000));
+const interval = computed(() =>
+  props.metric === 'temperature' ? 4000 : props.metric === 'memory' ? 3000 : props.metric === 'network' ? 1000 : 2000
+);
 const series = computed(() => {
   const channels = !bidirectional.value
     ? [{ secondary: false, color: 'var(--primary)' }]
@@ -133,7 +135,7 @@ function sync() {
   const clock = performance.now();
   timeline.accept(props.history, props.observedAtMs || props.history.at(-1)?.sampledAtMs || 0, clock, interval.value);
   points.value = timeline.points;
-  if (!bidirectional.value) ceiling.value = 100;
+  if (!bidirectional.value) ceiling.value = props.metric === 'temperature' ? 150 : 100;
   else {
     const peak = Math.max(
       1,
@@ -199,6 +201,9 @@ onBeforeUnmount(() => {
 }
 .bidirectional {
   border-bottom: 0;
+}
+.temperature {
+  height: 36px;
 }
 .bidirectional::before {
   content: '';

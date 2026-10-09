@@ -253,6 +253,16 @@ mod tests {
             false,
         );
         let percentage_width = column[0].width as f64;
+        for compact in [false, true] {
+            let size = if compact { 11.0 } else { 12.0 };
+            let width = if compact { 43.0 } else { 46.0 };
+            for value in 1..=150 {
+                assert!(
+                    measured(&format!("{value}°C"), size, 0.3) <= width,
+                    "temperature {value} overflows"
+                );
+            }
+        }
         // Real AppKit metrics catch regressions that string-length tests miss.
         for value in 0..=100 {
             assert!(

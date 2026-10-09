@@ -4168,5 +4168,13 @@
     "efficiency": "能效核心",
     "performance": "性能核心",
     "cached": "缓存"
+  },
+  "cpuTemperature": {
+    "label": "CPU 温度",
+    "coreAverageHint": "{count} 个可读取 CPU 核心传感器的平均温度",
+    "packageHint": "CPU 封装温度；取 {count} 个传感器的最高值",
+    "coreMaximumHint": "{count} 个 CPU 核心传感器的最高温度",
+    "unsupportedHint": "MangoDisk 无法在此设备读取已确认的 CPU 温度传感器",
+    "trend": "最近一分钟 CPU 温度，单位摄氏度"
   }
 }

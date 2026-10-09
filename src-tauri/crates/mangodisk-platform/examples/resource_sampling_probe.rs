@@ -2,7 +2,7 @@
 //! `cpu-memory <ticks> <interval> --burst` isolates process queries without sleeping or
 //! reading global CPU, for cost-per-query comparisons above Windows CPU timer granularity.
 use mangodisk_platform::system_resources::{
-    cpu::CpuReader,
+    cpu::{details::CpuDetailsReader, CpuReader},
     gpu::GpuReader,
     memory::{MemorySampler, MemorySource},
     network::NetworkReader,
@@ -20,6 +20,7 @@ fn main() {
     assert!(matches!(
         mode,
         "overview"
+            | "overview-temperature"
             | "memory"
             | "cpu"
             | "cpu-background"
@@ -35,6 +36,9 @@ fn main() {
     let burst = args.get(4).is_some_and(|arg| arg == "--burst");
     assert!(!burst || mode == "cpu-memory");
     let mut cpu: CpuReader = Default::default();
+    let mut cpu_details = CpuDetailsReader::default();
+    let temperature_queries = std::cell::Cell::new(0u64);
+    let temperature_ready = std::cell::Cell::new(0u64);
     let mut memory = MemorySampler::default();
     let mut gpu = GpuReader::default();
     let mut network = NetworkReader::default();
@@ -43,6 +47,12 @@ fn main() {
     let pid = Pid::from_u32(std::process::id());
     let refresh = |observer: &mut System| own_usage(observer, pid);
     let mut sample = |cpu: &mut CpuReader, memory: &mut MemorySampler, tick: u64| {
+        if mode == "overview-temperature" && tick.is_multiple_of(2) {
+            if let Some(result) = cpu_details.read(false, true).temperature {
+                temperature_queries.set(temperature_queries.get() + 1);
+                temperature_ready.set(temperature_ready.get() + u64::from(result.is_ok()));
+            }
+        }
         if matches!(mode, "gpu" | "gpu-detail" | "overview-gpu") && tick.is_multiple_of(2) {
             if mode == "gpu-detail" {
                 gpu.read_detailed()
@@ -86,6 +96,8 @@ fn main() {
     }
     let (before_cpu, before_rss) = refresh(&mut observer);
     let before_helpers = helper_cpu_ms();
+    let before_temperature_queries = temperature_queries.get();
+    let before_temperature_ready = temperature_ready.get();
     let started = Instant::now();
     let mut durations = Vec::new();
     let mut rss_min = before_rss;
@@ -114,6 +126,8 @@ fn main() {
             "schemaVersion": 1, "mode": mode, "os": std::env::consts::OS,
             "arch": std::env::consts::ARCH, "samples": durations.len(),
             "measurementTicks": seconds,
+            "temperatureQueries": temperature_queries.get() - before_temperature_queries,
+            "temperatureReadySamples": temperature_ready.get() - before_temperature_ready,
             "burst": burst, "cpuMilliseconds": after_cpu - before_cpu,
             "processIntervalSeconds": process_interval,
             "coldSampleMicros": cold_sample_micros,

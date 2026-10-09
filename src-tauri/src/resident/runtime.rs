@@ -104,6 +104,11 @@ impl ResidentState {
         let gpu_sampling = preferences.enabled
             && (cfg!(target_os = "macos") || preferences.shows(MetricId::Gpu) || panel_open);
         MetricId::ALL.map(|metric| Demand {
+            temperature: preferences.enabled
+                && metric == MetricId::Cpu
+                && (preferences.shows_cpu_temperature()
+                    || (panel_open
+                        && matches!(selected, MetricId::Cpu | MetricId::Network | MetricId::Disk))),
             active: (preferences.enabled && metric != MetricId::Gpu)
                 || (metric == MetricId::Gpu && gpu_sampling)
                 || (metric == MetricId::Network && catalogue & 1 != 0)
@@ -642,6 +647,52 @@ pub fn start(app: &tauri::AppHandle, preferences: ResidentPreferences) -> Arc<Re
 mod overview_tests {
     use super::*;
 
+    #[test]
+    fn menu_bar_temperature_demand_survives_closing_the_panel_only_on_macos() {
+        let state = test_state();
+        state.panel_open.store(false, Ordering::Relaxed);
+        state
+            .preferences
+            .lock()
+            .unwrap()
+            .metrics
+            .iter_mut()
+            .find(|metric| {
+                metric.id == crate::resident::preference_schema::DisplayMetricId::CpuTemperature
+            })
+            .unwrap()
+            .enabled = true;
+        let cpu = state.demands(false)[0].clone();
+        assert!(cpu.active);
+        assert!(!cpu.detailed);
+        assert_eq!(cpu.temperature, cfg!(target_os = "macos"));
+        *state.panel_metric.lock().unwrap() = MetricId::Memory;
+        state.panel_open.store(true, Ordering::Relaxed);
+        assert_eq!(
+            state.demands(false)[0].temperature,
+            cfg!(target_os = "macos")
+        );
+        state
+            .preferences
+            .lock()
+            .unwrap()
+            .metrics
+            .iter_mut()
+            .find(|metric| {
+                metric.id == crate::resident::preference_schema::DisplayMetricId::CpuTemperature
+            })
+            .unwrap()
+            .enabled = false;
+        assert!(!state.demands(false)[0].temperature);
+        *state.panel_metric.lock().unwrap() = MetricId::Cpu;
+        assert!(state.demands(false)[0].temperature);
+        state.preferences.lock().unwrap().enabled = false;
+        assert!(state
+            .demands(false)
+            .iter()
+            .all(|demand| !demand.active && !demand.temperature));
+    }
+
     fn test_state() -> ResidentState {
         let (wake, _) = mpsc::sync_channel(1);
         let mut preferences = ResidentPreferences::default();
@@ -709,6 +760,11 @@ mod overview_tests {
             for (metric, demand) in MetricId::ALL.into_iter().zip(state.demands(false)) {
                 assert!(demand.active);
                 assert_eq!(
+                    demand.temperature,
+                    metric == MetricId::Cpu
+                        && matches!(selected, MetricId::Cpu | MetricId::Network | MetricId::Disk)
+                );
+                assert_eq!(
                     demand.detailed,
                     matches!(metric, MetricId::Cpu | MetricId::Memory | MetricId::Gpu)
                         && metric == selected
@@ -726,6 +782,7 @@ mod overview_tests {
                 metric != MetricId::Gpu || cfg!(target_os = "macos")
             );
             assert!(!demand.detailed);
+            assert!(!demand.temperature);
         }
         assert!(state.disk_activity_demand().active);
         state.preferences.lock().unwrap().enabled = false;
@@ -803,7 +860,7 @@ mod overview_tests {
             .unwrap()
             .metrics
             .iter_mut()
-            .find(|metric| metric.id == MetricId::Gpu)
+            .find(|metric| metric.id.metric() == Some(MetricId::Gpu))
             .unwrap()
             .enabled = true;
         assert!(state.demands(false)[gpu].active);

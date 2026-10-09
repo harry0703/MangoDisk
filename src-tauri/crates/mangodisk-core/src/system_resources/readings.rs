@@ -2,6 +2,7 @@
 use mangodisk_platform::system_resources::{
     cpu::{
         details::{CpuDetails, CpuFrequency, CpuIdentity},
+        temperature::{CpuTemperature, TEMPERATURE_FRESHNESS_MS},
         CpuSample,
     },
     disk::{ResourceVolume, VolumeCapacity},
@@ -28,6 +29,8 @@ pub struct ResourceReadings {
     pub cpu: MetricReading<CpuUsage>,
     pub cpu_identity: Option<CpuIdentity>,
     pub cpu_frequency: MetricReading<CpuFrequency>,
+    pub cpu_temperature: MetricReading<CpuTemperature>,
+    pub cpu_temperature_history: Vec<TrendPoint>,
     pub gpu: MetricReading<GpuUsage>,
     pub gpu_details: MetricReading<GpuUsage>,
     pub gpu_detail_history: Vec<TrendPoint>,
@@ -53,11 +56,13 @@ pub struct ResourceReadings {
 impl Default for ResourceReadings {
     fn default() -> Self {
         Self {
-            schema_version: 15,
+            schema_version: 16,
             observed_at_ms: 0,
             cpu: MetricReading::default(),
             cpu_identity: None,
             cpu_frequency: MetricReading::default(),
+            cpu_temperature: MetricReading::default(),
+            cpu_temperature_history: Vec::new(),
             gpu: MetricReading::default(),
             gpu_details: MetricReading::default(),
             gpu_detail_history: Vec::new(),
@@ -89,6 +94,7 @@ pub struct ResourceCache {
     network_delta: NetworkDelta,
     disk_io_delta: DiskIoDelta,
     cpu_history: Trend,
+    cpu_temperature_history: Trend,
     gpu_history: Trend,
     gpu_detail_history: Trend,
     gpu_detail_device: Option<String>,
@@ -131,6 +137,55 @@ impl ResourceCache {
 
     pub fn cpu_details(&mut self, details: CpuDetails, timestamp_ms: u64) {
         self.readings.cpu_identity = Some(details.identity);
+        match details.temperature {
+            Some(Ok(value))
+                if value.celsius.is_finite()
+                    && value.celsius > 0.0
+                    && value.celsius <= 150.0
+                    && value.sensor_count > 0 =>
+            {
+                if self
+                    .readings
+                    .cpu_temperature
+                    .value
+                    .as_ref()
+                    .is_some_and(|previous| {
+                        previous.kind != value.kind
+                            || previous.source != value.source
+                            || previous.sensor_count != value.sensor_count
+                    })
+                {
+                    self.cpu_temperature_history.clear();
+                }
+                self.cpu_temperature_history.push(TrendPoint {
+                    sampled_at_ms: timestamp_ms,
+                    primary: value.celsius,
+                    secondary: None,
+                });
+                self.readings.cpu_temperature = MetricReading::ready(value, timestamp_ms);
+            }
+            Some(result) => {
+                let unsupported = result.as_ref().err().is_some_and(|error| {
+                    error.code() == mangodisk_platform::PlatformErrorCode::Unsupported
+                });
+                self.readings.cpu_temperature = MetricReading {
+                    status: if unsupported {
+                        MetricStatus::Unsupported
+                    } else {
+                        MetricStatus::Failed
+                    },
+                    value: None,
+                    sampled_at_ms: None,
+                };
+                // A recovery must not connect through a known failed observation or
+                // combine different sensor sets after the old value is discarded.
+                self.cpu_temperature_history.clear();
+            }
+            None => self
+                .readings
+                .cpu_temperature
+                .expire(timestamp_ms, TEMPERATURE_FRESHNESS_MS),
+        }
         match details.frequency {
             Some(Ok(Some(value))) => {
                 self.readings.cpu_frequency = MetricReading::ready(value, timestamp_ms)
@@ -395,6 +450,8 @@ impl ResourceCache {
                 self.cpu_history.clear();
                 self.readings.cpu = MetricReading::default();
                 self.readings.cpu_frequency = MetricReading::default();
+                self.readings.cpu_temperature = MetricReading::default();
+                self.cpu_temperature_history.clear();
             }
             MetricId::Memory => {
                 self.readings.memory = MetricReading::default();
@@ -442,6 +499,9 @@ impl ResourceCache {
             .cpu_frequency
             .expire(now_ms, MetricId::Cpu.freshness_ms());
         self.readings
+            .cpu_temperature
+            .expire(now_ms, TEMPERATURE_FRESHNESS_MS);
+        self.readings
             .memory_processes
             .expire(now_ms, MetricId::Memory.freshness_ms());
         self.readings
@@ -453,10 +513,11 @@ impl ResourceCache {
         before != self.statuses()
     }
 
-    fn statuses(&self) -> [MetricStatus; 10] {
+    fn statuses(&self) -> [MetricStatus; 11] {
         [
             self.readings.cpu.status,
             self.readings.cpu_frequency.status,
+            self.readings.cpu_temperature.status,
             self.readings.gpu.status,
             self.readings.gpu_details.status,
             self.readings.memory.status,
@@ -473,6 +534,7 @@ impl ResourceCache {
         self.readings.memory_history = self.memory_history.snapshot(now_ms);
         self.readings.disk_io_history = self.disk_io_history.snapshot(now_ms);
         self.readings.cpu_history = self.cpu_history.snapshot(now_ms);
+        self.readings.cpu_temperature_history = self.cpu_temperature_history.snapshot(now_ms);
         self.readings.gpu_history = self.gpu_history.snapshot(now_ms);
         self.readings.gpu_detail_history = self.gpu_detail_history.snapshot(now_ms);
         self.readings
@@ -491,6 +553,77 @@ mod tests {
     use mangodisk_platform::system_resources::cpu::CpuCounters;
 
     #[test]
+    fn temperature_freshness_failure_and_sensor_identity_are_independent_of_cpu_load() {
+        use mangodisk_platform::system_resources::cpu::temperature::{
+            CpuTemperatureKind, CpuTemperatureSource,
+        };
+        use mangodisk_platform::{PlatformError, PlatformErrorCode};
+        let mut cache = ResourceCache::default();
+        let details = |temperature| CpuDetails {
+            identity: CpuIdentity::default(),
+            frequency: None,
+            temperature,
+        };
+        let value = || CpuTemperature {
+            celsius: 48.5,
+            sensor_count: 16,
+            kind: CpuTemperatureKind::CoreAverage,
+            source: CpuTemperatureSource::AppleSmc,
+        };
+        cache.cpu_details(details(Some(Ok(value()))), 1000);
+        cache.fail(MetricId::Cpu, MetricStatus::Failed);
+        assert_eq!(
+            cache.snapshot(1000).cpu_temperature.status,
+            MetricStatus::Ready
+        );
+        cache.cpu_details(details(None), 5000);
+        assert_eq!(
+            cache.snapshot(5000).cpu_temperature.sampled_at_ms,
+            Some(1000)
+        );
+        assert_eq!(
+            cache.snapshot(11001).cpu_temperature.status,
+            MetricStatus::Stale
+        );
+        cache.cpu_details(
+            details(Some(Err(PlatformError::new(
+                PlatformErrorCode::OperationFailed,
+                "sensor disconnected",
+            )))),
+            12000,
+        );
+        let failed = cache.snapshot(12000);
+        assert_eq!(failed.cpu_temperature.status, MetricStatus::Failed);
+        assert!(failed.cpu_temperature.value.is_none());
+        assert!(failed.cpu_temperature_history.is_empty());
+        cache.cpu_details(details(Some(Ok(value()))), 13000);
+        let mut changed = value();
+        changed.sensor_count = 8;
+        cache.cpu_details(details(Some(Ok(changed))), 17000);
+        assert_eq!(cache.snapshot(17000).cpu_temperature_history.len(), 1);
+        let mut invalid = value();
+        invalid.celsius = f64::NAN;
+        cache.cpu_details(details(Some(Ok(invalid))), 18000);
+        assert_eq!(
+            cache.snapshot(18000).cpu_temperature.status,
+            MetricStatus::Failed
+        );
+        cache.cpu_details(
+            details(Some(Err(PlatformError::new(
+                PlatformErrorCode::Unsupported,
+                "no CPU sensor",
+            )))),
+            19000,
+        );
+        assert_eq!(
+            cache.snapshot(19000).cpu_temperature.status,
+            MetricStatus::Unsupported
+        );
+        cache.reset(MetricId::Cpu);
+        assert!(cache.snapshot(20000).cpu_temperature.value.is_none());
+    }
+
+    #[test]
     fn frequency_baselines_preserve_sample_age_and_failures_never_show_a_clock() {
         use mangodisk_platform::system_resources::cpu::details::CpuFrequencySource;
         use mangodisk_platform::{PlatformError, PlatformErrorCode};
@@ -501,6 +634,7 @@ mod tests {
                 nominal_frequency_mhz: Some(3700.0),
             },
             frequency,
+            temperature: None,
         };
         cache.cpu_details(
             detail(Some(Ok(Some(CpuFrequency {
@@ -722,7 +856,7 @@ mod tests {
             second.cpu_processes.value.as_ref().unwrap()
         ));
         let wire = serde_json::to_value(&second).unwrap();
-        assert_eq!(wire["schemaVersion"], 15);
+        assert_eq!(wire["schemaVersion"], 16);
         assert_eq!(wire["cpuProcesses"]["value"]["readableProcessCount"], 12);
         assert!(!cache.expire(2000));
         assert!(cache.expire(6001));
@@ -844,7 +978,7 @@ mod tests {
             },
             1000,
         ));
-        assert_eq!(cache.snapshot(1000).schema_version, 15);
+        assert_eq!(cache.snapshot(1000).schema_version, 16);
         assert_eq!(
             cache.snapshot(6001).cpu_processes.status,
             MetricStatus::Stale

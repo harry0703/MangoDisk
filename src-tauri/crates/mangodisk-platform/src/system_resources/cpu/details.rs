@@ -1,6 +1,8 @@
 //! Optional CPU identity and frequency observations, independent of utilization.
+use super::temperature::{CpuTemperature, CpuTemperatureReader, TEMPERATURE_INTERVAL_MS};
 use crate::{PlatformError, PlatformErrorCode, PlatformResult};
 use serde::Serialize;
+use std::time::{Duration, Instant};
 
 #[cfg(all(target_os = "macos", target_arch = "aarch64"))]
 mod macos;
@@ -32,19 +34,23 @@ pub struct CpuDetails {
     pub identity: CpuIdentity,
     // None means no demand, Ok(None) means a baseline or no active observation.
     pub frequency: Option<PlatformResult<Option<CpuFrequency>>>,
+    pub temperature: Option<PlatformResult<CpuTemperature>>,
 }
 
 #[derive(Default)]
 pub struct CpuDetailsReader {
     identity: Option<CpuIdentity>,
+    temperature: Option<CpuTemperatureReader>,
+    temperature_due: Option<Instant>,
     #[cfg(windows)]
     frequency: Option<windows::FrequencyReader>,
     #[cfg(all(target_os = "macos", target_arch = "aarch64"))]
     frequency: Option<macos::FrequencyReader>,
 }
 impl CpuDetailsReader {
-    pub fn read(&mut self, detailed: bool) -> CpuDetails {
+    pub fn read(&mut self, detailed: bool, temperature_visible: bool) -> CpuDetails {
         let identity = self.identity.get_or_insert_with(identity).clone();
+        let temperature = self.read_temperature(temperature_visible, identity.model.as_deref());
         #[cfg(any(windows, all(target_os = "macos", target_arch = "aarch64")))]
         let frequency = if detailed {
             let reader = self.frequency.get_or_insert_with(Default::default);
@@ -60,9 +66,53 @@ impl CpuDetailsReader {
         CpuDetails {
             identity,
             frequency,
+            temperature,
         }
     }
+    fn read_temperature(
+        &mut self,
+        visible: bool,
+        model: Option<&str>,
+    ) -> Option<PlatformResult<CpuTemperature>> {
+        if !visible {
+            self.temperature = None;
+            self.temperature_due = None;
+            return None;
+        }
+        let now = Instant::now();
+        if self.temperature_due.is_some_and(|due| now < due) {
+            return None;
+        }
+        let result = (|| {
+            if self.temperature.is_none() {
+                self.temperature = Some(CpuTemperatureReader::new(model)?);
+            }
+            self.temperature
+                .as_mut()
+                .expect("temperature reader initialized")
+                .read()
+        })();
+        let delay = if result.is_ok() {
+            TEMPERATURE_INTERVAL_MS
+        } else {
+            30_000
+        };
+        self.temperature_due = Some(now + Duration::from_millis(delay));
+        if let Err(error) = &result {
+            self.temperature = None;
+            if error.code() != PlatformErrorCode::Unsupported {
+                log::warn!(
+                    "cpu_temperature_read_failed code={:?} error={}",
+                    error.code(),
+                    crate::diagnostics::text(error)
+                );
+            }
+        }
+        Some(result)
+    }
     pub fn reset(&mut self) {
+        self.temperature = None;
+        self.temperature_due = None;
         #[cfg(any(windows, all(target_os = "macos", target_arch = "aarch64")))]
         {
             if let Some(reader) = &mut self.frequency {
@@ -149,5 +199,33 @@ mod tests {
             assert_eq!(valid_mhz(value), None);
         }
         assert_eq!(valid_mhz(4774.29), Some(4774.29));
+    }
+}
+
+#[cfg(test)]
+mod temperature_tests {
+    use super::*;
+    #[test]
+    fn hidden_panels_release_temperature_resources_and_unsupported_probes_back_off() {
+        let mut reader = CpuDetailsReader::default();
+        assert!(reader.read_temperature(false, None).is_none());
+        assert!(reader.temperature_due.is_none());
+        #[cfg(any(windows, all(target_os = "macos", target_arch = "aarch64")))]
+        {
+            let missing = reader
+                .read_temperature(true, Some("VirtualApple"))
+                .unwrap()
+                .unwrap_err();
+            assert_eq!(missing.code(), PlatformErrorCode::Unsupported);
+            assert!(reader
+                .read_temperature(true, Some("VirtualApple"))
+                .is_none());
+            assert!(reader.temperature.is_none());
+        }
+        reader.temperature_due = Some(Instant::now() + Duration::from_secs(30));
+        assert!(reader.read_temperature(false, None).is_none());
+        assert!(reader.temperature_due.is_none());
+        reader.reset();
+        assert!(reader.temperature.is_none());
     }
 }

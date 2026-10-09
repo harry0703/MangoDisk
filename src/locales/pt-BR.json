@@ -4168,5 +4168,13 @@
     "efficiency": "Núcleos de eficiência",
     "performance": "Núcleos de desempenho",
     "cached": "Em cache"
+  },
+  "cpuTemperature": {
+    "label": "Temperatura da CPU",
+    "coreAverageHint": "Média de {count} sensores legíveis dos núcleos da CPU",
+    "packageHint": "Temperatura do pacote da CPU; maior valor entre {count} sensores",
+    "coreMaximumHint": "Maior temperatura entre {count} sensores dos núcleos da CPU",
+    "unsupportedHint": "O MangoDisk não consegue ler um sensor de temperatura da CPU identificado neste dispositivo",
+    "trend": "Temperatura da CPU no último minuto, em graus Celsius"
   }
 }

@@ -28,6 +28,22 @@ impl Labels {
     pub fn text(&self, key: &str) -> &str {
         self.messages.text(&format!("/systemStatus/{key}"))
     }
+    pub fn temperature(&self, key: &str) -> &str {
+        self.messages.text(&format!("/cpuTemperature/{key}"))
+    }
+    pub fn temperature_scope(
+        &self,
+        value: &mangodisk_platform::system_resources::cpu::temperature::CpuTemperature,
+    ) -> String {
+        use mangodisk_platform::system_resources::cpu::temperature::CpuTemperatureKind;
+        let key = match value.kind {
+            CpuTemperatureKind::CoreAverage => "coreAverageHint",
+            CpuTemperatureKind::Package => "packageHint",
+            CpuTemperatureKind::CoreMaximum => "coreMaximumHint",
+        };
+        self.temperature(key)
+            .replace("{count}", &value.sensor_count.to_string())
+    }
     pub fn metric(&self, metric: MetricId) -> &str {
         self.text(match metric {
             MetricId::Cpu => "cpu",

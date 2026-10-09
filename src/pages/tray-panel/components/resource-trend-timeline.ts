@@ -28,7 +28,7 @@ export class ResourceTrendTimeline {
     this.lastFrameClock = clock;
     const now = this.time(clock);
     const last = this.points.at(-1)?.sampledAtMs;
-    const fresh = last !== undefined && now - last <= (this.interval === 3000 ? 10000 : 5000);
+    const fresh = last !== undefined && now - last <= (this.interval >= 3000 ? 10000 : 5000);
     // A delayed VM/IPC delivery must not let the viewport outrun completed
     // samples. Catch up gradually after it arrives, never snap the whole strip.
     // Real outages still scroll out after freshness expires; no values are made up.
@@ -63,7 +63,7 @@ export class ResourceTrendTimeline {
       if (discontinuity) {
         this.points = [];
         const last = incoming.at(-1)?.sampledAtMs;
-        const fresh = last !== undefined && observed - last <= (interval === 3000 ? 10000 : 5000);
+        const fresh = last !== undefined && observed - last <= (interval >= 3000 ? 10000 : 5000);
         this.playhead = Math.min(observed - this.delay, fresh ? last : Infinity);
         this.lastFrameClock = clock;
       }

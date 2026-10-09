@@ -293,8 +293,14 @@ onBeforeUnmount(() => {
         role="tabpanel"
         aria-labelledby="metric-tab-cpu"
       >
-        <MdResourceOverview class="detail-summary" metric="cpu" :reading="store.reading" :active="panelVisible" />
-        <MdCpuDetails :reading="store.reading" />
+        <MdResourceOverview
+          class="detail-summary"
+          metric="cpu"
+          :show-cpu-temperature="false"
+          :reading="store.reading"
+          :active="panelVisible"
+        />
+        <MdCpuDetails :reading="store.reading" :active="panelVisible" />
         <MdApplicationResourceList
           class="monitor-processes"
           metric="cpu"

@@ -3,7 +3,7 @@ import { emptyReadings } from '@/lib/utils/system-resources';
 
 export function preferencesFixture(): ResidentPreferences {
   return {
-    schemaVersion: 10,
+    schemaVersion: 11,
     revision: 0,
     enabled: true,
     showIcon: true,
@@ -21,6 +21,7 @@ export function preferencesFixture(): ResidentPreferences {
       { id: 'network', enabled: false },
       { id: 'disk', enabled: false },
       { id: 'gpu', enabled: false },
+      { id: 'cpuTemperature', enabled: false },
     ],
     networkInterface: null,
     diskVolume: null,

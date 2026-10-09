@@ -4168,5 +4168,13 @@
     "efficiency": "Efficiency cores",
     "performance": "Performance cores",
     "cached": "Cached"
+  },
+  "cpuTemperature": {
+    "label": "CPU temperature",
+    "coreAverageHint": "Average of {count} readable CPU core sensors",
+    "packageHint": "CPU package temperature; highest value across {count} sensors",
+    "coreMaximumHint": "Highest temperature across {count} CPU core sensors",
+    "unsupportedHint": "MangoDisk cannot read an identified CPU temperature sensor on this device",
+    "trend": "CPU temperature over the last minute, in degrees Celsius"
   }
 }

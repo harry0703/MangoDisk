@@ -81,6 +81,13 @@ export interface CpuFrequency {
   performanceMhz: number | null;
   source: 'windowsPerformance' | 'applePerformanceStates';
 }
+export const CPU_TEMPERATURE_FRESHNESS_MS = 10_000;
+export interface CpuTemperature {
+  celsius: number;
+  kind: 'coreAverage' | 'package' | 'coreMaximum';
+  source: 'appleSmc' | 'linuxHwmon';
+  sensorCount: number;
+}
 export interface GpuUsage {
   usedPercent: number;
   adapterId: string;
@@ -123,11 +130,13 @@ export interface DiskIoRate {
   writtenBytesPerSecond: number;
 }
 export interface ResourceReadings {
-  schemaVersion: 15;
+  schemaVersion: 16;
   observedAtMs: number;
   cpu: MetricReading<CpuUsage>;
   cpuIdentity: CpuIdentity | null;
   cpuFrequency: MetricReading<CpuFrequency>;
+  cpuTemperature: MetricReading<CpuTemperature>;
+  cpuTemperatureHistory: TrendPoint[];
   gpu: MetricReading<GpuUsage>;
   gpuDetails: MetricReading<GpuUsage>;
   gpuDetailHistory: TrendPoint[];

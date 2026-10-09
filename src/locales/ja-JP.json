@@ -4168,5 +4168,13 @@
     "efficiency": "高効率コア",
     "performance": "高性能コア",
     "cached": "キャッシュ"
+  },
+  "cpuTemperature": {
+    "label": "CPU 温度",
+    "coreAverageHint": "読み取り可能な CPU コアセンサー {count} 個の平均温度",
+    "packageHint": "CPU パッケージ温度：{count} 個のセンサーの最高値",
+    "coreMaximumHint": "CPU コアセンサー {count} 個の最高温度",
+    "unsupportedHint": "MangoDisk はこのデバイスで CPU 温度センサーを確認して読み取ることができません",
+    "trend": "直近1分間の CPU 温度（摂氏）"
   }
 }

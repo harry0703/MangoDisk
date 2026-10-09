@@ -4,6 +4,7 @@ import { createI18n } from 'vue-i18n';
 import { describe, expect, it } from 'vitest';
 import MdCpuDetails from './md-cpu-details.vue';
 import MdTooltip from '@/components/custom/md-tooltip.vue';
+import MdIconTrend from '@/components/icons/md-icon-trend.vue';
 import enUS from '@/locales/en-US.json';
 import type { ResourceReadings } from '@/lib/models/system-resources';
 import { emptyReadings } from '@/lib/utils/system-resources';
@@ -35,6 +36,37 @@ const windowsReading = () => {
   return reading;
 };
 describe('CPU detail observations', () => {
+  it('starts a new temperature curve when the sensor group changes', async () => {
+    const reading = emptyReadings();
+    reading.observedAtMs = 70_000;
+    reading.cpuTemperature = {
+      status: 'ready',
+      sampledAtMs: 70_000,
+      value: { celsius: 60, kind: 'coreAverage', source: 'appleSmc', sensorCount: 16 },
+    };
+    reading.cpuTemperatureHistory = [
+      { sampledAtMs: 66_000, primary: 50, secondary: null },
+      { sampledAtMs: 70_000, primary: 60, secondary: null },
+    ];
+    const wrapper = render(reading);
+    expect(wrapper.findComponent(MdIconTrend).props('series')[0].line).toContain(' L');
+    await wrapper.setProps({
+      reading: {
+        ...reading,
+        observedAtMs: 74_000,
+        cpuTemperature: {
+          ...reading.cpuTemperature,
+          sampledAtMs: 74_000,
+          value: { ...reading.cpuTemperature.value!, celsius: 65, sensorCount: 8 },
+        },
+        cpuTemperatureHistory: [{ sampledAtMs: 74_000, primary: 65, secondary: null }],
+      },
+    });
+    const line = wrapper.findComponent(MdIconTrend).props('series')[0].line as string;
+    expect(line).not.toContain(' L');
+    expect(line).toContain(' l0.001,0');
+    wrapper.unmount();
+  });
   it('shows real recent load statistics alongside frequency without rated data or tooltips', async () => {
     const wrapper = render(windowsReading());
     const facts = wrapper.findAll('.resource-fact');
@@ -43,7 +75,7 @@ describe('CPU detail observations', () => {
     expect(facts[1].text()).toContain('1 min average30%');
     expect(facts[2].text()).toContain('1 min peak60%');
     expect(wrapper.text()).not.toContain('3.70');
-    expect(wrapper.findComponent(MdTooltip).exists()).toBe(false);
+    expect(facts.every(fact => !fact.findComponent(MdTooltip).exists())).toBe(true);
     await facts[0].trigger('mouseenter');
     expect(wrapper.find('[role="tooltip"]').exists()).toBe(false);
     wrapper.unmount();
