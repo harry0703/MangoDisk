@@ -65,12 +65,21 @@ fn partial_linked_folder_deletion_expires_shared_sibling_sessions() {
     cache::clear_all().unwrap();
     let fixture = tempfile::tempdir().unwrap();
     let root = fs::canonicalize(fixture.path()).unwrap();
-    let locked = root.join("a/locked");
-    fs::create_dir_all(&locked).unwrap();
+    fs::create_dir_all(root.join("a/one")).unwrap();
+    fs::create_dir_all(root.join("a/two")).unwrap();
     fs::create_dir(root.join("b")).unwrap();
-    fs::write(root.join("a/owner.bin"), vec![1; 8192]).unwrap();
-    fs::hard_link(root.join("a/owner.bin"), root.join("b/alias.bin")).unwrap();
-    fs::write(locked.join("retained.bin"), [1]).unwrap();
+    for name in ["one", "two"] {
+        let owner = root.join("a").join(name).join("owner.bin");
+        fs::write(&owner, vec![1; 8192]).unwrap();
+        fs::hard_link(&owner, root.join("b").join(format!("alias-{name}.bin"))).unwrap();
+    }
+    // Fail at the second native directory entry, after the first subtree was
+    // irreversibly removed. Never assume a filesystem's enumeration order.
+    let children = fs::read_dir(root.join("a"))
+        .unwrap()
+        .map(|entry| entry.unwrap().path())
+        .collect::<Vec<_>>();
+    let locked = children[1].clone();
     let initial = analyze(&root);
     let sibling = AnalysisService::analyze_with_progress(
         Some(root.join("b").to_string_lossy().into_owned()),
@@ -85,6 +94,10 @@ fn partial_linked_folder_deletion_expires_shared_sibling_sessions() {
     );
     fs::set_permissions(&locked, fs::Permissions::from_mode(0o700)).unwrap();
     let error = deleted.expect_err("unreadable descendants must stop deletion");
+    assert!(
+        !children[0].exists(),
+        "the fixture must exercise a real partial deletion"
+    );
     assert_eq!(
         error.mutation_state(),
         mangodisk_platform::PlatformMutationState::MayHaveChanged
@@ -609,4 +622,150 @@ fn changed_hard_link_content_keeps_transferred_snapshot_totals_consistent() {
             0
         );
     }
+}
+
+#[test]
+#[ignore = "manual isolated deletion latency measurement"]
+fn manual_analysis_deletion_latency() {
+    let _operation_lock = crate::shared::operation::test_operation_lock();
+    for count in [20, 200, 2000] {
+        let mut samples = Vec::new();
+        for _ in 0..11 {
+            cache::clear_all().unwrap();
+            let fixture = tempfile::tempdir().unwrap();
+            let root = fs::canonicalize(fixture.path()).unwrap();
+            let directory = root.join("delete-target");
+            fs::create_dir(&directory).unwrap();
+            for index in 0..count {
+                fs::write(directory.join(format!("payload-{index:05}.bin")), [1; 64]).unwrap();
+            }
+            let scanned = analyze(&root);
+            let started = Instant::now();
+            let removed = AnalysisService::delete_entry_permanently(
+                scanned.scan_id,
+                scanned.entries[0].path.clone(),
+            )
+            .unwrap();
+            samples.push(started.elapsed().as_secs_f64() * 1000.0);
+            assert!(!removed.requires_rescan);
+            assert!(!directory.exists());
+            assert_eq!(removed.removed_file_count, count);
+        }
+        samples.sort_by(f64::total_cmp);
+        println!("analysis_delete_benchmark files={count} iterations={} p50_ms={:.3} p95_ms={:.3} max_ms={:.3}", samples.len(), samples[5], samples[10], samples[10]);
+    }
+}
+
+#[cfg(windows)]
+#[test]
+fn analysis_locked_failure_before_any_unlink_preserves_session() {
+    use std::os::windows::fs::OpenOptionsExt;
+    let _operation_lock = crate::shared::operation::test_operation_lock();
+    cache::clear_all().unwrap();
+    let fixture = tempfile::tempdir().unwrap();
+    let root = fs::canonicalize(fixture.path()).unwrap();
+    let directory = root.join("locked-target");
+    fs::create_dir(&directory).unwrap();
+    let payload = directory.join("locked.bin");
+    fs::write(&payload, [1; 64]).unwrap();
+    let initial = analyze(&root);
+    let locked = fs::OpenOptions::new()
+        .read(true)
+        .share_mode(0)
+        .open(&payload)
+        .unwrap();
+    let failed =
+        AnalysisService::delete_entry_permanently(initial.scan_id, initial.entries[0].path.clone());
+    drop(locked);
+    let error = failed.expect_err("locked files must stop deletion");
+    assert_eq!(
+        error.mutation_state(),
+        mangodisk_platform::PlatformMutationState::NotAttempted
+    );
+    assert!(matches!(
+        error.reason(),
+        Some(
+            crate::shared::CoreErrorReason::ResourceBusy
+                | crate::shared::CoreErrorReason::AccessDeniedOrBusy
+        )
+    ));
+    assert!(
+        AnalysisService::resolve_open_target(initial.scan_id, initial.entries[0].path.clone())
+            .is_ok()
+    );
+    assert!(payload.exists());
+    let cached = cache::analysis_result(&root).unwrap().unwrap();
+    assert_eq!(cached.total_bytes, initial.total_bytes);
+
+    cache::clear_all().unwrap();
+}
+
+#[cfg(windows)]
+#[test]
+fn analysis_locked_descendant_before_staging_preserves_session_and_cache() {
+    use std::os::windows::fs::OpenOptionsExt;
+    let _operation_lock = crate::shared::operation::test_operation_lock();
+    cache::clear_all().unwrap();
+    let fixture = tempfile::tempdir().unwrap();
+    let root = fs::canonicalize(fixture.path()).unwrap();
+    let directory = root.join("locked-target");
+    fs::create_dir(&directory).unwrap();
+    let payload = directory.join("locked.bin");
+    fs::write(&payload, [1; 64]).unwrap();
+    let initial = analyze(&root);
+    let locked = fs::OpenOptions::new()
+        .read(true)
+        .share_mode(0)
+        .open(&payload)
+        .unwrap();
+    let failed =
+        AnalysisService::delete_entry_permanently(initial.scan_id, initial.entries[0].path.clone());
+    drop(locked);
+    let error = failed.expect_err("an open descendant must prevent staging the directory");
+    assert_eq!(
+        error.mutation_state(),
+        mangodisk_platform::PlatformMutationState::NotAttempted
+    );
+    assert!(payload.exists());
+    assert!(
+        AnalysisService::resolve_open_target(initial.scan_id, initial.entries[0].path.clone())
+            .is_ok()
+    );
+    assert_eq!(
+        cache::analysis_result(&root).unwrap().unwrap().total_bytes,
+        initial.total_bytes
+    );
+    cache::clear_all().unwrap();
+}
+
+#[cfg(unix)]
+#[test]
+fn large_native_directory_failure_keeps_unknown_mutation_conservative() {
+    use std::os::unix::fs::PermissionsExt;
+    let _operation_lock = crate::shared::operation::test_operation_lock();
+    cache::clear_all().unwrap();
+    let fixture = tempfile::tempdir().unwrap();
+    let root = fs::canonicalize(fixture.path()).unwrap();
+    let locked = root.join("large-target/locked");
+    fs::create_dir_all(&locked).unwrap();
+    for index in 0..257 {
+        fs::write(locked.join(format!("file-{index}")), [1]).unwrap();
+    }
+    let initial = analyze(&root);
+    fs::set_permissions(&locked, fs::Permissions::from_mode(0o0)).unwrap();
+    let failed =
+        AnalysisService::delete_entry_permanently(initial.scan_id, initial.entries[0].path.clone());
+    fs::set_permissions(&locked, fs::Permissions::from_mode(0o700)).unwrap();
+    let error = failed.expect_err("native recursive removal must report uncertainty");
+    assert_eq!(
+        error.mutation_state(),
+        mangodisk_platform::PlatformMutationState::MayHaveChanged
+    );
+    assert!(
+        AnalysisService::resolve_open_target(initial.scan_id, initial.entries[0].path.clone())
+            .is_err()
+    );
+    assert!(locked.exists());
+    assert!(cache::analysis_result(&root).unwrap().is_none());
+    cache::clear_all().unwrap();
 }

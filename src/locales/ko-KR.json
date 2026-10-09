@@ -1948,6 +1948,8 @@
     }
   },
   "analysis": {
+    "recovering": "크기 확인 중 · 삭제 일시 중지",
+    "recoveryRequired": "크기 미확인 · 삭제 전에 다시 분석하세요",
     "shareOfCurrentFolder": "현재 폴더에서 차지하는 비율",
     "shareOfParentFolder": "상위 폴더에서 차지하는 비율",
     "title": "디스크 공간 분석",

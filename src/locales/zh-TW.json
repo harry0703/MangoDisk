@@ -1948,6 +1948,8 @@
     }
   },
   "analysis": {
+    "recovering": "正在校驗大小，暫時無法刪除",
+    "recoveryRequired": "大小尚未校驗，請重新分析後再刪除",
     "shareOfCurrentFolder": "佔目前目錄",
     "shareOfParentFolder": "佔上層目錄",
     "title": "磁碟空間分析",

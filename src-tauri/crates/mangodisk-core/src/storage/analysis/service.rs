@@ -1320,7 +1320,7 @@ mod tests {
 
     #[cfg(unix)]
     #[test]
-    fn failed_native_directory_delete_invalidates_sessions_even_without_known_counts() {
+    fn unchanged_directory_failure_retains_authoritative_sessions() {
         use std::os::unix::fs::PermissionsExt;
         let _operation_lock = crate::shared::operation::test_operation_lock();
         cache::clear_all().unwrap();
@@ -1350,14 +1350,14 @@ mod tests {
         let error = result.expect_err("unreadable contents must stop deletion");
         assert_eq!(
             error.mutation_state(),
-            mangodisk_platform::PlatformMutationState::MayHaveChanged
+            mangodisk_platform::PlatformMutationState::NotAttempted
         );
         assert_eq!(
             error.reason(),
-            Some(crate::shared::CoreErrorReason::DeleteIncomplete)
+            Some(crate::shared::CoreErrorReason::AccessDeniedOrBusy)
         );
         assert!(locked.join("retained").exists());
-        assert!(AnalysisService::resolve_open_target(initial.scan_id, selected).is_err());
+        assert!(AnalysisService::resolve_open_target(initial.scan_id, selected).is_ok());
         cache::clear_all().unwrap();
     }
 }

@@ -44,6 +44,71 @@ beforeEach(() => {
 });
 
 describe('analysis page', () => {
+  it.each(['macos', 'windows'])('keeps the %s browser mounted during recovery progress and cancellation', async os => {
+    vi.useFakeTimers();
+    vi.spyOn(OperatingSystemService, 'isWindows').mockReturnValue(os === 'windows');
+    const wrapper = shallowMount(AnalysisPage, {
+      props: {
+        result,
+        excludedFolders: [],
+        homePath: '/fixture',
+        disk: null,
+        disks: [],
+        progress: null,
+        busy: false,
+        cancelling: false,
+        deleting: false,
+      },
+      global: {
+        plugins: [i18n],
+        stubs: {
+          MdPageShell: { template: '<div><slot /></div>' },
+          MdDelayedOperationWorkspace: false,
+          MdOperationWorkspace: { template: '<div><slot /></div>' },
+        },
+      },
+    });
+    try {
+      const listId = wrapper.getComponent(MdAnalysisFolderPane).vm.$.uid;
+      const chartId = wrapper.getComponent(MdAnalysisVisualPane).vm.$.uid;
+      await wrapper.setProps({
+        busy: true,
+        recovering: true,
+        recoveryRequired: true,
+        progress: {
+          operationId: 5,
+          currentStage: 'analyzing',
+          currentPath: '/fixture',
+          itemsScanned: 12,
+          bytesScanned: 100,
+          completedSteps: 0,
+          totalSteps: 1,
+          foundItems: 12,
+          foundBytes: 100,
+          elapsedMs: 100,
+        },
+      });
+      await vi.advanceTimersByTimeAsync(30_000);
+      expect(wrapper.findComponent(MdOperationProgress).exists()).toBe(false);
+      expect(wrapper.getComponent(MdAnalysisFolderPane).vm.$.uid).toBe(listId);
+      expect(wrapper.getComponent(MdAnalysisVisualPane).vm.$.uid).toBe(chartId);
+      expect(wrapper.find('.browser-content').attributes('inert')).toBeUndefined();
+      expect(wrapper.getComponent(MdAnalysisFolderPane).props('deleteDisabled')).toBe(true);
+      await wrapper.get('.recovery-status button').trigger('click');
+      expect(wrapper.emitted('cancel')).toHaveLength(1);
+      await wrapper.setProps({ busy: false, recovering: false, progress: null });
+      expect(wrapper.getComponent(MdAnalysisFolderPane).vm.$.uid).toBe(listId);
+      expect(wrapper.getComponent(MdAnalysisFolderPane).props('deleteDisabled')).toBe(true);
+      expect(wrapper.get('.recovery-status').text()).toContain(i18n.global.t('analysis.recoveryRequired'));
+      await wrapper.setProps({ recoveryRequired: false, result: { ...result, scanId: 9 } });
+      expect(wrapper.find('.recovery-status').exists()).toBe(false);
+      expect(wrapper.getComponent(MdAnalysisFolderPane).props('deleteDisabled')).toBe(false);
+    } finally {
+      wrapper.unmount();
+      vi.useRealTimers();
+    }
+  });
+
   it.each([
     ['macos', 501],
     ['macos', 30_000],

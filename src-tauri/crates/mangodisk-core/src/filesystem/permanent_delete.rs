@@ -783,7 +783,18 @@ fn delete_staged_target(
             error,
             verified_outcome: None,
         }),
-        StagedRemoval::DirectoryTree | StagedRemoval::AnalysisDirectoryTree => {
+        StagedRemoval::DirectoryTree => fs::remove_dir_all(&staged_target)
+            .map(|_| StagedRemovalSuccess {
+                outcome: expected_outcome,
+                restore_remainder: false,
+            })
+            .map_err(|error| StagedRemovalFailure {
+                error,
+                verified_outcome: None,
+            }),
+        StagedRemoval::AnalysisDirectoryTree
+            if use_native_analysis_removal(expected_item_count) =>
+        {
             fs::remove_dir_all(&staged_target)
                 .map(|_| StagedRemovalSuccess {
                     outcome: expected_outcome,
@@ -793,6 +804,16 @@ fn delete_staged_target(
                     error,
                     verified_outcome: None,
                 })
+        }
+        StagedRemoval::AnalysisDirectoryTree => {
+            // Observe this single removal walk so an untouched failure does not
+            // invalidate analysis snapshots or trigger a recovery scan.
+            remove_directory_tree_cancellable(&staged_target, &|| false).map(|outcome| {
+                StagedRemovalSuccess {
+                    outcome,
+                    restore_remainder: false,
+                }
+            })
         }
         StagedRemoval::CancellableDirectoryTree(is_cancelled) => {
             remove_directory_tree_cancellable(&staged_target, is_cancelled).map(|outcome| {
@@ -822,7 +843,7 @@ fn delete_staged_target(
             // Never label the root or a later remainder sample as that descendant.
             "permanent_delete_stage_finished path={} staging={} stage=remove outcome=failed failure_path_scope={} error_kind={:?} native_code={:?} elapsed_ms={} error={}",
             diagnostic_path(path), diagnostic_path(&staged_target),
-            if matches!(removal, StagedRemoval::DirectoryTree | StagedRemoval::AnalysisDirectoryTree) { "recursive_root_only" } else { "see_entry_diagnostic" },
+            if matches!(removal, StagedRemoval::DirectoryTree) || matches!(removal, StagedRemoval::AnalysisDirectoryTree) && use_native_analysis_removal(expected_item_count) { "recursive_root_only" } else { "see_entry_diagnostic" },
             failure.error.kind(), failure.error.raw_os_error(), removal_started.elapsed().as_millis(),
             mangodisk_platform::diagnostics::text(&failure.error)
         ),
@@ -905,11 +926,11 @@ fn delete_staged_target(
                 error.native_code = identity_error.native_code;
                 return Err(error);
             }
-            if matches!(removal, StagedRemoval::AnalysisDirectoryTree) {
-                // Concurrent creation invalidates snapshot-minus-remainder accounting.
-                // A failed native recursive delete may already have mutated the tree,
-                // even when the old snapshot was empty. Restore immediately rather
-                // than delaying recovery with another unbounded full-tree walk.
+            if matches!(removal, StagedRemoval::AnalysisDirectoryTree)
+                && delete_failure.verified_outcome.is_none()
+            {
+                // The native fast path cannot prove how much was removed. Restore
+                // the remainder promptly and let analysis recover in the background.
                 let result = rollback_staged_target(
                     path,
                     &staging_root,
@@ -983,6 +1004,13 @@ fn delete_staged_target(
     }
 }
 
+fn use_native_analysis_removal(expected_item_count: u64) -> bool {
+    // Unix metadata reads add a measurable cost to large observed walks. Keep
+    // their native removal throughput; small trees retain exact failure counts.
+    // Windows can reuse enumeration metadata without another file query.
+    cfg!(unix) && expected_item_count > 256
+}
+
 /// Removes a staged tree while observing cancellation between directory entries.
 ///
 /// `remove_dir_all` has no cancellation hook, which is unacceptable for the
@@ -1018,6 +1046,16 @@ fn remove_directory_tree_entry(
         ));
     }
     let metadata = deletion_entry_io(path, "metadata", fs::symlink_metadata(path))?;
+    remove_directory_tree_entry_with_metadata(path, metadata, is_cancelled, outcome, names)
+}
+
+fn remove_directory_tree_entry_with_metadata(
+    path: &Path,
+    metadata: fs::Metadata,
+    is_cancelled: &(dyn Fn() -> bool + Sync),
+    outcome: &mut PermanentDeleteOutcome,
+    names: Option<(&mangodisk_platform::NameExclusions, &Path)>,
+) -> Result<(), std::io::Error> {
     if names
         .is_some_and(|(policy, root)| path != root && policy.matches_entry(path, metadata.is_dir()))
     {
@@ -1057,7 +1095,26 @@ fn remove_directory_tree_entry(
                 "directory tree deletion cancelled",
             ));
         }
-        remove_directory_tree_entry(&entry?.path(), is_cancelled, outcome, names)?;
+        let entry = deletion_entry_io(path, "read_entry", entry)?;
+        let child = entry.path();
+        let metadata = deletion_entry_io(&child, "metadata", entry.metadata())?;
+        if metadata.is_dir() {
+            // Directory recursion must recheck the live link/reparse type. File
+            // unlink never follows its target; Windows enumeration metadata
+            // avoids another file metadata query without weakening that boundary.
+            remove_directory_tree_entry(&child, is_cancelled, outcome, names)?;
+        } else {
+            if is_cancelled() {
+                return Err(directory_contents_cancelled_error());
+            }
+            remove_directory_tree_entry_with_metadata(
+                &child,
+                metadata,
+                is_cancelled,
+                outcome,
+                names,
+            )?;
+        }
     }
     if is_cancelled() {
         return Err(std::io::Error::new(
@@ -1684,6 +1741,44 @@ mod permanent_delete_tests {
     impl Drop for DeleteSandbox {
         fn drop(&mut self) {
             let _ = fs::remove_dir_all(&self.0);
+        }
+    }
+
+    #[test]
+    #[ignore = "manual paired isolated deletion benchmark"]
+    fn manual_observed_deletion_comparison() {
+        for count in [20, 200, 2000] {
+            let mut native = Vec::new();
+            let mut observed = Vec::new();
+            for iteration in 0..31 {
+                for observe in [iteration % 2 == 0, iteration % 2 != 0] {
+                    let fixture = tempfile::tempdir().unwrap();
+                    let directory = fixture.path().join("target");
+                    fs::create_dir(&directory).unwrap();
+                    for index in 0..count {
+                        fs::write(directory.join(format!("file-{index:05}")), [1; 64]).unwrap();
+                    }
+                    let prepared = prepare_path_for_permanent_delete(&directory).unwrap();
+                    let started = Instant::now();
+                    let removal = if observe {
+                        StagedRemoval::AnalysisDirectoryTree
+                    } else {
+                        StagedRemoval::DirectoryTree
+                    };
+                    delete_via_staging(prepared, count * 64, count, removal).unwrap();
+                    let sample = started.elapsed().as_secs_f64() * 1000.0;
+                    if observe {
+                        observed.push(sample);
+                    } else {
+                        native.push(sample);
+                    }
+                    assert!(!directory.exists());
+                }
+            }
+            for (mode, mut samples) in [("native", native), ("analysis", observed)] {
+                samples.sort_by(f64::total_cmp);
+                println!("paired_delete_benchmark files={count} mode={mode} iterations={} p50_ms={:.3} p95_ms={:.3} max_ms={:.3}", samples.len(), samples[15], samples[29], samples[30]);
+            }
         }
     }
 

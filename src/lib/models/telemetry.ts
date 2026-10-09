@@ -66,6 +66,7 @@ export const LOG_EVENTS = {
   storageScanExclusionsUpdated: 'exclusions_updated',
   historyRefreshFailed: 'history_refresh_failed',
   analysisCacheSyncedAfterDelete: 'cache_synced_after_delete',
+  analysisRecoveryFinished: 'recovery_finished',
   analysisCacheConfigurationChanged: 'cache_configuration_changed',
   analysisViewPreferencesLoadFailed: 'view_preferences_load_failed',
   analysisViewPreferencesSaveFailed: 'view_preferences_save_failed',

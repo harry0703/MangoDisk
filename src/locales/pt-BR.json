@@ -1948,6 +1948,8 @@
     }
   },
   "analysis": {
+    "recovering": "Verificando tamanhos · Exclusão pausada",
+    "recoveryRequired": "Tamanhos não verificados · Analise novamente antes de excluir",
     "shareOfCurrentFolder": "Da pasta atual",
     "shareOfParentFolder": "Da pasta superior",
     "title": "Análise de Espaço em Disco",

@@ -82,6 +82,27 @@ describe('analysis store', () => {
     expect(store.result?.scanMode).toBe('fast');
   });
 
+  it('keeps the visible snapshot mounted while recovery scans run and after cancellation', async () => {
+    const store = useAnalysisStore();
+    store.result = { ...result, entries: [entry] };
+    const visible = store.result;
+    let finish: (value: AnalysisResult) => void = () => undefined;
+    vi.spyOn(AnalysisService, 'analyze').mockImplementation(
+      () =>
+        new Promise(resolve => {
+          finish = resolve;
+        })
+    );
+    vi.spyOn(AnalysisService, 'cancel').mockResolvedValue();
+    const request = store.refreshAfterDelete(result.root, entry.path, true);
+    await vi.waitFor(() => expect(AnalysisService.analyze).toHaveBeenCalledOnce());
+    expect(store.result).toBe(visible);
+    await store.cancel();
+    finish(result);
+    await request;
+    expect(store.result).toBe(visible);
+  });
+
   it('defaults to standard and expires cached navigation when switching metrics', async () => {
     const store = useAnalysisStore();
     expect(store.scanMode).toBe('standard');
@@ -539,7 +560,7 @@ describe('analysis store', () => {
     expect(refreshDisk).toHaveBeenCalledOnce();
   });
 
-  it('does not revive old results when refreshing a partial deletion fails', async () => {
+  it('retains an explicitly unverified view when partial deletion recovery fails', async () => {
     vi.spyOn(AnalysisService, 'deletePermanently').mockRejectedValue({
       code: 'operationFailed',
       retryable: true,
@@ -551,7 +572,9 @@ describe('analysis store', () => {
     store.result = { ...result, entries: [entry] };
     store.cache = { '/fixture': store.result };
     await store.deletePermanently(entry);
-    expect(store.result).toBeNull();
+    expect(store.result?.entries).toEqual([entry]);
+    expect(store.recoveryRequired).toBe(true);
+    expect(store.recovering).toBe(false);
     expect(store.cache).toEqual({});
     expect(store.deletingPath).toBeNull();
     expect(useAppStore().errorReason).toBe('deleteRecoveryFailed');
@@ -578,7 +601,9 @@ describe('analysis store', () => {
     const request = store.deletePermanently(entry);
     await vi.waitFor(() => expect(analyze).toHaveBeenCalledOnce());
     expect(useAppStore().errorReason).toBe('directoryNotEmpty');
-    expect(store.result).toBeNull();
+    expect(store.result?.entries).toEqual([entry]);
+    expect(store.recovering).toBe(true);
+    expect(store.recoveryRequired).toBe(true);
     expect(store.deleting).toBe(false);
     expect(store.pending).toBe(true);
     await store.cancel();
@@ -610,9 +635,62 @@ describe('analysis store', () => {
     store.cache = { [AnalysisCacheUtils.key(result.root)]: store.result };
 
     await store.deletePermanently(entry);
-    expect(store.result).toBeNull();
+    expect(store.result?.entries).toEqual([entry]);
+    expect(store.recoveryRequired).toBe(true);
     expect(store.pending).toBe(false);
     expect(useAppStore().errorReason).toBe('analysisRefreshFailedAfterDelete');
+  });
+
+  it('blocks deletion from an unverified retained view until a fresh analysis completes', async () => {
+    const store = useAnalysisStore();
+    store.result = { ...result, entries: [entry] };
+    store.recoveryRequired = true;
+    const remove = vi.spyOn(AnalysisService, 'deletePermanently');
+    await store.deletePermanently(entry);
+    expect(remove).not.toHaveBeenCalled();
+    vi.spyOn(AnalysisService, 'analyze').mockResolvedValue({ ...result, scanId: 9, entries: [entry] });
+    await store.analyze(result.root, true);
+    expect(store.recoveryRequired).toBe(false);
+  });
+
+  it('does not replace a different visible directory when recovery finishes', async () => {
+    const store = useAnalysisStore();
+    store.result = result;
+    let finish: (value: AnalysisResult) => void = () => undefined;
+    vi.spyOn(AnalysisService, 'analyze').mockImplementation(
+      () =>
+        new Promise(resolve => {
+          finish = resolve;
+        })
+    );
+    const request = store.refreshAfterDelete(result.root, entry.path, true);
+    await vi.waitFor(() => expect(AnalysisService.analyze).toHaveBeenCalledOnce());
+    const other = { ...result, root: '/other', scanId: 11 };
+    store.result = other;
+    finish({ ...result, scanId: 12 });
+    await request;
+    expect(store.result).toEqual(other);
+    expect(store.recoveryRequired).toBe(true);
+  });
+
+  it('discards recovery data if exclusions change while scanning', async () => {
+    const store = useAnalysisStore();
+    store.result = result;
+    let finish: (value: AnalysisResult) => void = () => undefined;
+    vi.spyOn(AnalysisService, 'analyze').mockImplementation(
+      () =>
+        new Promise(resolve => {
+          finish = resolve;
+        })
+    );
+    const request = store.refreshAfterDelete(result.root, entry.path, true);
+    await vi.waitFor(() => expect(AnalysisService.analyze).toHaveBeenCalledOnce());
+    useStorageScanPreferencesStore().folders = [{ path: '/fixture/cache', scopes: ['analysis'] }];
+    finish({ ...result, scanId: 12 });
+    await request;
+    expect(store.result).toBeNull();
+    expect(store.cache).toEqual({});
+    expect(store.recoveryRequired).toBe(true);
   });
 
   it('keeps an unchanged result when deletion is rejected before mutation', async () => {

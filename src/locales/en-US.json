@@ -1948,6 +1948,8 @@
     }
   },
   "analysis": {
+    "recovering": "Verifying sizes · Deletion paused",
+    "recoveryRequired": "Unverified sizes · Analyze again before deleting",
     "shareOfCurrentFolder": "Of current folder",
     "shareOfParentFolder": "Of parent folder",
     "title": "Disk Space Analysis",

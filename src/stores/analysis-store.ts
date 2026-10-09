@@ -42,6 +42,8 @@ interface AnalysisState {
   scanStarted: boolean;
   deleting: boolean;
   deletingPath: string | null;
+  recovering: boolean;
+  recoveryRequired: boolean;
 }
 
 type ViewPreferenceKey = 'viewMode' | 'treemapDepth' | 'sunburstDepth';
@@ -66,6 +68,8 @@ export const useAnalysisStore = defineStore('analysis', {
     scanStarted: false,
     deleting: false,
     deletingPath: null,
+    recovering: false,
+    recoveryRequired: false,
   }),
   actions: {
     async initializeScanMode() {
@@ -236,6 +240,7 @@ export const useAnalysisStore = defineStore('analysis', {
         const targetKey = target ? AnalysisCacheUtils.key(target) : '';
         if (!refresh && targetKey && this.cache[targetKey]) {
           this.result = this.cache[targetKey];
+          this.recoveryRequired = false;
           this.cacheOrder = AnalysisCacheUtils.touch(this.cacheOrder, targetKey);
           if (setHome) this.homePath = PathUtils.display(this.result.root);
           return;
@@ -279,6 +284,7 @@ export const useAnalysisStore = defineStore('analysis', {
           return;
         }
         this.result = result;
+        this.recoveryRequired = false;
         const cached = AnalysisCacheUtils.store(this.cache, this.cacheOrder, result, ANALYSIS_RESULT_CACHE_LIMIT);
         this.cache = cached.cache;
         this.cacheOrder = cached.order;
@@ -323,11 +329,16 @@ export const useAnalysisStore = defineStore('analysis', {
         this.cache = {};
         this.cacheOrder = [];
       }
+      const visibleResult = this.result;
       // Deletion or concurrent writes can invalidate every overlapping snapshot.
       // Expire overlapping snapshots before starting a cancellable recovery scan.
       this.cache = AnalysisCacheUtils.invalidateChangedPath(this.cache, path);
       this.cacheOrder = AnalysisCacheUtils.retainExisting(this.cacheOrder, this.cache);
-      this.result = null;
+      // Keep the mounted browser and scroll position while the snapshot is
+      // explicitly read-only. Failed or cancelled recovery must not revive it
+      // as an authoritative cache entry.
+      this.recovering = true;
+      this.recoveryRequired = true;
       this.pending = true;
       this.cancelling = false;
       this.scanStarted = false;
@@ -343,6 +354,7 @@ export const useAnalysisStore = defineStore('analysis', {
         if (this.cancelling) return;
         LoggerService.info(LOG_DOMAINS.analysis, LOG_EVENTS.scanRequested, {
           operation: 'refresh_analysis_after_delete',
+          presentation: 'background',
           scanMode: this.scanMode,
           root,
           excludedFolderCount: paths.length,
@@ -359,7 +371,10 @@ export const useAnalysisStore = defineStore('analysis', {
           const cached = AnalysisCacheUtils.store(this.cache, this.cacheOrder, refreshed, ANALYSIS_RESULT_CACHE_LIMIT);
           this.cache = cached.cache;
           this.cacheOrder = cached.order;
-          this.result = refreshed;
+          if (this.result === visibleResult) {
+            this.result = refreshed;
+            this.recoveryRequired = false;
+          }
         } else {
           this.invalidateResultForExclusionChange();
           this.result = null;
@@ -379,6 +394,12 @@ export const useAnalysisStore = defineStore('analysis', {
         }
       } finally {
         unlisten?.();
+        LoggerService.info(LOG_DOMAINS.analysis, LOG_EVENTS.analysisRecoveryFinished, {
+          root,
+          path,
+          outcome: this.recoveryRequired ? (this.cancelling ? 'cancelled' : 'unverified') : 'verified',
+        });
+        this.recovering = false;
         this.progress = null;
         this.pending = false;
         this.cancelling = false;
@@ -386,7 +407,7 @@ export const useAnalysisStore = defineStore('analysis', {
       }
     },
     async deletePermanently(entry: DirectoryEntryInfo) {
-      if (this.pending || this.deleting) return;
+      if (this.pending || this.deleting || this.recoveryRequired) return;
       this.invalidateResultForExclusionChange();
       if (!this.result) return;
       const sourceResult = this.result;

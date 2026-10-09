@@ -1948,6 +1948,8 @@
     }
   },
   "analysis": {
+    "recovering": "Boyutlar doğrulanıyor · Silme duraklatıldı",
+    "recoveryRequired": "Boyutlar doğrulanmadı · Silmeden önce yeniden analiz edin",
     "shareOfCurrentFolder": "Geçerli klasördeki pay",
     "shareOfParentFolder": "Üst klasördeki pay",
     "title": "Disk Alanı Analizi",

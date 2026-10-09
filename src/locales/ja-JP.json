@@ -1948,6 +1948,8 @@
     }
   },
   "analysis": {
+    "recovering": "変更確認中・削除停止中",
+    "recoveryRequired": "削除前に再解析してください",
     "shareOfCurrentFolder": "現在のフォルダーに占める割合",
     "shareOfParentFolder": "親フォルダーに占める割合",
     "title": "ディスク容量分析",

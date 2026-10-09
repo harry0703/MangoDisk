@@ -45,6 +45,8 @@ const props = defineProps<{
   cancelling: boolean;
   deleting: boolean;
   deletingPath?: string | null;
+  recovering?: boolean;
+  recoveryRequired?: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -175,7 +177,7 @@ const folderNavigationPending = computed(() => props.busy && !primaryAnalysisPen
 // data; cache navigation keeps the mounted list and its sorting state. Cache
 // projection and transport can exceed the UI delay without scanning anything.
 const showFullAnalysisProgress = computed(
-  () => props.busy && (primaryAnalysisPending.value || props.progress !== null)
+  () => props.busy && !props.recovering && (primaryAnalysisPending.value || props.progress !== null)
 );
 
 watch(
@@ -334,12 +336,18 @@ function navigateHistory(index: number) {
         @home="analyze(homePath)"
         @navigate="analyze"
       />
+      <div v-if="recoveryRequired" class="recovery-status" role="status" aria-live="polite">
+        <span>{{ t(recovering ? 'analysis.recovering' : 'analysis.recoveryRequired') }}</span>
+        <button v-if="recovering" type="button" :disabled="cancelling" @click="emit('cancel')">
+          {{ t(cancelling ? 'loading.cancelling' : 'common.cancel') }}
+        </button>
+      </div>
       <!-- A cache hit keeps the browser; a real scan replaces stale navigation and totals. -->
       <MdDelayedOperationWorkspace
         :key="showFullAnalysisProgress ? 'full' : 'navigation'"
         class="analysis-overlay"
         :class="{ 'analysis-overlay--full': !result || showFullAnalysisProgress }"
-        :active="busy && (!result || showFullAnalysisProgress)"
+        :active="busy && !recovering && (!result || showFullAnalysisProgress)"
         :delay="showFullAnalysisProgress ? 0 : undefined"
         mode="overlay"
         role="status"
@@ -378,7 +386,7 @@ function navigateHistory(index: number) {
         v-else-if="!showFullAnalysisProgress"
         class="browser-content"
         :class="{ 'browser-content--list-collapsed': listCollapsed }"
-        :inert="busy || undefined"
+        :inert="(busy && !recovering) || undefined"
         :aria-busy="busy"
       >
         <MdAnalysisFolderPane
@@ -389,8 +397,8 @@ function navigateHistory(index: number) {
           :folder-count="folderCount"
           :file-count="fileCount"
           :truncated="result.truncated"
-          :open-disabled="busy || deleting"
-          :delete-disabled="busy || deleting || !resultMatchesExclusions"
+          :open-disabled="busy || deleting || recoveryRequired"
+          :delete-disabled="busy || deleting || recoveryRequired || !resultMatchesExclusions"
           :deleting-path="deletingPath"
           :hovered-entry-path="hoveredEntryPath"
           @hover-entry="hoverEntry"
@@ -407,8 +415,8 @@ function navigateHistory(index: number) {
           :entries="entries"
           :folder-count="folderCount"
           :view-mode="viewMode"
-          :open-disabled="busy || deleting"
-          :delete-disabled="busy || deleting || !resultMatchesExclusions"
+          :open-disabled="busy || deleting || recoveryRequired"
+          :delete-disabled="busy || deleting || recoveryRequired || !resultMatchesExclusions"
           :deleting-path="deletingPath"
           :hovered-entry-path="hoveredEntryPath"
           @hover-entry="hoverEntry"
@@ -440,6 +448,22 @@ function navigateHistory(index: number) {
 
 <style scoped>
 @reference "@assets/main.css";
+
+.recovery-status {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 16px;
+  color: var(--color-muted-foreground);
+  font-size: 12px;
+}
+
+.recovery-status button {
+  color: var(--color-primary-text);
+  cursor: pointer;
+}
 
 .analysis-shell {
   min-height: 0;
