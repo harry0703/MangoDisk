@@ -10,6 +10,7 @@ import koKR from '@/locales/modules/ko-kr';
 import ptBR from '@/locales/modules/pt-br';
 import ruRU from '@/locales/modules/ru-ru';
 import trTR from '@/locales/modules/tr-tr';
+import ukUA from '@/locales/modules/uk-ua';
 import zhCN from '@/locales/modules/zh-cn';
 import zhTW from '@/locales/modules/zh-tw';
 
@@ -24,7 +25,8 @@ function frenchPluralRule(choice: number, choicesLength: number): number {
   return 0;
 }
 
-function russianPluralRule(choice: number, choicesLength: number): number {
+// Russian and Ukrainian share one/few/many forms; four-form messages keep an explicit zero state.
+function eastSlavicPluralRule(choice: number, choicesLength: number): number {
   const normalizedChoice = Math.abs(choice);
   const hasExplicitZeroForm = choicesLength === 4;
   if (hasExplicitZeroForm && normalizedChoice === 0) return 0;
@@ -51,7 +53,8 @@ export const i18n = createI18n<[MessageSchema], SupportedLocale, false>({
   fallbackLocale: LANGUAGE_IDS.enUS,
   pluralRules: {
     [LANGUAGE_IDS.frFR]: frenchPluralRule,
-    [LANGUAGE_IDS.ruRU]: russianPluralRule,
+    [LANGUAGE_IDS.ruRU]: eastSlavicPluralRule,
+    [LANGUAGE_IDS.ukUA]: eastSlavicPluralRule,
   },
   messages: {
     [LANGUAGE_IDS.zhCN]: zhCN,
@@ -59,6 +62,7 @@ export const i18n = createI18n<[MessageSchema], SupportedLocale, false>({
     [LANGUAGE_IDS.jaJP]: jaJP,
     [LANGUAGE_IDS.koKR]: koKR,
     [LANGUAGE_IDS.ruRU]: ruRU,
+    [LANGUAGE_IDS.ukUA]: ukUA,
     [LANGUAGE_IDS.enUS]: enUS,
     [LANGUAGE_IDS.trTR]: trTR,
     [LANGUAGE_IDS.ptBR]: ptBR,
@@ -82,6 +86,7 @@ if (import.meta.hot) {
       './locales/modules/pt-br',
       './locales/modules/ru-ru',
       './locales/modules/tr-tr',
+      './locales/modules/uk-ua',
       './locales/modules/zh-cn',
       './locales/modules/zh-tw',
     ],
@@ -96,6 +101,7 @@ if (import.meta.hot) {
         LANGUAGE_IDS.ptBR,
         LANGUAGE_IDS.ruRU,
         LANGUAGE_IDS.trTR,
+        LANGUAGE_IDS.ukUA,
         LANGUAGE_IDS.zhCN,
         LANGUAGE_IDS.zhTW,
       ];

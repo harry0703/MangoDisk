@@ -18,6 +18,7 @@ import koKR from '@/locales/ko-KR.json';
 import ptBR from '@/locales/pt-BR.json';
 import ruRU from '@/locales/ru-RU.json';
 import trTR from '@/locales/tr-TR.json';
+import ukUA from '@/locales/uk-UA.json';
 vi.mock('@/lib/services/resident/resident-service', () => ({
   ResidentService: { preferences: vi.fn(), savePreferences: vi.fn() },
 }));
@@ -31,6 +32,7 @@ const messages = {
   'pt-BR': ptBR,
   'ru-RU': ruRU,
   'tr-TR': trTR,
+  'uk-UA': ukUA,
 };
 function reading(): ResourceReadings {
   return {
