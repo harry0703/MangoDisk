@@ -13,6 +13,7 @@ const expectedLocaleIds = new Set([
   'pt-br',
   'ru-ru',
   'tr-tr',
+  'uk-ua',
   'zh-cn',
   'zh-tw',
 ]);
@@ -156,6 +157,9 @@ const localeChunkLimitOverrides = new Map([
   ['ru-ru', { bytes: 432448, gzipBytes: 77104 }],
   ['zh-cn', { bytes: 311296, gzipBytes: 63312 }],
   ['zh-tw', { bytes: 311296, gzipBytes: 63808 }],
+  // Ukrainian uses two-byte Cyrillic like Russian: uk-UA measures 432085 raw / 75837
+  // gzip bytes. Keep this margin local; other locale and application limits stay fixed.
+  ['uk-ua', { bytes: 432192, gzipBytes: 75904 }],
   ['tr-tr', { bytes: 321568, gzipBytes: 64896 }],
 ]);
 

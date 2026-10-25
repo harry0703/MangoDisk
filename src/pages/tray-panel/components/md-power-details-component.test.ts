@@ -13,6 +13,7 @@ import es from '@/locales/es-ES.json';
 import pt from '@/locales/pt-BR.json';
 import ru from '@/locales/ru-RU.json';
 import tr from '@/locales/tr-TR.json';
+import uk from '@/locales/uk-UA.json';
 import type { BatteryDetails } from '@/lib/models/system-resources/power';
 import MdIcon from '@/components/icons/md-icon.vue';
 import MdTooltip from '@/components/custom/md-tooltip.vue';
@@ -62,6 +63,7 @@ describe.each([
   ['pt-BR', pt],
   ['ru-RU', ru],
   ['tr-TR', tr],
+  ['uk-UA', uk],
 ] as const)('power detail presentation (%s)', (locale, messages) => {
   function render(value = reading()) {
     return mount(Page, {
