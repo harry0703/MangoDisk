@@ -13,6 +13,7 @@ const expectedLocaleIds = new Set([
   'pt-br',
   'ru-ru',
   'tr-tr',
+  'uk-ua',
   'zh-cn',
   'zh-tw',
 ]);
@@ -119,16 +120,23 @@ const localeChunkLimitOverrides = new Map([
   // Six Explorer integration strings measure de/es/fr/ja/ko/pt/ru raw bytes
   // 321701/323720/332309/345954/316033/317048/418069; ja/ko/zh-tw gzip is
   // 65730/63158/61441. Keep the increases local and application limits fixed.
-  ['fr-fr', { bytes: 333568, gzipBytes: 66720 }],
-  ['de-de', { bytes: 322944, gzipBytes: 67232 }],
-  ['es-es', { bytes: 324992, gzipBytes: 65056 }],
-  ['pt-br', { bytes: 318336, gzipBytes: 64096 }],
+  // The Ukrainian language name adds about 54 raw / 33 gzip bytes per locale.
+  // With Node 24.18.0 (zlib 1.2.12), current main alone measures de/es/fr/pt/ru/tr
+  // gzip 67510/65388/66918/64415/75212/63042, above its limits; with this change
+  // they measure 67542/65429/66955/64446/75228/63073. Ukrainian uses two-byte
+  // Cyrillic like Russian: uk-UA measures 420129 raw / 74090 gzip bytes.
+  // Extend only these locale margins; application budgets stay fixed.
+  ['fr-fr', { bytes: 333568, gzipBytes: 67008 }],
+  ['de-de', { bytes: 322944, gzipBytes: 67584 }],
+  ['es-es', { bytes: 324992, gzipBytes: 65472 }],
+  ['pt-br', { bytes: 318336, gzipBytes: 64512 }],
   ['ko-kr', { bytes: 317312, gzipBytes: 63520 }],
   // Retain the finishing-charge labels' additional 128 raw bytes for ja/ru.
   ['ja-jp', { bytes: 347392, gzipBytes: 66112 }],
-  ['ru-ru', { bytes: 419712, gzipBytes: 74688 }],
+  ['ru-ru', { bytes: 419712, gzipBytes: 75264 }],
   ['zh-tw', { bytes: maximumLocaleChunkBytes, gzipBytes: 61792 }],
-  ['tr-tr', { bytes: 312064, gzipBytes: 62816 }],
+  ['uk-ua', { bytes: 420224, gzipBytes: 74176 }],
+  ['tr-tr', { bytes: 312064, gzipBytes: 63168 }],
 ]);
 
 function fail(message) {

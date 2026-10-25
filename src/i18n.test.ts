@@ -12,10 +12,11 @@ import koKR from '@/locales/ko-KR.json';
 import ptBR from '@/locales/pt-BR.json';
 import ruRU from '@/locales/ru-RU.json';
 import trTR from '@/locales/tr-TR.json';
+import ukUA from '@/locales/uk-UA.json';
 import zhCN from '@/locales/zh-CN.json';
 import zhTW from '@/locales/zh-TW.json';
 
-const localeResources = [zhCN, zhTW, jaJP, koKR, ruRU, enUS, trTR, ptBR, frFR, deDE, esES];
+const localeResources = [zhCN, zhTW, jaJP, koKR, ruRU, ukUA, enUS, trTR, ptBR, frFR, deDE, esES];
 
 function leafKeys(value: unknown, prefix = ''): string[] {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return [prefix];
@@ -57,7 +58,7 @@ describe('i18n resources', () => {
     const englishEntries = new Map(leafEntries(enUS));
     const argumentsIn = (value: unknown) =>
       typeof value === 'string' ? [...new Set(value.match(/\{[a-zA-Z][a-zA-Z0-9_]*\}/gu) ?? [])].sort() : [];
-    for (const resource of [trTR, ptBR, ruRU, frFR, deDE, esES]) {
+    for (const resource of [trTR, ptBR, ruRU, ukUA, frFR, deDE, esES]) {
       const mismatchedKeys = leafEntries(resource)
         .filter(
           ([key, value]) => JSON.stringify(argumentsIn(value)) !== JSON.stringify(argumentsIn(englishEntries.get(key)))
@@ -154,6 +155,7 @@ describe('i18n resources', () => {
       [LANGUAGE_IDS.jaJP]: '開く',
       [LANGUAGE_IDS.koKR]: '열기',
       [LANGUAGE_IDS.ruRU]: 'Открыть',
+      [LANGUAGE_IDS.ukUA]: 'Відкрити',
       [LANGUAGE_IDS.zhCN]: '打开',
       [LANGUAGE_IDS.zhTW]: '開啟',
       [LANGUAGE_IDS.trTR]: 'Aç',
@@ -178,6 +180,8 @@ describe('i18n resources', () => {
     expect(LanguageService.resolveSupportedLanguage(['ko'])).toBe(LANGUAGE_IDS.koKR);
     expect(LanguageService.resolveSupportedLanguage(['ru-RU', 'en-US'])).toBe(LANGUAGE_IDS.ruRU);
     expect(LanguageService.resolveSupportedLanguage(['ru'])).toBe(LANGUAGE_IDS.ruRU);
+    expect(LanguageService.resolveSupportedLanguage(['uk-UA', 'en-US'])).toBe(LANGUAGE_IDS.ukUA);
+    expect(LanguageService.resolveSupportedLanguage(['uk'])).toBe(LANGUAGE_IDS.ukUA);
     expect(LanguageService.resolveSupportedLanguage(['tr-TR', 'en-US'])).toBe(LANGUAGE_IDS.trTR);
     expect(LanguageService.resolveSupportedLanguage([' TR '])).toBe(LANGUAGE_IDS.trTR);
     expect(LanguageService.resolveSupportedLanguage(['pt-BR'])).toBe(LANGUAGE_IDS.ptBR);
@@ -269,6 +273,50 @@ describe('i18n resources', () => {
   ])('preserves the Russian explicit zero and plural forms for %s items', (count, expected) => {
     i18n.global.locale.value = LANGUAGE_IDS.ruRU;
     expect(i18n.global.t('cleanup.applicationComponentCount', { count }, count)).toBe(expected);
+  });
+
+  it('detects and renders Ukrainian with native plural forms', () => {
+    expect(LanguageService.resolveSupportedLanguage(['uk-UA', 'en-US'])).toBe(LANGUAGE_IDS.ukUA);
+    expect(i18n.global.availableLocales).toContain(LANGUAGE_IDS.ukUA);
+
+    i18n.global.locale.value = LANGUAGE_IDS.ukUA;
+    expect(i18n.global.t('common.open')).toBe('Відкрити');
+    expect(i18n.global.t('common.fileCount', { count: 0 }, 0)).toBe('0 файлів');
+    expect(i18n.global.t('common.fileCount', { count: 1 }, 1)).toBe('1 файл');
+    expect(i18n.global.t('common.fileCount', { count: 2 }, 2)).toBe('2 файли');
+    expect(i18n.global.t('common.fileCount', { count: 5 }, 5)).toBe('5 файлів');
+    expect(i18n.global.t('common.fileCount', { count: 11 }, 11)).toBe('11 файлів');
+    expect(i18n.global.t('common.fileCount', { count: 21 }, 21)).toBe('21 файл');
+    expect(i18n.global.t('common.fileCount', { count: 22 }, 22)).toBe('22 файли');
+    expect(i18n.global.t('common.fileCount', { count: 25 }, 25)).toBe('25 файлів');
+  });
+
+  it.each([1, 21, 31, 101, 1001])('shows the actual Ukrainian history clear count for %s records', count => {
+    i18n.global.locale.value = LANGUAGE_IDS.ukUA;
+    expect(i18n.global.t('history.clearConfirmCount', { count }, count)).toBe(`${count} запис`);
+  });
+
+  it.each([
+    [0, 'Немає елементів для оптимізації'],
+    [1, 'Для оптимізації доступний 1 елемент'],
+    [2, 'Для оптимізації доступні 2 елементи'],
+    [5, 'Для оптимізації доступно 5 елементів'],
+    [11, 'Для оптимізації доступно 11 елементів'],
+    [21, 'Для оптимізації доступний 21 елемент'],
+    [22, 'Для оптимізації доступні 22 елементи'],
+    [25, 'Для оптимізації доступно 25 елементів'],
+  ])('preserves the Ukrainian explicit zero and plural forms for %s items', (count, expected) => {
+    i18n.global.locale.value = LANGUAGE_IDS.ukUA;
+    expect(i18n.global.t('cleanup.applicationComponentCount', { count }, count)).toBe(expected);
+  });
+
+  it.each([
+    [1, '1 програма запускається автоматично'],
+    [3, '3 програми запускаються автоматично'],
+    [12, '12 програм запускаються автоматично'],
+  ])('pluralizes Ukrainian counts that are single-form in English for %s', (count, expected) => {
+    i18n.global.locale.value = LANGUAGE_IDS.ukUA;
+    expect(i18n.global.t('startup.summary.programs', { count })).toBe(expected);
   });
 
   it('applies interpolation and pluralization for the active locale', () => {

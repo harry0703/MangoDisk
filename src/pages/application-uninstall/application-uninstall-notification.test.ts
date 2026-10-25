@@ -17,6 +17,7 @@ import pt from '@/locales/pt-BR.json';
 import tr from '@/locales/tr-TR.json';
 import ko from '@/locales/ko-KR.json';
 import ru from '@/locales/ru-RU.json';
+import uk from '@/locales/uk-UA.json';
 import zh from '@/locales/zh-CN.json';
 import tw from '@/locales/zh-TW.json';
 import ApplicationUninstallPage from './index.vue';
@@ -34,6 +35,7 @@ const messages = {
   'tr-TR': tr,
   'pt-BR': pt,
   'ru-RU': ru,
+  'uk-UA': uk,
 };
 
 type Outcome = 'completed' | 'failed' | 'cancelled' | 'continuing' | 'removedWithFailure';

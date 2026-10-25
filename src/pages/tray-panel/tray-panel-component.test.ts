@@ -23,6 +23,7 @@ import koKR from '@/locales/ko-KR.json';
 import ptBR from '@/locales/pt-BR.json';
 import trTR from '@/locales/tr-TR.json';
 import ruRU from '@/locales/ru-RU.json';
+import ukUA from '@/locales/uk-UA.json';
 import deDE from '@/locales/de-DE.json';
 import frFR from '@/locales/fr-FR.json';
 import esES from '@/locales/es-ES.json';
@@ -496,6 +497,7 @@ describe('monitoring panel interactions', () => {
     ['tr-TR', trTR],
     ['pt-BR', ptBR],
     ['ru-RU', ruRU],
+    ['uk-UA', ukUA],
     ['de-DE', deDE],
     ['fr-FR', frFR],
     ['es-ES', esES],
@@ -683,6 +685,7 @@ describe('monitoring panel interactions', () => {
     ['tr-TR', trTR, 'Çık'],
     ['pt-BR', ptBR, 'Sair'],
     ['ru-RU', ruRU, 'Выйти'],
+    ['uk-UA', ukUA, 'Вийти'],
   ] as const)('renders the localized quit action in %s', async (_locale, messages, expected) => {
     const { wrapper } = render(TrayPanelPage, {}, false, messages);
     await flushPromises();
@@ -851,26 +854,29 @@ describe('memory presentation', () => {
     expect(wrapper.get('.memory-pressure').attributes('data-pressure')).toBe('normal');
   });
 
-  it.each([enUS, zhCN, zhTW, jaJP, koKR, ptBR, trTR, ruRU])('localizes every pressure state and hint', messages => {
-    for (const pressure of ['normal', 'warning', 'critical', 'unavailable', 'stale'] as const) {
-      const { wrapper } = render(
-        MemoryOverview,
-        {
-          memory: { ...memory, pressure: pressure === 'stale' ? 'normal' : pressure },
-          status: pressure === 'stale' ? 'failed' : 'ready',
-        },
-        false,
-        messages
-      );
-      expect(wrapper.get('.memory-pressure').text()).toContain(messages.monitoring.pressure[pressure]);
-      const lines = messages.monitoring.pressure[`${pressure}Hint`].split('\n');
-      expect(lines).toHaveLength(2);
-      for (const line of lines) {
-        expect(line.length).toBeGreaterThan(0);
-        expect(line).not.toMatch(/[.!?。！？：:;；，,]$/);
+  it.each([enUS, zhCN, zhTW, jaJP, koKR, ptBR, trTR, ruRU, ukUA])(
+    'localizes every pressure state and hint',
+    messages => {
+      for (const pressure of ['normal', 'warning', 'critical', 'unavailable', 'stale'] as const) {
+        const { wrapper } = render(
+          MemoryOverview,
+          {
+            memory: { ...memory, pressure: pressure === 'stale' ? 'normal' : pressure },
+            status: pressure === 'stale' ? 'failed' : 'ready',
+          },
+          false,
+          messages
+        );
+        expect(wrapper.get('.memory-pressure').text()).toContain(messages.monitoring.pressure[pressure]);
+        const lines = messages.monitoring.pressure[`${pressure}Hint`].split('\n');
+        expect(lines).toHaveLength(2);
+        for (const line of lines) {
+          expect(line.length).toBeGreaterThan(0);
+          expect(line).not.toMatch(/[.!?。！？：:;；，,]$/);
+        }
       }
     }
-  });
+  );
   it('keeps details behind the memory options menu with an accessible usage meter', async () => {
     const { wrapper } = render(MemoryOverview, { memory });
     expect(wrapper.text()).not.toContain('60 B');
