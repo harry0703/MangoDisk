@@ -54,10 +54,12 @@ pub struct BatteryDetails {
     pub adapter: Option<PowerAdapter>,
 }
 
+#[cfg(any(target_os = "macos", target_os = "windows", test))]
 pub(super) fn bounded(value: Option<f64>, minimum: f64, maximum: f64) -> Option<f64> {
     value.filter(|value| value.is_finite() && (minimum..=maximum).contains(value))
 }
 
+#[cfg(any(target_os = "macos", target_os = "windows", test))]
 pub(super) fn percentage(current: Option<f64>, full: Option<f64>) -> Option<f64> {
     let current = bounded(current, 0.0, 10_000_000.0)?;
     let full = bounded(full, 1.0, 10_000_000.0)?;
