@@ -99,7 +99,7 @@ onBeforeUnmount(() => {
   <div class="status-settings">
     <MdSettingsRow
       :title="t('floatingMonitor.title')"
-      :description="isMacOs ? '' : t(isLinux ? 'systemStatus.linuxDisplayHint' : 'systemStatus.displayHint')"
+      :description="t(isLinux ? 'systemStatus.linuxDisplayHint' : 'systemStatus.displayHint')"
       title-id="resident-enabled-label"
       description-id="resident-enabled-hint"
     >

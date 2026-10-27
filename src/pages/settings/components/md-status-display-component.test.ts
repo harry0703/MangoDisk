@@ -95,6 +95,19 @@ afterEach(() => {
   vi.useRealTimers();
 });
 describe('status display interactions', () => {
+  it.each([
+    { isMacOs: true, isLinux: false, hint: 'systemStatus.displayHint' },
+    { isMacOs: false, isLinux: false, hint: 'systemStatus.displayHint' },
+    { isMacOs: false, isLinux: true, hint: 'systemStatus.linuxDisplayHint' },
+  ])('renders the accessible description on $isMacOs/$isLinux', async ({ hint, ...props }) => {
+    const wrapper = mount(Settings, { props, global: global() });
+    wrappers.push(wrapper);
+    await flushPromises();
+    const description = wrapper.get('#resident-enabled-hint');
+    expect(description.text()).toBe(hint);
+    expect(wrapper.get('#resident-enabled').attributes('aria-describedby')).toBe(description.attributes('id'));
+  });
+
   it('retains a failed reset confirmation when a queued native notification reloads preferences', async () => {
     let notify!: () => void;
     vi.mocked(ResidentService.onPreferencesChanged).mockImplementation(async callback => {
