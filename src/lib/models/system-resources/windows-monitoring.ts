@@ -1,8 +1,13 @@
 export type WindowsMonitoringState = 'notInstalled' | 'ready' | 'unavailable' | 'incompatible' | 'unsupportedHardware';
+export interface WindowsDependencyIssue {
+  reason: 'missing' | 'incompatible' | 'certificateUntrusted' | 'verificationFailed' | 'unavailable';
+  nativeCode?: string;
+}
 export interface WindowsMonitoringObservation {
   state: WindowsMonitoringState;
   driverAvailable: boolean;
   serviceInstalled: boolean;
+  dependencyIssue?: WindowsDependencyIssue;
 }
 export type WindowsMonitoringOutcome =
   | 'ready'
@@ -10,6 +15,7 @@ export type WindowsMonitoringOutcome =
   | 'unsupportedHardware'
   | 'busy'
   | 'verificationFailed'
+  | 'certificateUntrusted'
   | 'userCancelled'
   | 'installationFailed'
   | 'serviceUnavailable'
@@ -19,4 +25,5 @@ export type WindowsMonitoringOutcome =
 export interface WindowsMonitoringSetupResult {
   outcome: WindowsMonitoringOutcome;
   observation: WindowsMonitoringObservation;
+  nativeCode?: string;
 }

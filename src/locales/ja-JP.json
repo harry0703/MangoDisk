@@ -4424,12 +4424,13 @@
     "outcomes": {
       "unsupportedHardware": "未対応のハードウェアです。何もインストールしていません",
       "busy": "別のインストールが進行中です",
-      "verificationFailed": "検証に失敗したため、インストーラーを実行していません",
+      "verificationFailed": "コンポーネントの検証に失敗しました。未検証のコンポーネントは実行していません",
       "installationFailed": "インストール未完了です。状態を更新して再試行してください",
       "serviceUnavailable": "サービスを利用できません。修復してください",
       "restartRequired": "変更を完了するには Windows を再起動してください",
       "driverRemovalFailed": "PawnIO の削除が未完了です。他の監視アプリを終了して再試行してください",
-      "removalFailed": "削除が未完了です。状態を更新して再試行してください"
+      "removalFailed": "削除が未完了です。状態を更新して再試行してください",
+      "certificateUntrusted": "コンポーネントの証明書チェーンが信頼されていないため、操作を停止しました"
     },
     "collectionOff": "温度の収集は無効です",
     "goToSettings": "設定を開く",
@@ -4447,7 +4448,16 @@
     "pawnIoWebsite": "PawnIO の公式サイトを開く",
     "linkFailed": "ブラウザーを開けません。再試行してください",
     "removeDriver": "PawnIO ドライバーも削除",
-    "removeDriverHint": "他の監視アプリのセンサー取得に影響する場合があります"
+    "removeDriverHint": "他の監視アプリのセンサー取得に影響する場合があります",
+    "dependency": {
+      "missing": "PawnIO は未インストールです。収集サービスと一緒にインストールされます",
+      "incompatible": "インストール済みの PawnIO は互換性がありません。インストール時に更新されます",
+      "certificateUntrusted": "PawnIO はインストール済みですが、証明書チェーンが信頼されていません",
+      "verificationFailed": "PawnIO はインストール済みですが、署名を検証できませんでした",
+      "unavailable": "インストール済みの PawnIO 依存関係を確認できませんでした"
+    },
+    "errorCode": "エラーコード：",
+    "certificateHint": "システムの日付、Windows Update、および「ルート証明書の自動更新を無効にする」ポリシー（DisableRootAutoUpdate）を確認してください。組織が管理する PC では管理者にお問い合わせください"
   },
   "thirdPartyLicenses": {
     "title": "サードパーティのライセンス",

@@ -135,6 +135,112 @@ describe('optional Windows temperature setup', () => {
       expect(toast.warning).not.toHaveBeenCalled();
     }
   });
+  it('keeps certificate diagnostics visible without enabling collection', async () => {
+    vi.mocked(WindowsMonitoringService.install).mockResolvedValue({
+      outcome: 'certificateUntrusted',
+      nativeCode: '0x800B0109',
+      observation: { state: 'notInstalled', driverAvailable: false, serviceInstalled: false },
+    });
+    const { wrapper, settings } = await open();
+    await button(wrapper, 'install').trigger('click');
+    await flushPromises();
+    expect(wrapper.text()).toContain('windowsMonitoring.outcomes.certificateUntrusted');
+    expect(wrapper.text()).toContain('0x800B0109');
+    expect(wrapper.text()).toContain('windowsMonitoring.certificateHint');
+    expect(settings.preferences!.windowsCpuTemperatureEnabled).toBe(false);
+    expect(ResidentService.savePreferences).not.toHaveBeenCalled();
+  });
+  it('clears an old trust failure when a later enable observes a ready service', async () => {
+    vi.mocked(WindowsMonitoringService.install).mockResolvedValue({
+      outcome: 'certificateUntrusted',
+      nativeCode: '0x800B0109',
+      observation: { state: 'notInstalled', driverAvailable: false, serviceInstalled: false },
+    });
+    const { wrapper, settings } = await open();
+    await button(wrapper, 'install').trigger('click');
+    await flushPromises();
+    expect(wrapper.text()).toContain('0x800B0109');
+    vi.mocked(WindowsMonitoringService.observe).mockResolvedValue({
+      state: 'ready',
+      driverAvailable: true,
+      serviceInstalled: true,
+    });
+    await button(wrapper, 'install').trigger('click');
+    await flushPromises();
+    expect(settings.preferences!.windowsCpuTemperatureEnabled).toBe(true);
+    expect(wrapper.text()).toContain('windowsMonitoring.states.ready');
+    expect(wrapper.text()).not.toContain('0x800B0109');
+    expect(wrapper.text()).not.toContain('windowsMonitoring.certificateHint');
+    expect(WindowsMonitoringService.install).toHaveBeenCalledOnce();
+  });
+  it('keeps the operation code and troubleshooting hint from the same diagnostic', async () => {
+    vi.mocked(WindowsMonitoringService.install).mockResolvedValue({
+      outcome: 'verificationFailed',
+      nativeCode: '0x80096010',
+      observation: {
+        state: 'notInstalled',
+        driverAvailable: false,
+        serviceInstalled: false,
+        dependencyIssue: { reason: 'certificateUntrusted', nativeCode: '0x800B0109' },
+      },
+    });
+    const { wrapper } = await open();
+    await button(wrapper, 'install').trigger('click');
+    await flushPromises();
+    expect(wrapper.text()).toContain('windowsMonitoring.outcomes.verificationFailed');
+    expect(wrapper.text()).toContain('0x80096010');
+    expect(wrapper.text()).not.toContain('windowsMonitoring.certificateHint');
+    expect(wrapper.text()).not.toContain('0x800B0109');
+  });
+  it.each(['certificateUntrusted', 'verificationFailed'] as const)(
+    'updates collection after %s only when the service is confirmed removed',
+    async outcome => {
+      vi.mocked(WindowsMonitoringService.observe).mockResolvedValue({
+        state: 'ready',
+        driverAvailable: true,
+        serviceInstalled: true,
+      });
+      const { wrapper, settings } = await open();
+      settings.preferences!.windowsCpuTemperatureEnabled = true;
+      settings.draft!.windowsCpuTemperatureEnabled = true;
+      for (const serviceInstalled of [true, false]) {
+        vi.mocked(WindowsMonitoringService.uninstall).mockResolvedValue({
+          outcome,
+          nativeCode: outcome === 'certificateUntrusted' ? '0x800B0109' : '0x80096010',
+          observation: {
+            state: serviceInstalled ? 'ready' : 'notInstalled',
+            driverAvailable: false,
+            serviceInstalled,
+          },
+        });
+        await requestRemoval(wrapper);
+        await button(wrapper, 'remove').trigger('click');
+        await flushPromises();
+        expect(settings.preferences!.windowsCpuTemperatureEnabled).toBe(serviceInstalled);
+      }
+    }
+  );
+  it('distinguishes a missing dependency from an installed untrusted dependency', async () => {
+    vi.mocked(WindowsMonitoringService.observe).mockResolvedValue({
+      state: 'notInstalled',
+      driverAvailable: false,
+      serviceInstalled: false,
+      dependencyIssue: { reason: 'missing' },
+    });
+    const { wrapper, monitoring } = await open();
+    expect(wrapper.text()).toContain('windowsMonitoring.dependency.missing');
+    monitoring.observation = {
+      state: 'notInstalled',
+      driverAvailable: false,
+      serviceInstalled: false,
+      dependencyIssue: { reason: 'certificateUntrusted', nativeCode: '0x800B0109' },
+    };
+    await flushPromises();
+    expect(wrapper.text()).toContain('windowsMonitoring.dependency.certificateUntrusted');
+    expect(wrapper.text()).toContain('0x800B0109');
+    expect(wrapper.text()).toContain('windowsMonitoring.certificateHint');
+    expect(WindowsMonitoringService.install).not.toHaveBeenCalled();
+  });
   it('does not offer installation for unsupported hardware', async () => {
     vi.mocked(WindowsMonitoringService.observe).mockResolvedValue({
       state: 'unsupportedHardware',

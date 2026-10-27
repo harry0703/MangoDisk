@@ -4424,12 +4424,13 @@
     "outcomes": {
       "unsupportedHardware": "지원되지 않는 하드웨어입니다. 구성 요소를 설치하지 않았습니다",
       "busy": "다른 설치 작업이 진행 중입니다",
-      "verificationFailed": "검증에 실패했습니다. 다운로드한 파일을 실행하지 않았습니다",
+      "verificationFailed": "구성 요소 검증에 실패했습니다. 검증되지 않은 구성 요소는 실행하지 않았습니다",
       "installationFailed": "설치가 완료되지 않았습니다. 상태를 새로 고친 후 다시 시도해 주세요",
       "serviceUnavailable": "서비스를 사용할 수 없습니다. 복구해 주세요",
       "restartRequired": "드라이버 변경을 완료하려면 Windows를 다시 시작하세요",
       "driverRemovalFailed": "PawnIO가 완전히 제거되지 않았습니다. 다른 모니터링 앱을 닫고 다시 시도하세요",
-      "removalFailed": "제거가 완료되지 않았습니다. 상태를 새로 고친 후 다시 시도하세요"
+      "removalFailed": "제거가 완료되지 않았습니다. 상태를 새로 고친 후 다시 시도하세요",
+      "certificateUntrusted": "구성 요소의 인증서 체인을 신뢰할 수 없어 작업을 중단했습니다"
     },
     "collectionOff": "온도 수집이 꺼져 있습니다",
     "goToSettings": "설정으로 이동",
@@ -4447,7 +4448,16 @@
     "pawnIoWebsite": "PawnIO 공식 웹사이트 열기",
     "linkFailed": "브라우저를 열 수 없습니다. 나중에 다시 시도하세요",
     "removeDriver": "PawnIO 드라이버도 제거",
-    "removeDriverHint": "다른 모니터링 앱도 이 드라이버를 사용할 수 있으며, 제거하면 센서를 읽지 못할 수 있습니다"
+    "removeDriverHint": "다른 모니터링 앱도 이 드라이버를 사용할 수 있으며, 제거하면 센서를 읽지 못할 수 있습니다",
+    "dependency": {
+      "missing": "PawnIO가 설치되어 있지 않습니다. 수집 서비스와 함께 설치됩니다",
+      "incompatible": "설치된 PawnIO 버전이 호환되지 않아 설치 중 업데이트됩니다",
+      "certificateUntrusted": "PawnIO가 설치되어 있지만 인증서 체인을 신뢰할 수 없습니다",
+      "verificationFailed": "PawnIO가 설치되어 있지만 서명을 확인할 수 없습니다",
+      "unavailable": "설치된 PawnIO 종속성을 확인할 수 없습니다"
+    },
+    "errorCode": "오류 코드:",
+    "certificateHint": "시스템 날짜, Windows 업데이트, “자동 루트 인증서 업데이트 사용 안 함” 정책(DisableRootAutoUpdate)을 확인하세요. 조직에서 관리하는 PC는 관리자에게 문의하세요"
   },
   "thirdPartyLicenses": {
     "title": "타사 라이선스",

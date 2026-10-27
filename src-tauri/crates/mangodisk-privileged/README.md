@@ -131,6 +131,14 @@ under `MangoDiskPrivileged`. Events include stages, native errors and elapsed
 time where applicable. Control characters are escaped and messages are bounded.
 Successful cached requests are not logged individually.
 
+Dependency inspection distinguishes a missing or incompatible PawnIO package from
+an installed library whose signature cannot be trusted. The latter blocks setup
+instead of triggering driver reinstallation. Native Authenticode status codes
+survive bootstrap errors and the elevated helper exit status. The setup dialog
+shows untrusted-root errors separately, including the hexadecimal status and
+Windows certificate-update troubleshooting guidance. It never imports trust
+roots, changes certificate-update policy, or bypasses signature validation.
+
 ## Validation
 
 `pnpm check` includes protocol, cache, replacement, and Core regression tests.

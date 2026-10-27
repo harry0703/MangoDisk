@@ -4424,12 +4424,13 @@
     "outcomes": {
       "unsupportedHardware": "Matériel non pris en charge ; aucun composant n'a été installé",
       "busy": "Une autre installation est en cours",
-      "verificationFailed": "Échec de la vérification des composants. Rien n'a été exécuté",
+      "verificationFailed": "Échec de la vérification des composants. Les composants non vérifiés n’ont pas été exécutés",
       "installationFailed": "L'installation n'est pas terminée. Actualisez le statut avant de réessayer",
       "serviceUnavailable": "Le service est indisponible. Essayez de réparer",
       "restartRequired": "Redémarrez Windows pour terminer les modifications du pilote",
       "driverRemovalFailed": "PawnIO n'a pas été complètement supprimé. Fermez les autres applications de surveillance et réessayez",
-      "removalFailed": "La suppression n'est pas terminée. Actualisez le statut et réessayez"
+      "removalFailed": "La suppression n'est pas terminée. Actualisez le statut et réessayez",
+      "certificateUntrusted": "La chaîne de certificats du composant n’est pas approuvée. L’opération a été arrêtée"
     },
     "collectionOff": "La collecte de température est désactivée",
     "goToSettings": "Ouvrir les réglages",
@@ -4447,7 +4448,16 @@
     "pawnIoWebsite": "Ouvrez le site Web PawnIO",
     "linkFailed": "Impossible d'ouvrir le navigateur. Veuillez réessayer plus tard",
     "removeDriver": "Supprimez également le pilote PawnIO",
-    "removeDriverHint": "D'autres applications de surveillance peuvent utiliser ce pilote et perdre l'accès au capteur s'il est supprimé"
+    "removeDriverHint": "D'autres applications de surveillance peuvent utiliser ce pilote et perdre l'accès au capteur s'il est supprimé",
+    "dependency": {
+      "missing": "PawnIO n’est pas installé ; il sera installé avec le service de collecte",
+      "incompatible": "La version installée de PawnIO est incompatible ; elle sera mise à jour pendant l’installation",
+      "certificateUntrusted": "PawnIO est installé, mais sa chaîne de certificats n’est pas approuvée",
+      "verificationFailed": "PawnIO est installé, mais sa signature n’a pas pu être vérifiée",
+      "unavailable": "La dépendance PawnIO installée n’a pas pu être contrôlée"
+    },
+    "errorCode": "Code d’erreur :",
+    "certificateHint": "Vérifiez la date du système, Windows Update et la stratégie « Désactiver la mise à jour automatique des certificats racines » (DisableRootAutoUpdate). Pour un ordinateur géré par une organisation, contactez votre administrateur"
   },
   "thirdPartyLicenses": {
     "title": "Licences tierces",

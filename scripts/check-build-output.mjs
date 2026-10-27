@@ -104,6 +104,8 @@ const maximumLocaleGzipBytes = 60 * 1024;
 // de-de=320766/66628; es-es=322822/64402; fr-fr=331367/66022; ja-jp=344794/65481.
 // ko-kr=315083/62941; pt-br=316114/63450; ru-ru=416577/73979; tr-tr=310045/62193.
 // Extend only affected locale allowances; application budgets stay fixed.
+// Certificate diagnostics add eight localized labels and hints. Raise only measured
+// locale limits, with less than 128 raw / 32 gzip bytes of additional headroom.
 const localeChunkLimitOverrides = new Map([
   // SystemTemp and administrator restart add six strings per locale. Measured
   // de/es/fr/ja/ko/pt/ru raw sizes: 318229/320136/328638/342040/312385/313458/413113.
@@ -117,16 +119,16 @@ const localeChunkLimitOverrides = new Map([
   // Six Explorer integration strings measure de/es/fr/ja/ko/pt/ru raw bytes
   // 321701/323720/332309/345954/316033/317048/418069; ja/ko/zh-tw gzip is
   // 65730/63158/61441. Keep the increases local and application limits fixed.
-  ['fr-fr', { bytes: 332416, gzipBytes: 66464 }],
-  ['de-de', { bytes: 321920, gzipBytes: 67072 }],
-  ['es-es', { bytes: 323840, gzipBytes: 64896 }],
-  ['pt-br', { bytes: 317184, gzipBytes: 63936 }],
-  ['ko-kr', { bytes: 316160, gzipBytes: 63232 }],
+  ['fr-fr', { bytes: 333568, gzipBytes: 66720 }],
+  ['de-de', { bytes: 322944, gzipBytes: 67232 }],
+  ['es-es', { bytes: 324992, gzipBytes: 65056 }],
+  ['pt-br', { bytes: 318336, gzipBytes: 64096 }],
+  ['ko-kr', { bytes: 317312, gzipBytes: 63520 }],
   // Retain the finishing-charge labels' additional 128 raw bytes for ja/ru.
-  ['ja-jp', { bytes: 346240, gzipBytes: 65856 }],
-  ['ru-ru', { bytes: 418304, gzipBytes: 74688 }],
-  ['zh-tw', { bytes: maximumLocaleChunkBytes, gzipBytes: 61504 }],
-  ['tr-tr', { bytes: 311552, gzipBytes: 62592 }],
+  ['ja-jp', { bytes: 347392, gzipBytes: 66112 }],
+  ['ru-ru', { bytes: 419712, gzipBytes: 74688 }],
+  ['zh-tw', { bytes: maximumLocaleChunkBytes, gzipBytes: 61792 }],
+  ['tr-tr', { bytes: 312064, gzipBytes: 62816 }],
 ]);
 
 function fail(message) {

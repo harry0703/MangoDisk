@@ -69,6 +69,36 @@ describe('Windows monitoring setup state', () => {
     expect(store.observation).toEqual({ state: 'unavailable', driverAvailable: false, serviceInstalled: false });
     expect(store.loading).toBe(false);
   });
+  it('preserves the native trust code and clears it before a later attempt', async () => {
+    const store = useWindowsMonitoringStore();
+    vi.mocked(WindowsMonitoringService.install).mockResolvedValue({
+      outcome: 'certificateUntrusted',
+      nativeCode: '0x800B0109',
+      observation: ready.observation,
+    });
+    expect(await store.setup()).toBe('certificateUntrusted');
+    expect(store.nativeCode).toBe('0x800B0109');
+    const pending = deferred<WindowsMonitoringSetupResult>();
+    vi.mocked(WindowsMonitoringService.install).mockReturnValue(pending.promise);
+    const retry = store.setup();
+    expect(store.nativeCode).toBeNull();
+    pending.resolve(ready);
+    expect(await retry).toBe('ready');
+    expect(store.nativeCode).toBeNull();
+  });
+  it('clears a previous setup diagnostic before refreshing the current state', async () => {
+    const store = useWindowsMonitoringStore();
+    store.outcome = 'certificateUntrusted';
+    store.nativeCode = '0x800B0109';
+    const pending = deferred<WindowsMonitoringObservation>();
+    vi.mocked(WindowsMonitoringService.observe).mockReturnValue(pending.promise);
+    const refresh = store.load();
+    expect(store.outcome).toBeNull();
+    expect(store.nativeCode).toBeNull();
+    pending.resolve(ready.observation);
+    await refresh;
+    expect(store.observation).toEqual(ready.observation);
+  });
   it('deduplicates refresh and does not refresh during installation', async () => {
     const pending = deferred<WindowsMonitoringSetupResult>();
     vi.mocked(WindowsMonitoringService.install).mockReturnValue(pending.promise);

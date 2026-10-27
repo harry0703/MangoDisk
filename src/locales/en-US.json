@@ -4424,12 +4424,13 @@
     "outcomes": {
       "unsupportedHardware": "Unsupported hardware; no components were installed",
       "busy": "Another installation is in progress",
-      "verificationFailed": "Component verification failed. Nothing was executed",
+      "verificationFailed": "Component verification failed. Unverified components were not run",
       "installationFailed": "Installation did not complete. Refresh the status before trying again",
       "serviceUnavailable": "The service is unavailable. Try repairing",
       "restartRequired": "Restart Windows to finish the driver changes",
       "driverRemovalFailed": "PawnIO was not fully removed. Close other monitoring apps and try again",
-      "removalFailed": "Removal did not finish. Refresh the status and try again"
+      "removalFailed": "Removal did not finish. Refresh the status and try again",
+      "certificateUntrusted": "The component certificate chain is not trusted. The operation was stopped"
     },
     "collectionOff": "Temperature collection is off",
     "goToSettings": "Go to settings",
@@ -4447,7 +4448,16 @@
     "pawnIoWebsite": "Open the PawnIO website",
     "linkFailed": "Could not open the browser. Please try again later",
     "removeDriver": "Also remove the PawnIO driver",
-    "removeDriverHint": "Other monitoring apps may use this driver and lose sensor access if it is removed"
+    "removeDriverHint": "Other monitoring apps may use this driver and lose sensor access if it is removed",
+    "dependency": {
+      "missing": "PawnIO is not installed; it will be installed with the collection service",
+      "incompatible": "The installed PawnIO version is incompatible; installation will update it",
+      "certificateUntrusted": "PawnIO is installed, but its certificate chain is not trusted",
+      "verificationFailed": "PawnIO is installed, but its signature could not be verified",
+      "unavailable": "The installed PawnIO dependency could not be checked"
+    },
+    "errorCode": "Error code:",
+    "certificateHint": "Check the system date, Windows Update, and the “Turn off Automatic Root Certificates Update” policy (DisableRootAutoUpdate). On an organization-managed PC, contact your administrator"
   },
   "thirdPartyLicenses": {
     "title": "Third-party licenses",

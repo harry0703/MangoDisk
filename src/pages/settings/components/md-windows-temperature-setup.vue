@@ -23,17 +23,29 @@ import { useWindowsMonitoringStore } from '@/stores/windows-monitoring-store';
 import { useResidentSettingsStore } from '@/stores/resident-settings-store';
 import { LinkService } from '@/lib/services/shell/link-service';
 import { LoggerService } from '@/lib/services/diagnostics/logger-service';
-import type { WindowsMonitoringOutcome } from '@/lib/models/system-resources/windows-monitoring';
+import type {
+  WindowsDependencyIssue,
+  WindowsMonitoringOutcome,
+} from '@/lib/models/system-resources/windows-monitoring';
 
 const outcomeLabels: Record<Exclude<WindowsMonitoringOutcome, 'ready' | 'removed' | 'userCancelled'>, string> = {
   unsupportedHardware: 'windowsMonitoring.outcomes.unsupportedHardware',
   busy: 'windowsMonitoring.outcomes.busy',
   verificationFailed: 'windowsMonitoring.outcomes.verificationFailed',
+  certificateUntrusted: 'windowsMonitoring.outcomes.certificateUntrusted',
   installationFailed: 'windowsMonitoring.outcomes.installationFailed',
   serviceUnavailable: 'windowsMonitoring.outcomes.serviceUnavailable',
   restartRequired: 'windowsMonitoring.outcomes.restartRequired',
   driverRemovalFailed: 'windowsMonitoring.outcomes.driverRemovalFailed',
   removalFailed: 'windowsMonitoring.outcomes.removalFailed',
+};
+
+const dependencyLabels: Record<WindowsDependencyIssue['reason'], string> = {
+  missing: 'windowsMonitoring.dependency.missing',
+  incompatible: 'windowsMonitoring.dependency.incompatible',
+  certificateUntrusted: 'windowsMonitoring.dependency.certificateUntrusted',
+  verificationFailed: 'windowsMonitoring.dependency.verificationFailed',
+  unavailable: 'windowsMonitoring.dependency.unavailable',
 };
 
 const props = defineProps<{ open: boolean; selectDisplayItem?: boolean }>();
@@ -50,6 +62,25 @@ const busy = computed(() => monitoring.busy || settings.saving);
 const installed = computed(() => monitoring.observation?.serviceInstalled === true);
 const supported = computed(() => monitoring.observation?.state !== 'unsupportedHardware');
 const collecting = computed(() => monitoring.observation?.state === 'ready' && enabled.value);
+const diagnostic = computed(() => {
+  const outcome = monitoring.outcome;
+  if ((outcome === 'certificateUntrusted' || outcome === 'verificationFailed') && monitoring.nativeCode)
+    return {
+      label: outcomeLabels[outcome],
+      code: monitoring.nativeCode,
+      certificateUntrusted: outcome === 'certificateUntrusted',
+      failed: true,
+    };
+  const issue = monitoring.observation?.dependencyIssue;
+  return issue
+    ? {
+        label: dependencyLabels[issue.reason],
+        code: issue.nativeCode,
+        certificateUntrusted: issue.reason === 'certificateUntrusted',
+        failed: issue.reason === 'certificateUntrusted' || issue.reason === 'verificationFailed',
+      }
+    : null;
+});
 const needsRepair = computed(
   () => installed.value && ['unavailable', 'incompatible'].includes(monitoring.observation?.state ?? '')
 );
@@ -81,6 +112,7 @@ watch(
     if (
       [
         'verificationFailed',
+        'certificateUntrusted',
         'installationFailed',
         'serviceUnavailable',
         'driverRemovalFailed',
@@ -106,6 +138,7 @@ watch(
       removeConfirmation.value = false;
       removeDriver.value = false;
       monitoring.outcome = null;
+      monitoring.nativeCode = null;
       void monitoring.load();
     }
   }
@@ -147,7 +180,8 @@ async function remove() {
   }
   if (
     (['removed', 'driverRemovalFailed', 'restartRequired'].includes(outcome) ||
-      (outcome === 'removalFailed' && monitoring.observation?.state === 'notInstalled')) &&
+      (['removalFailed', 'certificateUntrusted', 'verificationFailed'].includes(outcome) &&
+        monitoring.observation?.state === 'notInstalled')) &&
     !monitoring.observation?.serviceInstalled
   )
     await settings.change({
@@ -218,6 +252,17 @@ async function repair() {
               </template>
             </I18nT>
           </ul>
+        </div>
+        <div v-if="diagnostic" class="space-y-2 rounded-lg border border-border p-3" role="status">
+          <p :class="diagnostic.failed ? 'text-destructive-text' : 'text-foreground'">
+            {{ t(diagnostic.label) }}
+          </p>
+          <p v-if="diagnostic.code" class="text-content-secondary">
+            {{ t('windowsMonitoring.errorCode') }} <code class="select-text">{{ diagnostic.code }}</code>
+          </p>
+          <p v-if="diagnostic.certificateUntrusted" class="text-content-secondary text-muted-foreground">
+            {{ t('windowsMonitoring.certificateHint') }}
+          </p>
         </div>
         <div class="flex items-center gap-1 text-content-meta text-muted-foreground">
           <span>{{ t('windowsMonitoring.supportSummary') }}</span>

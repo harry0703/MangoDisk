@@ -16,6 +16,27 @@ pub struct Observation {
     pub state: ServiceState,
     pub driver_available: bool,
     pub service_installed: bool,
+    #[cfg(windows)]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub dependency_issue: Option<DependencyIssue>,
+}
+#[cfg(windows)]
+#[derive(Debug, Clone, Copy, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub enum DependencyIssueReason {
+    Missing,
+    Incompatible,
+    CertificateUntrusted,
+    VerificationFailed,
+    Unavailable,
+}
+#[cfg(windows)]
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct DependencyIssue {
+    pub reason: DependencyIssueReason,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub native_code: Option<String>,
 }
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -25,6 +46,7 @@ pub enum SetupOutcome {
     UnsupportedHardware,
     Busy,
     VerificationFailed,
+    CertificateUntrusted,
     UserCancelled,
     InstallationFailed,
     ServiceUnavailable,
@@ -37,6 +59,17 @@ pub enum SetupOutcome {
 pub struct SetupResult {
     pub outcome: SetupOutcome,
     pub observation: Observation,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub native_code: Option<String>,
+}
+
+#[cfg(windows)]
+fn signature_outcome(code: u32) -> SetupOutcome {
+    if code == mangodisk_privileged::signature_verification::CERT_E_UNTRUSTEDROOT {
+        SetupOutcome::CertificateUntrusted
+    } else {
+        SetupOutcome::VerificationFailed
+    }
 }
 
 pub fn observe() -> Observation {
@@ -58,6 +91,7 @@ pub async fn install(app: tauri::AppHandle) -> SetupResult {
         SetupResult {
             outcome: SetupOutcome::UnsupportedHardware,
             observation: observe(),
+            native_code: None,
         }
     }
 }
@@ -70,6 +104,7 @@ pub async fn uninstall(app: tauri::AppHandle, remove_driver: bool) -> SetupResul
         SetupResult {
             outcome: SetupOutcome::UnsupportedHardware,
             observation: observe(),
+            native_code: None,
         }
     }
 }
@@ -108,9 +143,41 @@ mod native {
                 state: ServiceState::UnsupportedHardware,
                 driver_available: false,
                 service_installed,
+                dependency_issue: None,
             };
         }
-        let driver_available = deployment::driver_available();
+        let (driver_available, dependency_issue) = match deployment::driver_dependency() {
+            Ok(deployment::DriverDependency::Ready) => (true, None),
+            Ok(dependency) => (
+                false,
+                Some(DependencyIssue {
+                    reason: match dependency {
+                        deployment::DriverDependency::Missing => DependencyIssueReason::Missing,
+                        deployment::DriverDependency::Incompatible => {
+                            DependencyIssueReason::Incompatible
+                        }
+                        deployment::DriverDependency::Ready => unreachable!(),
+                    },
+                    native_code: None,
+                }),
+            ),
+            Err(error) => {
+                let code = mangodisk_privileged::signature_verification::native_code(&error);
+                (
+                    false,
+                    Some(DependencyIssue {
+                        reason: match code {
+                            Some(
+                                mangodisk_privileged::signature_verification::CERT_E_UNTRUSTEDROOT,
+                            ) => DependencyIssueReason::CertificateUntrusted,
+                            Some(_) => DependencyIssueReason::VerificationFailed,
+                            None => DependencyIssueReason::Unavailable,
+                        },
+                        native_code: code.map(|code| format!("0x{code:08X}")),
+                    }),
+                )
+            }
+        };
         let state = match installation {
             Ok(false) => ServiceState::NotInstalled,
             Err(_) => ServiceState::Unavailable,
@@ -144,6 +211,7 @@ mod native {
             state,
             driver_available,
             service_installed,
+            dependency_issue,
         }
     }
     fn sensor_ready() -> bool {
@@ -163,6 +231,7 @@ mod native {
                 state: ServiceState::Unavailable,
                 driver_available: false,
                 service_installed: false,
+                dependency_issue: None,
             })
     }
     pub(super) async fn install(_app: tauri::AppHandle) -> SetupResult {
@@ -170,12 +239,35 @@ mod native {
             return SetupResult {
                 outcome: SetupOutcome::Busy,
                 observation: observe_async().await,
+                native_code: None,
             };
         };
         let initial = observe_async().await;
         if matches!(initial.state, ServiceState::UnsupportedHardware) {
             return SetupResult {
                 outcome: SetupOutcome::UnsupportedHardware,
+                observation: initial,
+                native_code: None,
+            };
+        }
+        if let Some(issue) = initial.dependency_issue.as_ref().filter(|issue| {
+            matches!(
+                issue.reason,
+                DependencyIssueReason::CertificateUntrusted
+                    | DependencyIssueReason::VerificationFailed
+            )
+        }) {
+            log::warn!(
+                "windows_monitoring_dependency_blocked component=PawnIOLib.dll stage=preflight reason={:?} native_code={:?}",
+                issue.reason, issue.native_code
+            );
+            return SetupResult {
+                outcome: if matches!(issue.reason, DependencyIssueReason::CertificateUntrusted) {
+                    SetupOutcome::CertificateUntrusted
+                } else {
+                    SetupOutcome::VerificationFailed
+                },
+                native_code: issue.native_code.clone(),
                 observation: initial,
             };
         }
@@ -185,7 +277,22 @@ mod native {
             client::elevate_embedded(BOOTSTRAP, client::SetupAction::InstallCpuTemperature)
         })
         .await;
+        let mut native_code = None;
         let outcome = match result {
+            Ok(Ok(code)) if mangodisk_privileged::signature_verification::is_trust_status(code) => {
+                native_code = Some(format!("0x{code:08X}"));
+                log::warn!("windows_monitoring_signature_failed native_code=0x{code:08X}");
+                signature_outcome(code)
+            }
+            Ok(Err(ref error))
+                if mangodisk_privileged::signature_verification::native_code(error).is_some() =>
+            {
+                let code = mangodisk_privileged::signature_verification::native_code(error)
+                    .expect("checked signature status");
+                native_code = Some(format!("0x{code:08X}"));
+                log::warn!("windows_monitoring_signature_failed native_code=0x{code:08X}");
+                signature_outcome(code)
+            }
             Ok(Ok(0)) => SetupOutcome::Ready,
             Ok(Ok(deployment::REBOOT_EXIT_CODE)) => SetupOutcome::RestartRequired,
             Ok(Ok(deployment::BUSY_EXIT_CODE)) => SetupOutcome::Busy,
@@ -222,6 +329,7 @@ mod native {
         SetupResult {
             outcome,
             observation,
+            native_code,
         }
     }
     pub(super) async fn uninstall(_app: tauri::AppHandle, remove_driver: bool) -> SetupResult {
@@ -229,6 +337,7 @@ mod native {
             return SetupResult {
                 outcome: SetupOutcome::Busy,
                 observation: observe_async().await,
+                native_code: None,
             };
         };
         let result = tauri::async_runtime::spawn_blocking(move || {
@@ -237,7 +346,22 @@ mod native {
         })
         .await;
         let observation = observe_async().await;
+        let mut native_code = None;
         let outcome = match result {
+            Ok(Ok(code)) if mangodisk_privileged::signature_verification::is_trust_status(code) => {
+                native_code = Some(format!("0x{code:08X}"));
+                log::warn!("windows_monitoring_signature_failed native_code=0x{code:08X}");
+                signature_outcome(code)
+            }
+            Ok(Err(ref error))
+                if mangodisk_privileged::signature_verification::native_code(error).is_some() =>
+            {
+                let code = mangodisk_privileged::signature_verification::native_code(error)
+                    .expect("checked signature status");
+                native_code = Some(format!("0x{code:08X}"));
+                log::warn!("windows_monitoring_signature_failed native_code=0x{code:08X}");
+                signature_outcome(code)
+            }
             Ok(Ok(deployment::BUSY_EXIT_CODE)) => SetupOutcome::Busy,
             Ok(Err(error)) if error.kind() == std::io::ErrorKind::WouldBlock => SetupOutcome::Busy,
             Ok(Err(error)) if error.kind() == std::io::ErrorKind::InvalidData => {
@@ -272,6 +396,51 @@ mod native {
         SetupResult {
             outcome,
             observation,
+            native_code,
         }
+    }
+}
+
+#[cfg(all(test, windows))]
+mod tests {
+    use super::*;
+
+    #[test]
+    #[cfg(windows)]
+    fn distinguishes_untrusted_roots_from_other_signature_failures() {
+        assert!(matches!(
+            signature_outcome(0x800b0109),
+            SetupOutcome::CertificateUntrusted
+        ));
+        for code in [0x800b0101, 0x80096010, 0x800b0100, 0x800b010a] {
+            assert!(matches!(
+                signature_outcome(code),
+                SetupOutcome::VerificationFailed
+            ));
+        }
+    }
+
+    #[test]
+    fn serializes_dependency_diagnostics_and_native_status_without_free_form_errors() {
+        let result = SetupResult {
+            outcome: SetupOutcome::CertificateUntrusted,
+            native_code: Some("0x800B0109".into()),
+            observation: Observation {
+                state: ServiceState::NotInstalled,
+                driver_available: false,
+                service_installed: false,
+                dependency_issue: Some(DependencyIssue {
+                    reason: DependencyIssueReason::CertificateUntrusted,
+                    native_code: Some("0x800B0109".into()),
+                }),
+            },
+        };
+        let json = serde_json::to_value(result).expect("setup result serializes");
+        assert_eq!(json["outcome"], "certificateUntrusted");
+        assert_eq!(json["nativeCode"], "0x800B0109");
+        assert_eq!(
+            json["observation"]["dependencyIssue"]["reason"],
+            "certificateUntrusted"
+        );
     }
 }

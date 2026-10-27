@@ -4424,12 +4424,13 @@
     "outcomes": {
       "unsupportedHardware": "Donanım desteklenmiyor. Hiçbir bileşen yüklenmedi",
       "busy": "Başka bir yükleme devam ediyor",
-      "verificationFailed": "Bileşen doğrulaması başarısız. İndirilen dosyalar çalıştırılmadı",
+      "verificationFailed": "Bileşen doğrulaması başarısız. Doğrulanmamış bileşenler çalıştırılmadı",
       "installationFailed": "Yükleme tamamlanmadı. Tekrar denemeden önce durumu yenileyin",
       "serviceUnavailable": "Hizmet kullanılamıyor. Onarmayı deneyin",
       "restartRequired": "Sürücü değişikliklerini tamamlamak için Windows’u yeniden başlatın",
       "driverRemovalFailed": "PawnIO tamamen kaldırılamadı. Diğer izleme uygulamalarını kapatıp tekrar deneyin",
-      "removalFailed": "Kaldırma tamamlanmadı. Durumu yenileyip tekrar deneyin"
+      "removalFailed": "Kaldırma tamamlanmadı. Durumu yenileyip tekrar deneyin",
+      "certificateUntrusted": "Bileşenin sertifika zincirine güvenilmiyor. İşlem durduruldu"
     },
     "collectionOff": "Sıcaklık ölçümü kapalı",
     "goToSettings": "Ayarlara git",
@@ -4447,7 +4448,16 @@
     "pawnIoWebsite": "PawnIO resmi sitesini aç",
     "linkFailed": "Tarayıcı açılamadı. Lütfen daha sonra tekrar deneyin",
     "removeDriver": "PawnIO sürücüsünü de kaldır",
-    "removeDriverHint": "Diğer izleme uygulamaları bu sürücüyü kullanıyor olabilir ve kaldırıldığında sensörlere erişemeyebilir"
+    "removeDriverHint": "Diğer izleme uygulamaları bu sürücüyü kullanıyor olabilir ve kaldırıldığında sensörlere erişemeyebilir",
+    "dependency": {
+      "missing": "PawnIO yüklü değil; toplama hizmetiyle birlikte yüklenecek",
+      "incompatible": "Yüklü PawnIO sürümü uyumsuz; kurulum sırasında güncellenecek",
+      "certificateUntrusted": "PawnIO yüklü ancak sertifika zincirine güvenilmiyor",
+      "verificationFailed": "PawnIO yüklü ancak imzası doğrulanamadı",
+      "unavailable": "Yüklü PawnIO bağımlılığı denetlenemedi"
+    },
+    "errorCode": "Hata kodu:",
+    "certificateHint": "Sistem tarihini, Windows Update’i ve “Otomatik Kök Sertifika Güncelleştirmesini Kapat” ilkesini (DisableRootAutoUpdate) kontrol edin. Kuruluş tarafından yönetilen bir bilgisayarda yöneticinizle iletişime geçin"
   },
   "thirdPartyLicenses": {
     "title": "Üçüncü taraf lisansları",

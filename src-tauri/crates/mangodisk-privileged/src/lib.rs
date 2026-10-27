@@ -1,5 +1,6 @@
 //! Windows capability transport and its independently installed service host.
 pub mod artifacts;
+pub mod signature_verification;
 #[cfg(windows)]
 pub mod windows;
 

@@ -51,18 +51,36 @@ pub fn temperature_sensor() -> Option<crate::cpu_temperature::CpuTemperatureSens
 pub fn install_directory() -> io::Result<PathBuf> {
     Ok(security::program_files()?.join("MangoDiskPrivileged"))
 }
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum DriverDependency {
+    Ready,
+    Missing,
+    Incompatible,
+}
+
 pub fn driver_available() -> bool {
-    security::program_files()
-        .ok()
-        .and_then(|p| {
-            let root = p.join("PawnIO");
-            security::reject_reparse(&root).ok()?;
-            let path = root.join("PawnIOLib.dll");
-            security::reject_reparse(&path).ok()?;
-            verify_signature(&path).ok()?;
-            minimum_driver_version(&path).ok()
-        })
-        .is_some()
+    matches!(driver_dependency(), Ok(DriverDependency::Ready))
+}
+
+pub fn driver_dependency() -> io::Result<DriverDependency> {
+    let root = security::program_files()?.join("PawnIO");
+    let path = root.join("PawnIOLib.dll");
+    for path in [&root, &path] {
+        if let Err(error) = security::reject_reparse(path) {
+            return if error.kind() == io::ErrorKind::NotFound {
+                Ok(DriverDependency::Missing)
+            } else {
+                Err(error)
+            };
+        }
+    }
+    // An installed but untrusted library must not be treated as a missing driver.
+    verify_signature(&path)?;
+    Ok(if minimum_driver_version(&path).is_ok() {
+        DriverDependency::Ready
+    } else {
+        DriverDependency::Incompatible
+    })
 }
 
 fn minimum_driver_version(path: &Path) -> io::Result<()> {
@@ -163,8 +181,8 @@ pub(super) fn verify_signature_open(path: &Path, file: &File) -> io::Result<()> 
     };
     if code != 0 {
         return Err(io::Error::new(
-            io::ErrorKind::PermissionDenied,
-            format!("Authenticode verification failed status=0x{code:08x}"),
+            io::ErrorKind::InvalidData,
+            crate::signature_verification::SignatureFailure(code as u32),
         ));
     }
     Ok(())
@@ -243,7 +261,12 @@ pub(crate) fn install(installer: &[u8], module: &[u8], artifact: &Artifact) -> R
     let directory = install_directory()?;
     protect_directory(&directory)?;
     let _lock = installation_lock(&directory)?;
-    let installer = if driver_available() {
+    let dependency = driver_dependency().inspect_err(|error| {
+        super::diagnostics::error(format!(
+            "pawnio_dependency outcome=blocked component=PawnIOLib.dll stage=verification error={error}"
+        ));
+    })?;
+    let installer = if dependency == DriverDependency::Ready {
         super::diagnostics::info("pawnio_dependency outcome=reuse version_minimum=2.2");
         None
     } else {
@@ -346,7 +369,7 @@ pub(crate) fn install(installer: &[u8], module: &[u8], artifact: &Artifact) -> R
             if status.code() == Some(REBOOT_EXIT_CODE as i32) {
                 return Err(io::Error::from_raw_os_error(REBOOT_EXIT_CODE as i32).into());
             }
-            if !status.success() || !driver_available() {
+            if !status.success() || driver_dependency()? != DriverDependency::Ready {
                 return Err(io::Error::other(format!(
                     "PawnIO installation failed exit={:?}",
                     status.code()
@@ -513,6 +536,9 @@ fn driver_removal_error(error: Box<dyn std::error::Error>) -> Box<dyn std::error
     super::diagnostics::error(format!(
         "pawnio_remove_failed restart_required={restart} error={error}"
     ));
+    if crate::signature_verification::native_code(error.as_ref()).is_some() {
+        return error;
+    }
     io::Error::from_raw_os_error(if restart {
         REBOOT_EXIT_CODE
     } else {
@@ -559,6 +585,62 @@ fn installation_lock(directory: &Path) -> io::Result<File> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    #[ignore = "requires Windows trust for the bundled PawnIO installer"]
+    fn native_signature_rejects_a_tampered_copy_and_retains_the_removal_status() {
+        use crate::signature_verification::native_code;
+
+        let original =
+            Path::new(env!("CARGO_MANIFEST_DIR")).join("vendors/pawnio/2.2.0/PawnIO_setup.exe");
+        verify_signature(&original).expect("the original vendor signature is trusted");
+        let directory = tempfile::tempdir().unwrap();
+        let path = directory.path().join("tampered.exe");
+        let mut bytes = fs::read(original).unwrap();
+        bytes[0x1000] ^= 1;
+        fs::write(&path, bytes).unwrap();
+        let error = verify_signature(&path).expect_err("modified signed bytes must be rejected");
+        assert_eq!(native_code(&error), Some(0x80096010));
+        assert_eq!(
+            native_code(driver_removal_error(error.into()).as_ref()),
+            Some(0x80096010)
+        );
+    }
+
+    #[test]
+    fn driver_removal_retains_certificate_failures_and_other_removal_outcomes() {
+        use crate::signature_verification::{native_code, SignatureFailure, CERT_E_UNTRUSTEDROOT};
+
+        for code in [CERT_E_UNTRUSTEDROOT, 0x80096010] {
+            let error = io::Error::new(io::ErrorKind::InvalidData, SignatureFailure(code));
+            assert_eq!(
+                native_code(driver_removal_error(error.into()).as_ref()),
+                Some(code)
+            );
+        }
+        for (error, expected) in [
+            (
+                io::Error::from_raw_os_error(REBOOT_EXIT_CODE as i32),
+                REBOOT_EXIT_CODE,
+            ),
+            (
+                io::Error::other("PawnIO removal incomplete"),
+                DRIVER_REMOVAL_EXIT_CODE,
+            ),
+        ] {
+            let error = driver_removal_error(error.into());
+            assert_eq!(
+                error.downcast_ref::<io::Error>().unwrap().raw_os_error(),
+                Some(expected as i32)
+            );
+        }
+    }
+
+    #[test]
+    #[ignore = "requires an installed, trusted PawnIO 2.2 or newer dependency"]
+    fn native_installed_pawnio_is_reused_after_signature_and_version_checks() {
+        assert_eq!(driver_dependency().unwrap(), DriverDependency::Ready);
+    }
+
     #[test]
     fn self_removal_is_rejected_before_service_mutation() {
         let directory = tempfile::tempdir().unwrap();

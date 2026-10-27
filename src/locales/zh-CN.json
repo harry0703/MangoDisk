@@ -4424,12 +4424,13 @@
     "outcomes": {
       "unsupportedHardware": "硬件不支持，未安装任何组件",
       "busy": "另一个安装操作正在进行",
-      "verificationFailed": "组件校验失败，未执行下载的文件",
+      "verificationFailed": "组件校验失败，未运行未经验证的组件",
       "installationFailed": "安装未完成，请刷新状态后重试",
       "serviceUnavailable": "服务不可用，请尝试修复",
       "restartRequired": "请重启 Windows 以完成驱动变更",
       "driverRemovalFailed": "PawnIO 驱动未完全移除，请关闭其他监控软件后重试",
-      "removalFailed": "移除未完成，请刷新状态后重试"
+      "removalFailed": "移除未完成，请刷新状态后重试",
+      "certificateUntrusted": "组件证书链不受信任，操作已停止"
     },
     "collectionOff": "温度采集尚未启用",
     "goToSettings": "去设置",
@@ -4447,7 +4448,16 @@
     "pawnIoWebsite": "打开 PawnIO 官网",
     "linkFailed": "无法打开浏览器，请稍后重试",
     "removeDriver": "同时移除 PawnIO 驱动",
-    "removeDriverHint": "其他监控软件可能也在使用此驱动，移除后可能无法读取传感器"
+    "removeDriverHint": "其他监控软件可能也在使用此驱动，移除后可能无法读取传感器",
+    "dependency": {
+      "missing": "未安装 PawnIO，安装采集服务时将一并安装",
+      "incompatible": "已安装的 PawnIO 版本不兼容，安装时将更新",
+      "certificateUntrusted": "已安装 PawnIO，但其证书链不受信任",
+      "verificationFailed": "已安装 PawnIO，但其签名未通过校验",
+      "unavailable": "无法检查已安装的 PawnIO 依赖"
+    },
+    "errorCode": "错误码：",
+    "certificateHint": "请检查系统日期、Windows 更新，以及“关闭自动根证书更新”策略（DisableRootAutoUpdate）。若电脑由组织管理，请联系管理员"
   },
   "thirdPartyLicenses": {
     "title": "第三方许可证",

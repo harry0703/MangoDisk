@@ -4424,12 +4424,13 @@
     "outcomes": {
       "unsupportedHardware": "硬體不支援，未安裝任何元件",
       "busy": "另一個安裝操作正在進行",
-      "verificationFailed": "元件驗證失敗，未執行下載的檔案",
+      "verificationFailed": "元件驗證失敗，未執行未通過驗證的元件",
       "installationFailed": "安裝未完成，請重新整理狀態後再試",
       "serviceUnavailable": "服務無法使用，請嘗試修復",
       "restartRequired": "請重新啟動 Windows 以完成驅動程式變更",
       "driverRemovalFailed": "PawnIO 驅動程式未完全移除，請關閉其他監控軟體後重試",
-      "removalFailed": "移除未完成，請重新整理狀態後重試"
+      "removalFailed": "移除未完成，請重新整理狀態後重試",
+      "certificateUntrusted": "元件憑證鏈不受信任，操作已停止"
     },
     "collectionOff": "溫度採集尚未啟用",
     "goToSettings": "前往設定",
@@ -4447,7 +4448,16 @@
     "pawnIoWebsite": "開啟 PawnIO 官網",
     "linkFailed": "無法開啟瀏覽器，請稍後重試",
     "removeDriver": "同時移除 PawnIO 驅動程式",
-    "removeDriverHint": "其他監控軟體可能也在使用此驅動程式，移除後可能無法讀取感測器"
+    "removeDriverHint": "其他監控軟體可能也在使用此驅動程式，移除後可能無法讀取感測器",
+    "dependency": {
+      "missing": "尚未安裝 PawnIO，安裝收集服務時會一併安裝",
+      "incompatible": "已安裝的 PawnIO 版本不相容，安裝時會更新",
+      "certificateUntrusted": "已安裝 PawnIO，但其憑證鏈不受信任",
+      "verificationFailed": "已安裝 PawnIO，但其簽章未通過驗證",
+      "unavailable": "無法檢查已安裝的 PawnIO 相依元件"
+    },
+    "errorCode": "錯誤碼：",
+    "certificateHint": "請檢查系統日期、Windows 更新，以及「關閉自動根憑證更新」原則（DisableRootAutoUpdate）。若電腦由組織管理，請聯絡管理員"
   },
   "thirdPartyLicenses": {
     "title": "第三方授權條款",

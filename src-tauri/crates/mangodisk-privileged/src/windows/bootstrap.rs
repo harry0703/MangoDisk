@@ -32,15 +32,12 @@ impl Bootstrap {
 
 pub(super) fn prepare(bytes: &[u8]) -> io::Result<Bootstrap> {
     let root = security::local_app_data()?;
-    prepare_in(&root, bytes).map_err(|error| {
-        io::Error::new(
-            error.kind(),
-            format!(
-                "bootstrap preparation failed path={} native_code={:?} error={error}",
-                root.join("MangoDisk/privileged").display(),
-                error.raw_os_error()
-            ),
-        )
+    prepare_in(&root, bytes).inspect_err(|error| {
+        super::diagnostics::error(format!(
+            "bootstrap preparation failed path={} native_code={:?} error={error}",
+            root.join("MangoDisk/privileged").display(),
+            error.raw_os_error()
+        ));
     })
 }
 

@@ -4424,12 +4424,13 @@
     "outcomes": {
       "unsupportedHardware": "Hardware no compatible; no se instalaron componentes",
       "busy": "Hay otra instalación en progreso",
-      "verificationFailed": "Error en la verificación del componente. No se ejecutó nada",
+      "verificationFailed": "Error al verificar el componente. No se ejecutaron componentes sin verificar",
       "installationFailed": "La instalación no se completó. Actualiza el estado antes de volver a intentarlo",
       "serviceUnavailable": "El servicio no está disponible. Intenta reparar",
       "restartRequired": "Reinicia Windows para finalizar los cambios de controlador",
       "driverRemovalFailed": "PawnIO no se eliminó por completo. Cierra otras aplicaciones de monitoreo y vuelve a intentarlo",
-      "removalFailed": "La eliminación no finalizó. Actualiza el estado y vuelve a intentarlo"
+      "removalFailed": "La eliminación no finalizó. Actualiza el estado y vuelve a intentarlo",
+      "certificateUntrusted": "La cadena de certificados del componente no es de confianza. Se ha detenido la operación"
     },
     "collectionOff": "La toma de temperatura está desactivada",
     "goToSettings": "Ir a los ajustes",
@@ -4447,7 +4448,16 @@
     "pawnIoWebsite": "Abre el sitio web de PawnIO",
     "linkFailed": "No se ha podido abrir el navegador. Vuelve a intentarlo más tarde",
     "removeDriver": "Elimina también el controlador PawnIO",
-    "removeDriverHint": "Otras aplicaciones de monitoreo pueden usar este controlador y perder el acceso al sensor si se elimina"
+    "removeDriverHint": "Otras aplicaciones de monitoreo pueden usar este controlador y perder el acceso al sensor si se elimina",
+    "dependency": {
+      "missing": "PawnIO no está instalado; se instalará junto con el servicio de recopilación",
+      "incompatible": "La versión instalada de PawnIO no es compatible; se actualizará durante la instalación",
+      "certificateUntrusted": "PawnIO está instalado, pero su cadena de certificados no es de confianza",
+      "verificationFailed": "PawnIO está instalado, pero no se ha podido verificar su firma",
+      "unavailable": "No se ha podido comprobar la dependencia de PawnIO instalada"
+    },
+    "errorCode": "Código de error:",
+    "certificateHint": "Comprueba la fecha del sistema, Windows Update y la directiva «Desactivar la actualización automática de certificados raíz» (DisableRootAutoUpdate). Si tu organización administra el equipo, contacta con su administrador"
   },
   "thirdPartyLicenses": {
     "title": "Licencias de terceros",
