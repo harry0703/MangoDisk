@@ -64,7 +64,7 @@ struct Window {
     shell_surface: bool,
     appearance_checked: std::time::Instant,
     layout_checked: std::time::Instant,
-    layout_inputs: Option<(std::time::Instant, Bounds, super::peers::Peers)>,
+    layout_inputs: Option<(std::time::Instant, Bounds, Bounds, super::peers::Peers)>,
 }
 
 pub(super) fn start(service: Arc<Service>) {

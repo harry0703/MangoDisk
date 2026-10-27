@@ -29,6 +29,15 @@ impl Bounds {
             && self.right <= outer.right
             && self.bottom <= outer.bottom
     }
+    pub fn intersection(self, other: Self) -> Option<Self> {
+        let clipped = Self {
+            left: self.left.max(other.left),
+            top: self.top.max(other.top),
+            right: self.right.min(other.right),
+            bottom: self.bottom.min(other.bottom),
+        };
+        (clipped.width() > 0 && clipped.height() > 0).then_some(clipped)
+    }
     pub fn contains(self, x: i32, y: i32) -> bool {
         x >= self.left && x < self.right && y >= self.top && y < self.bottom
     }
@@ -158,6 +167,54 @@ mod tests {
             top: 1040,
             bottom: 1080,
         }
+    }
+    #[test]
+    fn clipped_shell_alignment_uses_the_visible_band_even_when_the_tray_stays_expanded() {
+        for dpi in [96, 120, 144, 192, 240] {
+            let px = |value| value * dpi / 96;
+            let shell = Bounds {
+                left: px(-1920),
+                top: px(1008),
+                right: 0,
+                bottom: px(1080),
+            };
+            let region = Bounds {
+                top: px(1032),
+                ..shell
+            };
+            let tray = Bounds {
+                left: px(-300),
+                ..shell
+            };
+            let visible = shell.intersection(region).unwrap();
+            let band = content_band(visible, Some(tray));
+            assert_eq!(band, region);
+            let original = place(shell, &[], px(120), px(36), px(4), Edge::Right, false).unwrap();
+            assert!(
+                !original.fits_in(visible),
+                "expanded centering clips the first text row"
+            );
+            let aligned = align_cross_axis(original, band).unwrap();
+            assert_eq!(
+                aligned.top,
+                region.top + (region.height() - original.height()) / 2
+            );
+            assert_eq!(
+                (aligned.left, aligned.right),
+                (original.left, original.right)
+            );
+            assert!(aligned.fits_in(visible));
+            assert_eq!(
+                shell.transpose().intersection(region.transpose()),
+                Some(visible.transpose())
+            );
+            assert_eq!(
+                align_cross_axis(original.transpose(), band.transpose()),
+                Some(aligned.transpose())
+            );
+        }
+        assert!(rect(0, 100).intersection(rect(100, 200)).is_none());
+        assert!(rect(0, 100).intersection(Bounds::default()).is_none());
     }
     #[test]
     fn content_alignment_corrects_inset_shells_at_fractional_and_integer_dpi() {

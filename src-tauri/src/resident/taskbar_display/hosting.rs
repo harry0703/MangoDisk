@@ -5,6 +5,7 @@ use windows_sys::{
     core::w,
     Win32::{
         Foundation::*,
+        Graphics::Gdi::*,
         System::Threading::*,
         UI::{HiDpi::*, WindowsAndMessaging::*},
     },
@@ -155,9 +156,166 @@ pub unsafe fn client_bounds(parent: HWND) -> Option<super::layout::Bounds> {
     })
 }
 
+/// Explorer can clip an expanded taskbar without changing either HWND's bounds.
+/// Window regions use the window origin, which can differ from its client origin.
+pub unsafe fn visible_bounds(
+    window: HWND,
+    client: super::layout::Bounds,
+) -> Option<super::layout::Bounds> {
+    let mut region = RECT::default();
+    match GetWindowRgnBox(window, &mut region) {
+        0 => Some(client), // A window without an explicit region uses its full bounds.
+        NULLREGION => None,
+        _ => {
+            let mut origin = RECT::default();
+            if GetWindowRect(window, &mut origin) == 0 {
+                return None;
+            }
+            client.intersection(super::layout::Bounds {
+                left: origin.left + region.left,
+                top: origin.top + region.top,
+                right: origin.left + region.right,
+                bottom: origin.top + region.bottom,
+            })
+        }
+    }
+}
+
+/// A complex region's bounding box can contain holes between floating taskbar
+/// sections. Require the entire strip to survive clipping before displaying it.
+pub unsafe fn region_contains(window: HWND, bounds: super::layout::Bounds) -> bool {
+    let mut box_rect = RECT::default();
+    let kind = GetWindowRgnBox(window, &mut box_rect);
+    match kind {
+        0 => return true,
+        NULLREGION => return false,
+        _ => {}
+    }
+    let mut origin = RECT::default();
+    if GetWindowRect(window, &mut origin) == 0 {
+        return false;
+    }
+    if kind == SIMPLEREGION {
+        return bounds.fits_in(super::layout::Bounds {
+            left: origin.left + box_rect.left,
+            top: origin.top + box_rect.top,
+            right: origin.left + box_rect.right,
+            bottom: origin.top + box_rect.bottom,
+        });
+    }
+    let region = CreateRectRgn(0, 0, 0, 0);
+    let remaining = CreateRectRgn(
+        bounds.left - origin.left,
+        bounds.top - origin.top,
+        bounds.right - origin.left,
+        bounds.bottom - origin.top,
+    );
+    let contained = !region.is_null()
+        && !remaining.is_null()
+        && GetWindowRgn(window, region) != 0
+        && CombineRgn(remaining, remaining, region, RGN_DIFF) == NULLREGION;
+    if !region.is_null() {
+        DeleteObject(region);
+    }
+    if !remaining.is_null() {
+        DeleteObject(remaining);
+    }
+    contained
+}
+
+/// A lease can move task buttons anywhere along the host's original long axis.
+/// Preserve cross-axis clipping, but use gaps when that entire lane is not visible.
+pub unsafe fn reservation_visible(
+    shell: HWND,
+    parent: HWND,
+    host: super::layout::Bounds,
+    content: super::layout::Bounds,
+) -> bool {
+    let lane = super::layout::content_band(host, Some(content));
+    region_contains(shell, lane) && (parent == shell || region_contains(parent, lane))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn host_regions_clip_at_the_window_origin_and_reject_complex_holes() {
+        unsafe {
+            let original = SetThreadDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2);
+            let restore = DpiContext(original);
+            let window = CreateWindowExW(
+                0,
+                w!("STATIC"),
+                ptr::null(),
+                WS_POPUP | WS_BORDER,
+                80,
+                120,
+                500,
+                80,
+                ptr::null_mut(),
+                ptr::null_mut(),
+                ptr::null_mut(),
+                ptr::null(),
+            );
+            assert!(!window.is_null());
+            let client = client_bounds(window).unwrap();
+            assert_eq!(visible_bounds(window, client), Some(client));
+            let lower_band = CreateRectRgn(0, 24, 500, 80);
+            assert_ne!(SetWindowRgn(window, lower_band, 0), 0);
+            let visible = visible_bounds(window, client).unwrap();
+            assert_eq!(visible.top, 144, "region coordinates use the window origin");
+            assert_eq!(visible.left, client.left);
+            assert!(region_contains(window, visible));
+            assert!(!region_contains(window, client));
+            assert!(reservation_visible(window, window, client, visible));
+
+            assert_ne!(SetWindowRgn(window, CreateRectRgn(40, 24, 460, 80), 0), 0);
+            let inset = visible_bounds(window, client).unwrap();
+            assert!(region_contains(window, inset));
+            assert!(
+                !reservation_visible(window, window, client, inset),
+                "a long-axis inset cannot authorize a lease in the original host"
+            );
+
+            let islands = CreateRectRgn(0, 24, 160, 80);
+            let right = CreateRectRgn(300, 24, 500, 80);
+            assert_eq!(CombineRgn(islands, islands, right, RGN_OR), COMPLEXREGION);
+            DeleteObject(right);
+            assert_ne!(SetWindowRgn(window, islands, 0), 0);
+            assert_eq!(visible_bounds(window, client), Some(visible));
+            assert!(!reservation_visible(window, window, client, visible));
+            assert!(
+                !region_contains(window, visible),
+                "the bounding box includes a hole"
+            );
+            assert!(region_contains(
+                window,
+                super::super::layout::Bounds {
+                    right: 230,
+                    ..visible
+                }
+            ));
+            assert!(!region_contains(
+                window,
+                super::super::layout::Bounds {
+                    left: 250,
+                    right: 350,
+                    ..visible
+                }
+            ));
+
+            assert_ne!(SetWindowRgn(window, CreateRectRgn(0, 0, 0, 0), 0), 0);
+            assert!(visible_bounds(window, client).is_none());
+            assert!(!region_contains(window, visible));
+            assert_ne!(SetWindowRgn(window, ptr::null_mut(), 0), 0);
+            assert_eq!(visible_bounds(window, client), Some(client));
+            assert!(region_contains(window, client));
+            assert!(reservation_visible(window, window, client, client));
+            DestroyWindow(window);
+            drop(restore);
+        }
+    }
 
     #[test]
     fn native_process_machine_reports_binary_architecture_even_under_emulation() {

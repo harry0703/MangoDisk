@@ -188,10 +188,22 @@ impl Window {
             self.service.publish(DisplayStatus::Taskbar);
             return;
         }
+        let visible_host = hosting::visible_bounds(shell, parent_bounds).and_then(|bounds| {
+            if self.parent == shell {
+                Some(bounds)
+            } else {
+                hosting::visible_bounds(self.parent, bounds)
+            }
+        });
+        let Some(visible_host) = visible_host else {
+            self.hide(hwnd, Visibility::ShellMoving);
+            self.service.publish(DisplayStatus::Taskbar);
+            return;
+        };
         // Keep shell/foreground visibility, collision and live host checks at 100 ms.
         // Stable layout does not need columns, surface allocation or a companion
         // exchange at that rate. Publications and shell events bypass this gate.
-        let inputs = (geometry.sampled, parent_bounds, peers.clone());
+        let inputs = (geometry.sampled, parent_bounds, visible_host, peers.clone());
         if !force
             && self.visible
             && !self.paint_failed
@@ -209,8 +221,8 @@ impl Window {
             .unwrap_or_else(|e| e.into_inner())
             .clone();
         let columns = presentation::columns(&model.entries, geometry.dpi, model.compact);
-        let content_band = layout::content_band(geometry.bar, geometry.content);
-        let placement_host = layout::content_band(parent_bounds, geometry.content);
+        let placement_host = layout::content_band(visible_host, geometry.content);
+        let content_band = layout::content_band(geometry.bar, Some(placement_host));
         let Some(surface) = Surface::arrange(&columns, content_band, geometry.dpi) else {
             self.release_reservation();
             self.hide(hwnd, Visibility::UnsupportedLayout);
@@ -248,6 +260,7 @@ impl Window {
         // the Windows 11 check until a usable snapshot identifies its taskbar,
         // including when an earlier registry read failed and later recovered.
         let reservation_supported = peers_allow_reservation
+            && hosting::reservation_visible(shell, self.parent, parent_bounds, placement_host)
             && match geometry.environment {
                 Environment::Unknown => false,
                 Environment::Windows10 => hosting::task_list(self.parent).is_some(),
@@ -374,6 +387,16 @@ impl Window {
             self.service.publish(DisplayStatus::NoSpace);
             return;
         };
+        if !hosting::region_contains(shell, bounds)
+            || (self.parent != shell && !hosting::region_contains(self.parent, bounds))
+        {
+            if self.visibility != Some(Visibility::UnsupportedLayout) {
+                log::info!("resident_taskbar_clipped bounds={bounds:?} bar={:?} host={parent_bounds:?} visible_host={visible_host:?} outcome=hidden", geometry.bar);
+            }
+            self.hide(hwnd, Visibility::UnsupportedLayout);
+            self.service.publish(DisplayStatus::UnsupportedLayout);
+            return;
+        }
         let color = if self.appearance_checked.elapsed() >= Duration::from_secs(1) {
             self.appearance_checked = std::time::Instant::now();
             windows_bitmap::appearance().color
@@ -389,7 +412,7 @@ impl Window {
             || self.paint_failed;
         if self.bounds != bounds || self.surface.vertical != surface.vertical {
             log::info!(
-                "resident_taskbar_layout vertical={} preference={:?} compact={} width={} height={} left={} top={} dpi={} bar={:?} host={parent_bounds:?} content={:?} placement_host={placement_host:?}",
+                "resident_taskbar_layout vertical={} preference={:?} compact={} width={} height={} left={} top={} dpi={} bar={:?} host={parent_bounds:?} visible_host={visible_host:?} content={:?} placement_host={placement_host:?}",
                 surface.vertical,
                 model.position,
                 model.compact,
