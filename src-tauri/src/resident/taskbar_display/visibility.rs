@@ -37,6 +37,13 @@ pub fn is_shell_desktop(class: &str, process_id: u32, shell_process_id: u32) -> 
     process_id != 0 && process_id == shell_process_id && matches!(class, "WorkerW" | "Progman")
 }
 
+/// Windows 11 taskbar thumbnails use a full-monitor XAML host even though only
+/// the preview cards are drawn. Require ownership by the current taskbar process;
+/// another application's identically named fullscreen window is not a shell UI.
+pub fn is_shell_preview(class: &str, process_id: u32, shell_process_id: u32) -> bool {
+    class == "XamlExplorerHostIslandWindow" && process_id != 0 && process_id == shell_process_id
+}
+
 /// Start/search animations briefly report a full-monitor CoreWindow. Only
 /// the system-installed shell hosts are exempt; arbitrary UWP fullscreen windows
 /// share this class and must continue to hide the monitor strip.
@@ -98,6 +105,17 @@ mod tests {
         assert!(!is_shell_desktop("CabinetWClass", 42, 42));
         assert!(!is_shell_desktop("WorkerW", 7, 42));
         assert!(!is_shell_desktop("Progman", 0, 0));
+    }
+
+    #[test]
+    fn full_monitor_taskbar_preview_requires_current_explorer_ownership() {
+        assert!(is_fullscreen(MONITOR, MONITOR, false, false));
+        assert!(is_shell_preview("XamlExplorerHostIslandWindow", 42, 42));
+        assert!(!is_shell_preview("XamlExplorerHostIslandWindow", 7, 42));
+        assert!(!is_shell_preview("XamlExplorerHostIslandWindow", 0, 0));
+        assert!(!is_shell_preview("XamlExplorerHostIslandWindow", 42, 0));
+        assert!(!is_shell_preview("Chrome_WidgetWin_1", 42, 42));
+        assert!(!is_shell_preview("CabinetWClass", 42, 42));
     }
 
     const MONITOR: Bounds = Bounds {

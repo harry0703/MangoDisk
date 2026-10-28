@@ -1,5 +1,6 @@
 //! The window and its GDI objects stay on one native thread. Other threads only
 //! replace a bounded model and post a wake message; callbacks never create WebViews.
+mod foreground;
 mod interaction;
 mod messages;
 mod rendering;
@@ -60,8 +61,8 @@ struct Window {
         Edge,
         bool,
     )>,
-    foreground: usize,
-    shell_surface: bool,
+    foreground: foreground::Identity,
+    fullscreen_candidate: Option<foreground::FullscreenCandidate>,
     appearance_checked: std::time::Instant,
     layout_checked: std::time::Instant,
     layout_inputs: Option<(std::time::Instant, Bounds, Bounds, super::peers::Peers)>,
@@ -138,8 +139,8 @@ pub(super) fn start(service: Arc<Service>) {
                 reservation_failed: None,
                 reservation_retry: std::time::Instant::now(),
                 placement_policy: None,
-                foreground: 0,
-                shell_surface: false,
+                foreground: foreground::Identity::default(),
+                fullscreen_candidate: None,
                 appearance_checked: std::time::Instant::now() - Duration::from_secs(2),
                 layout_checked: std::time::Instant::now() - Duration::from_secs(2),
                 layout_inputs: None,

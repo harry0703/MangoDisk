@@ -9,7 +9,10 @@ use super::super::{
     visibility::{self, Visibility},
     DisplayStatus,
 };
-use super::Window;
+use super::{
+    foreground::{FullscreenCandidate, Identity, ShellSurface},
+    Window,
+};
 use crate::resident::tray_display::windows_bitmap;
 use std::{ptr, sync::atomic::Ordering, time::Duration};
 use windows_sys::{
@@ -17,7 +20,6 @@ use windows_sys::{
     Win32::{
         Foundation::*,
         Graphics::Gdi::*,
-        System::{SystemInformation::GetWindowsDirectoryW, Threading::*},
         UI::{HiDpi::*, WindowsAndMessaging::*},
     },
 };
@@ -30,7 +32,14 @@ impl Window {
     }
 
     pub(super) unsafe fn update(&mut self, hwnd: HWND, force: bool) {
-        if !self.service.requested.load(Ordering::Relaxed) {
+        let requested = self.service.requested.load(Ordering::Relaxed);
+        let foreground = GetForegroundWindow();
+        if (requested || self.visibility != Some(Visibility::Disabled))
+            && !self.foreground.matches(foreground, self.shell)
+        {
+            self.foreground = Identity::read(foreground, self.shell);
+        }
+        if !requested {
             self.release_reservation();
             self.hide(hwnd, Visibility::Disabled);
             self.service.publish(DisplayStatus::Tray);
@@ -128,11 +137,6 @@ impl Window {
             && bounds.right <= info.rcMonitor.right
             && bounds.top >= info.rcMonitor.top
             && bounds.bottom <= info.rcMonitor.bottom;
-        let foreground = GetForegroundWindow();
-        if self.foreground != foreground as usize {
-            self.foreground = foreground as usize;
-            self.shell_surface = is_shell_surface(foreground, shell);
-        }
         let mut front = RECT::default();
         let front_available = !foreground.is_null() && GetWindowRect(foreground, &mut front) != 0;
         let front_bounds = Bounds {
@@ -141,24 +145,45 @@ impl Window {
             right: front.right,
             bottom: front.bottom,
         };
+        let style = GetWindowLongPtrW(foreground, GWL_STYLE);
+        let maximized = IsZoomed(foreground) != 0;
+        let monitor_bounds = Bounds {
+            left: info.rcMonitor.left,
+            top: info.rcMonitor.top,
+            right: info.rcMonitor.right,
+            bottom: info.rcMonitor.bottom,
+        };
+        let fullscreen = front_available
+            && visibility::is_fullscreen(
+                front_bounds,
+                monitor_bounds,
+                style & (WS_DLGFRAME | WS_THICKFRAME) as isize != 0,
+                maximized,
+            );
         let covered = foreground != GetShellWindow()
-            && !self.shell_surface
+            && self.foreground.surface == ShellSurface::Application
             && foreground != hwnd
             && foreground != shell
             && !foreground.is_null()
-            && front_available
-            && visibility::is_fullscreen(
-                front_bounds,
-                Bounds {
-                    left: info.rcMonitor.left,
-                    top: info.rcMonitor.top,
-                    right: info.rcMonitor.right,
-                    bottom: info.rcMonitor.bottom,
-                },
-                GetWindowLongPtrW(foreground, GWL_STYLE) & (WS_DLGFRAME | WS_THICKFRAME) as isize
-                    != 0,
-                IsZoomed(foreground) != 0,
-            );
+            && fullscreen;
+        let candidate = fullscreen.then_some(FullscreenCandidate {
+            hwnd: foreground as usize,
+            process_id: self.foreground.process_id,
+            window: front_bounds,
+            monitor: monitor_bounds,
+            style,
+            maximized,
+            surface: self.foreground.surface,
+        });
+        if candidate != self.fullscreen_candidate {
+            if let Some(candidate) = &candidate {
+                log::info!(
+                    "resident_taskbar_fullscreen_candidate {} window={:?} monitor={:?} style={style:#x} maximized={maximized} dpi={} fullscreen_hide={covered}",
+                    self.foreground.diagnostic(), candidate.window, candidate.monitor, geometry.dpi,
+                );
+            }
+            self.fullscreen_candidate = candidate;
+        }
         let hidden = if !inside || IsWindowVisible(shell) == 0 {
             Some(Visibility::AutoHidden)
         } else if covered {
@@ -542,56 +567,4 @@ impl Window {
         self.update_hover(hwnd);
         self.service.publish(DisplayStatus::Taskbar);
     }
-}
-
-/// The shell desktop is not necessarily GetShellWindow(): Windows 10 commonly
-/// activates a full-monitor WorkerW when the user clicks the wallpaper. Resolve
-/// its class and shell ownership together, once per foreground-window change.
-/// The separate system Start host is also a shell surface during its animation.
-unsafe fn is_shell_surface(hwnd: HWND, shell: HWND) -> bool {
-    let mut process_id = 0;
-    let mut shell_process_id = 0;
-    GetWindowThreadProcessId(hwnd, &mut process_id);
-    GetWindowThreadProcessId(shell, &mut shell_process_id);
-    let mut class = [0u16; 256];
-    let length = GetClassNameW(hwnd, class.as_mut_ptr(), class.len() as i32).max(0) as usize;
-    let class = String::from_utf16_lossy(&class[..length]);
-    if visibility::is_shell_desktop(&class, process_id, shell_process_id) {
-        return true;
-    }
-    if class != "Windows.UI.Core.CoreWindow" {
-        return false;
-    }
-    // Resolve only on a foreground change, and only for the relevant class.
-    // A process basename alone must not exempt a user-installed UWP application.
-    let process = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, 0, process_id);
-    if process.is_null() {
-        return false;
-    }
-    let mut image = [0u16; 32768];
-    let mut length = image.len() as u32;
-    let queried = QueryFullProcessImageNameW(process, 0, image.as_mut_ptr(), &mut length) != 0;
-    CloseHandle(process);
-    if !queried {
-        return false;
-    }
-    let mut windows = [0u16; 32768];
-    let count = GetWindowsDirectoryW(windows.as_mut_ptr(), windows.len() as u32) as usize;
-    if count == 0 || count >= windows.len() {
-        return false;
-    }
-    let image = String::from_utf16_lossy(&image[..length as usize]);
-    let system_apps = format!(
-        "{}\\SystemApps\\",
-        String::from_utf16_lossy(&windows[..count])
-    );
-    let system_app = image
-        .to_ascii_lowercase()
-        .starts_with(&system_apps.to_ascii_lowercase());
-    let name = image.rsplit('\\').next().unwrap_or_default();
-    let flyout = visibility::is_shell_flyout(&class, name, system_app);
-    if flyout {
-        log::debug!("resident_taskbar_system_surface image={name} pid={process_id}");
-    }
-    flyout
 }

@@ -48,16 +48,14 @@ impl Window {
 
     pub(super) unsafe fn record_visibility(&mut self, state: Visibility) {
         if self.visibility != Some(state) {
-            let foreground = GetForegroundWindow();
-            let mut class = [0u16; 256];
-            let length =
-                GetClassNameW(foreground, class.as_mut_ptr(), class.len() as i32).max(0) as usize;
+            let foreground = self.foreground.hwnd as HWND;
             let mut frame = RECT::default();
             let has_frame = GetWindowRect(foreground, &mut frame) != 0;
+            let frame_code = if has_frame { 0 } else { GetLastError() };
             log::info!(
-                "resident_taskbar_visibility previous={:?} current={state:?} foreground={foreground:?} class={} style={:#x} maximized={} frame_available={has_frame} frame=({},{},{},{}) bounds={:?}",
+                "resident_taskbar_visibility previous={:?} current={state:?} {} style={:#x} maximized={} frame_available={has_frame} frame_code={frame_code} frame=({},{},{},{}) bounds={:?}",
                 self.visibility,
-                mangodisk_platform::diagnostics::text(&String::from_utf16_lossy(&class[..length])),
+                self.foreground.diagnostic(),
                 GetWindowLongPtrW(foreground, GWL_STYLE),
                 IsZoomed(foreground) != 0,
                 frame.left, frame.top, frame.right, frame.bottom,
