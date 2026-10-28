@@ -181,6 +181,8 @@ pub struct GpuReader {
     discovered_at: Option<Instant>,
     statistics_key: CFString,
     temperature_due: Option<Instant>,
+    power: crate::system_resources::component_power::ComponentPowerReader,
+    power_adapter: Option<String>,
     diagnostics: ObservationDiagnostics,
     discovery_failure: Option<(&'static str, String)>,
 }
@@ -191,6 +193,10 @@ impl Default for GpuReader {
             discovered_at: None,
             statistics_key: CFString::new("PerformanceStatistics"),
             temperature_due: None,
+            power: crate::system_resources::component_power::ComponentPowerReader::new(
+                crate::system_resources::component_power::Component::Gpu,
+            ),
+            power_adapter: None,
             diagnostics: ObservationDiagnostics::default(),
             discovery_failure: None,
         }
@@ -467,6 +473,35 @@ impl GpuReader {
     }
     pub fn read_detailed(&mut self) -> PlatformResult<GpuSample> {
         self.read()
+    }
+    pub fn read_power(
+        &mut self,
+    ) -> Option<PlatformResult<crate::system_resources::component_power::GpuPower>> {
+        use crate::system_resources::component_power::{Component, ComponentPowerReader, GpuPower};
+        if let Err(error) = self.refresh() {
+            return Some(Err(error));
+        }
+        let mut adapters = self
+            .adapters
+            .iter()
+            .filter(|adapter| adapter.class.contains("agx"));
+        let Some(adapter) = adapters.next() else {
+            return Some(Err(super::unsupported()));
+        };
+        if adapters.next().is_some() {
+            return Some(Err(super::unsupported()));
+        }
+        let id = adapter.id.clone();
+        if self.power_adapter.as_ref() != Some(&id) {
+            self.power = ComponentPowerReader::new(Component::Gpu);
+            self.power_adapter = Some(id.clone());
+        }
+        self.power.read().map(|result| {
+            result.map(|power| GpuPower {
+                adapter_id: id,
+                power,
+            })
+        })
     }
     pub fn read_temperatures(
         &mut self,

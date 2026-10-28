@@ -22,6 +22,8 @@ export function emptyReadings(): ResourceReadings {
     batteryTemperature: empty(),
     chargingPower: empty(),
     batteryPower: empty(),
+    cpuPower: empty(),
+    gpuPower: empty(),
     systemPower: empty(),
     fanSpeed: empty(),
     gpu: empty(),

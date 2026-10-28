@@ -42,6 +42,7 @@ fn baseline_retries_remain_bounded_and_return_to_the_regular_cadence() {
                     sample: Ok(CpuSample::Baseline),
                 },
                 MetricId::Gpu => Observation::Gpu {
+                    power: None,
                     fan_speed: None,
                     sample: Ok(GpuSample::Baseline),
                     adapters: vec![],
@@ -185,6 +186,7 @@ fn auxiliary_failures_preserve_fresh_utilization_and_history() {
             MetricId::Cpu,
             Ok(Observation::CpuAuxiliary(
                 crate::resident::cpu_auxiliary_sampling::Observation {
+                    cpu_power: None,
                     details: CpuDetails {
                         identity: Default::default(),
                         frequency: Some(Err(PlatformError::new(

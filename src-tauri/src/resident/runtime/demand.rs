@@ -58,6 +58,9 @@ impl ResidentState {
             system_power: DisplayMetricId::SystemPower.supported_on_platform()
                 && metric == MetricId::Cpu
                 && preferences.enabled,
+            component_power: cfg!(all(target_os = "macos", target_arch = "aarch64"))
+                && preferences.enabled
+                && matches!(metric, MetricId::Cpu | MetricId::Gpu),
             battery: DisplayMetricId::BatteryPower.supported_on_platform()
                 && metric == MetricId::Cpu
                 && preferences.enabled

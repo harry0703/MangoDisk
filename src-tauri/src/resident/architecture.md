@@ -1616,6 +1616,18 @@ selected-device changes still invalidate observations. The cache lives in the
 resident process; restarting the application starts without previous observations.
 Background sampling intervals and on-demand detail collection are unchanged.
 
+Resource schema 37 adds independent `cpuPower` and adapter-identified `gpuPower`
+readings. These are IOReport component energy estimates, not SMC whole-system
+power. Each native owner keeps a nonblocking baseline and uses the actual sample
+interval; counter failures, missing channels, unknown units, clock changes and
+intervals outside 100–5000 ms never produce a synthetic zero. CPU and GPU failures
+remain independent. The existing two-second workers keep sampling with the panel
+closed, and readings expire after five seconds. No ANE subscription is exposed.
+The legacy Energy Model path is restricted to Apple Silicon before macOS 27;
+macOS 27 legacy counters may freeze, so that layout remains unavailable pending a
+validated CLPC implementation. Other platforms retain their current sensors and
+report component power as unsupported.
+
 SMC remains the preferred temperature source. Only an unsuccessful CPU/GPU
 observation may try explicitly named IOHID CPU/GPU sensors. PMU, NAND, battery and
 anonymous sensors are excluded. GPU HID fallback additionally requires one

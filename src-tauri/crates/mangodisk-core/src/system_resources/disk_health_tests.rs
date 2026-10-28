@@ -46,7 +46,7 @@ fn health_has_independent_freshness_and_rejects_other_devices_or_failed_observat
     cache.disk(volume("one"), capacity, 1000);
     cache.disk_health(Ok(health("one")), 1000);
     let wire = serde_json::to_value(cache.snapshot(1000)).unwrap();
-    assert_eq!(wire["schemaVersion"], 36);
+    assert_eq!(wire["schemaVersion"], 37);
     assert_eq!(
         wire["diskHealth"]["value"]["totalWrittenBytes"],
         "123456789012345678901234"

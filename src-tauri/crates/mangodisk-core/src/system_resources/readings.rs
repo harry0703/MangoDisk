@@ -1,4 +1,5 @@
 //! Independent cached results and interval calculations; no clocks, threads, or desktop APIs.
+mod component_power;
 mod power;
 use mangodisk_platform::system_resources::{
     battery::{BatteryPower, BatteryTemperature, ChargingPower, BATTERY_FRESHNESS_MS},
@@ -56,6 +57,9 @@ pub struct ResourceReadings {
     pub charging_power: MetricReading<ChargingPower>,
     pub battery_power: MetricReading<BatteryPower>,
     pub fan_speed: MetricReading<mangodisk_platform::system_resources::fans::FanSample>,
+    pub cpu_power:
+        MetricReading<mangodisk_platform::system_resources::component_power::ComponentPower>,
+    pub gpu_power: MetricReading<mangodisk_platform::system_resources::component_power::GpuPower>,
     pub system_power: MetricReading<mangodisk_platform::system_resources::power::SystemPower>,
     pub gpu: MetricReading<GpuUsage>,
     pub gpu_details: MetricReading<GpuUsage>,
@@ -88,7 +92,7 @@ pub struct ResourceReadings {
 impl Default for ResourceReadings {
     fn default() -> Self {
         Self {
-            schema_version: 36,
+            schema_version: 37,
             observed_at_ms: 0,
             cpu: MetricReading::default(),
             cpu_identity: None,
@@ -104,6 +108,8 @@ impl Default for ResourceReadings {
             charging_power: MetricReading::default(),
             battery_power: MetricReading::default(),
             fan_speed: MetricReading::default(),
+            cpu_power: component_power::initial(),
+            gpu_power: component_power::initial(),
             system_power: MetricReading::default(),
             gpu: MetricReading::default(),
             gpu_details: MetricReading::default(),
@@ -413,6 +419,17 @@ impl ResourceCache {
         // Catalogue captions include display ordinals, which can change when another
         // GPU disappears. Native sample names detect replacements independently.
         let present = |id: &str| adapters.iter().any(|adapter| adapter.id == id);
+        if self
+            .readings
+            .gpu_power
+            .value
+            .as_ref()
+            .is_some_and(|power| !present(&power.adapter_id))
+        {
+            self.readings
+                .gpu_power
+                .mark_unavailable(MetricStatus::Disconnected);
+        }
         self.gpu_device_histories.retain(|id, _| present(id));
         self.gpu_temperature.retain(present);
         for adapter in &adapters {
@@ -730,6 +747,8 @@ impl ResourceCache {
     /// Update freshness without copying application identities or rebuilding histories.
     pub fn expire(&mut self, now_ms: u64) -> bool {
         let before = self.statuses();
+        self.readings.cpu_power.expire(now_ms, 5_000);
+        self.readings.gpu_power.expire(now_ms, 5_000);
         let mut gpu_changed = false;
         for history in self.gpu_device_histories.values_mut() {
             let previous = history.reading.status;
@@ -805,8 +824,10 @@ impl ResourceCache {
         gpu_changed || before != self.statuses()
     }
 
-    fn statuses(&self) -> [MetricStatus; 21] {
+    fn statuses(&self) -> [MetricStatus; 23] {
         [
+            self.readings.cpu_power.status,
+            self.readings.gpu_power.status,
             self.readings.battery_details.status,
             self.readings.fan_speed.status,
             self.readings.system_power.status,
@@ -1747,7 +1768,7 @@ mod tests {
             second.cpu_processes.value.as_ref().unwrap()
         ));
         let wire = serde_json::to_value(&second).unwrap();
-        assert_eq!(wire["schemaVersion"], 36);
+        assert_eq!(wire["schemaVersion"], 37);
         assert_eq!(wire["cpuProcesses"]["value"]["readableProcessCount"], 12);
         assert!(!cache.expire(2000));
         assert!(cache.expire(6001));
@@ -1869,7 +1890,7 @@ mod tests {
             },
             1000,
         ));
-        assert_eq!(cache.snapshot(1000).schema_version, 36);
+        assert_eq!(cache.snapshot(1000).schema_version, 37);
         assert_eq!(
             cache.snapshot(6001).cpu_processes.status,
             MetricStatus::Stale

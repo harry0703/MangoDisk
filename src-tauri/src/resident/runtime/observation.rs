@@ -53,6 +53,7 @@ impl ObservationState {
                     details,
                     battery,
                     system_power,
+                    cpu_power,
                     battery_present,
                     fan_speed,
                 } = observation;
@@ -67,6 +68,9 @@ impl ObservationState {
                 cache.battery_presence(battery_present, completion.timestamp_ms);
                 if let Some(sample) = fan_speed {
                     cache.fan_speed(sample, completion.timestamp_ms);
+                }
+                if let Some(sample) = cpu_power {
+                    cache.cpu_power(sample, completion.timestamp_ms);
                 }
                 if let Some(sample) = system_power {
                     cache.system_power(sample, completion.timestamp_ms);
@@ -126,6 +130,7 @@ impl ObservationState {
                 catalogue.fetch_and(!4, Ordering::Relaxed);
             }
             Ok(Observation::Gpu {
+                power,
                 fan_speed,
                 sample,
                 adapters,
@@ -133,6 +138,9 @@ impl ObservationState {
             }) => {
                 if let Some(sample) = fan_speed {
                     cache.fan_speed(sample, completion.timestamp_ms);
+                }
+                if let Some(sample) = power {
+                    cache.gpu_power(sample, completion.timestamp_ms);
                 }
                 let missing_selection = slot
                     .demand

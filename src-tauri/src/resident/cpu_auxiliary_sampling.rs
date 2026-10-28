@@ -17,12 +17,18 @@ pub struct Observation {
             mangodisk_platform::system_resources::battery::BatterySample,
         >,
     >,
+    pub(super) cpu_power: Option<
+        mangodisk_platform::PlatformResult<
+            mangodisk_platform::system_resources::component_power::ComponentPower,
+        >,
+    >,
     pub(super) details: CpuDetails,
 }
 
 #[derive(Default)]
 pub struct Reader {
     battery_presence: mangodisk_platform::system_resources::battery::BatteryPresenceReader,
+    cpu_power: mangodisk_platform::system_resources::component_power::ComponentPowerReader,
     power: mangodisk_platform::system_resources::power::SystemPowerReader,
     fans: Option<Box<mangodisk_platform::system_resources::fans::FanReader>>,
     battery: mangodisk_platform::system_resources::battery::BatteryReader,
@@ -34,6 +40,7 @@ impl Reader {
         let Self {
             battery_presence,
             power,
+            cpu_power,
             fans,
             battery,
             details,
@@ -48,6 +55,12 @@ impl Reader {
             None
         };
         Observation {
+            cpu_power: if demand.component_power {
+                cpu_power.read()
+            } else {
+                *cpu_power = Default::default();
+                None
+            },
             battery_present,
             fan_speed: if demand.fan_speed {
                 Some(fans.get_or_insert_with(Box::default).read())
