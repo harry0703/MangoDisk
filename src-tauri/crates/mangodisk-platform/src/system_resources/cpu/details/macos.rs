@@ -2,6 +2,8 @@
 use super::{CpuFrequency, CpuFrequencyActivity, CpuFrequencyClass, CpuFrequencySource};
 use crate::{PlatformError, PlatformErrorCode};
 
+#[cfg(test)]
+mod a18_pro_tests;
 mod frequency_layout;
 use crate::PlatformResult;
 use core_foundation::{
@@ -11,7 +13,9 @@ use core_foundation::{
     dictionary::{CFDictionary, CFMutableDictionaryRef},
     string::{CFString, CFStringRef},
 };
-use frequency_layout::{active_average, activity_ratios, cluster, decode_table, CoreKind, KINDS};
+use frequency_layout::{
+    active_average, activity_ratios, decode_table, CoreKind, FrequencyLayout, KINDS,
+};
 use std::{
     ffi::c_char,
     ptr,
@@ -116,7 +120,7 @@ fn table(object: u32, key: &str, divisor: f64) -> PlatformResult<Option<Vec<f64>
             )
         })
 }
-fn load_tables(generation: u32) -> PlatformResult<[Vec<f64>; 3]> {
+fn load_tables(layout: FrequencyLayout) -> PlatformResult<[Vec<f64>; 3]> {
     let mut tables: [Vec<f64>; 3] = Default::default();
     for node in [c"pmgr", c"pmgr-child"] {
         let mut iterator = 0;
@@ -136,7 +140,8 @@ fn load_tables(generation: u32) -> PlatformResult<[Vec<f64>; 3]> {
                 break;
             }
             let entry = Object(entry);
-            let clusters = (generation >= 5)
+            let clusters = layout
+                .uses_cluster_metadata()
                 .then(|| property(entry.0, "acc-clusters"))
                 .flatten();
             let data = clusters
@@ -145,24 +150,24 @@ fn load_tables(generation: u32) -> PlatformResult<[Vec<f64>; 3]> {
             if clusters.is_some() && data.is_none() {
                 return Err(unavailable("decode_clusters", "reason=not_data"));
             }
-            let keys =
-                frequency_layout::table_keys(generation, data.as_ref().map(|data| data.bytes()))
-                    .ok_or_else(|| {
-                        unavailable(
-                            "decode_clusters",
-                            format!(
-                        "node={} generation={generation} bytes={} reason=unknown_cluster_layout",
-                        node.to_string_lossy(),
-                        data.as_ref().map_or(0, |data| data.len()),
-                    ),
-                        )
-                    })?;
+            let keys = layout
+                .table_keys(data.as_ref().map(|data| data.bytes()))
+                .ok_or_else(|| {
+                    unavailable(
+                        "decode_clusters",
+                        format!(
+                            "node={} layout={layout:?} bytes={} reason=unknown_cluster_layout",
+                            node.to_string_lossy(),
+                            data.as_ref().map_or(0, |data| data.len()),
+                        ),
+                    )
+                })?;
             for kind in KINDS {
                 let index = kind as usize;
                 if tables[index].is_empty() {
                     for slot in keys[index].into_iter().flatten() {
                         let key = format!("voltage-states{slot}-sram");
-                        match table(entry.0, &key, frequency_layout::divisor(generation)) {
+                        match table(entry.0, &key, layout.divisor()) {
                             Ok(Some(values)) => {
                                 log::info!("cpu_frequency_table node={} kind={kind:?} key={key} states={} min_mhz={} max_mhz={}", node.to_string_lossy(), values.len(), values.iter().copied().fold(f64::INFINITY, f64::min), values.iter().copied().fold(f64::NEG_INFINITY, f64::max));
                                 tables[index] = values;
@@ -180,7 +185,7 @@ fn load_tables(generation: u32) -> PlatformResult<[Vec<f64>; 3]> {
             }
         }
     }
-    if frequency_layout::complete_tables(generation, &mut tables) {
+    if layout.complete_tables(&mut tables) {
         log::info!(
             "cpu_frequency_table kind=Performance source=shared_pacc generation=6 states={}",
             tables[CoreKind::Performance as usize].len()
@@ -189,7 +194,7 @@ fn load_tables(generation: u32) -> PlatformResult<[Vec<f64>; 3]> {
     if tables.iter().all(Vec::is_empty) {
         return Err(unavailable(
             "load_tables",
-            format!("generation={generation} nodes=pmgr,pmgr-child reason=no_identified_tables"),
+            format!("layout={layout:?} nodes=pmgr,pmgr-child reason=no_identified_tables"),
         ));
     }
     Ok(tables)
@@ -198,8 +203,8 @@ pub(super) fn frequency_classes(model: &str) -> Vec<super::CpuFrequencyClass> {
     use super::CpuFrequencyClass;
     // Discover installed tiers from firmware, never from fluctuating live values.
     // This probe does not subscribe to IOReport or start frequency sampling.
-    frequency_layout::generation(model)
-        .and_then(|generation| match load_tables(generation) {
+    FrequencyLayout::identify(model)
+        .and_then(|layout| match load_tables(layout) {
             Ok(tables) => Some(tables),
             Err(error) => {
                 log::info!("cpu_frequency_classes_unavailable model={} code={:?} error={} outcome=no_selectable_classes",crate::diagnostics::text(model),error.code(),crate::diagnostics::text(&error));
@@ -224,7 +229,7 @@ struct Subscription {
     channels: CFType,
     subscription: CFType,
     previous: Option<(CFType, Instant)>,
-    generation: u32,
+    layout: FrequencyLayout,
     expected_channels: [Vec<String>; 3],
     tables: [Vec<f64>; 3],
 }
@@ -232,7 +237,7 @@ fn dictionary(value: &CFType) -> Option<CFDictionary<CFString, CFType>> {
     let value = value.downcast::<CFDictionary>()?;
     Some(unsafe { CFDictionary::wrap_under_get_rule(value.as_concrete_TypeRef()) })
 }
-fn channel_names(sample: &CFType, generation: u32) -> PlatformResult<[Vec<String>; 3]> {
+fn channel_names(sample: &CFType, layout: FrequencyLayout) -> PlatformResult<[Vec<String>; 3]> {
     let dictionary = dictionary(sample)
         .ok_or_else(|| unavailable("identify_channels", "reason=not_dictionary"))?;
     let list = dictionary
@@ -253,7 +258,7 @@ fn channel_names(sample: &CFType, generation: u32) -> PlatformResult<[Vec<String
         let name = unsafe { IOReportChannelGetChannelName(item.cast()) };
         if !name.is_null() {
             let name = unsafe { CFString::wrap_under_get_rule(name) }.to_string();
-            if let Some(kind) = cluster(&name, generation) {
+            if let Some(kind) = layout.cluster(&name) {
                 names[kind as usize].push(name);
             }
         }
@@ -265,24 +270,20 @@ impl Subscription {
         let model = super::identity()
             .model
             .ok_or_else(|| unavailable("identify_model", "reason=model_missing"))?;
-        let generation = frequency_layout::generation(&model).ok_or_else(|| {
+        let layout = FrequencyLayout::identify(&model).ok_or_else(|| {
             unavailable(
                 "identify_model",
                 format!(
-                    "model={} reason=unidentified_generation",
+                    "model={} reason=unidentified_layout",
                     crate::diagnostics::text(&model)
                 ),
             )
         })?;
-        let tables = load_tables(generation)?;
+        let tables = load_tables(layout)?;
         let group = CFString::new("CPU Stats");
         // Newer chips expose EACC/PACC complex names; their per-core channels retain the
         // ECPU/MCPU/PCPU identity needed to keep three distinct frequency classes.
-        let subgroup = CFString::new(if generation >= 5 {
-            "CPU Core Performance States"
-        } else {
-            "CPU Complex Performance States"
-        });
+        let subgroup = CFString::new(layout.subgroup());
         let raw = unsafe {
             IOReportCopyChannelsInGroup(
                 group.as_concrete_TypeRef(),
@@ -331,13 +332,13 @@ impl Subscription {
             return Err(unavailable("subscribe", "reason=null_result"));
         }
         let subscription = unsafe { CFType::wrap_under_create_rule(raw) };
-        let expected_channels = channel_names(&channels, generation)?;
-        log::info!("cpu_frequency_capability model={} generation={generation} subgroup={} efficiency_states={} performance_states={} super_states={}",crate::diagnostics::text(&model),subgroup,tables[0].len(),tables[1].len(),tables[2].len());
+        let expected_channels = channel_names(&channels, layout)?;
+        log::info!("cpu_frequency_capability model={} layout={layout:?} subgroup={} efficiency_states={} performance_states={} super_states={}",crate::diagnostics::text(&model),subgroup,tables[0].len(),tables[1].len(),tables[2].len());
         Ok(Self {
             channels,
             subscription,
             previous: None,
-            generation,
+            layout,
             expected_channels,
             tables,
         })
@@ -402,7 +403,7 @@ impl Subscription {
                 continue;
             }
             let name = unsafe { CFString::wrap_under_get_rule(name) }.to_string();
-            let Some(kind) = cluster(&name, self.generation) else {
+            let Some(kind) = self.layout.cluster(&name) else {
                 if observed_names.len() < 24 {
                     observed_names.push(crate::diagnostics::text(&name));
                 }
@@ -454,7 +455,7 @@ impl Subscription {
             }
         }
         if matched == 0 {
-            return Err(unavailable("decode_channels", format!("generation={} channel_count={} observed={observed_names:?} reason=no_identified_cpu_channels",self.generation,list.len())));
+            return Err(unavailable("decode_channels", format!("layout={:?} channel_count={} observed={observed_names:?} reason=no_identified_cpu_channels",self.layout,list.len())));
         }
         Ok(Some(complete_sample(
             values,
@@ -587,6 +588,63 @@ mod tests {
     use super::*;
 
     #[test]
+    #[ignore = "requires physical Apple Silicon and live IOReport channels"]
+    fn native_frequency_sampling_preserves_installed_classes_and_idle_intervals() {
+        let identity = super::super::identity();
+        let layout = FrequencyLayout::identify(identity.model.as_deref().unwrap()).unwrap();
+        let mut subscription = Subscription::open().expect("native IOReport subscription");
+        assert_eq!(subscription.layout, layout);
+        assert!(subscription.read().unwrap().is_none());
+        let mut completed = 0;
+        for _ in 0..8 {
+            std::thread::sleep(Duration::from_millis(150));
+            let sample = subscription
+                .read()
+                .unwrap()
+                .expect("completed native interval");
+            assert_eq!(sample.source, CpuFrequencySource::ApplePerformanceStates);
+            assert!(sample.average_mhz.is_none());
+            assert!(!sample.activity.is_empty());
+            for (kind, value, class) in [
+                (
+                    CoreKind::Efficiency,
+                    sample.efficiency_mhz,
+                    CpuFrequencyClass::Efficiency,
+                ),
+                (
+                    CoreKind::Performance,
+                    sample.performance_mhz,
+                    CpuFrequencyClass::Performance,
+                ),
+                (CoreKind::Super, sample.super_mhz, CpuFrequencyClass::Super),
+            ] {
+                if let Some(value) = value {
+                    assert!(identity.frequency_classes.contains(&class));
+                    assert!(subscription.tables[kind as usize]
+                        .iter()
+                        .any(|mhz| *mhz <= value + 0.001));
+                    assert!(subscription.tables[kind as usize]
+                        .iter()
+                        .any(|mhz| *mhz >= value - 0.001));
+                }
+                if sample
+                    .activity
+                    .iter()
+                    .any(|entry| entry.class == class && entry.is_idle())
+                {
+                    assert!(
+                        value.is_none(),
+                        "idle cores must not publish a minimum clock"
+                    );
+                }
+            }
+            println!("model={:?} layout={layout:?} efficiency_mhz={:?} performance_mhz={:?} super_mhz={:?} activity={:?}", identity.model, sample.efficiency_mhz, sample.performance_mhz, sample.super_mhz, sample.activity);
+            completed += 1;
+        }
+        assert_eq!(completed, 8);
+    }
+
+    #[test]
     fn incomplete_intervals_do_not_publish_a_partial_class_frequency() {
         let expected = [
             vec!["ECPU".into()],
@@ -688,7 +746,9 @@ mod tests {
     fn complex_channels_include_the_unnumbered_first_performance_cluster() {
         let mut values: [Vec<f64>; 3] = Default::default();
         for (name, residencies) in [("ECPU", [75, 25]), ("PCPU", [25, 75]), ("PCPU1", [50, 50])] {
-            let kind = cluster(name, 3).expect("The native channel must be classified");
+            let kind = FrequencyLayout::M(3)
+                .cluster(name)
+                .expect("The native channel must be classified");
             let states = vec![
                 ("IDLE".into(), 1000),
                 ("V0P1".into(), residencies[0]),

@@ -9,6 +9,7 @@ use crate::{
 pub(super) struct Reader {
     sensors: TemperatureSensors,
     kind: GpuTemperatureKind,
+    reject_power_gated_readings: bool,
 }
 impl Reader {
     pub(super) fn new(model: &str, class: &str, unambiguous: bool) -> PlatformResult<Self> {
@@ -22,22 +23,37 @@ impl Reader {
         } else {
             GpuTemperatureKind::Device
         };
-        Ok(Self { sensors, kind })
+        Ok(Self {
+            sensors,
+            kind,
+            reject_power_gated_readings: model == "Apple A18 Pro",
+        })
     }
     pub(super) fn read(&self) -> PlatformResult<(f64, u32, GpuTemperatureKind)> {
         let values = self.sensors.read()?;
-        if values.contains(&128.0) {
-            return Err(PlatformError::new(
-                PlatformErrorCode::InvalidData,
-                "GPU SMC temperature sentinel",
-            ));
-        }
         Ok((
-            values.iter().sum::<f64>() / values.len() as f64,
+            sensor_average(&values, self.reject_power_gated_readings)?,
             values.len() as u32,
             self.kind,
         ))
     }
+}
+fn sensor_average(values: &[f64], reject_power_gated_readings: bool) -> PlatformResult<f64> {
+    if values.is_empty() || values.contains(&128.0) {
+        return Err(PlatformError::new(
+            PlatformErrorCode::InvalidData,
+            "GPU SMC temperature sentinel or empty sensor group",
+        ));
+    }
+    // Stats #3625 reports approximately 0.2 C on A18 Pro while its GPU is gated.
+    // Reject the whole interval rather than dropping a sensor and changing the mean.
+    if reject_power_gated_readings && values.iter().any(|value| *value <= 1.0) {
+        return Err(PlatformError::new(
+            PlatformErrorCode::InvalidData,
+            "GPU SMC temperature stage=validate model=A18Pro reason=near_zero_power_gated_reading",
+        ));
+    }
+    Ok(values.iter().sum::<f64>() / values.len() as f64)
 }
 fn unsupported() -> PlatformError {
     PlatformError::new(
@@ -56,6 +72,10 @@ fn sensor_keys(model: &str, class: &str, unambiguous: bool) -> Option<&'static [
     // Keep driver readings on AMD until an internal physical-device mapping exists.
     if !class.contains("agx") {
         return None;
+    }
+    // Stats aab2e1b5: Modules/Sensors/values.swift identifies these A18 Pro GPU sensors.
+    if model == "Apple A18 Pro" {
+        return Some(const { &[*b"Tg05", *b"Tg0D", *b"Tg0L", *b"Tg0e"] });
     }
     let chip = model
         .strip_prefix("Apple M")?
@@ -115,6 +135,20 @@ fn sensor_keys(model: &str, class: &str, unambiguous: bool) -> Option<&'static [
 mod tests {
     use super::*;
     #[test]
+    fn a18_pro_power_gated_sensors_do_not_become_near_zero_temperatures() {
+        // Stats #3625 observes approximately 0.2 C while the GPU is power-gated.
+        for values in [&[0.2; 4][..], &[42.9, 0.2, 43.6, 43.3], &[0.199_999; 4]] {
+            assert_eq!(
+                sensor_average(values, true).unwrap_err().code(),
+                PlatformErrorCode::InvalidData
+            );
+        }
+        assert!((sensor_average(&[42.9, 43.8, 43.6, 43.3], true).unwrap() - 43.4).abs() < 0.000001);
+        assert_eq!(sensor_average(&[0.2], false).unwrap(), 0.2);
+        assert!(sensor_average(&[128.0], false).is_err());
+        assert!(sensor_average(&[], true).is_err());
+    }
+    #[test]
     fn identities_exclude_cpu_proximity_and_ambiguous_devices() {
         let keys = sensor_keys("Apple M3 Max", "agx", true).unwrap();
         assert_eq!(keys.len(), 8);
@@ -139,6 +173,21 @@ mod tests {
             .unwrap()
             .contains(b"Tg1U"));
         assert!(sensor_keys("Apple M4 Unknown", "agx", true).is_none());
+    }
+
+    #[test]
+    fn a18_pro_gpu_keys_preserve_verified_adapter_identity() {
+        let keys =
+            sensor_keys("Apple A18 Pro", "agx", true).expect("identified A18 Pro GPU sensors");
+        assert_eq!(keys, &[*b"Tg05", *b"Tg0D", *b"Tg0L", *b"Tg0e"]);
+        for key in [b"Te05", b"Te0S", b"Tp05", b"Tp0D", b"TG0P"] {
+            assert!(!keys.contains(key));
+        }
+        assert!(sensor_keys("Apple A18 Pro", "agx", false).is_none());
+        assert!(sensor_keys("Apple A18 Pro", "amd", true).is_none());
+        for model in ["Apple A18", "Apple A18 Pro Max", "Apple A19 Pro"] {
+            assert!(sensor_keys(model, "agx", true).is_none());
+        }
     }
 
     #[test]

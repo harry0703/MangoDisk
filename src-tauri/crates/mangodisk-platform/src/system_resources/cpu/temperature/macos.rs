@@ -136,6 +136,13 @@ fn cpu_keys(model: Option<&str>) -> Option<(&'static [[u8; 4]], CpuTemperatureKi
         // A prefix alone is not an identity: Tf includes both CPU and GPU sensors,
         // and Tp0P is a power-board sensor on Intel. Unknown chips fail closed.
         let model = model?;
+        // Stats aab2e1b5: Modules/Sensors/values.swift identifies these A18 Pro cores.
+        if model == "Apple A18 Pro" {
+            return Some((
+                const { &[*b"Te05", *b"Te0S", *b"Tp05", *b"Tp0D"] },
+                CpuTemperatureKind::CoreAverage,
+            ));
+        }
         let generation = model
             .strip_prefix("Apple M")?
             .split_whitespace()
@@ -263,6 +270,20 @@ mod tests {
         assert!(cpu_keys(Some("Apple M7")).is_none());
         assert!(cpu_keys(None).is_none());
         assert!(cpu_keys(Some("VirtualApple")).is_none());
+    }
+
+    #[cfg(target_arch = "aarch64")]
+    #[test]
+    fn a18_pro_cpu_keys_preserve_verified_core_identity() {
+        let (keys, kind) = cpu_keys(Some("Apple A18 Pro")).expect("identified A18 Pro CPU sensors");
+        assert_eq!(keys, &[*b"Te05", *b"Te0S", *b"Tp05", *b"Tp0D"]);
+        assert_eq!(kind, CpuTemperatureKind::CoreAverage);
+        for key in [b"Tg05", b"Tg0D", b"Tg0L", b"Tg0e", b"TC0P"] {
+            assert!(!keys.contains(key));
+        }
+        for model in ["Apple A18", "Apple A18 Pro Max", "Apple A19 Pro"] {
+            assert!(cpu_keys(Some(model)).is_none(), "unverified model: {model}");
+        }
     }
 
     #[cfg(target_arch = "aarch64")]

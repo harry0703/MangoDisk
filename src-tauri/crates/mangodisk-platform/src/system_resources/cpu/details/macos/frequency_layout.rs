@@ -11,7 +11,66 @@ pub(super) enum CoreKind {
 pub(super) const KINDS: [CoreKind; 3] =
     [CoreKind::Efficiency, CoreKind::Performance, CoreKind::Super];
 
-pub(super) fn generation(model: &str) -> Option<u32> {
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(super) enum FrequencyLayout {
+    M(u32),
+    A18Pro,
+}
+
+impl FrequencyLayout {
+    pub(super) fn identify(model: &str) -> Option<Self> {
+        match model {
+            "Apple A18 Pro" => Some(Self::A18Pro),
+            _ => generation(model).map(Self::M),
+        }
+    }
+
+    pub(super) fn divisor(self) -> f64 {
+        match self {
+            Self::M(generation) => divisor(generation),
+            // macmon #57 and Stats #3625 contain A18 Pro firmware dumps: Hz,
+            // despite the chip sharing a silicon generation with the kHz-based M4.
+            Self::A18Pro => 1_000_000.0,
+        }
+    }
+
+    pub(super) fn table_keys(self, clusters: Option<&[u8]>) -> Option<[[Option<u8>; 2]; 3]> {
+        match self {
+            Self::M(generation) => table_keys(generation, clusters),
+            Self::A18Pro => Some([[Some(1), None], [Some(5), None], [None, None]]),
+        }
+    }
+
+    pub(super) fn uses_cluster_metadata(self) -> bool {
+        matches!(self, Self::M(5..))
+    }
+
+    pub(super) fn subgroup(self) -> &'static str {
+        if self.uses_cluster_metadata() {
+            "CPU Core Performance States"
+        } else {
+            "CPU Complex Performance States"
+        }
+    }
+
+    pub(super) fn cluster(self, name: &str) -> Option<CoreKind> {
+        match self {
+            Self::M(generation) => cluster(name, generation),
+            // Apple specifies four efficiency and two performance cores on Neo.
+            // Its ECPU/PCPU channels must never be labelled as M5-style Super.
+            Self::A18Pro => classify_channel(name, false, false),
+        }
+    }
+
+    pub(super) fn complete_tables(self, tables: &mut [Vec<f64>; 3]) -> bool {
+        match self {
+            Self::M(generation) => complete_tables(generation, tables),
+            Self::A18Pro => false,
+        }
+    }
+}
+
+fn generation(model: &str) -> Option<u32> {
     let model = model.strip_prefix("Apple M")?;
     let (number, variant) = model.split_once(' ').unwrap_or((model, ""));
     if !matches!(variant, "" | "Pro" | "Max" | "Ultra") {
@@ -28,7 +87,7 @@ pub(super) fn generation(model: &str) -> Option<u32> {
     }
 }
 
-pub(super) fn divisor(generation: u32) -> f64 {
+fn divisor(generation: u32) -> f64 {
     if generation <= 3 {
         1_000_000.0
     } else {
@@ -55,7 +114,7 @@ pub(super) fn decode_table(bytes: &[u8], divisor: f64) -> Option<Vec<f64>> {
     values
 }
 
-pub(super) fn table_keys(generation: u32, clusters: Option<&[u8]>) -> Option<[[Option<u8>; 2]; 3]> {
+fn table_keys(generation: u32, clusters: Option<&[u8]>) -> Option<[[Option<u8>; 2]; 3]> {
     // Pinned layouts: Stats ea74107c SystemKit.getFrequencies and macmon 8b2ab564
     // parse_acc_clusters. M5 Max exposes performance states at slot 23, not 22.
     let mut keys = if generation <= 4 {
@@ -124,7 +183,11 @@ pub(super) fn table_keys(generation: u32, clusters: Option<&[u8]>) -> Option<[[O
     Some(keys)
 }
 
-pub(super) fn cluster(name: &str, generation: u32) -> Option<CoreKind> {
+fn cluster(name: &str, generation: u32) -> Option<CoreKind> {
+    classify_channel(name, generation >= 5, true)
+}
+
+fn classify_channel(name: &str, pcpu_is_super: bool, has_mcpu: bool) -> Option<CoreKind> {
     let core = if let Some((complex, core)) = name.split_once('_') {
         let valid_complex = complex == "EACC"
             || complex
@@ -142,13 +205,16 @@ pub(super) fn cluster(name: &str, generation: u32) -> Option<CoreKind> {
         ("MCPU", CoreKind::Performance),
         (
             "PCPU",
-            if generation >= 5 {
+            if pcpu_is_super {
                 CoreKind::Super
             } else {
                 CoreKind::Performance
             },
         ),
     ] {
+        if prefix == "MCPU" && !has_mcpu {
+            continue;
+        }
         if let Some(suffix) = core.strip_prefix(prefix) {
             // Complex channels may omit the first cluster's numeric suffix.
             if suffix.is_empty() {
@@ -163,7 +229,7 @@ pub(super) fn cluster(name: &str, generation: u32) -> Option<CoreKind> {
     None
 }
 
-pub(super) fn complete_tables(generation: u32, tables: &mut [Vec<f64>; 3]) -> bool {
+fn complete_tables(generation: u32, tables: &mut [Vec<f64>; 3]) -> bool {
     // Stats ea74107ca4012312818d31120461776fb9451780 SystemKit.getFrequencies:
     // M6 MCPU and PCPU channels share the PACC table when no separate MCPU table exists.
     if generation == 6 && tables[1].is_empty() && !tables[2].is_empty() {
@@ -300,6 +366,10 @@ mod tests {
             for variant in ["", " Pro", " Max", " Ultra"] {
                 let model = format!("Apple M{number}{variant}");
                 assert_eq!(generation(&model), Some(number));
+                let layout = FrequencyLayout::identify(&model).unwrap();
+                assert_eq!(layout, FrequencyLayout::M(number));
+                assert_eq!(layout.divisor(), divisor(number));
+                assert_eq!(layout.table_keys(None), table_keys(number, None));
             }
             let divisor = divisor(number);
             let mut bytes = Vec::new();
@@ -317,6 +387,7 @@ mod tests {
             "VirtualApple",
         ] {
             assert_eq!(generation(model), None);
+            assert_eq!(FrequencyLayout::identify(model), None);
         }
         assert_eq!(decode_table(&[0; 8], 1000.0), None);
         assert_eq!(decode_table(&[0; 7], 1000.0), None);
