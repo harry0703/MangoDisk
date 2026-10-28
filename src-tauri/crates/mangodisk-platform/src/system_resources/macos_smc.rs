@@ -317,6 +317,7 @@ fn discover(connection: &Connection, keys: &[[u8; 4]]) -> PlatformResult<Vec<(u3
 fn supported_encoding(info: KeyInfo) -> bool {
     temperature_encoding(info)
         || (info.kind == u32::from_be_bytes(*b"sp96") && info.size == 2)
+        || (info.kind == u32::from_be_bytes(*b"sp87") && info.size == 2)
         || (info.kind == u32::from_be_bytes(*b"fpe2") && info.size == 2)
         || (info.kind == u32::from_be_bytes(*b"ui8 ") && info.size == 1)
 }
@@ -348,6 +349,8 @@ fn decode(info: KeyInfo, bytes: &[u8; 32]) -> Option<f64> {
     } else {
         let divisor = if info.kind == u32::from_be_bytes(*b"sp96") {
             64.0
+        } else if info.kind == u32::from_be_bytes(*b"sp87") {
+            128.0
         } else {
             256.0
         };
@@ -358,6 +361,27 @@ fn decode(info: KeyInfo, bytes: &[u8; 32]) -> Option<f64> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn macbook_package_power_sp87_preserves_fraction_sign_and_bounds() {
+        let info = KeyInfo {
+            kind: u32::from_be_bytes(*b"sp87"),
+            size: 2,
+            ..Default::default()
+        };
+        let mut bytes = [0; 32];
+        for (raw, expected) in [
+            (0i16, 0.0),
+            (1281, 10.0078125),
+            (-128, -1.0),
+            (i16::MAX, 255.9921875),
+            (i16::MIN, -256.0),
+        ] {
+            bytes[..2].copy_from_slice(&raw.to_be_bytes());
+            assert_eq!(decode(info, &bytes), Some(expected));
+        }
+        assert!(!temperature_encoding(info));
+        assert!(decode(KeyInfo { size: 4, ..info }, &bytes).is_none());
+    }
     #[test]
     fn fan_count_and_unsigned_fixed_point_preserve_zero_and_fractional_rpm() {
         let mut bytes = [0; 32];
