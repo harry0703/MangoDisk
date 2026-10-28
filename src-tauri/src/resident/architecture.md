@@ -1615,3 +1615,12 @@ or synthetic trend points. Battery presence and
 selected-device changes still invalidate observations. The cache lives in the
 resident process; restarting the application starts without previous observations.
 Background sampling intervals and on-demand detail collection are unchanged.
+
+SMC remains the preferred temperature source. Only an unsuccessful CPU/GPU
+observation may try explicitly named IOHID CPU/GPU sensors. PMU, NAND, battery and
+anonymous sensors are excluded. GPU HID fallback additionally requires one
+identified Apple accelerator. Invalid members reject the complete matched group;
+CPU and GPU fall back independently and expose `appleHid` as the source. SMC
+initialization or transport failure is retried after thirty seconds even while
+HID succeeds; transient invalid sensor values can recover on the next interval.
+A machine without those HID sensors still reports temperature as unavailable.

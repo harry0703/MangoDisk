@@ -26,6 +26,7 @@ pub enum CpuTemperatureKind {
 #[serde(rename_all = "camelCase")]
 pub enum CpuTemperatureSource {
     AppleSmc,
+    AppleHid,
     LinuxHwmon,
     IntelDtsPawnIo,
     AmdZenPawnIo,

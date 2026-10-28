@@ -8,10 +8,56 @@ use crate::{PlatformError, PlatformErrorCode};
 use std::mem::size_of;
 
 pub(super) struct Reader {
+    smc: PlatformResult<SmcReader>,
+    model: Option<String>,
+    retry_at: std::time::Instant,
+}
+impl Reader {
+    pub(super) fn new(model: Option<&str>) -> PlatformResult<Self> {
+        Ok(Self {
+            smc: SmcReader::new(model),
+            model: model.map(str::to_owned),
+            retry_at: std::time::Instant::now() + std::time::Duration::from_secs(30),
+        })
+    }
+    pub(super) fn read(&mut self) -> PlatformResult<CpuTemperature> {
+        if self.smc.is_err() && std::time::Instant::now() >= self.retry_at {
+            self.smc = SmcReader::new(self.model.as_deref());
+            self.retry_at = std::time::Instant::now() + std::time::Duration::from_secs(30);
+        }
+        let was_connected = self.smc.is_ok();
+        let primary = self
+            .smc
+            .as_mut()
+            .map_err(|error| error.clone())
+            .and_then(SmcReader::read);
+        if was_connected {
+            if let Err(error) = &primary {
+                if error.code() != crate::PlatformErrorCode::InvalidData {
+                    self.smc = Err(error.clone());
+                    self.retry_at = std::time::Instant::now() + std::time::Duration::from_secs(30);
+                }
+            }
+        }
+        crate::system_resources::macos_hid::fallback(primary, || {
+            let (celsius, sensor_count) = crate::system_resources::macos_hid::read(
+                crate::system_resources::macos_hid::Sensor::Cpu,
+            )?;
+            Ok(CpuTemperature {
+                celsius,
+                sensor_count,
+                sampled_at_ms: None,
+                kind: CpuTemperatureKind::CoreAverage,
+                source: CpuTemperatureSource::AppleHid,
+            })
+        })
+    }
+}
+struct SmcReader {
     sensors: TemperatureSensors,
     kind: CpuTemperatureKind,
 }
-impl Reader {
+impl SmcReader {
     pub(super) fn new(model: Option<&str>) -> PlatformResult<Self> {
         #[cfg(target_arch = "x86_64")]
         let (keys, _) = cpu_keys(model).ok_or_else(unsupported)?;

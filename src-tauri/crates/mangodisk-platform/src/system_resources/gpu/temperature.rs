@@ -14,6 +14,7 @@ pub enum GpuTemperatureKind {
 #[serde(rename_all = "camelCase")]
 pub enum GpuTemperatureSource {
     AppleSmc,
+    AppleHid,
     Driver,
 }
 #[derive(Debug, Clone, Serialize)]

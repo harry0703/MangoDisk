@@ -87,45 +87,44 @@ impl Adapter {
         };
         let driver = property(self.object.0, statistics_key)
             .map(|value| details(&value, self.unified, self.core_count));
-        let reading =
-            (|| {
-                if let Some(celsius) = driver
-                    .and_then(|value| value.telemetry.temperature_celsius)
-                    .filter(|value| *value != 128.0)
-                {
-                    Ok(GpuTemperature {
+        let reading = (|| {
+            if let Some(celsius) = driver
+                .and_then(|value| value.telemetry.temperature_celsius)
+                .filter(|value| *value != 128.0)
+            {
+                Ok(GpuTemperature {
+                    adapter_id: self.id.clone(),
+                    adapter_name: self.name.clone(),
+                    celsius,
+                    kind: GpuTemperatureKind::Device,
+                    source: GpuTemperatureSource::Driver,
+                    sensor_count: 1,
+                })
+            } else {
+                if let Some((error, retry_at)) = &self.temperature_error {
+                    if Instant::now() < *retry_at {
+                        return Err(error.clone());
+                    }
+                }
+                if self.temperature.is_none() {
+                    self.temperature = Some(super::macos_temperature::Reader::new(
+                        &self.name,
+                        &self.class,
+                        unambiguous,
+                    )?);
+                }
+                self.temperature.as_mut().unwrap().read().map(
+                    |(celsius, sensor_count, kind, source)| GpuTemperature {
                         adapter_id: self.id.clone(),
                         adapter_name: self.name.clone(),
                         celsius,
-                        kind: GpuTemperatureKind::Device,
-                        source: GpuTemperatureSource::Driver,
-                        sensor_count: 1,
-                    })
-                } else {
-                    if let Some((error, retry_at)) = &self.temperature_error {
-                        if Instant::now() < *retry_at {
-                            return Err(error.clone());
-                        }
-                    }
-                    if self.temperature.is_none() {
-                        self.temperature = Some(super::macos_temperature::Reader::new(
-                            &self.name,
-                            &self.class,
-                            unambiguous,
-                        )?);
-                    }
-                    self.temperature.as_ref().unwrap().read().map(
-                        |(celsius, sensor_count, kind)| GpuTemperature {
-                            adapter_id: self.id.clone(),
-                            adapter_name: self.name.clone(),
-                            celsius,
-                            sensor_count,
-                            kind,
-                            source: GpuTemperatureSource::AppleSmc,
-                        },
-                    )
-                }
-            })();
+                        sensor_count,
+                        kind,
+                        source,
+                    },
+                )
+            }
+        })();
         let diagnostic = match &reading {
             Ok(value) => {
                 self.temperature_error = None;

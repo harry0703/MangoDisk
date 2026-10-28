@@ -7,11 +7,80 @@ use crate::{
 };
 
 pub(super) struct Reader {
+    smc: PlatformResult<SmcReader>,
+    hid_allowed: bool,
+    model: String,
+    class: String,
+    unambiguous: bool,
+    retry_at: std::time::Instant,
+}
+impl Reader {
+    pub(super) fn new(model: &str, class: &str, unambiguous: bool) -> PlatformResult<Self> {
+        Ok(Self {
+            smc: SmcReader::new(model, class, unambiguous),
+            hid_allowed: unambiguous && class.contains("agx"),
+            model: model.into(),
+            class: class.into(),
+            unambiguous,
+            retry_at: std::time::Instant::now() + std::time::Duration::from_secs(30),
+        })
+    }
+    pub(super) fn read(
+        &mut self,
+    ) -> PlatformResult<(
+        f64,
+        u32,
+        GpuTemperatureKind,
+        super::temperature::GpuTemperatureSource,
+    )> {
+        if self.smc.is_err() && std::time::Instant::now() >= self.retry_at {
+            self.smc = SmcReader::new(&self.model, &self.class, self.unambiguous);
+            self.retry_at = std::time::Instant::now() + std::time::Duration::from_secs(30);
+        }
+        let was_connected = self.smc.is_ok();
+        let primary = self
+            .smc
+            .as_ref()
+            .map_err(Clone::clone)
+            .and_then(SmcReader::read)
+            .map(|(celsius, count, kind)| {
+                (
+                    celsius,
+                    count,
+                    kind,
+                    super::temperature::GpuTemperatureSource::AppleSmc,
+                )
+            });
+        if was_connected {
+            if let Err(error) = &primary {
+                if error.code() != crate::PlatformErrorCode::InvalidData {
+                    self.smc = Err(error.clone());
+                    self.retry_at = std::time::Instant::now() + std::time::Duration::from_secs(30);
+                }
+            }
+        }
+        if !self.hid_allowed {
+            return primary;
+        }
+        crate::system_resources::macos_hid::fallback(primary, || {
+            let (celsius, count) = crate::system_resources::macos_hid::read(
+                crate::system_resources::macos_hid::Sensor::Gpu,
+            )?;
+            Ok((
+                celsius,
+                count,
+                GpuTemperatureKind::SensorAverage,
+                super::temperature::GpuTemperatureSource::AppleHid,
+            ))
+        })
+    }
+}
+struct SmcReader {
     sensors: TemperatureSensors,
     kind: GpuTemperatureKind,
     reject_power_gated_readings: bool,
 }
-impl Reader {
+impl SmcReader {
     pub(super) fn new(model: &str, class: &str, unambiguous: bool) -> PlatformResult<Self> {
         let keys = sensor_keys(model, class, unambiguous).ok_or_else(unsupported)?;
         let sensors = TemperatureSensors::new(keys)?;

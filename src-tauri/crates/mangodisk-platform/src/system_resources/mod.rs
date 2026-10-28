@@ -31,3 +31,6 @@ mod process_image_windows;
 
 #[cfg(target_os = "macos")]
 mod macos_smc;
+
+#[cfg(target_os = "macos")]
+mod macos_hid;

@@ -98,7 +98,7 @@ export const CPU_TEMPERATURE_FRESHNESS_MS = 10_000;
 export interface CpuTemperature {
   celsius: number;
   kind: 'coreAverage' | 'package' | 'coreMaximum' | 'diode' | 'proximity';
-  source: 'appleSmc' | 'linuxHwmon' | 'intelDtsPawnIo' | 'amdZenPawnIo';
+  source: 'appleSmc' | 'appleHid' | 'linuxHwmon' | 'intelDtsPawnIo' | 'amdZenPawnIo';
   sensorCount: number;
 }
 export const GPU_TEMPERATURE_FRESHNESS_MS = 10_000;
@@ -107,7 +107,7 @@ export interface GpuTemperature {
   adapterName: string;
   celsius: number;
   kind: 'sensorAverage' | 'device';
-  source: 'appleSmc' | 'driver';
+  source: 'appleSmc' | 'appleHid' | 'driver';
   sensorCount: number;
 }
 export interface GpuUsage {
