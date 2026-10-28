@@ -1641,6 +1641,10 @@ Preference schema 39 adds disabled CPU/GPU power display entries and color rules
 inserting new power entries after the matching temperature item while preserving
 existing relative order, choices and thresholds. Saved power positions remain
 customizable. Floating schema 12 adds their
-shared display IDs. Native menu indicators
+shared display IDs. The CPU/GPU detail panels show fresh available component
+power only; GPU power must match the selected adapter. Native menu indicators
 also validate freshness and identity. Metric-specific entries open the matching
 page; the combined macOS entry retains the last page.
+
+Component power sits in the utilization card footer beside the device label,
+with no reserved field for unavailable readings.

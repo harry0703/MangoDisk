@@ -207,6 +207,7 @@ const rates = computed(() =>
           :observed-at-ms="reading.observedAtMs"
           @activate="$emit('gpu')"
         />
+        <slot name="meta-end" />
       </template>
       <template v-else-if="metric === 'memory'">
         <span v-if="ready && memory">

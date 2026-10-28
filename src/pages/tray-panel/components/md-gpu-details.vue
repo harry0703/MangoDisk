@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import MdComponentPower from './md-component-power.vue';
 import { summarizeUtilizationHistory } from '@/lib/utils/system-resources/utilization-history-summary';
 import MdGpuEngineHistory from './md-gpu-engine-history.vue';
 import MdResourceFacts from './md-resource-facts.vue';
@@ -68,6 +69,17 @@ const value = computed(() => {
     (!selectedId.value || selectedId.value === sample.value?.adapterId)
     ? sample.value
     : null;
+});
+const powerMatches = computed(() => {
+  const adapterId =
+    selectedId.value ??
+    value.value?.adapterId ??
+    (props.reading.gpuAdapters.length === 1 ? props.reading.gpuAdapters[0]?.id : null);
+  return (
+    !!adapterId &&
+    props.reading.gpuAdapters.some(adapter => adapter.id === adapterId) &&
+    props.reading.gpuPower.value?.adapterId === adapterId
+  );
 });
 const deviceIdentity = computed(() => JSON.stringify([value.value?.adapterId, value.value?.adapterName]));
 const temperatureIdentity = computed(() => {
@@ -204,16 +216,25 @@ onMounted(() => {
           :active="active"
           :label="t('systemStatus.lastMinute')"
         />
-        <p v-if="value" class="detail-note device-caption">
-          <MdTooltip :active="active" :text="deviceTooltip">
-            <span class="device-name">{{ value.adapterName }}</span>
-          </MdTooltip>
-          <span v-if="readingFailed" class="reading-error" role="status" :aria-label="t(METRIC_STATUS_KEYS.failed)">{{
-            t(METRIC_STATUS_KEYS.failed)
+        <p class="detail-note device-caption">
+          <template v-if="value">
+            <MdTooltip :active="active" :text="deviceTooltip">
+              <span class="device-name">{{ value.adapterName }}</span>
+            </MdTooltip>
+            <span v-if="readingFailed" class="reading-error" role="status" :aria-label="t(METRIC_STATUS_KEYS.failed)">{{
+              t(METRIC_STATUS_KEYS.failed)
+            }}</span>
+          </template>
+          <span v-else role="status">{{
+            t(METRIC_STATUS_KEYS[reading.gpuDetails.status === 'ready' ? 'loading' : reading.gpuDetails.status])
           }}</span>
-        </p>
-        <p v-else class="detail-note" role="status">
-          {{ t(METRIC_STATUS_KEYS[reading.gpuDetails.status === 'ready' ? 'loading' : reading.gpuDetails.status]) }}
+          <MdComponentPower
+            v-if="powerMatches"
+            metric="gpu"
+            :reading="reading.gpuPower"
+            :observed-at-ms="reading.observedAtMs"
+            :active="active"
+          />
         </p>
       </div>
     </MdResourceCard>

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import MdComponentPower from './md-component-power.vue';
 import { computed } from 'vue';
 import MdResourceFacts from './md-resource-facts.vue';
 import MdCpuTemperature from './md-cpu-temperature.vue';
@@ -75,7 +76,16 @@ const facts = computed(() => {
     :show-cpu-temperature="false"
     :reading="reading"
     :active="active"
-  />
+  >
+    <template #meta-end>
+      <MdComponentPower
+        metric="cpu"
+        :reading="reading.cpuPower"
+        :observed-at-ms="reading.observedAtMs"
+        :active="active"
+      />
+    </template>
+  </MdResourceOverview>
   <MdTemperatureDetails
     v-if="temperatureSupported && reading.cpuTemperature.status !== 'unsupported'"
     :history="temperatureEnabled ? reading.cpuTemperatureHistory : []"

@@ -674,3 +674,45 @@ describe('shared GPU temperature history', () => {
     expect(wrapper.get('.temperature-chart').findComponent({ name: 'MdResourceTrend' }).exists()).toBe(false);
   });
 });
+
+it('never attributes component power to a different selected GPU', async () => {
+  const value = reading();
+  value.gpuPower = { status: 'ready', sampledAtMs: 2000, value: { adapterId: 'a', watts: 24.5, source: 'ioReport' } };
+  const { wrapper, settings } = render(value);
+  await flushPromises();
+  expect(wrapper.get('.gpu-summary .device-caption [data-component-power="gpu"]').text()).toBe('24.5W');
+  settings.draft!.gpuAdapter = 'b';
+  await flushPromises();
+  expect(wrapper.text()).not.toContain('24.5W');
+  settings.draft!.gpuAdapter = 'a';
+  await flushPromises();
+  expect(wrapper.text()).toContain('24.5W');
+});
+
+it('keeps identified GPU power available when utilization is unavailable', async () => {
+  const value = reading();
+  value.gpuAdapters = [{ id: 'a', name: 'Apple GPU' }];
+  value.gpu = { status: 'unsupported', sampledAtMs: null, value: null };
+  value.gpuDetails = { status: 'unsupported', sampledAtMs: null, value: null };
+  value.gpuPower = { status: 'ready', sampledAtMs: 2000, value: { adapterId: 'a', watts: 0.4, source: 'ioReport' } };
+  const { wrapper } = render(value);
+  await flushPromises();
+  expect(wrapper.get('.gpu-summary [data-component-power="gpu"]').text()).toBe('0.4W');
+  await wrapper.setProps({
+    reading: { ...value, gpuAdapters: [...value.gpuAdapters, { id: 'b', name: 'Other GPU' }] },
+  });
+  expect(wrapper.find('[data-component-power="gpu"]').exists()).toBe(false);
+});
+
+it('hides fresh cached power after the saved GPU disappears from the catalogue', async () => {
+  const value = reading();
+  value.gpuAdapters = [{ id: 'b', name: 'Replacement GPU' }];
+  value.gpu = { status: 'disconnected', sampledAtMs: null, value: null };
+  value.gpuDetails = { status: 'disconnected', sampledAtMs: null, value: null };
+  value.gpuPower = { status: 'ready', sampledAtMs: 2000, value: { adapterId: 'a', watts: 24.5, source: 'ioReport' } };
+  const { wrapper, settings } = render(value);
+  await flushPromises();
+  settings.draft!.gpuAdapter = 'a';
+  await flushPromises();
+  expect(wrapper.find('[data-component-power="gpu"]').exists()).toBe(false);
+});

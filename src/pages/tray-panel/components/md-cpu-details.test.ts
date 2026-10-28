@@ -264,3 +264,16 @@ describe('CPU detail observations', () => {
     wrapper.unmount();
   });
 });
+
+it('places fresh component power inside the usage card and removes unavailable power', async () => {
+  const reading = windowsReading();
+  reading.cpuPower = { status: 'ready', sampledAtMs: 70000, value: { watts: 6.7, source: 'ioReport' } };
+  const wrapper = render(reading);
+  expect(wrapper.get('.cpu-summary .resource-meta [data-component-power="cpu"]').text()).toBe('6.7W');
+  expect(wrapper.findAll('[data-component-power="cpu"]')).toHaveLength(1);
+  await wrapper.setProps({
+    reading: { ...reading, cpuPower: { status: 'unsupported', sampledAtMs: null, value: null } },
+  });
+  expect(wrapper.find('[data-component-power="cpu"]').exists()).toBe(false);
+  wrapper.unmount();
+});
