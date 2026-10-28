@@ -1677,3 +1677,7 @@ displays. Floating power colors must not inherit the compact surface's rounded
 threshold match. GPU catalogue removal invalidates cached component power and
 its timestamp immediately; a returning device needs a new valid observation.
 The GPU panel also requires the power adapter to remain in the current catalogue.
+GPU power entries retain their sampled adapter identity on native and floating
+surfaces. Multi-GPU displays show the corresponding GPU number, and tooltips name
+the source adapter, so an independently selected utilization display cannot make
+one GPU's watts appear to belong to another. Single-GPU labels remain unchanged.

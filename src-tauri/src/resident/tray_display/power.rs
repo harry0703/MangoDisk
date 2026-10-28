@@ -1,6 +1,6 @@
 //! Battery and system power presentation using the shared native precision rules.
 use super::{
-    display_entry::{DisplayEntry, DisplayId},
+    display_entry::{DisplayEntry, DisplayId, GpuDisplayDevice},
     labels,
 };
 use crate::resident::preference_schema::DisplayMetricId;
@@ -70,6 +70,26 @@ pub(super) fn component_power_entry(
     id: DisplayMetricId,
 ) -> DisplayEntry {
     let cpu = id == DisplayMetricId::CpuPower;
+    let gpu_device = if cpu {
+        None
+    } else {
+        values.gpu_power.value.as_ref().and_then(|power| {
+            values
+                .gpu_adapters
+                .iter()
+                .enumerate()
+                .find(|(_, adapter)| adapter.id == power.adapter_id)
+                .map(|(index, adapter)| GpuDisplayDevice {
+                    id: adapter.id.clone(),
+                    name: adapter.name.clone(),
+                    label: if values.gpu_adapters.len() == 1 {
+                        "GPU".into()
+                    } else {
+                        format!("GPU{index}")
+                    },
+                })
+        })
+    };
     let (status, at, watts) = if cpu {
         let reading = &values.cpu_power;
         (
@@ -85,12 +105,7 @@ pub(super) fn component_power_entry(
             reading
                 .value
                 .as_ref()
-                .filter(|power| {
-                    values
-                        .gpu_adapters
-                        .iter()
-                        .any(|adapter| adapter.id == power.adapter_id)
-                })
+                .filter(|_| gpu_device.is_some())
                 .map(|power| power.power.watts),
         )
     };
@@ -102,11 +117,37 @@ pub(super) fn component_power_entry(
                 .and_then(|at| values.observed_at_ms.checked_sub(at))
                 .is_some_and(|age| age <= 5_000)
     });
-    let name = labels.text(if cpu { "cpuPower" } else { "gpuPower" });
+    let metric_name = labels.text(if cpu { "cpuPower" } else { "gpuPower" });
+    let name = gpu_device
+        .as_ref()
+        .filter(|device| device.label != "GPU")
+        .map_or_else(
+            || metric_name.to_string(),
+            |device| format!("{} · {metric_name}", device.label),
+        );
     let digits = watts.map(power_digits).unwrap_or_else(|| "—".into());
+    let tooltip = if let Some(watts) = watts {
+        format!(
+            "{metric_name} {watts:.1}W · {}",
+            labels.text("componentPowerHint")
+        )
+    } else {
+        format!(
+            "{metric_name} · {}",
+            labels.status(if status == MetricStatus::Ready {
+                MetricStatus::Stale
+            } else {
+                status
+            })
+        )
+    };
+    let tooltip = match &gpu_device {
+        Some(device) => format!("{} · {tooltip}", device.name),
+        None => tooltip,
+    };
     DisplayEntry {
         frequency: None,
-        gpu_device: None,
+        gpu_device,
         id: if cpu {
             DisplayId::CpuPower
         } else {
@@ -122,18 +163,7 @@ pub(super) fn component_power_entry(
         } else {
             format!("{name} —")
         },
-        tooltip: if let Some(watts) = watts {
-            format!("{name} {watts:.1}W · {}", labels.text("componentPowerHint"))
-        } else {
-            format!(
-                "{name} · {}",
-                labels.status(if status == MetricStatus::Ready {
-                    MetricStatus::Stale
-                } else {
-                    status
-                })
-            )
-        },
+        tooltip,
         digits,
     }
 }
@@ -336,6 +366,65 @@ mod tests {
         component_power::{ComponentPower, ComponentPowerSource, GpuPower},
         gpu::GpuAdapter,
     };
+    #[test]
+    fn hybrid_power_entries_preserve_the_sampler_device_identity() {
+        let labels = labels::Labels::for_locale("en-US");
+        let mut values = ResourceReadings {
+            observed_at_ms: 1000,
+            ..Default::default()
+        };
+        values.gpu_adapters = vec![
+            GpuAdapter {
+                id: "amd".into(),
+                name: "Radeon Pro".into(),
+            },
+            GpuAdapter {
+                id: "intel".into(),
+                name: "Intel Graphics".into(),
+            },
+        ];
+        values.gpu = MetricReading::ready(
+            mangodisk_core::system_resources::gpu::GpuUsage {
+                adapter_id: "amd".into(),
+                adapter_name: "Radeon Pro".into(),
+                used_percent: 80.0,
+                details: None,
+            },
+            1000,
+        );
+        values.gpu_power = MetricReading::ready(
+            GpuPower {
+                adapter_id: "intel".into(),
+                power: ComponentPower {
+                    watts: 0.4,
+                    source: ComponentPowerSource::AppleSmc,
+                },
+            },
+            1000,
+        );
+        let entry = component_power_entry(&values, &labels, DisplayMetricId::GpuPower);
+        let device = entry
+            .gpu_device
+            .as_ref()
+            .expect("GPU power must retain the sampled adapter");
+        assert_eq!(device.id, "intel");
+        assert_eq!(device.label, "GPU1");
+        #[cfg(target_os = "macos")]
+        assert_eq!(
+            super::super::macos_presentation::columns(std::slice::from_ref(&entry), false)[0].top,
+            "GPU1"
+        );
+        assert!(entry.tooltip.contains("Intel Graphics"));
+        assert!(entry.text.contains("GPU1"));
+        values.gpu_power.value.as_mut().unwrap().adapter_id = "amd".into();
+        let entry = component_power_entry(&values, &labels, DisplayMetricId::GpuPower);
+        assert_eq!(entry.gpu_device.as_ref().unwrap().label, "GPU0");
+        assert!(entry.tooltip.contains("Radeon Pro"));
+        values.gpu_adapters.remove(1);
+        let entry = component_power_entry(&values, &labels, DisplayMetricId::GpuPower);
+        assert_eq!(entry.gpu_device.as_ref().unwrap().label, "GPU");
+        assert!(!entry.text.contains("GPU0"));
+    }
     #[test]
     fn floating_power_keeps_tenths_without_changing_compact_or_missing_readings() {
         let labels = labels::Labels::for_locale("en-US");

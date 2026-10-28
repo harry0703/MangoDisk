@@ -433,6 +433,32 @@ describe('floating monitor interaction and lifecycle', () => {
       'GPU 2',
     ]);
   });
+  it.each(Object.keys(locales))('identifies a single hybrid GPU power source in %s', async locale => {
+    const value = snapshot();
+    value.entries.push({
+      id: 'gpuPower',
+      digits: '0.4',
+      marker: 'W',
+      text: 'GPU power 0.4W',
+      tooltip: 'Intel Graphics · GPU power 0.4W',
+      tone: 'normal',
+      gpuDevice: { id: 'intel', name: 'Intel Graphics', label: 'GPU1' },
+    });
+    native.ready.mockResolvedValue(value);
+    const wrapper = render(locale);
+    await flushPromises();
+    expect(wrapper.get('[data-metric="gpuPower"] .metric-label').text()).toContain('GPU1');
+    accept({
+      ...value,
+      entries: value.entries.map(entry =>
+        entry.id === 'gpuPower' ? { ...entry, gpuDevice: { ...entry.gpuDevice!, label: 'GPU' } } : entry
+      ),
+    });
+    await flushPromises();
+    expect(wrapper.get('[data-metric="gpuPower"] .metric-label').text()).toBe(
+      locales[locale]!.floatingMonitor.labels.gpuPower
+    );
+  });
   it('keeps the latest native event when an older initial read finishes later', async () => {
     let resolve: (value: FloatingSnapshot) => void = () => {};
     native.ready.mockReturnValue(
