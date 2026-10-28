@@ -4512,7 +4512,7 @@
     "linkHint": "系統回報的網卡連線速率\n不代表實際網際網路速度",
     "status": "狀態",
     "connected": "已連線",
-    "hardwareAddress": "目前 MAC 位址",
+    "hardwareAddress": "MAC 位址",
     "standard": "Wi-Fi 標準",
     "channel": "頻道",
     "wifiLinkHint": "目前 Wi-Fi 協商的傳送速率\n不代表實際網際網路速度",

@@ -15,6 +15,7 @@ const props = withDefaults(
   }>(),
   { active: true }
 );
+const slots = defineSlots<{ scale?: (props: { ceiling: number }) => unknown }>();
 const timeline = new ResourceTrendTimeline();
 const offset = ref(0);
 const points = shallowRef<TrendPoint[]>([]);
@@ -190,6 +191,9 @@ onBeforeUnmount(() => {
 
 <template>
   <div class="resource-trend" :class="[metric, { bidirectional }]" role="img" :aria-label="label">
+    <div v-if="slots.scale && points.length" class="trend-scale" aria-hidden="true">
+      <span class="scale-range"><slot name="scale" :ceiling="ceiling" /></span>
+    </div>
     <div class="trend-strip">
       <MdIconTrend :series="series" :amplitude="amplitude" :offset="offset" :origin="metric === 'power' ? 100 : 50" />
     </div>
@@ -222,5 +226,20 @@ onBeforeUnmount(() => {
 .trend-strip {
   position: absolute;
   inset: 0;
+}
+.trend-scale {
+  position: absolute;
+  inset: 4px 6px;
+  z-index: 1;
+  pointer-events: none;
+  font-size: 9px;
+  line-height: 12px;
+  font-variant-numeric: tabular-nums;
+}
+.scale-range {
+  position: absolute;
+  top: 0;
+  left: 0;
+  color: var(--muted-foreground);
 }
 </style>

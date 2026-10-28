@@ -12,6 +12,24 @@ afterEach(() => {
 });
 
 describe('resource trend rendering', () => {
+  it('shows one plain range value without a zero label or directional arrows', () => {
+    const wrapper = mount(Trend, {
+      props: {
+        metric: 'network',
+        label: 'Network',
+        active: false,
+        observedAtMs: 60000,
+        history: [{ sampledAtMs: 60000, primary: 16, secondary: 256 }],
+      },
+      slots: { scale: ({ ceiling }: { ceiling: number }) => `${ceiling} B/s` },
+    });
+    expect(wrapper.get('.scale-range').text()).toBe('256 B/s');
+    expect(wrapper.findAll('.scale-range')).toHaveLength(1);
+    expect(wrapper.find('.scale-zero').exists()).toBe(false);
+    expect(wrapper.get('.trend-scale').text()).not.toMatch(/[↑↓]/);
+    wrapper.unmount();
+  });
+
   it('does not bridge a failed power reading followed by a quick retry', () => {
     const recovered = { ...point(59500), gapBefore: true };
     const wrapper = mount(Trend, {

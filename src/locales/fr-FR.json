@@ -4512,7 +4512,7 @@
     "linkHint": "Taux de liaison signalé par le système\nPas votre vitesse Internet",
     "status": "Statut",
     "connected": "Connecté",
-    "hardwareAddress": "Adresse MAC actuelle",
+    "hardwareAddress": "Adresse MAC",
     "standard": "Norme Wi-Fi",
     "channel": "Canal",
     "wifiLinkHint": "Taux de transmission Wi-Fi actuellement négocié\nPas votre vitesse Internet",

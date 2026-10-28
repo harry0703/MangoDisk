@@ -4512,7 +4512,7 @@
     "linkHint": "Tasa de enlace reportada por el sistema\nNo es tu velocidad de internet",
     "status": "Estado",
     "connected": "Conectado",
-    "hardwareAddress": "Dirección MAC actual",
+    "hardwareAddress": "Dirección MAC",
     "standard": "Estándar Wi-Fi",
     "channel": "Canal",
     "wifiLinkHint": "Velocidad de transmisión Wi-Fi negociada actual\nNo es tu velocidad de internet",

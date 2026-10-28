@@ -4512,7 +4512,7 @@
     "linkHint": "Taxa de conexão informada pelo sistema\nNão é a velocidade da internet",
     "status": "Status",
     "connected": "Conectado",
-    "hardwareAddress": "Endereço MAC atual",
+    "hardwareAddress": "Endereço MAC",
     "standard": "Padrão Wi-Fi",
     "channel": "Canal",
     "wifiLinkHint": "Taxa de transmissão Wi-Fi negociada no momento\nNão é a velocidade da internet",

@@ -11,6 +11,8 @@ import NetworkDetails from './md-network-details.vue';
 import { OperatingSystemService } from '@/lib/services/settings/operating-system-service';
 import { emptyReadings } from '@/lib/utils/system-resources/system-resources';
 import type { ResourceReadings } from '@/lib/models/system-resources/system-resources';
+import { preferencesFixture } from '@/tests/fixtures/resident';
+import { Select } from '@/components/ui/select';
 import en from '@/locales/en-US.json';
 import zh from '@/locales/zh-CN.json';
 import tw from '@/locales/zh-TW.json';
@@ -26,7 +28,11 @@ const clipboard = vi.hoisted(() => ({ writeText: vi.fn().mockResolvedValue(undef
 vi.mock('@/lib/services/shell/clipboard-service', () => ({ ClipboardService: clipboard }));
 
 const wrappers: ReturnType<typeof mount>[] = [];
-beforeEach(() => vi.spyOn(OperatingSystemService, 'currentPlatform').mockReturnValue('macos'));
+beforeEach(() => {
+  vi.spyOn(OperatingSystemService, 'currentPlatform').mockReturnValue('macos');
+  vi.spyOn(ResidentService, 'onPreferencesChanged').mockResolvedValue(() => {});
+  vi.spyOn(ResidentService, 'preferences').mockResolvedValue(preferencesFixture());
+});
 afterEach(() => {
   wrappers.splice(0).forEach(wrapper => wrapper.unmount());
   vi.restoreAllMocks();
@@ -319,6 +325,27 @@ describe('disk health and network detail presentation', () => {
     expect(wrapper.find('.health-status').exists()).toBe(false);
     expect(wrapper.find('.disk-health .resource-facts').exists()).toBe(false);
   });
+  it('persists interface changes without replacing other resident preferences and releases its listener', async () => {
+    const stop = vi.fn();
+    vi.mocked(ResidentService.onPreferencesChanged).mockResolvedValueOnce(stop);
+    const preferences = preferencesFixture();
+    vi.spyOn(ResidentService, 'savePreferences').mockImplementation(async value => ({ ...value, revision: 1 }));
+    const wrapper = render(NetworkDetails, emptyReadings());
+    await flushPromises();
+    wrapper.getComponent(Select).vm.$emit('update:modelValue', 'wired-adapter');
+    await flushPromises();
+    expect(ResidentService.savePreferences).toHaveBeenCalledWith({ ...preferences, networkInterface: 'wired-adapter' });
+    wrapper.getComponent(Select).vm.$emit('update:modelValue', 'automatic');
+    await flushPromises();
+    expect(ResidentService.savePreferences).toHaveBeenLastCalledWith({
+      ...preferences,
+      revision: 1,
+      networkInterface: null,
+    });
+    wrapper.unmount();
+    expect(stop).toHaveBeenCalledOnce();
+  });
+
   it('formats link rates as bits and keeps valid zero session traffic distinct from missing data', async () => {
     const reading = emptyReadings();
     reading.observedAtMs = 10000;
@@ -351,7 +378,7 @@ describe('disk health and network detail presentation', () => {
     expect(wrapper.text()).toContain('192.0.2.1');
     expect(wrapper.text()).toContain('2001:db8::1');
     expect(wrapper.text()).toContain('02:00:00:00:00:01');
-    const mac = wrapper.get('button[aria-label="Copy: Current MAC address"]');
+    const mac = wrapper.get('button[aria-label="Copy: MAC address"]');
     await mac.trigger('click');
     await flushPromises();
     expect(clipboard.writeText).toHaveBeenLastCalledWith('02:00:00:00:00:01');
@@ -412,10 +439,27 @@ describe('disk health and network detail presentation', () => {
     };
     await wrapper.setProps({ reading: { ...reading, network: { ...reading.network, value: wifi } } });
     expect(wrapper.text()).toContain('2.4 Gbps');
-    expect(wrapper.text()).not.toContain('↓');
+    expect(wrapper.get('.network-interface header').text()).not.toContain('↓');
     expect(wrapper.text()).toContain('802.11ax');
     expect(wrapper.text()).toContain('36 (5 GHz, 160 MHz)');
     expect(wrapper.text()).not.toContain('-41 / -91 dBm');
+    await wrapper.setProps({
+      reading: {
+        ...reading,
+        network: {
+          ...reading.network,
+          value: {
+            ...wifi,
+            interface: {
+              ...wifi.interface,
+              details: { ...wifi.interface.details, addresses: ['192.0.2.1'] },
+            },
+          },
+        },
+      },
+    });
+    expect(wrapper.get('.network-interface').text()).not.toContain('IPv6');
+    expect(wrapper.get('.network-interface').text()).toContain('192.0.2.1');
     await wrapper.setProps({ reading: { ...reading, network: { ...reading.network, status: 'stale' } } });
     expect(wrapper.text()).toContain('↓ 1 Gbps · ↑ 100 Mbps');
     expect(wrapper.text()).toContain('192.0.2.1');

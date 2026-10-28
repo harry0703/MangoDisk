@@ -45,6 +45,7 @@ import { useWindowsMonitoringStore } from '@/stores/windows-monitoring-store';
 vi.mock('@/lib/services/resident/resident-service', () => ({
   ResidentService: {
     preferences: vi.fn(),
+    onPreferencesChanged: vi.fn().mockResolvedValue(() => {}),
     onReading: vi.fn(),
     onPanelVisibility: vi.fn(),
     onPanelPage: vi.fn(),
@@ -66,9 +67,16 @@ vi.mock('@/lib/services/filesystem/file-icon-service', () => ({
 }));
 vi.mock('@/lib/services/filesystem/file-manager-service', () => ({ FileManagerService: { reveal: vi.fn() } }));
 vi.mock('@/lib/services/diagnostics/logger-service', () => ({ LoggerService: { warn: vi.fn() } }));
-vi.mock('@/lib/services/settings/byte-size-service', () => ({
-  ByteSizeService: { memory: (bytes: number) => `${bytes} B` },
-}));
+vi.mock('@/lib/services/settings/byte-size-service', async importOriginal => {
+  const actual = await importOriginal<typeof import('@/lib/services/settings/byte-size-service')>();
+  return {
+    ByteSizeService: class extends actual.ByteSizeService {
+      static override memory(bytes: number) {
+        return `${bytes} B`;
+      }
+    },
+  };
+});
 
 const memory = {
   totalBytes: 100,

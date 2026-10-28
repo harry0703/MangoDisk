@@ -4512,7 +4512,7 @@
     "linkHint": "Vom System gemeldete Verbindungsrate\nNicht Ihre Internetgeschwindigkeit",
     "status": "Status",
     "connected": "Verbunden",
-    "hardwareAddress": "Aktuelle MAC-Adresse",
+    "hardwareAddress": "MAC-Adresse",
     "standard": "Wi-Fi-Standard",
     "channel": "Kanal",
     "wifiLinkHint": "Aktuelle ausgehandelte WLAN-Übertragungsrate\nNicht Ihre Internetgeschwindigkeit",

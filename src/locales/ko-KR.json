@@ -4512,7 +4512,7 @@
     "linkHint": "시스템이 보고한 연결 속도\n실제 인터넷 속도가 아닙니다",
     "status": "상태",
     "connected": "연결됨",
-    "hardwareAddress": "현재 MAC 주소",
+    "hardwareAddress": "MAC 주소",
     "standard": "Wi-Fi 표준",
     "channel": "채널",
     "wifiLinkHint": "현재 Wi-Fi에서 협상된 송신 속도\n실제 인터넷 속도가 아닙니다",
