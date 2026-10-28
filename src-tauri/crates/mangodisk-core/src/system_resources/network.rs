@@ -389,6 +389,23 @@ mod tests {
     }
 
     #[test]
+    fn wired_default_route_survives_wifi_disconnect_and_reconnection() {
+        let lan = interface("en7", true, Some(0));
+        let mut wifi = interface("en0", true, Some(1));
+        wifi.interface.kind = InterfaceKind::Wifi;
+        let mut rows = [wifi, lan];
+        for connected in [true, false, true] {
+            rows[0].interface.connected = connected;
+            let (selected, reason) = select(&rows, None, Some("en0"));
+            assert_eq!(selected.unwrap().interface.id, "en7");
+            assert_eq!(reason, NetworkSelectionReason::DefaultRoute);
+            let catalogue = catalogue(&rows, None);
+            assert_eq!(catalogue[0].id, "en7");
+            assert_eq!(catalogue.len(), if connected { 2 } else { 1 });
+        }
+    }
+
+    #[test]
     fn rates_use_actual_elapsed_time_in_both_directions() {
         let interface = interface("lan", true, None).interface;
         let mut delta = NetworkDelta::default();

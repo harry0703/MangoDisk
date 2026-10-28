@@ -8,6 +8,7 @@ use std::{
 
 use core_foundation::{
     base::{CFType, TCFType, ToVoid},
+    boolean::CFBoolean,
     dictionary::CFDictionary,
     string::CFString,
 };
@@ -126,7 +127,9 @@ fn usable_address(ip: std::net::IpAddr) -> bool {
 
 fn primary_interfaces(store: Option<&SCDynamicStore>) -> Vec<String> {
     // SystemConfiguration exposes local routing state without opening a socket
-    // to a public destination. VPN primaries are filtered by physical identity below.
+    // to a public destination. Preserve IPv4-before-IPv6 priority instead of
+    // letting interface-name ordering decide between different family primaries.
+    // VPN primaries are filtered by physical identity below.
     ["State:/Network/Global/IPv4", "State:/Network/Global/IPv6"]
         .iter()
         .filter_map(|key| {
@@ -142,6 +145,32 @@ fn primary_interfaces(store: Option<&SCDynamicStore>) -> Vec<String> {
         .collect()
 }
 
+fn link_active(store: Option<&SCDynamicStore>, id: &str) -> Option<bool> {
+    let value = store?
+        .get(CFString::new(&format!(
+            "State:/Network/Interface/{id}/Link"
+        )))?
+        .downcast_into::<CFDictionary>()?;
+    let key = CFString::new("Active");
+    let raw = value.find(key.to_void())?;
+    unsafe { CFType::wrap_under_get_rule(*raw) }
+        .downcast_into::<CFBoolean>()
+        .map(bool::from)
+}
+
+fn connected_link(flags: i32, active: Option<bool>) -> bool {
+    // Driver-provided RUNNING flags can differ from SystemConfiguration's link
+    // state. Prefer the native link state, retaining flags when it is unavailable.
+    flags & libc::IFF_UP != 0 && active.unwrap_or(flags & libc::IFF_RUNNING != 0)
+}
+
+fn primary_route_metric(primary: &[String], id: &str) -> Option<u32> {
+    primary
+        .iter()
+        .position(|name| name == id)
+        .map(|rank| rank as u32)
+}
+
 #[derive(Default)]
 pub struct Reader {
     store: Option<SCDynamicStore>,
@@ -149,6 +178,7 @@ pub struct Reader {
     topology: Vec<String>,
     refreshed: Option<Instant>,
     wifi: wifi::Reader,
+    diagnostic_state: Vec<String>,
 }
 impl Reader {
     pub fn read(&mut self) -> PlatformResult<Vec<InterfaceSample>> {
@@ -190,6 +220,7 @@ impl Reader {
         bytes.truncate(length);
         let mut offset = 0;
         let mut result = Vec::new();
+        let mut flags = HashMap::new();
         while offset + 4 <= bytes.len() {
             // All route messages share only the first four bytes. Address records
             // are shorter than if_msghdr and must be skipped using their own length.
@@ -237,8 +268,8 @@ impl Reader {
                     let id = unsafe { CStr::from_ptr(name.as_ptr()) }
                         .to_string_lossy()
                         .into_owned();
-                    let connected = info.ifm_flags & libc::IFF_UP != 0
-                        && info.ifm_flags & libc::IFF_RUNNING != 0;
+                    flags.insert(id.clone(), info.ifm_flags);
+                    let connected = connected_link(info.ifm_flags, None);
                     result.push(InterfaceSample {
                         interface: NetworkInterface {
                             details: None,
@@ -246,13 +277,10 @@ impl Reader {
                             kind: InterfaceKind::Virtual,
                             connected,
                             physical: false,
-                            default_route_metric: primary
-                                .iter()
-                                .any(|name| name == &id)
-                                .then_some(0),
+                            default_route_metric: primary_route_metric(&primary, &id),
                             id,
                         },
-                        counters: (valid && connected).then_some(NetworkCounters {
+                        counters: valid.then_some(NetworkCounters {
                             received: data.ifmd_data.ifi_ibytes,
                             transmitted: data.ifmd_data.ifi_obytes,
                             receive_link_bps: (data.ifmd_data.ifi_baudrate > 0)
@@ -295,16 +323,20 @@ impl Reader {
             self.topology = topology;
             self.refreshed = Some(Instant::now());
         }
-        for sample in &mut result {
+        let mut diagnostic_state = Vec::new();
+        for (index, sample) in result.iter_mut().enumerate() {
+            let mut active = None;
             sample.interface.details = addressed.get(&sample.interface.id).cloned();
             if let Some((kind, name)) = self.physical.get(&sample.interface.id) {
                 sample.interface.kind = *kind;
                 sample.interface.physical = true;
                 // Carrier flags alone leave unused Thunderbolt ports apparently
                 // connected. An assigned non-link-local IP establishes a usable link.
-                sample.interface.connected &= addressed
-                    .get(&sample.interface.id)
-                    .is_some_and(|details| !details.addresses.is_empty());
+                active = link_active(self.store.as_ref(), &sample.interface.id);
+                sample.interface.connected = connected_link(flags[&sample.interface.id], active)
+                    && addressed
+                        .get(&sample.interface.id)
+                        .is_some_and(|details| !details.addresses.is_empty());
                 if let Some(name) = name {
                     sample.interface.name.clone_from(name);
                 }
@@ -323,6 +355,26 @@ impl Reader {
                     }
                 }
             }
+            diagnostic_state.push(format!(
+                    "row={} kind={:?} physical={} connected={} active={:?} default_route={} counters={} flags={:#x}",
+                    index,
+                    sample.interface.kind,
+                    sample.interface.physical,
+                    sample.interface.connected,
+                    active,
+                    sample.interface.default_route_metric.is_some(),
+                    sample.counters.is_some(),
+                    flags[&sample.interface.id],
+                ));
+        }
+        if self.diagnostic_state != diagnostic_state {
+            log::info!(
+                "network_interface_state platform=macos stage=sampling interfaces={} primary_count={} state={}",
+                result.len(),
+                primary.len(),
+                crate::diagnostics::text(&diagnostic_state.join("; ")),
+            );
+            self.diagnostic_state = diagnostic_state;
         }
         self.wifi.retain(&result);
         Ok(result)
@@ -339,6 +391,33 @@ fn unavailable() -> PlatformError {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn distinct_family_primaries_keep_their_priority_independent_of_interface_names() {
+        let primary = vec!["wired-primary".into(), "wifi-primary".into()];
+        assert_eq!(primary_route_metric(&primary, "wired-primary"), Some(0));
+        assert_eq!(primary_route_metric(&primary, "wifi-primary"), Some(1));
+        assert_eq!(primary_route_metric(&primary, "unrelated"), None);
+    }
+
+    #[test]
+    fn shared_or_missing_family_primaries_do_not_invent_another_route() {
+        let primary = vec!["same-link".into(), "same-link".into()];
+        assert_eq!(primary_route_metric(&primary, "same-link"), Some(0));
+        assert_eq!(primary_route_metric(&primary[..1], "same-link"), Some(0));
+        assert_eq!(primary_route_metric(&[], "same-link"), None);
+    }
+
+    #[test]
+    fn native_link_state_overrides_driver_running_flag_with_safe_fallback() {
+        let up = libc::IFF_UP;
+        let running = libc::IFF_RUNNING;
+        assert!(connected_link(up, Some(true)));
+        assert!(!connected_link(up | running, Some(false)));
+        assert!(!connected_link(running, Some(true)));
+        assert!(connected_link(up | running, None));
+        assert!(!connected_link(up, None));
+    }
+
     #[test]
     fn usable_links_include_private_ipv4_and_ipv6_without_loopback_or_link_local() {
         for ip in ["192.168.1.2", "10.0.0.2", "fd00::2", "2001:db8::2"] {

@@ -390,6 +390,12 @@ is logged once, and the periodic sample summary includes maximum loop latency.
 macOS interface names and physical-interface classification are cached for at
 most 10 seconds, with immediate invalidation when interface topology changes.
 Connection state, routes and byte counters are always read on each network tick.
+Physical links prefer SystemConfiguration’s native link-active state over driver
+`IFF_RUNNING` flags, falling back to flags when native state is unavailable;
+`IFF_UP` and a usable IP address are still required. Interface-state diagnostics
+are emitted only on changes and exclude interface identities, IP and MAC addresses.
+When IPv4 and IPv6 use different primary links, automatic selection prefers
+the physical IPv4 primary rather than sorting equal priorities by interface name.
 Windows reads interface state and byte counters every tick. Default-route preferences
 are cached for at most thirty seconds and invalidated by native route/interface
 notifications. Callback state is process-lifetime and never touches UI or reader
