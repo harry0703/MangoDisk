@@ -1,6 +1,33 @@
 use super::*;
 use mangodisk_core::system_resources::metrics::MetricId;
 use std::time::Duration;
+
+#[test]
+fn component_power_collects_on_intel_and_apple_silicon_with_panels_hidden() {
+    use crate::resident::preference_schema::DisplayMetricId;
+    for metric in [DisplayMetricId::CpuPower, DisplayMetricId::GpuPower] {
+        assert_eq!(metric.supported_on_platform(), cfg!(target_os = "macos"));
+    }
+    let state = test_state();
+    for panel_open in [false, true] {
+        state.panel_open.store(panel_open, Ordering::Relaxed);
+        for selected in MetricId::ALL {
+            *state.panel_page.lock().unwrap() = selected.into();
+            for (metric, demand) in MetricId::ALL.into_iter().zip(state.demands(false)) {
+                assert_eq!(
+                    demand.component_power,
+                    cfg!(target_os = "macos") && matches!(metric, MetricId::Cpu | MetricId::Gpu)
+                );
+            }
+        }
+    }
+    state.preferences.lock().unwrap().enabled = false;
+    assert!(state
+        .demands(false)
+        .iter()
+        .all(|demand| !demand.component_power));
+}
+
 #[test]
 fn disk_temperature_only_collects_when_selected_and_resident_enabled() {
     let state = test_state();

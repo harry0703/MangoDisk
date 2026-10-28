@@ -330,10 +330,7 @@ impl DisplayMetricId {
     }
     pub fn supported_on_platform(self) -> bool {
         match self {
-            Self::CpuPower | Self::GpuPower => {
-                cfg!(all(target_os = "macos", target_arch = "aarch64"))
-            }
-            Self::SystemPower => cfg!(target_os = "macos"),
+            Self::CpuPower | Self::GpuPower | Self::SystemPower => cfg!(target_os = "macos"),
             Self::CpuFrequency => cfg!(windows),
             Self::CpuEfficiencyFrequency
             | Self::CpuPerformanceFrequency

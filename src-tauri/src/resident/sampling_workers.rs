@@ -287,11 +287,24 @@ impl Sensor {
                 };
                 #[cfg(not(windows))]
                 let fan_speed = None;
+                let power = demand
+                    .component_power
+                    .then(|| {
+                        let selected = demand.selection.as_deref().or_else(|| {
+                            let Ok(GpuSample::Usage(adapters)) = &sample else {
+                                return None;
+                            };
+                            let index =
+                                mangodisk_core::system_resources::gpu::select_adapter_index(
+                                    adapters, None,
+                                )?;
+                            Some(adapters[index].id.as_str())
+                        });
+                        reader.read_power(selected)
+                    })
+                    .flatten();
                 Observation::Gpu {
-                    power: demand
-                        .component_power
-                        .then(|| reader.read_power())
-                        .flatten(),
+                    power,
                     fan_speed,
                     temperature,
                     sample,

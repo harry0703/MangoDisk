@@ -7,7 +7,7 @@ use mangodisk_platform::{
 
 pub(super) fn initial<T>() -> MetricReading<T> {
     MetricReading {
-        status: if cfg!(all(target_os = "macos", target_arch = "aarch64")) {
+        status: if cfg!(target_os = "macos") {
             MetricStatus::Loading
         } else {
             MetricStatus::Unsupported
@@ -54,6 +54,22 @@ mod tests {
     use mangodisk_platform::{
         system_resources::component_power::ComponentPowerSource, PlatformError,
     };
+    #[test]
+    fn intel_smc_power_preserves_its_source_and_cache_contract() {
+        let mut cache = ResourceCache::default();
+        cache.cpu_power(
+            Ok(ComponentPower {
+                watts: 12.5,
+                source: ComponentPowerSource::AppleSmc,
+            }),
+            1000,
+        );
+        let wire = serde_json::to_value(cache.snapshot(1000)).unwrap();
+        assert_eq!(wire["schemaVersion"], 38);
+        assert_eq!(wire["cpuPower"]["value"]["source"], "appleSmc");
+        assert_eq!(wire["cpuPower"]["value"]["watts"], 12.5);
+        assert_eq!(cache.snapshot(6001).cpu_power.status, MetricStatus::Stale);
+    }
     #[test]
     fn removed_gpu_invalidates_power_before_the_replacement_has_a_baseline() {
         use mangodisk_platform::system_resources::gpu::GpuAdapter;

@@ -54,6 +54,8 @@ struct Adapter {
     unified: bool,
     core_count: Option<u32>,
     class: String,
+    #[cfg(target_arch = "x86_64")]
+    acpi_path: Option<String>,
     temperature: Option<super::macos_temperature::Reader>,
     temperature_error: Option<(crate::PlatformError, Instant)>,
     temperature_diagnostic: Option<String>,
@@ -226,6 +228,10 @@ fn adapter_model(object: u32, key: &CFString) -> Option<String> {
     if let Some(name) = property(object, key).as_ref().and_then(model_name) {
         return Some(name);
     }
+    pci_property(object, key).as_ref().and_then(model_name)
+}
+
+fn pci_property(object: u32, key: &CFString) -> Option<CFType> {
     // Intel and AMD expose the model on the PCI device, sometimes behind a
     // controller node. Restrict the fallback to the nearest PCI device instead
     // of a recursive property search that could return the computer model.
@@ -239,7 +245,7 @@ fn adapter_model(object: u32, key: &CFString) -> Option<String> {
         }
         parent = Some(Object(entry));
         if unsafe { IOObjectConformsTo(entry, c"IOPCIDevice".as_ptr()) } != 0 {
-            return property(entry, key).as_ref().and_then(model_name);
+            return property(entry, key);
         }
     }
     None
@@ -375,6 +381,10 @@ impl GpuReader {
                 .and_then(|value| value.to_i64())
                 .and_then(|value| u32::try_from(value).ok())
                 .filter(|value| *value > 0 && *value <= 16_384);
+            #[cfg(target_arch = "x86_64")]
+            let acpi_path = pci_property(object.0, &CFString::new("acpi-path"))
+                .as_ref()
+                .and_then(model_name);
             adapters.push(Adapter {
                 object,
                 id,
@@ -382,6 +392,8 @@ impl GpuReader {
                 unified,
                 core_count,
                 class,
+                #[cfg(target_arch = "x86_64")]
+                acpi_path,
                 temperature: None,
                 temperature_error: None,
                 temperature_diagnostic: None,
@@ -476,24 +488,65 @@ impl GpuReader {
     }
     pub fn read_power(
         &mut self,
+        selected_adapter: Option<&str>,
     ) -> Option<PlatformResult<crate::system_resources::component_power::GpuPower>> {
         use crate::system_resources::component_power::{Component, ComponentPowerReader, GpuPower};
         if let Err(error) = self.refresh() {
             return Some(Err(error));
         }
-        let mut adapters = self
-            .adapters
-            .iter()
-            .filter(|adapter| adapter.class.contains("agx"));
-        let Some(adapter) = adapters.next() else {
-            return Some(Err(super::unsupported()));
+        #[cfg(target_arch = "aarch64")]
+        let (id, smc_integrated) = {
+            let mut adapters = self
+                .adapters
+                .iter()
+                .filter(|adapter| adapter.class.contains("agx"));
+            let Some(adapter) = adapters.next() else {
+                return Some(Err(super::unsupported()));
+            };
+            if adapters.next().is_some() {
+                return Some(Err(super::unsupported()));
+            }
+            if selected_adapter.is_some_and(|id| id != adapter.id) {
+                return Some(Err(super::unsupported()));
+            }
+            (adapter.id.clone(), false)
         };
-        if adapters.next().is_some() {
-            return Some(Err(super::unsupported()));
-        }
-        let id = adapter.id.clone();
+        #[cfg(target_arch = "x86_64")]
+        let (id, smc_integrated) = {
+            use crate::system_resources::component_power::macos_smc::{gpu_sensor, Sensor};
+            let selected = match selected_adapter {
+                Some(id) => {
+                    let Some(index) = self.adapters.iter().position(|adapter| adapter.id == id)
+                    else {
+                        return Some(Err(super::unsupported()));
+                    };
+                    Some(index)
+                }
+                None => None,
+            };
+            let Some((index, sensor)) = gpu_sensor(
+                self.adapters
+                    .iter()
+                    .map(|adapter| (adapter.class.as_str(), adapter.acpi_path.as_deref())),
+                selected,
+            ) else {
+                return Some(Err(super::unsupported()));
+            };
+            (
+                self.adapters[index].id.clone(),
+                sensor == Sensor::IntegratedGpu,
+            )
+        };
         if self.power_adapter.as_ref() != Some(&id) {
             self.power = ComponentPowerReader::new(Component::Gpu);
+            #[cfg(target_arch = "x86_64")]
+            if smc_integrated {
+                self.power = ComponentPowerReader::integrated_gpu();
+            }
+            log::info!(
+                "gpu_power_identity adapter={} smc_integrated={smc_integrated} outcome=bound",
+                text(&id)
+            );
             self.power_adapter = Some(id.clone());
         }
         self.power.read().map(|result| {
@@ -579,6 +632,18 @@ impl GpuReader {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn native_gpu_catalogue_contains_unique_adapter_identities() {
+        let adapters = GpuReader::default().catalogue().unwrap();
+        let identities: std::collections::HashSet<_> =
+            adapters.iter().map(|adapter| &adapter.id).collect();
+        assert_eq!(
+            identities.len(),
+            adapters.len(),
+            "duplicate IOAccelerator matches must not become multiple physical GPUs: {adapters:?}"
+        );
+    }
 
     #[test]
     #[ignore = "requires an Apple Silicon Mac with readable GPU SMC sensors"]

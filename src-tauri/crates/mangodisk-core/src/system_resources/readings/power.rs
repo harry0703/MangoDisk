@@ -179,7 +179,7 @@ mod tests {
         };
         cache.battery(Ok(sample(ChargeState::Finishing)), 1000);
         let cached = serde_json::to_value(cache.snapshot(6001)).unwrap();
-        assert_eq!(cached["schemaVersion"], 37);
+        assert_eq!(cached["schemaVersion"], 38);
         assert_eq!(cached["batteryDetails"]["status"], "stale");
         assert_eq!(
             cached["batteryDetails"]["value"]["chargeState"],

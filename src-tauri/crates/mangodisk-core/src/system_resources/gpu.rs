@@ -11,25 +11,32 @@ pub struct GpuUsage {
     pub details: Option<mangodisk_platform::system_resources::gpu::details::GpuDetails>,
 }
 
-pub fn select(adapters: Vec<GpuAdapterUsage>, selected: Option<&str>) -> Option<GpuUsage> {
+pub fn select_adapter_index(adapters: &[GpuAdapterUsage], selected: Option<&str>) -> Option<usize> {
     adapters
-        .into_iter()
-        .filter(|value| {
+        .iter()
+        .enumerate()
+        .filter(|(_, value)| {
             selected.is_none_or(|id| id == value.id)
                 && value.used_percent.is_finite()
                 && (0.0..=100.0).contains(&value.used_percent)
         })
-        .max_by(|a, b| {
+        .max_by(|(_, a), (_, b)| {
             a.used_percent
                 .total_cmp(&b.used_percent)
                 .then_with(|| b.id.cmp(&a.id))
         })
-        .map(|value| GpuUsage {
-            used_percent: value.used_percent,
-            adapter_id: value.id,
-            adapter_name: value.name,
-            details: value.details,
-        })
+        .map(|(index, _)| index)
+}
+
+pub fn select(mut adapters: Vec<GpuAdapterUsage>, selected: Option<&str>) -> Option<GpuUsage> {
+    let index = select_adapter_index(&adapters, selected)?;
+    let value = adapters.swap_remove(index);
+    Some(GpuUsage {
+        used_percent: value.used_percent,
+        adapter_id: value.id,
+        adapter_name: value.name,
+        details: value.details,
+    })
 }
 
 #[cfg(test)]

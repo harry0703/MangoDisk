@@ -1,10 +1,14 @@
 //! Component energy estimates are independent of whole-system SMC power.
-use crate::{PlatformError, PlatformErrorCode, PlatformResult};
+use crate::PlatformResult;
+#[cfg(not(all(target_os = "macos", target_arch = "x86_64")))]
+use crate::{PlatformError, PlatformErrorCode};
 use serde::Serialize;
 use std::time::{Duration, Instant};
 
-#[cfg(target_os = "macos")]
+#[cfg(all(target_os = "macos", target_arch = "aarch64"))]
 mod macos;
+#[cfg(all(target_os = "macos", any(test, target_arch = "x86_64")))]
+pub(crate) mod macos_smc;
 
 pub const COMPONENT_POWER_FRESHNESS_MS: u64 = 5_000;
 pub const COMPONENT_POWER_MAX_WATTS: f64 = 1_000.0;
@@ -19,6 +23,7 @@ pub enum Component {
 #[serde(rename_all = "camelCase")]
 pub enum ComponentPowerSource {
     IoReport,
+    AppleSmc,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -40,8 +45,12 @@ pub struct ComponentPowerReader {
     component: Component,
     retry_at: Option<Instant>,
     diagnostic: Option<String>,
-    #[cfg(target_os = "macos")]
+    #[cfg(all(target_os = "macos", target_arch = "aarch64"))]
     reader: Option<macos::Reader>,
+    #[cfg(all(target_os = "macos", target_arch = "x86_64"))]
+    reader: Option<macos_smc::Reader>,
+    #[cfg(all(target_os = "macos", target_arch = "x86_64"))]
+    smc_sensor: macos_smc::Sensor,
 }
 impl ComponentPowerReader {
     pub fn new(component: Component) -> Self {
@@ -51,6 +60,18 @@ impl ComponentPowerReader {
             diagnostic: None,
             #[cfg(target_os = "macos")]
             reader: None,
+            #[cfg(all(target_os = "macos", target_arch = "x86_64"))]
+            smc_sensor: match component {
+                Component::Cpu => macos_smc::Sensor::CpuPackage,
+                Component::Gpu => macos_smc::Sensor::DiscreteGpu,
+            },
+        }
+    }
+    #[cfg(all(target_os = "macos", target_arch = "x86_64"))]
+    pub(crate) fn integrated_gpu() -> Self {
+        Self {
+            smc_sensor: macos_smc::Sensor::IntegratedGpu,
+            ..Self::new(Component::Gpu)
         }
     }
     pub fn read(&mut self) -> Option<PlatformResult<ComponentPower>> {
@@ -60,7 +81,7 @@ impl ComponentPowerReader {
         }
         let result = self.sample();
         let diagnostic = match &result {
-            Ok(Some(_)) => Some("ready".to_string()),
+            Ok(Some(power)) => Some(format!("ready source={:?}", power.source)),
             Ok(None) => None,
             Err(error) => Some(format!(
                 "{:?}:{}",
@@ -70,7 +91,10 @@ impl ComponentPowerReader {
         };
         if let Some(diagnostic) = diagnostic {
             if self.diagnostic.as_ref() != Some(&diagnostic) {
-                log::info!("component_power_observation component={:?} source=ioreport outcome={diagnostic}", self.component);
+                log::info!(
+                    "component_power_observation component={:?} outcome={diagnostic}",
+                    self.component
+                );
                 self.diagnostic = Some(diagnostic);
             }
         }
@@ -87,7 +111,14 @@ impl ComponentPowerReader {
         #[cfg(target_os = "macos")]
         {
             if self.reader.is_none() {
-                self.reader = Some(macos::Reader::new(self.component)?);
+                #[cfg(target_arch = "aarch64")]
+                {
+                    self.reader = Some(macos::Reader::new(self.component)?);
+                }
+                #[cfg(target_arch = "x86_64")]
+                {
+                    self.reader = Some(macos_smc::Reader::new(self.smc_sensor)?);
+                }
             }
             self.reader
                 .as_mut()
@@ -98,16 +129,17 @@ impl ComponentPowerReader {
         Err(unavailable("platform"))
     }
 }
+#[cfg(not(all(target_os = "macos", target_arch = "x86_64")))]
 fn unavailable(stage: &str) -> PlatformError {
     PlatformError::new(
         PlatformErrorCode::Unsupported,
         format!(
-            "source=ioreport_energy stage={stage} reason=identified_component_energy_unavailable"
+            "source=component_power stage={stage} reason=identified_component_energy_unavailable"
         ),
     )
 }
 
-#[cfg(any(test, target_os = "macos"))]
+#[cfg(any(test, all(target_os = "macos", target_arch = "aarch64")))]
 fn channel_matches(component: Component, name: &str) -> bool {
     match component {
         Component::Cpu => {
@@ -120,7 +152,7 @@ fn channel_matches(component: Component, name: &str) -> bool {
         Component::Gpu => name == "GPU Energy",
     }
 }
-#[cfg(any(test, target_os = "macos"))]
+#[cfg(any(test, all(target_os = "macos", target_arch = "aarch64")))]
 fn energy_watts(energy: i64, unit: &str, seconds: f64) -> Option<f64> {
     let divisor = match unit {
         "mJ" => 1e3,
@@ -135,7 +167,7 @@ fn energy_watts(energy: i64, unit: &str, seconds: f64) -> Option<f64> {
     (watts.is_finite() && (0.0..=COMPONENT_POWER_MAX_WATTS).contains(&watts)).then_some(watts)
 }
 
-#[cfg(any(test, target_os = "macos"))]
+#[cfg(any(test, all(target_os = "macos", target_arch = "aarch64")))]
 fn sample_seconds(monotonic: Duration, wall: Option<Duration>) -> Option<f64> {
     let wall = wall?;
     ((100..=5_000).contains(&monotonic.as_millis())

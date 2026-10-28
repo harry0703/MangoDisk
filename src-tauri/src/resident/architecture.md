@@ -1622,17 +1622,32 @@ selected-device changes still invalidate observations. The cache lives in the
 resident process; restarting the application starts without previous observations.
 Background sampling intervals and on-demand detail collection are unchanged.
 
-Resource schema 37 adds independent `cpuPower` and adapter-identified `gpuPower`
-readings. These are IOReport component energy estimates, not SMC whole-system
-power. Each native owner keeps a nonblocking baseline and uses the actual sample
-interval; counter failures, missing channels, unknown units, clock changes and
-intervals outside 100–5000 ms never produce a synthetic zero. CPU and GPU failures
-remain independent. The existing two-second workers keep sampling with the panel
-closed, and readings expire after five seconds. No ANE subscription is exposed.
+Resource schema 38 exposes independent `cpuPower` and adapter-identified
+`gpuPower` readings with `ioReport` or `appleSmc` sources. Apple Silicon uses
+IOReport component energy estimates; Intel uses identified SMC power domains.
+Neither reading is SMC whole-system power. Each IOReport owner keeps a nonblocking
+baseline and uses the actual sample interval; counter failures, missing channels,
+unknown units, clock changes and intervals outside 100–5000 ms never produce a
+synthetic zero. CPU and GPU failures remain independent. The existing two-second
+workers keep sampling with the panel closed, and readings expire after five
+seconds. No ANE subscription is exposed.
 The legacy Energy Model path is restricted to Apple Silicon before macOS 27;
 macOS 27 legacy counters may freeze, so that layout remains unavailable pending a
-validated CLPC implementation. Other platforms retain their current sensors and
-report component power as unsupported.
+validated CLPC implementation. Intel CPU power uses the `PCPC` package sensor;
+core (`PC0C`), total (`PCTR`) and package readings are never substituted or summed.
+Intel GPU power binds `PG0C` only to a unique AMD/NVIDIA firmware PEG/GFX0 PCI
+device. Unknown, external and multiple discrete accelerators do not receive an
+ambiguous `PG0C` reading. A uniquely identified Intel accelerator uses `PCPG`,
+including on hybrid systems. GPU power follows the same Core-selected adapter as
+utilization, including manual choices and automatic busiest-device selection.
+Switching between integrated and discrete GPUs replaces the sensor owner rather
+than reusing the other rail's reading. These SMC values are instantaneous watts,
+without an energy baseline, and missing/invalid readings never become zero.
+Initialization and read failures retry after thirty seconds. The shared SMC transport decodes
+identified `sp87` signed fixed-point readings as big-endian values divided by 128,
+alongside existing `sp78`, `sp96`, float and unsigned fixed-point encodings.
+Other platforms retain their current sensors and report component power as
+unsupported.
 
 SMC remains the preferred temperature source. Only an unsuccessful CPU/GPU
 observation may try explicitly named IOHID CPU/GPU sensors. PMU, NAND, battery and

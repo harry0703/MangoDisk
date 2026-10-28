@@ -1,7 +1,7 @@
 import type { BatteryDetails } from './power';
 import type { GpuDetails } from '@/lib/models/system-resources/gpu-details';
 
-export const RESOURCE_READINGS_SCHEMA_VERSION = 37;
+export const RESOURCE_READINGS_SCHEMA_VERSION = 38;
 export const METRIC_IDS = ['cpu', 'gpu', 'memory', 'network', 'disk'] as const;
 export type MetricId = (typeof METRIC_IDS)[number];
 export type MetricStatus = 'loading' | 'ready' | 'stale' | 'disconnected' | 'unsupported' | 'failed';
@@ -210,7 +210,7 @@ export interface FanSample {
 }
 export interface ComponentPower {
   watts: number;
-  source: 'ioReport';
+  source: 'ioReport' | 'appleSmc';
 }
 export interface GpuPower extends ComponentPower {
   adapterId: string;
