@@ -64,7 +64,7 @@ describe('AppSettingsUtils', () => {
     }
   );
 
-  it.each([LANGUAGE_IDS.frFR, LANGUAGE_IDS.deDE, LANGUAGE_IDS.esES])(
+  it.each([LANGUAGE_IDS.frFR, LANGUAGE_IDS.deDE, LANGUAGE_IDS.esES, LANGUAGE_IDS.ukUA])(
     'preserves the saved %s locale when reloading preferences',
     language => {
       const saved = { ...AppSettingsUtils.defaults(language), theme: THEME_IDS.dark };

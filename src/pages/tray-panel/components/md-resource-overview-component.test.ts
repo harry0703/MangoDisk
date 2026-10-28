@@ -12,6 +12,7 @@ import ko from '@/locales/ko-KR.json';
 import pt from '@/locales/pt-BR.json';
 import ru from '@/locales/ru-RU.json';
 import tr from '@/locales/tr-TR.json';
+import uk from '@/locales/uk-UA.json';
 import MdTooltip from '@/components/custom/md-tooltip.vue';
 import { OperatingSystemService } from '@/lib/services/settings/operating-system-service';
 vi.mock('@/lib/services/settings/byte-size-service', () => ({
@@ -26,26 +27,29 @@ describe('resource details', () => {
   beforeEach(() => vi.spyOn(OperatingSystemService, 'currentPlatform').mockReturnValue('macos'));
   afterEach(() => vi.restoreAllMocks());
 
-  it.each([en, zh, tw, ja, ko, pt, ru, tr])('shows real GPU activity and device identity in each locale', messages => {
-    const reading = emptyReadings();
-    reading.observedAtMs = 1000;
-    reading.observedAtMs = 1000;
-    reading.gpu = {
-      status: 'ready',
-      sampledAtMs: 1000,
-      value: { usedPercent: 0, adapterId: 'gpu-1', adapterName: 'NVIDIA GeForce RTX 4090', details: null },
-    };
-    reading.gpuHistory = [{ sampledAtMs: 1000, primary: 0, secondary: null }];
-    const wrapper = mount(Overview, {
-      props: { metric: 'gpu', reading },
-      global: { plugins: [createI18n({ legacy: false, locale: 'test', messages: { test: messages } })] },
-    });
-    expect(wrapper.get('.resource-value').text()).toBe('0%');
-    expect(wrapper.get('.gpu-source').text()).toBe('NVIDIA GeForce RTX 4090');
-    expect(wrapper.getComponent(MdTooltip).props('text')).toBe(messages.systemStatus.gpuUsageHint);
-    expect(wrapper.find('.resource-trend.gpu').exists()).toBe(true);
-    wrapper.unmount();
-  });
+  it.each([en, zh, tw, ja, ko, pt, ru, tr, uk])(
+    'shows real GPU activity and device identity in each locale',
+    messages => {
+      const reading = emptyReadings();
+      reading.observedAtMs = 1000;
+      reading.observedAtMs = 1000;
+      reading.gpu = {
+        status: 'ready',
+        sampledAtMs: 1000,
+        value: { usedPercent: 0, adapterId: 'gpu-1', adapterName: 'NVIDIA GeForce RTX 4090', details: null },
+      };
+      reading.gpuHistory = [{ sampledAtMs: 1000, primary: 0, secondary: null }];
+      const wrapper = mount(Overview, {
+        props: { metric: 'gpu', reading },
+        global: { plugins: [createI18n({ legacy: false, locale: 'test', messages: { test: messages } })] },
+      });
+      expect(wrapper.get('.resource-value').text()).toBe('0%');
+      expect(wrapper.get('.gpu-source').text()).toBe('NVIDIA GeForce RTX 4090');
+      expect(wrapper.getComponent(MdTooltip).props('text')).toBe(messages.systemStatus.gpuUsageHint);
+      expect(wrapper.find('.resource-trend.gpu').exists()).toBe(true);
+      wrapper.unmount();
+    }
+  );
 
   it.each(['macos', 'windows'] as const)('shows identified GPU temperature in the %s overview', async platform => {
     vi.spyOn(OperatingSystemService, 'currentPlatform').mockReturnValue(platform);
@@ -211,7 +215,7 @@ describe('resource details', () => {
     }
   );
 
-  it.each([en, zh, tw, ja, ko, pt, ru, tr])(
+  it.each([en, zh, tw, ja, ko, pt, ru, tr, uk])(
     'shows memory pressure separately from capacity in each locale',
     messages => {
       for (const pressure of ['normal', 'warning', 'critical', 'unavailable'] as const) {

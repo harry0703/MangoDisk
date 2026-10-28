@@ -19,6 +19,7 @@ import ko from '@/locales/ko-KR.json';
 import pt from '@/locales/pt-BR.json';
 import ru from '@/locales/ru-RU.json';
 import tr from '@/locales/tr-TR.json';
+import uk from '@/locales/uk-UA.json';
 
 vi.mock('@/lib/services/diagnostics/logger-service', () => ({ LoggerService: { warn: vi.fn() } }));
 
@@ -143,20 +144,23 @@ describe('disk health and network detail presentation', () => {
       expect(wrapper.get('.disk-health header [data-slot="tooltip-trigger"]:last-child').element).toBe(anchor);
     }
   });
-  it.each([en, zh, tw, ja, ko, pt, ru, tr])('shows supported zero readings and health in every locale', messages => {
-    const reading = disk();
-    reading.diskDetailTemperature = {
-      status: 'ready',
-      sampledAtMs: 1000,
-      value: { volumeId: 'one', volumeName: 'System', celsius: 35, source: 'nvmeSmart' },
-    };
-    const wrapper = render(DiskDetails, reading, messages);
-    expect(wrapper.text()).toContain(messages.diskHealth.temperature);
-    expect(wrapper.text()).toContain(messages.diskHealth.healthy);
-    expect(wrapper.text()).toContain(messages.diskHealth.healthPercent);
-    expect(wrapper.text()).toContain('100%');
-    expect(wrapper.text()).not.toContain(messages.diskHealth.unavailable);
-  });
+  it.each([en, zh, tw, ja, ko, pt, ru, tr, uk])(
+    'shows supported zero readings and health in every locale',
+    messages => {
+      const reading = disk();
+      reading.diskDetailTemperature = {
+        status: 'ready',
+        sampledAtMs: 1000,
+        value: { volumeId: 'one', volumeName: 'System', celsius: 35, source: 'nvmeSmart' },
+      };
+      const wrapper = render(DiskDetails, reading, messages);
+      expect(wrapper.text()).toContain(messages.diskHealth.temperature);
+      expect(wrapper.text()).toContain(messages.diskHealth.healthy);
+      expect(wrapper.text()).toContain(messages.diskHealth.healthPercent);
+      expect(wrapper.text()).toContain('100%');
+      expect(wrapper.text()).not.toContain(messages.diskHealth.unavailable);
+    }
+  );
   it('clamps exhausted health to zero without inventing missing SMART details', async () => {
     const reading = disk();
     reading.diskHealth.value!.percentageUsed = 150;
