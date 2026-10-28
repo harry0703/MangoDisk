@@ -13,7 +13,7 @@ export interface FloatingEntry {
   fanRows?: { id: number; text: string; tone: FloatingEntry['tone'] }[];
 }
 export interface FloatingSnapshot {
-  schemaVersion: 11;
+  schemaVersion: 12;
   interactive: boolean;
   contextMenu: boolean;
   entries: FloatingEntry[];

@@ -69,7 +69,7 @@ pub struct MetricColorRule {
 }
 
 pub const MAX_COLOR_RULES: usize = 16;
-pub const COLOR_METRICS: [DisplayMetricId; 12] = [
+pub const COLOR_METRICS: [DisplayMetricId; 14] = [
     DisplayMetricId::Cpu,
     DisplayMetricId::CpuTemperature,
     DisplayMetricId::Gpu,
@@ -81,6 +81,8 @@ pub const COLOR_METRICS: [DisplayMetricId; 12] = [
     DisplayMetricId::ChargingPower,
     DisplayMetricId::BatteryPower,
     DisplayMetricId::SystemPower,
+    DisplayMetricId::CpuPower,
+    DisplayMetricId::GpuPower,
     DisplayMetricId::FanSpeed,
 ];
 
@@ -97,6 +99,7 @@ pub fn temperature(id: DisplayMetricId) -> bool {
 pub fn limit(id: DisplayMetricId) -> u16 {
     match id {
         DisplayMetricId::FanSpeed => 30000,
+        DisplayMetricId::CpuPower | DisplayMetricId::GpuPower => 1000,
         DisplayMetricId::SystemPower => 3000,
         DisplayMetricId::ChargingPower | DisplayMetricId::BatteryPower => 300,
         DisplayMetricId::BatteryTemperature => 100,
@@ -111,6 +114,8 @@ impl MetricColorRule {
             id,
             DisplayMetricId::ChargingPower
                 | DisplayMetricId::BatteryPower
+                | DisplayMetricId::CpuPower
+                | DisplayMetricId::GpuPower
                 | DisplayMetricId::SystemPower
         ) {
             return Self {

@@ -14,8 +14,8 @@ describe('floating monitor transport', () => {
     native.windowListen.mockResolvedValue(stop);
     expect(await FloatingMonitorService.onSnapshot(handler)).toBe(stop);
     expect(native.windowListen.mock.calls[0]![0]).toBe('resident-floating-snapshot');
-    native.windowListen.mock.calls[0]![1]({ payload: { schemaVersion: 11 } });
-    expect(handler).toHaveBeenCalledWith({ schemaVersion: 11 });
+    native.windowListen.mock.calls[0]![1]({ payload: { schemaVersion: 12 } });
+    expect(handler).toHaveBeenCalledWith({ schemaVersion: 12 });
     expect(native.listen).not.toHaveBeenCalled();
   });
   it('reloads appearance only for application settings changes', async () => {

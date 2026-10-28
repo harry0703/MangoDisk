@@ -1636,3 +1636,11 @@ CPU and GPU fall back independently and expose `appleHid` as the source. SMC
 initialization or transport failure is retried after thirty seconds even while
 HID succeeds; transient invalid sensor values can recover on the next interval.
 A machine without those HID sensors still reports temperature as unavailable.
+
+Preference schema 39 adds disabled CPU/GPU power display entries and color rules,
+inserting new power entries after the matching temperature item while preserving
+existing relative order, choices and thresholds. Saved power positions remain
+customizable. Floating schema 12 adds their
+shared display IDs. Native menu indicators
+also validate freshness and identity. Metric-specific entries open the matching
+page; the combined macOS entry retains the last page.

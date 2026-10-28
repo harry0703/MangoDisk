@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 mod migrations;
 pub use migrations::decode;
 
-pub(super) const PREFERENCE_SCHEMA_VERSION: u32 = 38;
+pub(super) const PREFERENCE_SCHEMA_VERSION: u32 = 39;
 
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -170,8 +170,10 @@ pub enum DisplayMetricId {
     CpuPerformanceFrequency,
     CpuSuperFrequency,
     CpuTemperature,
+    CpuPower,
     Gpu,
     GpuTemperature,
+    GpuPower,
     Memory,
     Disk,
     DiskTemperature,
@@ -198,6 +200,8 @@ impl DisplayMetricId {
             | Self::ChargingPower
             | Self::BatteryPower
             | Self::SystemPower
+            | Self::CpuPower
+            | Self::GpuPower
             | Self::FanSpeed => None,
             Self::Gpu => Some(MetricId::Gpu),
             Self::Memory => Some(MetricId::Memory),
@@ -243,15 +247,17 @@ pub struct ResidentPreferences {
     pub fan_ids: Vec<u8>,
 }
 
-const DISPLAY_ORDER: [DisplayMetricId; 17] = [
+const DISPLAY_ORDER: [DisplayMetricId; 19] = [
     DisplayMetricId::Cpu,
     DisplayMetricId::CpuFrequency,
     DisplayMetricId::CpuEfficiencyFrequency,
     DisplayMetricId::CpuPerformanceFrequency,
     DisplayMetricId::CpuSuperFrequency,
     DisplayMetricId::CpuTemperature,
+    DisplayMetricId::CpuPower,
     DisplayMetricId::Gpu,
     DisplayMetricId::GpuTemperature,
+    DisplayMetricId::GpuPower,
     #[cfg(windows)]
     DisplayMetricId::FanSpeed,
     DisplayMetricId::Memory,
@@ -324,6 +330,9 @@ impl DisplayMetricId {
     }
     pub fn supported_on_platform(self) -> bool {
         match self {
+            Self::CpuPower | Self::GpuPower => {
+                cfg!(all(target_os = "macos", target_arch = "aarch64"))
+            }
             Self::SystemPower => cfg!(target_os = "macos"),
             Self::CpuFrequency => cfg!(windows),
             Self::CpuEfficiencyFrequency

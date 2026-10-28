@@ -4298,7 +4298,10 @@
     "frequencyIdleReason": "No active residency for this core type in the valid sample",
     "frequencyNoSample": "No valid sample for this core type",
     "frequencyInterval": "State residency during the sample",
-    "frequencyActive": "Active"
+    "frequencyActive": "Active",
+    "cpuPower": "CPU power",
+    "gpuPower": "GPU power",
+    "componentPowerHint": "Estimated component power; excludes the rest of the system"
   },
   "webviewRuntime": {
     "updateRequired": "The component used to display MangoDisk is out of date. Update Microsoft Edge WebView2 Runtime, then reopen MangoDisk",
@@ -4567,7 +4570,9 @@
       "cpuFrequency": "CPU freq",
       "cpuEfficiencyFrequency": "CPU E",
       "cpuPerformanceFrequency": "CPU P",
-      "cpuSuperFrequency": "CPU S"
+      "cpuSuperFrequency": "CPU S",
+      "cpuPower": "CPU power",
+      "gpuPower": "GPU power"
     },
     "fontSize": "Font size",
     "bold": "Bold text",

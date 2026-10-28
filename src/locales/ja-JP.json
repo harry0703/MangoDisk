@@ -4298,7 +4298,10 @@
     "frequencyIdleReason": "有効な測定期間中、この種類のコアは非アクティブでした",
     "frequencyNoSample": "この種類のコアの有効な測定値がありません",
     "frequencyInterval": "測定期間中の状態の割合",
-    "frequencyActive": "アクティブ"
+    "frequencyActive": "アクティブ",
+    "cpuPower": "CPU 消費電力",
+    "gpuPower": "GPU 消費電力",
+    "componentPowerHint": "コンポーネントの推定消費電力です。システムの他の部分は含みません"
   },
   "webviewRuntime": {
     "updateRequired": "MangoDisk の画面表示に必要なコンポーネントが古くなっています。Microsoft Edge WebView2 Runtime を更新してから、MangoDisk を再起動してください",
@@ -4567,7 +4570,9 @@
       "cpuFrequency": "CPU 周波数",
       "cpuEfficiencyFrequency": "Eコア",
       "cpuPerformanceFrequency": "Pコア",
-      "cpuSuperFrequency": "Sコア"
+      "cpuSuperFrequency": "Sコア",
+      "cpuPower": "CPU 消費電力",
+      "gpuPower": "GPU 消費電力"
     },
     "fontSize": "文字サイズ",
     "bold": "太字",

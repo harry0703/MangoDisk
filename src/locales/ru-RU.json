@@ -4298,7 +4298,10 @@
     "frequencyIdleReason": "В корректном интервале измерения ядра этого типа не были активны",
     "frequencyNoSample": "Нет корректных данных для ядер этого типа",
     "frequencyInterval": "Доли состояний за интервал измерения",
-    "frequencyActive": "Активно"
+    "frequencyActive": "Активно",
+    "cpuPower": "Мощность CPU",
+    "gpuPower": "Мощность GPU",
+    "componentPowerHint": "Оценка мощности компонента без учёта остальной системы"
   },
   "webviewRuntime": {
     "updateRequired": "Обновите WebView2 Runtime и перезапустите MangoDisk",
@@ -4567,7 +4570,9 @@
       "cpuFrequency": "Част. CPU",
       "cpuEfficiencyFrequency": "CPU E",
       "cpuPerformanceFrequency": "CPU P",
-      "cpuSuperFrequency": "CPU S"
+      "cpuSuperFrequency": "CPU S",
+      "cpuPower": "Мощность CPU",
+      "gpuPower": "Мощность GPU"
     },
     "fontSize": "Размер шрифта",
     "bold": "Жирный текст",

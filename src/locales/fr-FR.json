@@ -4298,7 +4298,10 @@
     "frequencyIdleReason": "Ce type de cœur était inactif pendant la mesure valide",
     "frequencyNoSample": "Aucune mesure valide pour ce type de cœur",
     "frequencyInterval": "Répartition des états pendant la mesure",
-    "frequencyActive": "Actif"
+    "frequencyActive": "Actif",
+    "cpuPower": "Puissance CPU",
+    "gpuPower": "Puissance GPU",
+    "componentPowerHint": "Puissance estimée du composant, hors reste du système"
   },
   "webviewRuntime": {
     "updateRequired": "Le composant d’affichage de MangoDisk est obsolète. Mettez à jour Microsoft Edge WebView2 Runtime, puis relancez MangoDisk",
@@ -4567,7 +4570,9 @@
       "cpuFrequency": "Fréq. CPU",
       "cpuEfficiencyFrequency": "CPU E",
       "cpuPerformanceFrequency": "CPU P",
-      "cpuSuperFrequency": "CPU S"
+      "cpuSuperFrequency": "CPU S",
+      "cpuPower": "Puissance CPU",
+      "gpuPower": "Puissance GPU"
     },
     "fontSize": "Taille du texte",
     "bold": "Texte en gras",

@@ -9,7 +9,7 @@ use super::format::displayed_power;
 use super::{
     display_entry::{DisplayEntry, DisplayId},
     format::{byte_text, byte_text_with_precision, compact_rate, rate_title},
-    power::{battery_entry, system_power_entry},
+    power::{battery_entry, component_power_entry, system_power_entry},
     temperature::{disk_temperature_entry, gpu_temperature_entry, temperature_entry},
 };
 use crate::resident::{preference_schema::DisplayMetricId, preferences::ResidentPreferences};
@@ -51,6 +51,8 @@ pub fn indicator_title(
                     | DisplayId::BatteryTemperature
                     | DisplayId::ChargingPower
                     | DisplayId::BatteryPower
+                    | DisplayId::CpuPower
+                    | DisplayId::GpuPower
                     | DisplayId::SystemPower
                     | DisplayId::FanSpeed => entry.text.clone(),
                 }
@@ -87,6 +89,8 @@ pub fn desired(preferences: &ResidentPreferences) -> Vec<DisplayId> {
             DisplayId::BatteryTemperature => {
                 preferences.shows_battery_item(DisplayMetricId::BatteryTemperature)
             }
+            DisplayId::CpuPower => preferences.shows_display(DisplayMetricId::CpuPower),
+            DisplayId::GpuPower => preferences.shows_display(DisplayMetricId::GpuPower),
             DisplayId::SystemPower => preferences.shows_system_power(),
             DisplayId::FanSpeed => preferences.shows_fan_speed(),
             DisplayId::ChargingPower => {
@@ -218,6 +222,13 @@ pub fn entries(
             }
             continue;
         }
+        if matches!(
+            metric.id,
+            DisplayMetricId::CpuPower | DisplayMetricId::GpuPower
+        ) {
+            entries.push(component_power_entry(values, labels, metric.id));
+            continue;
+        }
         if metric.id == DisplayMetricId::SystemPower {
             if preferences.shows_system_power() {
                 entries.push(system_power_entry(values, labels));
@@ -286,6 +297,8 @@ pub fn entries(
                 | DisplayId::BatteryTemperature
                 | DisplayId::ChargingPower
                 | DisplayId::BatteryPower
+                | DisplayId::CpuPower
+                | DisplayId::GpuPower
                 | DisplayId::SystemPower
                 | DisplayId::FanSpeed => {
                     unreachable!()
@@ -487,6 +500,8 @@ fn platform_placeholder(id: DisplayMetricId, labels: &super::labels::Labels) -> 
         DisplayMetricId::BatteryPower => {
             (DisplayId::BatteryPower, "W", labels.text("batteryPower"))
         }
+        DisplayMetricId::CpuPower => (DisplayId::CpuPower, "W", labels.text("cpuPower")),
+        DisplayMetricId::GpuPower => (DisplayId::GpuPower, "W", labels.text("gpuPower")),
         DisplayMetricId::SystemPower => (DisplayId::SystemPower, "W", labels.text("systemPower")),
         DisplayMetricId::FanSpeed => (DisplayId::FanSpeed, "FMAX", labels.text("fanSpeed")),
         DisplayMetricId::Cpu

@@ -4298,7 +4298,10 @@
     "frequencyIdleReason": "本次有效采样中，该类核心未活跃",
     "frequencyNoSample": "该类核心暂无有效采样",
     "frequencyInterval": "采样期间状态占比",
-    "frequencyActive": "活跃"
+    "frequencyActive": "活跃",
+    "cpuPower": "CPU 功耗",
+    "gpuPower": "GPU 功耗",
+    "componentPowerHint": "组件功耗估算值，不包含整机其他部分的功耗"
   },
   "webviewRuntime": {
     "updateRequired": "当前界面运行组件版本较旧。请更新 Microsoft Edge WebView2 Runtime，然后重新打开 MangoDisk",
@@ -4567,7 +4570,9 @@
       "cpuFrequency": "CPU 频率",
       "cpuEfficiencyFrequency": "能效核",
       "cpuPerformanceFrequency": "性能核",
-      "cpuSuperFrequency": "超级核"
+      "cpuSuperFrequency": "超级核",
+      "cpuPower": "CPU 功耗",
+      "gpuPower": "GPU 功耗"
     },
     "fontSize": "字体大小",
     "bold": "加粗显示",

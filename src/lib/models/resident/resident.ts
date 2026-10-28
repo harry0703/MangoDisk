@@ -18,13 +18,15 @@ export type ResidentDisplayMetricId =
   | 'batteryTemperature'
   | 'chargingPower'
   | 'batteryPower'
+  | 'cpuPower'
+  | 'gpuPower'
   | 'systemPower'
   | 'fanSpeed';
 
 export type GpuDisplaySelection = { mode: 'automatic' } | { mode: 'selected'; adapterIds: string[] };
 
 export interface ResidentPreferences {
-  schemaVersion: 38;
+  schemaVersion: 39;
   windowsCpuTemperatureEnabled: boolean;
   revision: number;
   enabled: boolean;

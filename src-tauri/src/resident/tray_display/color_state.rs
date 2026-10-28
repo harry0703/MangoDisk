@@ -57,6 +57,8 @@ impl ColorState {
                 DisplayId::GpuTemperature => DisplayMetricId::GpuTemperature,
                 DisplayId::BatteryTemperature => DisplayMetricId::BatteryTemperature,
                 DisplayId::ChargingPower => DisplayMetricId::ChargingPower,
+                DisplayId::CpuPower => DisplayMetricId::CpuPower,
+                DisplayId::GpuPower => DisplayMetricId::GpuPower,
                 DisplayId::SystemPower => DisplayMetricId::SystemPower,
                 DisplayId::BatteryPower => DisplayMetricId::BatteryPower,
                 DisplayId::FanSpeed => DisplayMetricId::FanSpeed,
@@ -74,7 +76,7 @@ impl ColorState {
                 DisplayId::DiskTemperature => {
                     self.disk_temperature_volume.as_deref() == disk_temperature_volume
                 }
-                DisplayId::Gpu => self.gpu_adapter.as_deref() == gpu_adapter,
+                DisplayId::Gpu | DisplayId::GpuPower => self.gpu_adapter.as_deref() == gpu_adapter,
                 DisplayId::GpuTemperature => {
                     self.gpu_temperature_adapter.as_deref() == gpu_temperature_adapter
                 }

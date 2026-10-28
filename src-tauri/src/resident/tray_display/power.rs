@@ -8,6 +8,80 @@ use mangodisk_core::system_resources::{metrics::MetricStatus, readings::Resource
 
 use super::format::{displayed_power, power_digits};
 
+pub(super) fn component_power_entry(
+    values: &ResourceReadings,
+    labels: &labels::Labels,
+    id: DisplayMetricId,
+) -> DisplayEntry {
+    let cpu = id == DisplayMetricId::CpuPower;
+    let (status, at, watts) = if cpu {
+        let reading = &values.cpu_power;
+        (
+            reading.status,
+            reading.sampled_at_ms,
+            reading.value.as_ref().map(|power| power.watts),
+        )
+    } else {
+        let reading = &values.gpu_power;
+        (
+            reading.status,
+            reading.sampled_at_ms,
+            reading
+                .value
+                .as_ref()
+                .filter(|power| {
+                    values
+                        .gpu_adapters
+                        .iter()
+                        .any(|adapter| adapter.id == power.adapter_id)
+                })
+                .map(|power| power.power.watts),
+        )
+    };
+    let watts = watts.filter(|watts| {
+        status == MetricStatus::Ready
+            && watts.is_finite()
+            && (0.0..=1_000.0).contains(watts)
+            && at
+                .and_then(|at| values.observed_at_ms.checked_sub(at))
+                .is_some_and(|age| age <= 5_000)
+    });
+    let name = labels.text(if cpu { "cpuPower" } else { "gpuPower" });
+    let digits = watts.map(power_digits).unwrap_or_else(|| "—".into());
+    DisplayEntry {
+        frequency: None,
+        gpu_device: None,
+        id: if cpu {
+            DisplayId::CpuPower
+        } else {
+            DisplayId::GpuPower
+        },
+        tone: Default::default(),
+        power_state: None,
+        fan_rows: None,
+        color_value: watts.map(|watts| displayed_power(watts).floor() as u16),
+        marker: "W".into(),
+        text: if watts.is_some() {
+            format!("{name} {digits}W")
+        } else {
+            format!("{name} —")
+        },
+        tooltip: if let Some(watts) = watts {
+            format!("{name} {watts:.1}W · {}", labels.text("componentPowerHint"))
+        } else {
+            format!(
+                "{name} · {}",
+                labels.status(if status == MetricStatus::Ready {
+                    MetricStatus::Stale
+                } else {
+                    status
+                })
+            )
+        },
+        digits,
+    }
+}
+
 pub(super) fn system_power_entry(
     values: &ResourceReadings,
     labels: &labels::Labels,
@@ -195,5 +269,73 @@ pub(super) fn battery_entry(
         digits,
         text,
         tooltip,
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use mangodisk_core::system_resources::metrics::MetricReading;
+    use mangodisk_platform::system_resources::{
+        component_power::{ComponentPower, ComponentPowerSource, GpuPower},
+        gpu::GpuAdapter,
+    };
+    #[test]
+    fn component_entries_preserve_freshness_identity_and_panel_destination() {
+        let labels = labels::Labels::for_locale("en-US");
+        let mut values = ResourceReadings {
+            observed_at_ms: 1000,
+            ..Default::default()
+        };
+        let power = |watts| ComponentPower {
+            watts,
+            source: ComponentPowerSource::IoReport,
+        };
+        values.cpu_power = MetricReading::ready(power(0.0), 1000);
+        values.gpu_power = MetricReading::ready(
+            GpuPower {
+                adapter_id: "apple".into(),
+                power: power(25.5),
+            },
+            1000,
+        );
+        let cpu = component_power_entry(&values, &labels, DisplayMetricId::CpuPower);
+        assert_ne!(cpu.digits, "—");
+        assert!(cpu.text.contains("CPU"));
+        assert_eq!(
+            cpu.id.metric(),
+            Some(mangodisk_core::system_resources::metrics::MetricId::Cpu)
+        );
+        assert_eq!(
+            component_power_entry(&values, &labels, DisplayMetricId::GpuPower).digits,
+            "—"
+        );
+        assert_eq!(
+            cpu.id.page(),
+            Some(crate::resident::panel_page::PanelPage::Cpu)
+        );
+        let gpu = component_power_entry(&values, &labels, DisplayMetricId::GpuPower);
+        assert_eq!(
+            gpu.id.page(),
+            Some(crate::resident::panel_page::PanelPage::Gpu)
+        );
+        values.gpu_adapters.push(GpuAdapter {
+            id: "apple".into(),
+            name: "Apple GPU".into(),
+        });
+        assert_ne!(
+            component_power_entry(&values, &labels, DisplayMetricId::GpuPower).digits,
+            "—"
+        );
+        values.observed_at_ms = 6001;
+        assert_eq!(
+            component_power_entry(&values, &labels, DisplayMetricId::CpuPower).digits,
+            "—"
+        );
+        values.observed_at_ms = 999;
+        assert_eq!(
+            component_power_entry(&values, &labels, DisplayMetricId::GpuPower).digits,
+            "—"
+        );
     }
 }

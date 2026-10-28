@@ -8,7 +8,10 @@ fn explicit_save_replaces_unknown_versions_without_backups() {
     let path = directory.path().join("resident.json");
     for (version, preferences) in [
         (26, ResidentPreferences::default()),
-        (39, ResidentPreferences::default()),
+        (
+            u64::from(PREFERENCE_SCHEMA_VERSION) + 1,
+            ResidentPreferences::default(),
+        ),
         (
             u64::MAX,
             ResidentPreferences {

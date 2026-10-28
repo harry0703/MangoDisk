@@ -85,8 +85,8 @@ pub fn columns(
                         | DisplayId::CpuEfficiencyFrequency
                         | DisplayId::CpuPerformanceFrequency
                         | DisplayId::CpuSuperFrequency => entry.marker.as_str(),
-                        DisplayId::CpuTemperature => "CPU",
-                        DisplayId::Gpu | DisplayId::GpuTemperature => "GPU",
+                        DisplayId::CpuTemperature | DisplayId::CpuPower => "CPU",
+                        DisplayId::Gpu | DisplayId::GpuTemperature | DisplayId::GpuPower => "GPU",
                         DisplayId::Memory => "MEM",
                         DisplayId::Disk | DisplayId::DiskTemperature => "DISK",
                         DisplayId::BatteryTemperature => "BAT",
@@ -130,6 +130,8 @@ pub fn columns(
                                 | DisplayId::BatteryTemperature => "°C",
                                 DisplayId::ChargingPower
                                 | DisplayId::BatteryPower
+                                | DisplayId::CpuPower
+                                | DisplayId::GpuPower
                                 | DisplayId::SystemPower => "W",
                                 DisplayId::Cpu
                                 | DisplayId::Gpu

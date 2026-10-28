@@ -12,8 +12,10 @@ pub enum DisplayId {
     CpuPerformanceFrequency,
     CpuSuperFrequency,
     CpuTemperature,
+    CpuPower,
     Gpu,
     GpuTemperature,
+    GpuPower,
     Memory,
     Upload,
     Download,
@@ -27,7 +29,7 @@ pub enum DisplayId {
 }
 
 impl DisplayId {
-    pub const ALL: [Self; 19] = [
+    pub const ALL: [Self; 21] = [
         Self::App,
         Self::Cpu,
         Self::CpuFrequency,
@@ -35,8 +37,10 @@ impl DisplayId {
         Self::CpuPerformanceFrequency,
         Self::CpuSuperFrequency,
         Self::CpuTemperature,
+        Self::CpuPower,
         Self::Gpu,
         Self::GpuTemperature,
+        Self::GpuPower,
         Self::Memory,
         Self::Upload,
         Self::Download,
@@ -56,6 +60,8 @@ impl DisplayId {
             Self::CpuEfficiencyFrequency => "resident-cpu-efficiency-frequency",
             Self::CpuPerformanceFrequency => "resident-cpu-performance-frequency",
             Self::CpuSuperFrequency => "resident-cpu-super-frequency",
+            Self::CpuPower => "resident-cpu-power",
+            Self::GpuPower => "resident-gpu-power",
             Self::CpuTemperature => "resident-cpu-temperature",
             Self::Gpu => "resident-gpu",
             Self::GpuTemperature => "resident-gpu-temperature",
@@ -90,12 +96,13 @@ impl DisplayId {
             | Self::SystemPower
             | Self::FanSpeed => None,
             Self::Cpu
+            | Self::CpuPower
             | Self::CpuTemperature
             | Self::CpuFrequency
             | Self::CpuEfficiencyFrequency
             | Self::CpuPerformanceFrequency
             | Self::CpuSuperFrequency => Some(MetricId::Cpu),
-            Self::Gpu | Self::GpuTemperature => Some(MetricId::Gpu),
+            Self::Gpu | Self::GpuPower | Self::GpuTemperature => Some(MetricId::Gpu),
             Self::Memory => Some(MetricId::Memory),
             Self::Upload | Self::Download => Some(MetricId::Network),
             Self::Disk | Self::DiskTemperature => Some(MetricId::Disk),

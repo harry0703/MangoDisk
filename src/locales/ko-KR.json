@@ -4298,7 +4298,10 @@
     "frequencyIdleReason": "유효한 측정 구간에서 이 유형의 코어는 활성 상태가 아니었습니다",
     "frequencyNoSample": "이 유형의 코어에 유효한 측정값이 없습니다",
     "frequencyInterval": "측정 구간의 상태별 비율",
-    "frequencyActive": "활성"
+    "frequencyActive": "활성",
+    "cpuPower": "CPU 소비 전력",
+    "gpuPower": "GPU 소비 전력",
+    "componentPowerHint": "구성 요소의 추정 소비 전력이며 시스템의 나머지 부분은 포함하지 않습니다"
   },
   "webviewRuntime": {
     "updateRequired": "MangoDisk 화면 표시에 필요한 구성 요소의 버전이 오래되었습니다. Microsoft Edge WebView2 Runtime을 업데이트한 후 MangoDisk를 다시 실행해 주세요",
@@ -4567,7 +4570,9 @@
       "cpuFrequency": "CPU 주파수",
       "cpuEfficiencyFrequency": "E 코어",
       "cpuPerformanceFrequency": "P 코어",
-      "cpuSuperFrequency": "S 코어"
+      "cpuSuperFrequency": "S 코어",
+      "cpuPower": "CPU 소비 전력",
+      "gpuPower": "GPU 소비 전력"
     },
     "fontSize": "글자 크기",
     "bold": "굵은 글씨",

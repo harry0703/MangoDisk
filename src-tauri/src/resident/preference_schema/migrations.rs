@@ -19,6 +19,13 @@ pub fn decode(mut value: Value) -> Result<ResidentPreferences, &'static str> {
             .map_err(|_| "preferences_invalid")?
             .normalize();
     }
+    if version == 38 {
+        value
+            .as_object_mut()
+            .ok_or("preferences_invalid")?
+            .insert("schemaVersion".into(), PREFERENCE_SCHEMA_VERSION.into());
+        return decode_upgraded(value);
+    }
     if RELEASED_VERSIONS.contains(&version) || matches!(version, 28..=36) {
         let object = value.as_object_mut().ok_or("preferences_invalid")?;
         if object
@@ -29,6 +36,7 @@ pub fn decode(mut value: Value) -> Result<ResidentPreferences, &'static str> {
         }
     }
     if matches!(version, 28..=37) {
+        add_component_defaults(&mut value)?;
         add_frequency_defaults(value.as_object_mut().ok_or("preferences_invalid")?)?;
     }
     if matches!(version, 34..=37) {
@@ -40,9 +48,7 @@ pub fn decode(mut value: Value) -> Result<ResidentPreferences, &'static str> {
             add_fullscreen_default(object)?;
         }
         object.insert("schemaVersion".into(), PREFERENCE_SCHEMA_VERSION.into());
-        return serde_json::from_value::<ResidentPreferences>(value)
-            .map_err(|_| "preferences_invalid")?
-            .normalize();
+        return decode_upgraded(value);
     }
     if matches!(version, 29..=33) {
         let object = value.as_object_mut().ok_or("preferences_invalid")?;
@@ -85,17 +91,13 @@ pub fn decode(mut value: Value) -> Result<ResidentPreferences, &'static str> {
         add_macos_defaults(object)?;
         add_fullscreen_default(object)?;
         object.insert("schemaVersion".into(), PREFERENCE_SCHEMA_VERSION.into());
-        return serde_json::from_value::<ResidentPreferences>(value)
-            .map_err(|_| "preferences_invalid")?
-            .normalize();
+        return decode_upgraded(value);
     }
     if version == 28 {
         let object = value.as_object_mut().ok_or("preferences_invalid")?;
         add_floating_defaults(object)?;
         object.insert("schemaVersion".into(), PREFERENCE_SCHEMA_VERSION.into());
-        return serde_json::from_value::<ResidentPreferences>(value)
-            .map_err(|_| "preferences_invalid")?
-            .normalize();
+        return decode_upgraded(value);
     }
     if !RELEASED_VERSIONS.contains(&version) {
         return Err("preferences_version");
@@ -146,9 +148,7 @@ pub fn decode(mut value: Value) -> Result<ResidentPreferences, &'static str> {
     object.insert("diskTemperatureDevice".into(), Value::Null);
     add_floating_defaults(object)?;
     object.insert("schemaVersion".into(), PREFERENCE_SCHEMA_VERSION.into());
-    serde_json::from_value::<ResidentPreferences>(value)
-        .map_err(|_| "preferences_invalid")?
-        .normalize()
+    decode_upgraded(value)
 }
 
 fn add_frequency_defaults(object: &mut Map<String, Value>) -> Result<(), &'static str> {
@@ -327,6 +327,9 @@ fn upgrade_color_rules(object: &mut Map<String, Value>, version: u64) -> Result<
 }
 
 fn released_metric(version: u64, id: DisplayMetricId) -> bool {
+    if matches!(id, DisplayMetricId::CpuPower | DisplayMetricId::GpuPower) {
+        return false;
+    }
     if id.frequency_class().is_some() {
         return false;
     }
@@ -428,4 +431,39 @@ fn add_fullscreen_default(object: &mut Map<String, Value>) -> Result<(), &'stati
         return Err("preferences_invalid");
     }
     Ok(())
+}
+
+fn add_component_defaults(value: &mut Value) -> Result<(), &'static str> {
+    for key in ["metrics", "colorRules"] {
+        let rows = value
+            .get_mut(key)
+            .and_then(Value::as_array_mut)
+            .ok_or("preferences_invalid")?;
+        for (id, anchor) in [
+            (DisplayMetricId::CpuPower, DisplayMetricId::CpuTemperature),
+            (DisplayMetricId::GpuPower, DisplayMetricId::GpuTemperature),
+        ] {
+            let id_value = serde_json::to_value(id).map_err(|_| "preferences_invalid")?;
+            if !rows.iter().any(|row| row.get("id") == Some(&id_value)) {
+                if key == "metrics" {
+                    let anchor = serde_json::to_value(anchor).map_err(|_| "preferences_invalid")?;
+                    let index = rows
+                        .iter()
+                        .position(|row| row.get("id") == Some(&anchor))
+                        .ok_or("preferences_invalid")?
+                        + 1;
+                    rows.insert(index, serde_json::json!({"id": id_value, "enabled": false}));
+                } else {
+                    rows.push(serde_json::json!({"id": id_value, "enabled": false, "rules": []}));
+                }
+            }
+        }
+    }
+    Ok(())
+}
+fn decode_upgraded(mut value: Value) -> Result<ResidentPreferences, &'static str> {
+    add_component_defaults(&mut value)?;
+    serde_json::from_value::<ResidentPreferences>(value)
+        .map_err(|_| "preferences_invalid")?
+        .normalize()
 }

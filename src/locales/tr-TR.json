@@ -4298,7 +4298,10 @@
     "frequencyIdleReason": "Geçerli örnek boyunca bu çekirdek türü etkin değildi",
     "frequencyNoSample": "Bu çekirdek türü için geçerli örnek yok",
     "frequencyInterval": "Örnek boyunca durum oranları",
-    "frequencyActive": "Etkin"
+    "frequencyActive": "Etkin",
+    "cpuPower": "CPU gücü",
+    "gpuPower": "GPU gücü",
+    "componentPowerHint": "Bileşenin tahmini gücü; sistemin geri kalanını içermez"
   },
   "webviewRuntime": {
     "updateRequired": "MangoDisk'i görüntüleyen bileşen güncel değil. Microsoft Edge WebView2 Runtime'ı güncelleyin, ardından MangoDisk'i yeniden açın",
@@ -4567,7 +4570,9 @@
       "cpuFrequency": "CPU frek",
       "cpuEfficiencyFrequency": "CPU E",
       "cpuPerformanceFrequency": "CPU P",
-      "cpuSuperFrequency": "CPU S"
+      "cpuSuperFrequency": "CPU S",
+      "cpuPower": "CPU gücü",
+      "gpuPower": "GPU gücü"
     },
     "fontSize": "Yazı boyutu",
     "bold": "Kalın yazı",

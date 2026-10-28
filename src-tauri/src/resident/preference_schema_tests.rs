@@ -125,7 +125,7 @@ fn every_display_combination_retains_an_entry() {
 fn current_schema_rejects_development_versions_unknown_fields_and_missing_fields() {
     let current = serde_json::to_value(ResidentPreferences::default()).unwrap();
     for version in (0..PREFERENCE_SCHEMA_VERSION)
-        .filter(|v| ![7, 8, 10, 21, 25, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37].contains(v))
+        .filter(|v| ![7, 8, 10, 21, 25, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38].contains(v))
         .chain([PREFERENCE_SCHEMA_VERSION + 1])
     {
         let mut value = current.clone();
@@ -1006,4 +1006,58 @@ fn frequency_display_upgrade_preserves_order_and_defaults_new_items_off() {
         .unwrap()
         .push(serde_json::json!({"id":"cpuFrequency","enabled":true}));
     assert!(decode(previous).is_err());
+}
+
+#[test]
+fn version_38_adds_component_power_without_enabling_or_reordering_existing_metrics() {
+    let mut original = serde_json::to_value(ResidentPreferences::default()).unwrap();
+    original["schemaVersion"] = 38.into();
+    for key in ["metrics", "colorRules"] {
+        original[key]
+            .as_array_mut()
+            .unwrap()
+            .retain(|row| !matches!(row["id"].as_str(), Some("cpuPower" | "gpuPower")));
+    }
+    original["metrics"].as_array_mut().unwrap().reverse();
+    let expected = original["metrics"].clone();
+    let decoded = super::decode(original).unwrap();
+    let upgraded = serde_json::to_value(&decoded).unwrap();
+    assert_eq!(upgraded["schemaVersion"], 39);
+    let existing: Vec<_> = upgraded["metrics"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .filter(|row| !matches!(row["id"].as_str(), Some("cpuPower" | "gpuPower")))
+        .cloned()
+        .collect();
+    assert_eq!(&existing, expected.as_array().unwrap());
+    for (id, anchor) in [
+        (DisplayMetricId::CpuPower, DisplayMetricId::CpuTemperature),
+        (DisplayMetricId::GpuPower, DisplayMetricId::GpuTemperature),
+    ] {
+        let index = decoded
+            .metrics
+            .iter()
+            .position(|row| row.id == anchor)
+            .unwrap();
+        assert_eq!(decoded.metrics[index + 1].id, id);
+    }
+    for id in [DisplayMetricId::CpuPower, DisplayMetricId::GpuPower] {
+        assert!(
+            !decoded
+                .metrics
+                .iter()
+                .find(|row| row.id == id)
+                .unwrap()
+                .enabled
+        );
+        assert!(
+            !decoded
+                .color_rules
+                .iter()
+                .find(|row| row.id == id)
+                .unwrap()
+                .enabled
+        );
+    }
 }

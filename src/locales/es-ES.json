@@ -4298,7 +4298,10 @@
     "frequencyIdleReason": "Este tipo de núcleo no estuvo activo durante la muestra válida",
     "frequencyNoSample": "Sin muestra válida para este tipo de núcleo",
     "frequencyInterval": "Proporción de estados durante la muestra",
-    "frequencyActive": "Activo"
+    "frequencyActive": "Activo",
+    "cpuPower": "Potencia de CPU",
+    "gpuPower": "Potencia de GPU",
+    "componentPowerHint": "Potencia estimada del componente; excluye el resto del sistema"
   },
   "webviewRuntime": {
     "updateRequired": "El componente que muestra MangoDisk está desactualizado. Actualiza Microsoft Edge WebView2 Runtime y vuelve a abrir MangoDisk",
@@ -4567,7 +4570,9 @@
       "cpuFrequency": "Frec. CPU",
       "cpuEfficiencyFrequency": "CPU E",
       "cpuPerformanceFrequency": "CPU P",
-      "cpuSuperFrequency": "CPU S"
+      "cpuSuperFrequency": "CPU S",
+      "cpuPower": "Potencia de CPU",
+      "gpuPower": "Potencia de GPU"
     },
     "fontSize": "Tamaño de letra",
     "bold": "Texto en negrita",

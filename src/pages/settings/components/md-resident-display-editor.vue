@@ -138,6 +138,8 @@ const displayLabelKeys = {
   batteryTemperature: 'systemStatus.batteryTemperature',
   chargingPower: 'systemStatus.chargingPower',
   batteryPower: 'systemStatus.batteryPower',
+  cpuPower: 'systemStatus.cpuPower',
+  gpuPower: 'systemStatus.gpuPower',
   systemPower: 'systemStatus.systemPower',
   fanSpeed: !props.isLinux && !props.isMacOs ? 'systemStatus.gpuFanSpeed' : 'systemStatus.fanSpeed',
 };

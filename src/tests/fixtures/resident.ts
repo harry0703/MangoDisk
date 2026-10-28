@@ -4,7 +4,7 @@ import { emptyReadings } from '@/lib/utils/system-resources/system-resources';
 
 export function preferencesFixture(): ResidentPreferences {
   return {
-    schemaVersion: 38,
+    schemaVersion: 39,
     windowsCpuTemperatureEnabled: false,
     revision: 0,
     enabled: true,
@@ -47,6 +47,8 @@ export function preferencesFixture(): ResidentPreferences {
       { id: 'batteryTemperature', enabled: false },
       { id: 'chargingPower', enabled: false },
       { id: 'batteryPower', enabled: false },
+      { id: 'cpuPower', enabled: false },
+      { id: 'gpuPower', enabled: false },
       { id: 'systemPower', enabled: false },
       { id: 'fanSpeed', enabled: false },
     ],

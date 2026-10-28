@@ -7,7 +7,7 @@ export type DisplayPlatform = 'macos' | 'windows' | 'linux';
 /** Display availability never creates a sampling request. */
 export function supportsDisplayMetric(id: ResidentDisplayMetricId, platform: DisplayPlatform): boolean {
   if (isCpuFrequencyDisplay(id)) return id === 'cpuFrequency' ? platform === 'windows' : platform === 'macos';
-  if (id === 'systemPower') return platform === 'macos';
+  if (id === 'systemPower' || id === 'cpuPower' || id === 'gpuPower') return platform === 'macos';
   return (
     platform !== 'linux' ||
     ![

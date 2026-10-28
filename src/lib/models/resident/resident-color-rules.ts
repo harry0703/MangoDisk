@@ -8,6 +8,8 @@ export type ColorMetricId =
   | 'batteryTemperature'
   | 'chargingPower'
   | 'batteryPower'
+  | 'cpuPower'
+  | 'gpuPower'
   | 'systemPower'
   | 'fanSpeed';
 export type DisplayColor = 'default' | 'green' | 'yellow' | 'orange' | 'red' | 'blue';
@@ -60,6 +62,8 @@ export function defaultColorRules(): MetricColorRule[] {
       'batteryTemperature',
       'chargingPower',
       'batteryPower',
+      'cpuPower',
+      'gpuPower',
       'systemPower',
       'fanSpeed',
     ] as const
@@ -67,7 +71,9 @@ export function defaultColorRules(): MetricColorRule[] {
 }
 
 export function isPowerMetric(id: ColorMetricId): boolean {
-  return id === 'chargingPower' || id === 'batteryPower' || id === 'systemPower';
+  return (
+    id === 'cpuPower' || id === 'gpuPower' || id === 'chargingPower' || id === 'batteryPower' || id === 'systemPower'
+  );
 }
 export function colorMetricUnit(id: ColorMetricId): string {
   return id === 'fanSpeed' ? 'RPM' : isPowerMetric(id) ? 'W' : isTemperatureMetric(id) ? '°C' : '%';
@@ -75,13 +81,15 @@ export function colorMetricUnit(id: ColorMetricId): string {
 export function colorMetricLimit(id: ColorMetricId): number {
   return id === 'fanSpeed'
     ? 30000
-    : id === 'systemPower'
-      ? 3000
-      : isPowerMetric(id)
-        ? 300
-        : id === 'batteryTemperature'
-          ? 100
-          : isTemperatureMetric(id)
-            ? 150
-            : 100;
+    : id === 'cpuPower' || id === 'gpuPower'
+      ? 1000
+      : id === 'systemPower'
+        ? 3000
+        : isPowerMetric(id)
+          ? 300
+          : id === 'batteryTemperature'
+            ? 100
+            : isTemperatureMetric(id)
+              ? 150
+              : 100;
 }

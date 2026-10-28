@@ -4298,7 +4298,10 @@
     "frequencyIdleReason": "Dieser Kerntyp war im gültigen Messintervall nicht aktiv",
     "frequencyNoSample": "Keine gültige Messung für diesen Kerntyp",
     "frequencyInterval": "Zustandsanteile im Messintervall",
-    "frequencyActive": "Aktiv"
+    "frequencyActive": "Aktiv",
+    "cpuPower": "CPU-Leistung",
+    "gpuPower": "GPU-Leistung",
+    "componentPowerHint": "Geschätzte Komponentenleistung; ohne den Rest des Systems"
   },
   "webviewRuntime": {
     "updateRequired": "Die Anzeigekomponente von MangoDisk ist veraltet. Aktualisieren Sie Microsoft Edge WebView2 Runtime und öffnen Sie MangoDisk erneut",
@@ -4567,7 +4570,9 @@
       "cpuFrequency": "CPU-Takt",
       "cpuEfficiencyFrequency": "CPU E",
       "cpuPerformanceFrequency": "CPU P",
-      "cpuSuperFrequency": "CPU S"
+      "cpuSuperFrequency": "CPU S",
+      "cpuPower": "CPU-Leistung",
+      "gpuPower": "GPU-Leistung"
     },
     "fontSize": "Schriftgröße",
     "bold": "Fettschrift",

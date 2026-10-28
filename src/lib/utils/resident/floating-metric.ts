@@ -16,6 +16,8 @@ export const FLOATING_LABEL_KEYS: Record<FloatingMetricId, string> = {
   batteryTemperature: 'floatingMonitor.labels.batteryTemperature',
   chargingPower: 'floatingMonitor.labels.chargingPower',
   batteryPower: 'floatingMonitor.labels.batteryPower',
+  cpuPower: 'floatingMonitor.labels.cpuPower',
+  gpuPower: 'floatingMonitor.labels.gpuPower',
   systemPower: 'floatingMonitor.labels.systemPower',
   fanSpeed: 'floatingMonitor.labels.fanSpeed',
   upload: 'floatingMonitor.labels.upload',
@@ -25,6 +27,7 @@ export const FLOATING_LABEL_KEYS: Record<FloatingMetricId, string> = {
 export function detailPage(id: FloatingMetricId): ResidentPanelPage {
   switch (id) {
     case 'cpu':
+    case 'cpuPower':
     case 'cpuFrequency':
     case 'cpuEfficiencyFrequency':
     case 'cpuPerformanceFrequency':
@@ -37,6 +40,7 @@ export function detailPage(id: FloatingMetricId): ResidentPanelPage {
     case 'systemPower':
       return 'power';
     case 'gpu':
+    case 'gpuPower':
     case 'gpuTemperature':
     case 'fanSpeed':
       return 'gpu';
@@ -71,6 +75,8 @@ function floatingUnit(entry: FloatingEntry): string {
       return '°C';
     case 'chargingPower':
     case 'batteryPower':
+    case 'cpuPower':
+    case 'gpuPower':
     case 'systemPower':
       return entry.marker;
     case 'fanSpeed':

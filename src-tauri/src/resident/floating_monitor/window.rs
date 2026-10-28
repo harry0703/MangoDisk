@@ -171,7 +171,7 @@ pub fn update(
             #[cfg(any(target_os = "macos", target_os = "linux"))]
             let floating = super::passive_preferences(floating);
             Snapshot {
-                schema_version: 11,
+                schema_version: 12,
                 interactive: cfg!(windows),
                 context_menu: true,
                 entries: entries.to_vec(),

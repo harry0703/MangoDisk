@@ -148,8 +148,16 @@ pub fn columns(entries: &[DisplayEntry], compact: bool) -> Vec<Column> {
                         if compact { 38 } else { 42 },
                     ),
                 },
-                DisplayId::ChargingPower | DisplayId::BatteryPower | DisplayId::SystemPower => (
-                    if entry.id == DisplayId::SystemPower {
+                DisplayId::CpuPower
+                | DisplayId::GpuPower
+                | DisplayId::ChargingPower
+                | DisplayId::BatteryPower
+                | DisplayId::SystemPower => (
+                    if entry.id == DisplayId::CpuPower {
+                        "CPU"
+                    } else if entry.id == DisplayId::GpuPower {
+                        "GPU"
+                    } else if entry.id == DisplayId::SystemPower {
                         "SYS"
                     } else if entry.id == DisplayId::ChargingPower {
                         "CHG"
