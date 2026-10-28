@@ -67,6 +67,13 @@ describe('floating font measurement', () => {
       expect(new Set(idleWidths).size).toBe(1);
       expect(idleWidths[0]).toBe('Long idle label'.length * 7);
     }
+    for (const id of ['cpuPower', 'gpuPower', 'systemPower', 'batteryPower', 'chargingPower'] as const) {
+      const widths = ['0.0', '0.4', '6.7', '3000.0', '—'].map(
+        digits => FloatingLayoutService.measure(root, [{ entry: entry(id, digits), label: 'Power' }])[0]!.valueWidth
+      );
+      expect(new Set(widths).size).toBe(1);
+      expect(widths[0]).toBe('3000.0mW'.length * 7);
+    }
     expect(root.children).toHaveLength(1);
   });
   it('removes the hidden measurement node when font measurement fails and supports empty selections', () => {

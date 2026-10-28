@@ -1647,4 +1647,12 @@ also validate freshness and identity. Metric-specific entries open the matching
 page; the combined macOS entry retains the last page.
 
 Component power sits in the utilization card footer beside the device label,
-with no reserved field for unavailable readings.
+with no reserved field for unavailable readings. Floating power fields preserve
+one decimal place from the same validated observation before compact rounding;
+menu-bar and taskbar fields retain their existing precision. Fixed measurement
+samples reserve the complete decimal field without resizing on every update.
+Each native surface owns its color hysteresis, using the precision it actually
+displays. Floating power colors must not inherit the compact surface's rounded
+threshold match. GPU catalogue removal invalidates cached component power and
+its timestamp immediately; a returning device needs a new valid observation.
+The GPU panel also requires the power adapter to remain in the current catalogue.

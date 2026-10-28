@@ -53,6 +53,7 @@ pub struct DisplayState {
         bool,
     )>,
     colors: color_state::ColorState,
+    floating_colors: color_state::ColorState,
 }
 
 pub fn install(app: &tauri::AppHandle) -> tauri::Result<()> {
@@ -346,6 +347,7 @@ struct DisplayRequest {
     preferences: ResidentPreferences,
     labels: labels::Labels,
     entries: Vec<DisplayEntry>,
+    floating_power_digits: std::collections::HashMap<DisplayId, String>,
     disk_volume: Option<String>,
     disk_temperature_volume: Option<String>,
     gpu_adapter: Option<String>,
@@ -367,6 +369,7 @@ impl DisplayRequest {
         );
         Self {
             preferences: preferences.clone(),
+            floating_power_digits: power::floating_power_digits(&entries, &reading.resources),
             labels,
             entries,
             gpu_adapter: reading
@@ -408,6 +411,7 @@ fn render(
         preferences,
         labels,
         mut entries,
+        floating_power_digits,
         disk_volume,
         disk_temperature_volume,
         gpu_adapter,
@@ -472,14 +476,23 @@ fn render(
         }
     }
     state.visible = desired;
+    let mut floating_entries = power::floating_entries(&entries, &floating_power_digits);
+    state.floating_colors.apply(
+        &mut floating_entries,
+        preferences,
+        disk_volume.as_deref(),
+        disk_temperature_volume.as_deref(),
+        gpu_adapter.as_deref(),
+        gpu_temperature_adapter.as_deref(),
+    );
     #[cfg(windows)]
     {
         state.menu_preferences = Some(menu_preferences);
         // Queue inert window updates only after the tray recovery surface is ready.
-        super::floating_monitor::update(app, preferences, &entries);
+        super::floating_monitor::update(app, preferences, &floating_entries);
     }
     #[cfg(any(target_os = "macos", target_os = "linux"))]
-    super::floating_monitor::update(app, preferences, &entries);
+    super::floating_monitor::update(app, preferences, &floating_entries);
     #[cfg(any(windows, target_os = "macos", target_os = "linux"))]
     if changed_locale {
         // A translated title must update even when metric labels keep the same width.

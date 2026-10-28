@@ -44,7 +44,7 @@ export class FloatingLayoutService {
           digits = ['-100', '200', '—'];
           units = ['°C'];
         } else if (entry.id.endsWith('Power')) {
-          digits = ['9999', '<1', '—'];
+          digits = ['3000.0', '888.8', '0.0', '—'];
           units = ['W', 'mW'];
         } else if (entry.id === 'upload' || entry.id === 'download') {
           digits = ['999', '—'];

@@ -411,3 +411,147 @@ fn windows_fans_use_aggregate_values_and_clear_missing_colors() {
     assert_eq!(entries[0].digits, "—");
     assert_eq!(entries[0].tone, UsageTone::Normal);
 }
+
+#[test]
+fn floating_power_does_not_cross_color_threshold_before_its_displayed_value() {
+    use crate::resident::color_rules::{ColorRule, DisplayColor};
+    use crate::resident::preference_schema::DisplayMetricId;
+    use mangodisk_core::system_resources::{metrics::MetricReading, readings::ResourceReadings};
+    use mangodisk_platform::system_resources::component_power::{
+        ComponentPower, ComponentPowerSource,
+    };
+    let labels = labels::Labels::for_locale("en-US");
+    let mut preferences = ResidentPreferences::default();
+    preferences
+        .metrics
+        .iter_mut()
+        .find(|metric| metric.id == DisplayMetricId::CpuPower)
+        .unwrap()
+        .enabled = true;
+    let rule = preferences
+        .color_rules
+        .iter_mut()
+        .find(|rule| rule.id == DisplayMetricId::CpuPower)
+        .unwrap();
+    rule.enabled = true;
+    rule.rules = vec![
+        ColorRule::Below {
+            value: 7,
+            color: DisplayColor::Green,
+        },
+        ColorRule::AtLeast {
+            value: 7,
+            color: DisplayColor::Red,
+        },
+    ];
+    let values = ResourceReadings {
+        observed_at_ms: 1000,
+        cpu_power: MetricReading::ready(
+            ComponentPower {
+                watts: 6.7,
+                source: ComponentPowerSource::IoReport,
+            },
+            1000,
+        ),
+        ..Default::default()
+    };
+    let mut menu = vec![power::component_power_entry(
+        &values,
+        &labels,
+        DisplayMetricId::CpuPower,
+    )];
+    let mut state = DisplayState::default();
+    state
+        .colors
+        .apply(&mut menu, &preferences, None, None, None, None);
+    assert_eq!(menu[0].digits, "7");
+    assert_eq!(menu[0].tone, UsageTone::Critical);
+    let precision = power::floating_power_digits(&menu, &values);
+    let mut floating = power::floating_entries(&menu, &precision);
+    state
+        .floating_colors
+        .apply(&mut floating, &preferences, None, None, None, None);
+    assert_eq!(floating[0].digits, "6.7");
+    assert_eq!(
+        floating[0].tone,
+        UsageTone::Green,
+        "6.7 W must stay below a 7 W threshold on a fresh surface"
+    );
+}
+
+#[cfg(all(target_os = "macos", target_arch = "aarch64"))]
+#[test]
+#[ignore = "requires native Apple Silicon energy counters and a fractional observation"]
+fn native_component_power_precision_uses_independent_surface_colors() {
+    use crate::resident::{
+        color_rules::{ColorRule, DisplayColor},
+        preference_schema::DisplayMetricId,
+    };
+    use mangodisk_core::system_resources::{metrics::MetricReading, readings::ResourceReadings};
+    use mangodisk_platform::system_resources::component_power::ComponentPowerReader;
+    let labels = labels::Labels::for_locale("en-US");
+    let mut reader = ComponentPowerReader::default();
+    assert!(
+        reader.read().is_none(),
+        "native subscription establishes a baseline first"
+    );
+    for _ in 0..40 {
+        std::thread::sleep(std::time::Duration::from_millis(200));
+        let reading = reader
+            .read()
+            .expect("native power sample")
+            .expect("readable component energy");
+        let values = ResourceReadings {
+            observed_at_ms: 1000,
+            cpu_power: MetricReading::ready(reading, 1000),
+            ..Default::default()
+        };
+        let mut menu = vec![power::component_power_entry(
+            &values,
+            &labels,
+            DisplayMetricId::CpuPower,
+        )];
+        let precision = power::floating_power_digits(&menu, &values);
+        let displayed = precision[&DisplayId::CpuPower].parse::<f64>().unwrap();
+        let threshold = displayed.ceil() as u16;
+        if displayed.fract() == 0.0 || menu[0].digits.parse::<u16>().ok() != Some(threshold) {
+            continue;
+        }
+        let mut preferences = ResidentPreferences::default();
+        preferences
+            .metrics
+            .iter_mut()
+            .find(|metric| metric.id == DisplayMetricId::CpuPower)
+            .unwrap()
+            .enabled = true;
+        let rule = preferences
+            .color_rules
+            .iter_mut()
+            .find(|rule| rule.id == DisplayMetricId::CpuPower)
+            .unwrap();
+        rule.enabled = true;
+        rule.rules = vec![
+            ColorRule::Below {
+                value: threshold,
+                color: DisplayColor::Green,
+            },
+            ColorRule::AtLeast {
+                value: threshold,
+                color: DisplayColor::Red,
+            },
+        ];
+        let mut state = DisplayState::default();
+        state
+            .colors
+            .apply(&mut menu, &preferences, None, None, None, None);
+        let mut floating = power::floating_entries(&menu, &precision);
+        state
+            .floating_colors
+            .apply(&mut floating, &preferences, None, None, None, None);
+        assert_eq!(menu[0].tone, UsageTone::Critical);
+        assert_eq!(floating[0].tone, UsageTone::Green);
+        println!("native_power_precision watts={:.5} threshold={} menu={} menu_tone={:?} floating={} floating_tone={:?}", values.cpu_power.value.as_ref().unwrap().watts, threshold, menu[0].digits, menu[0].tone, floating[0].digits, floating[0].tone);
+        return;
+    }
+    panic!("no suitable fractional native power sample within eight seconds");
+}

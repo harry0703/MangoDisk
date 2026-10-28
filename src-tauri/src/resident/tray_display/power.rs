@@ -8,6 +8,62 @@ use mangodisk_core::system_resources::{metrics::MetricStatus, readings::Resource
 
 use super::format::{displayed_power, power_digits};
 
+/// Preserve validated fractional readings for the floating surface before compact rounding.
+pub(super) fn floating_power_digits(
+    entries: &[DisplayEntry],
+    values: &ResourceReadings,
+) -> std::collections::HashMap<DisplayId, String> {
+    entries
+        .iter()
+        .filter(|entry| entry.digits != "—")
+        .filter_map(|entry| {
+            let watts = match entry.id {
+                DisplayId::CpuPower => values.cpu_power.value.as_ref().map(|power| power.watts),
+                DisplayId::GpuPower => values
+                    .gpu_power
+                    .value
+                    .as_ref()
+                    .map(|power| power.power.watts),
+                DisplayId::SystemPower => {
+                    values.system_power.value.as_ref().map(|power| power.watts)
+                }
+                DisplayId::BatteryPower => {
+                    values.battery_power.value.as_ref().map(|power| power.watts)
+                }
+                DisplayId::ChargingPower => values
+                    .charging_power
+                    .value
+                    .as_ref()
+                    .map(|power| power.watts),
+                _ => None,
+            }?;
+            (watts.is_finite() && watts >= 0.0).then(|| (entry.id, format!("{watts:.1}")))
+        })
+        .collect()
+}
+
+/// The decimal surface classifies its own displayed value, not the compact rounding.
+pub(super) fn floating_entries(
+    entries: &[DisplayEntry],
+    digits: &std::collections::HashMap<DisplayId, String>,
+) -> Vec<DisplayEntry> {
+    entries
+        .iter()
+        .cloned()
+        .map(|mut entry| {
+            if let Some(value) = digits.get(&entry.id) {
+                // These strings come only from this module's fixed-decimal formatter.
+                // The integer part is sufficient for the existing whole-watt rules.
+                entry.color_value = value
+                    .split_once('.')
+                    .and_then(|(whole, _)| whole.parse().ok());
+                entry.digits = value.clone();
+            }
+            entry
+        })
+        .collect()
+}
+
 pub(super) fn component_power_entry(
     values: &ResourceReadings,
     labels: &labels::Labels,
@@ -280,6 +336,47 @@ mod tests {
         component_power::{ComponentPower, ComponentPowerSource, GpuPower},
         gpu::GpuAdapter,
     };
+    #[test]
+    fn floating_power_keeps_tenths_without_changing_compact_or_missing_readings() {
+        let labels = labels::Labels::for_locale("en-US");
+        let mut values = ResourceReadings {
+            observed_at_ms: 1000,
+            ..Default::default()
+        };
+        for watts in [0.0, 0.4, 6.1, 6.2, 999.9] {
+            values.cpu_power = MetricReading::ready(
+                ComponentPower {
+                    watts,
+                    source: ComponentPowerSource::IoReport,
+                },
+                1000,
+            );
+            let entry = component_power_entry(&values, &labels, DisplayMetricId::CpuPower);
+            let digits = floating_power_digits(std::slice::from_ref(&entry), &values);
+            assert_eq!(
+                digits.get(&DisplayId::CpuPower).unwrap(),
+                &format!("{watts:.1}")
+            );
+            assert_eq!(entry.digits, power_digits(watts));
+        }
+        values.observed_at_ms = 6001;
+        let entry = component_power_entry(&values, &labels, DisplayMetricId::CpuPower);
+        assert_eq!(entry.digits, "—");
+        assert!(floating_power_digits(&[entry], &values).is_empty());
+        values.observed_at_ms = 1000;
+        values.system_power = MetricReading::ready(
+            mangodisk_platform::system_resources::power::SystemPower { watts: 3000.0 },
+            1000,
+        );
+        let entry = system_power_entry(&values, &labels);
+        assert_eq!(
+            floating_power_digits(&[entry], &values)
+                .get(&DisplayId::SystemPower)
+                .unwrap(),
+            "3000.0"
+        );
+    }
+
     #[test]
     fn component_entries_preserve_freshness_identity_and_panel_destination() {
         let labels = labels::Labels::for_locale("en-US");
