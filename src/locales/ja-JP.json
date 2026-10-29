@@ -2038,7 +2038,25 @@
       "fastHint": "圧縮・スパースファイルのサイズはディスク使用量と異なる場合があります"
     },
     "diskUsage": "ディスク使用量",
-    "fileSize": "ファイルサイズ"
+    "fileSize": "ファイルサイズ",
+    "coverage": {
+      "summary": "未集計 · {count}",
+      "details": "詳細を表示",
+      "title": "集計対象外の項目",
+      "description": "以下の項目は合計サイズに含まれていません",
+      "permissionDenied": "アクセス拒否",
+      "readErrors": "読み取りエラー",
+      "excluded": "スキャンルールによる除外",
+      "linkOrMount": "リンク、マウントポイント、またはオンライン専用項目",
+      "other": "その他または未分類の理由",
+      "countHint": "件数はスキップした項目数で、内部のすべてのファイル数ではありません",
+      "administrator": "現在の権限：管理者",
+      "administratorHint": "システムやファイルの権限により、管理者でも読み取れない項目があります",
+      "standardUser": "現在の権限：標準ユーザー",
+      "restart": "管理者として再起動して再スキャン",
+      "restarting": "再起動中…",
+      "unavailable": "集計不可"
+    }
   },
   "storageScanExclusions": {
     "title": "スキャンの除外",

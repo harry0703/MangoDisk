@@ -356,17 +356,25 @@ onBeforeUnmount(() => {
                       {{
                         deletingPath === entry.path
                           ? t('analysis.deleting')
-                          : t('common.fileCount', { count: FormatService.integer(entry.fileCount) }, entry.fileCount)
+                          : entry.sizeStatus === 'unavailable'
+                            ? t('analysis.coverage.unavailable')
+                            : t('common.fileCount', { count: FormatService.integer(entry.fileCount) }, entry.fileCount)
                       }}
                     </small>
                   </span>
                   <span class="item-metrics">
                     <span>
-                      <strong class="md-result-primary">{{ ByteSizeService.bytes(entry.bytes) }}</strong>
+                      <strong class="md-result-primary">{{
+                        entry.sizeStatus === 'unavailable'
+                          ? t('analysis.coverage.unavailable')
+                          : ByteSizeService.bytes(entry.bytes)
+                      }}</strong>
                       <small>{{
-                        entry.bytes > 0 && FormatUtils.percent(entry.bytes, totalBytes) < 1
-                          ? '<1%'
-                          : `${Math.round(FormatUtils.percent(entry.bytes, totalBytes))}%`
+                        entry.sizeStatus === 'unavailable'
+                          ? '—'
+                          : entry.bytes > 0 && FormatUtils.percent(entry.bytes, totalBytes) < 1
+                            ? '<1%'
+                            : `${Math.round(FormatUtils.percent(entry.bytes, totalBytes))}%`
                       }}</small>
                     </span>
                   </span>

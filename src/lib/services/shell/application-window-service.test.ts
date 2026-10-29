@@ -41,6 +41,12 @@ describe('ApplicationWindowService', () => {
     expect(await ApplicationWindowService.restartAsAdministrator()).toBe(true);
   });
 
+  it('passes scan authority for administrator rescan without accepting a path', async () => {
+    invoke.mockResolvedValueOnce(true);
+    expect(await ApplicationWindowService.restartAsAdministrator(7)).toBe(true);
+    expect(invoke).toHaveBeenLastCalledWith('restart_application_as_administrator', { analysisScanId: 7 });
+  });
+
   it('hands readiness to Rust and returns navigation without showing the window itself', async () => {
     invoke.mockResolvedValueOnce('settings');
     expect(await ApplicationWindowService.showAfterMount()).toBe('settings');

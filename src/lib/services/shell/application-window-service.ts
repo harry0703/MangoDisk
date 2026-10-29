@@ -6,8 +6,10 @@ import { getCurrentWindow } from '@tauri-apps/api/window';
 import { LoggerService } from '@/lib/services/diagnostics/logger-service';
 
 export class ApplicationWindowService {
-  static restartAsAdministrator(): Promise<boolean> {
-    return invoke<boolean>('restart_application_as_administrator');
+  static restartAsAdministrator(analysisScanId?: number): Promise<boolean> {
+    return analysisScanId === undefined
+      ? invoke<boolean>('restart_application_as_administrator')
+      : invoke<boolean>('restart_application_as_administrator', { analysisScanId });
   }
 
   static async showAfterMount(): Promise<ResidentDestination | null> {

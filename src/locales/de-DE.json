@@ -2038,7 +2038,25 @@
       "fastHint": "Die Größe komprimierter Dateien und Sparse-Dateien kann vom belegten Speicherplatz abweichen"
     },
     "diskUsage": "Festplattennutzung",
-    "fileSize": "Dateigröße"
+    "fileSize": "Dateigröße",
+    "coverage": {
+      "summary": "Nicht erfasst · {count}",
+      "details": "Details anzeigen",
+      "title": "Nicht erfasste Einträge",
+      "description": "Diese Einträge sind nicht in der Gesamtgröße enthalten",
+      "permissionDenied": "Zugriff verweigert",
+      "readErrors": "Lesefehler",
+      "excluded": "Durch Scan-Regeln ausgeschlossen",
+      "linkOrMount": "Verknüpfungen, Einhängepunkte oder reine Online-Einträge",
+      "other": "Sonstige oder nicht zugeordnete Gründe",
+      "countHint": "Gezählt werden übersprungene Einträge, nicht alle darin enthaltenen Dateien",
+      "administrator": "Berechtigungen: Administrator",
+      "administratorHint": "System- oder Dateiberechtigungen können den Zugriff auch für Administratoren sperren",
+      "standardUser": "Berechtigungen: Standardbenutzer",
+      "restart": "Als Administrator neu starten und erneut scannen",
+      "restarting": "Neustart läuft…",
+      "unavailable": "Nicht ermittelt"
+    }
   },
   "storageScanExclusions": {
     "title": "Scan-Ausschlüsse",

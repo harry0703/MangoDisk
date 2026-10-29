@@ -268,11 +268,11 @@ const administratorRestartBusy = ref(false);
 const administratorRestartDisabled = computed(
   () => busyPages.value.length > 0 || appUpdateStore.busy || cleanupStore.privilegedScanRuleId !== null
 );
-async function restartAsAdministrator() {
+async function restartAsAdministrator(analysisScanId?: number) {
   if (administratorRestartBusy.value || administratorRestartDisabled.value || !isWindows) return;
   administratorRestartBusy.value = true;
   try {
-    const launched = await ApplicationWindowService.restartAsAdministrator();
+    const launched = await ApplicationWindowService.restartAsAdministrator(analysisScanId);
     if (!launched) administratorRestartBusy.value = false;
   } catch (error) {
     administratorRestartBusy.value = false;
@@ -783,6 +783,9 @@ async function cancelDeepCleanup() {
           :recovering="analysisStore.recovering"
           :recovery-required="analysisStore.recoveryRequired"
           :delete-batch-result="analysisStore.lastDeleteBatchResult"
+          :administrator-restart-busy="administratorRestartBusy"
+          :administrator-restart-disabled="administratorRestartDisabled"
+          @restart-as-administrator="restartAsAdministrator"
           @analyze="analyze"
           @cancel="analysisStore.cancel()"
           @error="store.reportError"

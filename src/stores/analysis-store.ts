@@ -2,7 +2,12 @@ import type { ScanNameExclusion } from '@/lib/models/storage/storage-scan';
 import { markRaw } from 'vue';
 import { defineStore } from 'pinia';
 
-import { ANALYSIS_RESULT_CACHE_LIMIT, ANALYSIS_SCAN_MODES, ANALYSIS_VIEW_IDS } from '@/lib/models/storage/analysis';
+import {
+  ANALYSIS_RESULT_CACHE_LIMIT,
+  ANALYSIS_SCAN_MODES,
+  ANALYSIS_VIEW_IDS,
+  ANALYSIS_SCAN_POLICY_VERSION,
+} from '@/lib/models/storage/analysis';
 import { LOG_DOMAINS, LOG_EVENTS } from '@/lib/models/diagnostics/telemetry';
 import type {
   AnalysisResult,
@@ -241,7 +246,7 @@ export const useAnalysisStore = defineStore('analysis', {
         requestedExclusions = preferences.pathsForScope('analysis');
         requestedNames = preferences.namesForScope('analysis');
         const targetKey = target ? AnalysisCacheUtils.key(target) : '';
-        if (!refresh && targetKey && this.cache[targetKey]) {
+        if (!refresh && targetKey && this.cache[targetKey]?.policyVersion === ANALYSIS_SCAN_POLICY_VERSION) {
           this.result = this.cache[targetKey];
           this.recoveryRequired = false;
           this.cacheOrder = AnalysisCacheUtils.touch(this.cacheOrder, targetKey);

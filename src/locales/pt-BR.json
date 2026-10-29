@@ -2038,7 +2038,25 @@
       "fastHint": "Arquivos compactados e esparsos podem ter tamanho diferente do uso do disco"
     },
     "diskUsage": "Uso do disco",
-    "fileSize": "Tamanho dos arquivos"
+    "fileSize": "Tamanho dos arquivos",
+    "coverage": {
+      "summary": "Não contabilizados · {count}",
+      "details": "Ver detalhes",
+      "title": "Itens não contabilizados",
+      "description": "Estes itens não estão incluídos no tamanho total",
+      "permissionDenied": "Acesso negado",
+      "readErrors": "Erros de leitura",
+      "excluded": "Excluídos pelas regras de análise",
+      "linkOrMount": "Links, pontos de montagem ou itens somente online",
+      "other": "Outras omissões ou motivos não classificados",
+      "countHint": "A contagem indica os itens ignorados, não todos os arquivos contidos neles",
+      "administrator": "Permissões: administrador",
+      "administratorHint": "As permissões do sistema ou dos arquivos podem bloquear o acesso até para administradores",
+      "standardUser": "Permissões: usuário padrão",
+      "restart": "Reiniciar como administrador e analisar novamente",
+      "restarting": "Reiniciando…",
+      "unavailable": "Não medido"
+    }
   },
   "storageScanExclusions": {
     "title": "Exclusões da verificação",

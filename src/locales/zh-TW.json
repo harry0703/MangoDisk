@@ -2038,7 +2038,25 @@
       "fastHint": "壓縮、稀疏檔案的大小可能與磁碟佔用不同"
     },
     "diskUsage": "磁碟佔用",
-    "fileSize": "檔案大小"
+    "fileSize": "檔案大小",
+    "coverage": {
+      "summary": "未納入統計 · {count}",
+      "details": "檢視詳情",
+      "title": "未計入統計",
+      "description": "以下項目未計入總大小",
+      "permissionDenied": "拒絕存取",
+      "readErrors": "讀取失敗",
+      "excluded": "掃描規則排除",
+      "linkOrMount": "連結、掛載點或僅限線上項目",
+      "other": "其他或未分類原因",
+      "countHint": "數量按略過的項目計算，不包含其內部的全部檔案",
+      "administrator": "目前權限：管理員",
+      "administratorHint": "部分項目受系統或檔案權限限制，管理員也可能無法讀取",
+      "standardUser": "目前權限：一般使用者",
+      "restart": "以系統管理員身分重新啟動並掃描",
+      "restarting": "正在重新啟動…",
+      "unavailable": "無法統計"
+    }
   },
   "storageScanExclusions": {
     "title": "掃描排除",

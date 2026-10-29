@@ -2038,7 +2038,25 @@
       "fastHint": "Compressed and sparse file sizes may differ from disk usage"
     },
     "diskUsage": "Disk usage",
-    "fileSize": "File size"
+    "fileSize": "File size",
+    "coverage": {
+      "summary": "Uncounted · {count}",
+      "details": "View details",
+      "title": "Uncounted items",
+      "description": "These items were not included in the total size",
+      "permissionDenied": "Access denied",
+      "readErrors": "Read errors",
+      "excluded": "Excluded by scan rules",
+      "linkOrMount": "Links, mount points or online-only items",
+      "other": "Other or unclassified omissions",
+      "countHint": "Counts refer to skipped entries, not all files inside them",
+      "administrator": "Permissions: administrator",
+      "administratorHint": "System or file permissions can block access even for administrators",
+      "standardUser": "Permissions: standard user",
+      "restart": "Restart as administrator and rescan",
+      "restarting": "Restarting…",
+      "unavailable": "Not measured"
+    }
   },
   "storageScanExclusions": {
     "title": "Scan exclusions",

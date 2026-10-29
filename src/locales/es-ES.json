@@ -2038,7 +2038,25 @@
       "fastHint": "El tamaño de los archivos comprimidos o dispersos puede diferir del espacio que ocupan en el disco"
     },
     "diskUsage": "Uso del disco",
-    "fileSize": "Tamaño del archivo"
+    "fileSize": "Tamaño del archivo",
+    "coverage": {
+      "summary": "Sin contar · {count}",
+      "details": "Ver detalles",
+      "title": "Elementos no contabilizados",
+      "description": "Estos elementos no se incluyen en el tamaño total",
+      "permissionDenied": "Acceso denegado",
+      "readErrors": "Errores de lectura",
+      "excluded": "Excluidos por las reglas de análisis",
+      "linkOrMount": "Enlaces, puntos de montaje o elementos solo en línea",
+      "other": "Otras omisiones o motivos sin clasificar",
+      "countHint": "Se cuentan los elementos omitidos, no todos los archivos que contienen",
+      "administrator": "Permisos: administrador",
+      "administratorHint": "Los permisos del sistema o de los archivos pueden impedir el acceso incluso a los administradores",
+      "standardUser": "Permisos: usuario estándar",
+      "restart": "Reiniciar como administrador y volver a analizar",
+      "restarting": "Reiniciando…",
+      "unavailable": "Sin medir"
+    }
   },
   "storageScanExclusions": {
     "title": "Exclusiones del análisis",

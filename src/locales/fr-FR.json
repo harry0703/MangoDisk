@@ -2038,7 +2038,25 @@
       "fastHint": "La taille des fichiers compressés ou à allocation partielle peut différer de l’espace occupé sur le disque"
     },
     "diskUsage": "Utilisation du disque",
-    "fileSize": "Taille du fichier"
+    "fileSize": "Taille du fichier",
+    "coverage": {
+      "summary": "Non comptabilisés · {count}",
+      "details": "Voir les détails",
+      "title": "Éléments non comptabilisés",
+      "description": "Ces éléments ne sont pas inclus dans la taille totale",
+      "permissionDenied": "Accès refusé",
+      "readErrors": "Erreurs de lecture",
+      "excluded": "Exclus par les règles d’analyse",
+      "linkOrMount": "Liens, points de montage ou éléments en ligne uniquement",
+      "other": "Autres omissions ou motifs non classés",
+      "countHint": "Le nombre indique les éléments ignorés, pas tous les fichiers contenus",
+      "administrator": "Droits : administrateur",
+      "administratorHint": "Les droits système ou des fichiers peuvent bloquer l’accès, même aux administrateurs",
+      "standardUser": "Droits : utilisateur standard",
+      "restart": "Redémarrer en tant qu’administrateur et relancer l’analyse",
+      "restarting": "Redémarrage…",
+      "unavailable": "Non mesuré"
+    }
   },
   "storageScanExclusions": {
     "title": "Exclusions d’analyse",

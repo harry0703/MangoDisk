@@ -2038,7 +2038,25 @@
       "fastHint": "Sıkıştırılmış ve seyrek dosya boyutları disk kullanımından farklı olabilir"
     },
     "diskUsage": "Disk kullanımı",
-    "fileSize": "Dosya boyutu"
+    "fileSize": "Dosya boyutu",
+    "coverage": {
+      "summary": "Sayılmayan · {count}",
+      "details": "Ayrıntıları göster",
+      "title": "Hesaba katılmayan öğeler",
+      "description": "Bu öğeler toplam boyuta dahil edilmedi",
+      "permissionDenied": "Erişim reddedildi",
+      "readErrors": "Okuma hataları",
+      "excluded": "Tarama kurallarıyla hariç tutulanlar",
+      "linkOrMount": "Bağlantılar, bağlama noktaları veya yalnızca çevrimiçi öğeler",
+      "other": "Diğer veya sınıflandırılmamış nedenler",
+      "countHint": "Sayı, atlanan öğeleri belirtir; içlerindeki tüm dosyaları değil",
+      "administrator": "Yetkiler: yönetici",
+      "administratorHint": "Sistem veya dosya izinleri, yöneticilerin bile erişimini engelleyebilir",
+      "standardUser": "Yetkiler: standart kullanıcı",
+      "restart": "Yönetici olarak yeniden başlat ve tekrar tara",
+      "restarting": "Yeniden başlatılıyor…",
+      "unavailable": "Ölçülemedi"
+    }
   },
   "storageScanExclusions": {
     "title": "Tarama dışında tutulanlar",

@@ -101,6 +101,7 @@ function updateDepth(value: unknown) {
             }}</span>
           </MdTooltip>
         </p>
+        <slot name="coverage" />
         <MdScanExclusionLink
           v-if="exclusionsActive"
           :hint="t('analysis.exclusionHint')"
@@ -189,6 +190,7 @@ function updateDepth(value: unknown) {
 @reference "@assets/main.css";
 
 .visual-pane {
+  container: analysis-visual / inline-size;
   display: flex;
   min-width: 0;
   min-height: 0;
@@ -213,6 +215,9 @@ function updateDepth(value: unknown) {
   margin-left: auto;
   align-items: center;
   gap: 8px;
+  max-width: 100%;
+  flex-wrap: wrap;
+  justify-content: flex-end;
 }
 
 .chart-depth {
@@ -249,8 +254,11 @@ function updateDepth(value: unknown) {
 .space-summary {
   display: flex;
   min-width: 0;
-  align-items: center;
+  align-items: baseline;
   gap: 8px;
+  max-width: 100%;
+  flex-wrap: wrap;
+  row-gap: 4px;
 }
 
 .visual-pane header p {

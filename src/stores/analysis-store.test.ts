@@ -19,6 +19,7 @@ import { useStorageScanPreferencesStore } from './storage-scan-preferences-store
 import { PreferenceStorageService } from '@/lib/services/settings/preference-storage-service';
 
 const result: AnalysisResult = {
+  policyVersion: 2,
   scanId: 7,
   root: '/fixture',
   scannedAtMs: 1_000,
@@ -202,6 +203,19 @@ describe('analysis store', () => {
     expect(analyze).not.toHaveBeenCalled();
     expect(appStore.currentPage).toBe(PAGE_IDS.settings);
     expect(analysisStore.result).toEqual(result);
+  });
+
+  it.each([undefined, 1])('rescans cached results from an obsolete policy %s', async policyVersion => {
+    const store = useAnalysisStore();
+    const cacheKey = AnalysisCacheUtils.key('/fixture');
+    store.cache = { [cacheKey]: { ...result, policyVersion } };
+    store.cacheOrder = [cacheKey];
+    const analyze = vi.spyOn(AnalysisService, 'analyze').mockResolvedValue(result);
+
+    await store.analyze('/fixture');
+
+    expect(analyze).toHaveBeenCalledOnce();
+    expect(store.result?.policyVersion).toBe(2);
   });
 
   it('keeps full-space analysis independent from scan exclusion preferences', async () => {

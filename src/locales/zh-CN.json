@@ -2038,7 +2038,25 @@
       "fastHint": "压缩、稀疏文件的大小可能与磁盘占用不同"
     },
     "diskUsage": "磁盘占用",
-    "fileSize": "文件大小"
+    "fileSize": "文件大小",
+    "coverage": {
+      "summary": "未计入统计 · {count}",
+      "details": "查看详情",
+      "title": "未计入统计",
+      "description": "以下项目未计入总大小",
+      "permissionDenied": "拒绝访问",
+      "readErrors": "读取失败",
+      "excluded": "扫描规则排除",
+      "linkOrMount": "链接、挂载点或仅联机项目",
+      "other": "其他或未分类原因",
+      "countHint": "数量按跳过的项目计算，不包含其内部的全部文件",
+      "administrator": "当前权限：管理员",
+      "administratorHint": "部分项目受系统或文件权限限制，管理员也可能无法读取",
+      "standardUser": "当前权限：普通用户",
+      "restart": "以管理员身份重启并重新扫描",
+      "restarting": "正在重启…",
+      "unavailable": "无法统计"
+    }
   },
   "storageScanExclusions": {
     "title": "扫描排除",

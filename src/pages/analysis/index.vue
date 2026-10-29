@@ -34,6 +34,7 @@ import { useAnalysisStore } from '@/stores/analysis-store';
 
 import { FormatService } from '@/lib/services/presentation/format-service';
 import MdAnalysisDeleteResultDialog from './components/md-analysis-delete-result-dialog.vue';
+import MdAnalysisCoverage from './components/md-analysis-coverage.vue';
 import MdAnalysisScanButton from './components/md-analysis-scan-button.vue';
 import MdAnalysisBrowserToolbar from './components/md-analysis-browser-toolbar.vue';
 import MdAnalysisFolderPane from './components/md-analysis-folder-pane.vue';
@@ -57,6 +58,8 @@ const props = defineProps<{
   recovering?: boolean;
   recoveryRequired?: boolean;
   deleteBatchResult?: AnalysisDeleteBatchResult | null;
+  administratorRestartBusy?: boolean;
+  administratorRestartDisabled?: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -68,6 +71,7 @@ const emit = defineEmits<{
   reveal: [path: string];
   delete: [entry: DirectoryEntryInfo];
   deleteMany: [entries: DirectoryEntryInfo[]];
+  restartAsAdministrator: [scanId: number];
 }>();
 
 const storageScopeStore = useStorageScopeStore();
@@ -533,7 +537,16 @@ function navigateHistory(index: number) {
           @open-entry="openEntry"
           @reveal="emit('reveal', $event)"
           @delete="requestDelete"
-        />
+        >
+          <template #coverage>
+            <MdAnalysisCoverage
+              :result="result"
+              :disabled="busy || deleting || recoveryRequired || administratorRestartDisabled"
+              :restarting="administratorRestartBusy"
+              @restart-as-administrator="emit('restartAsAdministrator', $event)"
+            />
+          </template>
+        </MdAnalysisVisualPane>
       </div>
     </article>
 

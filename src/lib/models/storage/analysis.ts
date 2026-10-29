@@ -2,6 +2,7 @@ export const ANALYSIS_SCAN_MODES = { standard: 'standard', fast: 'fast' } as con
 export type AnalysisScanMode = (typeof ANALYSIS_SCAN_MODES)[keyof typeof ANALYSIS_SCAN_MODES];
 
 export const ANALYSIS_RESULT_CACHE_LIMIT = 80;
+export const ANALYSIS_SCAN_POLICY_VERSION = 2;
 export const ANALYSIS_CHART_MAX_DEPTH = 6;
 export const ANALYSIS_REMAINDER_SCHEMA_VERSION = 2;
 export const ANALYSIS_DELETE_SCHEMA_VERSION = 1;
@@ -35,6 +36,7 @@ export const TREEMAP_TILE_KINDS = {
 } as const;
 
 export interface DirectoryEntryInfo {
+  sizeStatus?: 'complete' | 'partial' | 'unavailable';
   name: string;
   path: string;
   bytes: number;
@@ -47,6 +49,18 @@ export interface DirectoryEntryInfo {
 }
 
 export interface AnalysisResult {
+  policyVersion?: number;
+  coverage?: {
+    schemaVersion: 1;
+    omissions: {
+      permissionDenied: number;
+      readErrors: number;
+      excluded: number;
+      linkOrMount: number;
+      other: number;
+    };
+    elevated: boolean | null;
+  };
   /** Absent in results from older app versions; those use standard allocation. */
   scanMode?: AnalysisScanMode;
   scanId: number;

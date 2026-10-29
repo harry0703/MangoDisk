@@ -2038,7 +2038,25 @@
       "fastHint": "압축 및 희소 파일의 크기는 디스크 사용량과 다를 수 있습니다"
     },
     "diskUsage": "디스크 사용량",
-    "fileSize": "파일 크기"
+    "fileSize": "파일 크기",
+    "coverage": {
+      "summary": "집계 제외 · {count}",
+      "details": "세부 정보 보기",
+      "title": "집계되지 않은 항목",
+      "description": "다음 항목은 전체 크기에 포함되지 않았습니다",
+      "permissionDenied": "액세스 거부",
+      "readErrors": "읽기 오류",
+      "excluded": "검사 규칙에 따라 제외됨",
+      "linkOrMount": "링크, 탑재 지점 또는 온라인 전용 항목",
+      "other": "기타 또는 분류되지 않은 사유",
+      "countHint": "개수는 건너뛴 항목 수이며 내부의 모든 파일 수가 아닙니다",
+      "administrator": "현재 권한: 관리자",
+      "administratorHint": "시스템 또는 파일 권한에 따라 관리자도 일부 항목을 읽지 못할 수 있습니다",
+      "standardUser": "현재 권한: 일반 사용자",
+      "restart": "관리자로 다시 시작하고 재검사",
+      "restarting": "다시 시작 중…",
+      "unavailable": "집계 불가"
+    }
   },
   "storageScanExclusions": {
     "title": "스캔 제외",
