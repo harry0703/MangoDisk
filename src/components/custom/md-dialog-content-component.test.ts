@@ -12,12 +12,12 @@ import MdDialogHeader from './md-dialog-header.vue';
 import dialogContentSource from './md-dialog-content.vue?raw';
 
 describe('dialog content component', () => {
-  it('applies the bounded-height contract to the teleported dialog node', async () => {
+  it.each([true, false])('keeps layout and accessible content attributes with description=%s', async hasDescription => {
     const wrapper = mount(
       defineComponent({
         components: { DialogDescription, DialogTitle, MdDialogContent, MdDialogHeader, UiDialog },
-        template:
-          '<UiDialog :open="true"><MdDialogContent height="tall"><MdDialogHeader><DialogTitle>Title</DialogTitle><DialogDescription>Description</DialogDescription></MdDialogHeader><div>Content</div></MdDialogContent></UiDialog>',
+        setup: () => ({ hasDescription }),
+        template: `<UiDialog :open="true"><MdDialogContent height="tall" data-testid="content" v-bind="hasDescription ? {} : { 'aria-describedby': undefined }"><MdDialogHeader><DialogTitle>Title</DialogTitle><DialogDescription v-if="hasDescription">Description</DialogDescription></MdDialogHeader><div>Content</div></MdDialogContent></UiDialog>`,
       }),
       {
         attachTo: document.body,
@@ -29,6 +29,8 @@ describe('dialog content component', () => {
     const content = document.body.querySelector<HTMLElement>('[data-slot="dialog-content"]');
     const header = document.body.querySelector<HTMLElement>('[data-slot="dialog-header"]');
     expect(content).not.toBeNull();
+    expect(content?.dataset.testid).toBe('content');
+    expect(content?.hasAttribute('aria-describedby')).toBe(hasDescription);
     expect(content?.classList.contains('md-dialog-content--tall')).toBe(true);
     expect(header?.hasAttribute('data-tauri-drag-region')).toBe(true);
     expect(header?.querySelector('[aria-hidden="true"]')?.hasAttribute('data-tauri-drag-region')).toBe(true);

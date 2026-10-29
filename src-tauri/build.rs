@@ -18,11 +18,34 @@ fn main() {
     // LocalAppData. That ACL mismatch prevents startup. The manifest therefore uses `asInvoker`;
     // operations requiring administrator rights must elevate only at their platform capability
     // boundary.
-    let windows =
-        tauri_build::WindowsAttributes::new().app_manifest(include_str!("windows/app.manifest"));
+    let windows = tauri_build::WindowsAttributes::new_without_app_manifest();
     let attributes = tauri_build::Attributes::new().windows_attributes(windows);
 
     tauri_build::try_build(attributes).expect("failed to run the Tauri build script");
+    if std::env::var("CARGO_CFG_TARGET_OS").as_deref() == Ok("windows") {
+        build_windows_manifest();
+    }
+}
+
+fn build_windows_manifest() {
+    // Tauri links resources to application binaries only. Mock App tests also import
+    // TaskDialogIndirect, so every executable needs the same Common Controls v6 context.
+    println!("cargo:rerun-if-changed=windows/app.manifest");
+    let manifest = std::path::PathBuf::from(
+        std::env::var_os("CARGO_MANIFEST_DIR").expect("Cargo manifest path"),
+    )
+    .join("windows/app.manifest");
+    let source = std::path::PathBuf::from(std::env::var_os("OUT_DIR").expect("Cargo output path"))
+        .join("app_manifest.rc");
+    let path = manifest.to_string_lossy().replace('\\', "/");
+    std::fs::write(
+        &source,
+        format!("#pragma code_page(65001)\n1 24 \"{path}\"\n"),
+    )
+    .expect("write shared Windows manifest resource");
+    embed_resource::compile_for_everything(&source, embed_resource::NONE)
+        .manifest_required()
+        .expect("embed shared Windows manifest");
 }
 
 /// Embed the architecture-matched XAML adapter in the executable. No deployment

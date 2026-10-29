@@ -4507,6 +4507,16 @@
     "healthPercent": "Santé"
   },
   "networkDetails": {
+    "localTitle": "Interface locale",
+    "publicTitle": "IP publique",
+    "publicHint": "Un VPN ou un proxy peut modifier la localisation de l’IP",
+    "publicRefresh": "Actualiser",
+    "publicLoading": "Récupération…",
+    "publicUnavailable": "Temporairement indisponible",
+    "publicDisabled": "Non activé",
+    "publicStale": "Non actualisée",
+    "publicLastKnown": "Dernier résultat",
+    "publicContextFailed": "Échec de la vérification réseau. Actualisez pour réessayer",
     "title": "Trafic",
     "sessionHint": "Trafic surveillé sur cette interface pendant cette exécution\nLe redémarrage de l'application ou le changement d'interface réinitialise le total\nLes pauses et les intervalles non surveillés sont exclus",
     "linkHint": "Taux de liaison signalé par le système\nPas votre vitesse Internet",
@@ -4525,7 +4535,11 @@
     "resetDescription": "Réinitialisez les totaux enregistrés pour {name}. Le trafic de session est conservé",
     "resetFailed": "Impossible d'enregistrer la réinitialisation. Les totaux sont inchangés",
     "cumulativeHint": "Depuis {since}\nEnregistré séparément pour chaque interface surveillée\nInclut le trafic du réseau local ; les périodes non surveillées sont exclues",
-    "cumulativeUnavailable": "Les totaux enregistrés sont temporairement indisponibles\nLe trafic de session est toujours enregistré"
+    "cumulativeUnavailable": "Les totaux enregistrés sont temporairement indisponibles\nLe trafic de session est toujours enregistré",
+    "settings": "Réglages réseau",
+    "publicEnabled": "IP publique",
+    "queryHint": "IP et pays via MangoDisk. Cache de 1 heure",
+    "settingsFailed": "Impossible de modifier les réglages. Réessayez"
   },
   "diskDetails": {
     "activity": "Activité du disque",

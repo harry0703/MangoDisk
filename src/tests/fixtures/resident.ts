@@ -4,7 +4,7 @@ import { emptyReadings } from '@/lib/utils/system-resources/system-resources';
 
 export function preferencesFixture(): ResidentPreferences {
   return {
-    schemaVersion: 39,
+    schemaVersion: 41,
     windowsCpuTemperatureEnabled: false,
     revision: 0,
     enabled: true,
@@ -53,6 +53,7 @@ export function preferencesFixture(): ResidentPreferences {
       { id: 'fanSpeed', enabled: false },
     ],
     networkInterface: null,
+    publicNetwork: { enabled: true },
     diskVolume: null,
     diskTemperatureDevice: null,
     gpuAdapter: null,

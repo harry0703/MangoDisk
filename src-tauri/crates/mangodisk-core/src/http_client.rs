@@ -66,9 +66,133 @@ pub fn builder() -> reqwest::ClientBuilder {
     reqwest::Client::builder().default_headers(default_headers())
 }
 
+/// Optional first-party metadata, added only by callers of MangoDisk's own APIs.
+/// This never changes the defaults used for third-party HTTP requests.
+#[derive(Clone, Default)]
+pub struct OfficialRequestMetadata {
+    pub locale: String,
+    pub distribution: String,
+    pub os_version: Option<String>,
+    pub system_locale: Option<String>,
+    pub native_arch: Option<String>,
+    pub install_id: Option<String>,
+    pub request_id: Option<String>,
+}
+impl OfficialRequestMetadata {
+    pub fn headers(&self) -> HeaderMap {
+        let mut headers = default_headers();
+        headers.insert(
+            "x-mangodisk-app-version",
+            HeaderValue::from_static(env!("CARGO_PKG_VERSION")),
+        );
+        if let Some(locale) = valid_locale(&self.locale) {
+            insert_metadata(&mut headers, "accept-language", locale, 32);
+            insert_metadata(&mut headers, "x-mangodisk-locale", locale, 32);
+        }
+        if matches!(self.distribution.as_str(), "installed" | "portable") {
+            insert_metadata(
+                &mut headers,
+                "x-mangodisk-distribution",
+                &self.distribution,
+                16,
+            );
+        }
+        if let Some(value) = &self.os_version {
+            insert_metadata(&mut headers, "x-mangodisk-os-version", value, 128);
+        }
+        if let Some(value) = self.system_locale.as_deref().and_then(valid_locale) {
+            insert_metadata(&mut headers, "x-mangodisk-system-locale", value, 32);
+        }
+        if let Some(value @ ("aarch64" | "x86_64")) = self.native_arch.as_deref() {
+            insert_metadata(&mut headers, "x-mangodisk-native-arch", value, 16);
+        }
+        for (name, value) in [
+            ("x-mangodisk-install-id", &self.install_id),
+            ("x-request-id", &self.request_id),
+        ] {
+            if let Some(id) = value
+                .as_deref()
+                .and_then(|value| uuid::Uuid::parse_str(value).ok())
+            {
+                let mut value =
+                    HeaderValue::from_str(&id.to_string()).expect("UUID is a valid HTTP value");
+                value.set_sensitive(true);
+                headers.insert(name, value);
+            }
+        }
+        headers
+    }
+}
+fn valid_locale(locale: &str) -> Option<&str> {
+    let locale = locale.trim();
+    (locale.len() >= 2
+        && locale.len() <= 32
+        && !locale.starts_with('-')
+        && !locale.ends_with('-')
+        && locale
+            .bytes()
+            .all(|byte| byte.is_ascii_alphanumeric() || byte == b'-'))
+    .then_some(locale)
+}
+fn insert_metadata(headers: &mut HeaderMap, name: &'static str, value: &str, limit: usize) {
+    let value = value.trim();
+    if !value.is_empty()
+        && value.len() <= limit
+        && value.bytes().all(|byte| (32..=126).contains(&byte))
+    {
+        if let Ok(value) = HeaderValue::from_str(value) {
+            headers.insert(name, value);
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn official_headers_are_consistent_optional_and_do_not_change_generic_clients() {
+        let id = uuid::Uuid::new_v4().to_string();
+        let metadata = OfficialRequestMetadata {
+            locale: "zh-CN".into(),
+            distribution: "installed".into(),
+            os_version: Some("15.7".into()),
+            system_locale: Some("it-IT".into()),
+            native_arch: Some("aarch64".into()),
+            install_id: Some(id.to_uppercase()),
+            request_id: Some(id.clone()),
+        };
+        let headers = metadata.headers();
+        assert_eq!(headers["user-agent"], default_headers()["user-agent"]);
+        assert_eq!(headers["accept-language"], "zh-CN");
+        assert_eq!(headers["x-mangodisk-locale"], "zh-CN");
+        assert_eq!(
+            headers["x-mangodisk-app-version"],
+            env!("CARGO_PKG_VERSION")
+        );
+        assert_eq!(headers["x-mangodisk-install-id"], id);
+        assert!(headers["x-mangodisk-install-id"].is_sensitive());
+        assert_eq!(headers["x-mangodisk-system-locale"], "it-IT");
+        assert_eq!(headers["x-mangodisk-native-arch"], "aarch64");
+        assert_eq!(default_headers().len(), 1);
+        let omitted = OfficialRequestMetadata {
+            locale: "bad\r\nInjected: yes".into(),
+            distribution: "unknown".into(),
+            os_version: Some("bad\nvalue".into()),
+            system_locale: Some("a".repeat(33)),
+            native_arch: Some("invalid".into()),
+            install_id: Some("invalid".into()),
+            request_id: None,
+        }
+        .headers();
+        assert_eq!(omitted.len(), 2);
+        for locale in ["pt-BR", "it-IT", "zh-Hant-TW"] {
+            assert_eq!(valid_locale(locale), Some(locale));
+        }
+        for locale in ["", "-en", "en-", "en-US\r\nother: value"] {
+            assert!(valid_locale(locale).is_none());
+        }
+    }
 
     #[test]
     fn user_agent_formats_system_versions_and_architectures() {

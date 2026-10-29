@@ -10,6 +10,7 @@ mod memory;
 pub mod metrics;
 pub mod models;
 pub mod network;
+pub mod network_addresses;
 pub mod network_traffic;
 pub mod process_cpu;
 pub mod readings;

@@ -1168,7 +1168,7 @@ describe('status display interactions', () => {
     await wrapper.get('input[name="taskbar-position"][value="auto"]').setValue(true);
     await flushPromises();
     expect(ResidentService.savePreferences).toHaveBeenLastCalledWith(
-      expect.objectContaining({ schemaVersion: 39, taskbarPosition: 'auto' })
+      expect.objectContaining({ schemaVersion: 41, taskbarPosition: 'auto' })
     );
   });
 

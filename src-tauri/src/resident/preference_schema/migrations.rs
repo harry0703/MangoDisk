@@ -19,7 +19,23 @@ pub fn decode(mut value: Value) -> Result<ResidentPreferences, &'static str> {
             .map_err(|_| "preferences_invalid")?
             .normalize();
     }
-    if version == 38 {
+    if version == 40 {
+        let object = value.as_object_mut().ok_or("preferences_invalid")?;
+        let network = object
+            .get_mut("publicNetwork")
+            .and_then(Value::as_object_mut)
+            .ok_or("preferences_invalid")?;
+        network
+            .remove("refreshMinutes")
+            .and_then(|value| value.as_u64())
+            .filter(|minutes| [0, 1, 5, 15, 30, 60].contains(minutes))
+            .ok_or("preferences_invalid")?;
+        object.insert("schemaVersion".into(), PREFERENCE_SCHEMA_VERSION.into());
+        return serde_json::from_value::<ResidentPreferences>(value)
+            .map_err(|_| "preferences_invalid")?
+            .normalize();
+    }
+    if matches!(version, 38 | 39) {
         value
             .as_object_mut()
             .ok_or("preferences_invalid")?
@@ -462,6 +478,11 @@ fn add_component_defaults(value: &mut Value) -> Result<(), &'static str> {
     Ok(())
 }
 fn decode_upgraded(mut value: Value) -> Result<ResidentPreferences, &'static str> {
+    value.as_object_mut().ok_or("preferences_invalid")?.insert(
+        "publicNetwork".into(),
+        serde_json::to_value(super::PublicNetworkPreferences::default())
+            .map_err(|_| "preferences_invalid")?,
+    );
     add_component_defaults(&mut value)?;
     serde_json::from_value::<ResidentPreferences>(value)
         .map_err(|_| "preferences_invalid")?

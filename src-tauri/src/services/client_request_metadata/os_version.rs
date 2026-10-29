@@ -4,8 +4,8 @@ pub(crate) fn telemetry_os_version() -> String {
         if let Some(distribution) = linux_distribution() {
             return distribution;
         }
-        // A missing or unusual os-release must not prevent a signed update.
-        log::warn!("app_update_os_version_fallback source=os_release outcome=kernel_version");
+        // A missing or unusual os-release must not prevent a request.
+        log::warn!("client_metadata_os_version_fallback source=os_release outcome=kernel_version");
     }
 
     tauri_plugin_os::version().to_string()
@@ -36,7 +36,7 @@ fn parse_distribution(content: &str) -> Option<String> {
             None => name.to_string(),
         })
     })?;
-    // HTTP header values must stay printable ASCII so telemetry cannot break update checks.
+    // HTTP header values must stay printable ASCII so optional metadata cannot break requests.
     if !value
         .bytes()
         .all(|byte| byte == b' ' || byte.is_ascii_graphic())
@@ -71,7 +71,7 @@ mod tests {
     }
 
     #[test]
-    fn rejects_values_that_would_invalidate_the_update_header() {
+    fn rejects_values_that_would_invalidate_a_request_header() {
         assert_eq!(parse_distribution("PRETTY_NAME=\"bad\tname\""), None);
         assert_eq!(
             parse_distribution("PRETTY_NAME=\"\u{65e5}\u{672c}\u{8a9e} Linux\""),

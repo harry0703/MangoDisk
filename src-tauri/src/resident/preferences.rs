@@ -186,6 +186,9 @@ pub fn apply(
     } else {
         super::panel::hide(app);
     }
+    if let Some(network) = app.try_state::<Arc<super::public_network::PublicNetwork>>() {
+        network.configure(&preferences);
+    }
     let _ = app.emit("resident-preferences-changed", preferences.revision);
     state.wake();
     log::info!(

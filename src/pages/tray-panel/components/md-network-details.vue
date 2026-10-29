@@ -18,6 +18,7 @@ import { SelectTrigger } from 'reka-ui';
 import MdIcon from '@/components/icons/md-icon.vue';
 import { ICON_NAMES } from '@/lib/models/presentation/ui';
 import MdResourceFacts from './md-resource-facts.vue';
+import MdNetworkAddresses from './md-network-addresses.vue';
 
 const props = defineProps<{ reading: ResourceReadings; active: boolean }>();
 const { t, n, locale } = useI18n({ useScope: 'global' });
@@ -333,9 +334,9 @@ const interfaceFacts = computed(() => {
       </div>
     </dl>
   </section>
-  <section class="network-details network-interface" :aria-label="t('systemStatus.interface')">
+  <section class="network-details network-interface" :aria-label="t('networkDetails.localTitle')">
     <header>
-      <h2>{{ t('systemStatus.interface') }}</h2>
+      <h2>{{ t('networkDetails.localTitle') }}</h2>
       <MdTooltip
         :active="active"
         multiline
@@ -351,6 +352,7 @@ const interfaceFacts = computed(() => {
     </header>
     <MdResourceFacts :active="active" :facts="interfaceFacts" layout="rows" />
   </section>
+  <MdNetworkAddresses :active="active" />
   <MdConfirmDialog
     v-if="resetTarget"
     presentation="panel"
@@ -376,15 +378,15 @@ const interfaceFacts = computed(() => {
 <style scoped>
 @reference "@assets/main.css";
 .network-details {
-  padding: 8px 0;
+  padding: 6px 0;
   display: flex;
   flex-direction: column;
   flex: none;
-  gap: 12px;
+  gap: 6px;
 }
 .network-traffic {
   padding-block: 4px;
-  gap: 8px;
+  gap: 6px;
 }
 .traffic-facts {
   display: grid;
@@ -393,12 +395,12 @@ const interfaceFacts = computed(() => {
 }
 .traffic-facts > div {
   @apply rounded-lg bg-muted/40;
-  padding: 8px;
+  padding: 6px;
   min-width: 0;
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   align-items: baseline;
-  gap: 4px 8px;
+  gap: 2px 6px;
 }
 .traffic-facts small {
   grid-column: 1 / -1;
@@ -412,7 +414,7 @@ const interfaceFacts = computed(() => {
 }
 .traffic-facts dd {
   margin: 0;
-  font-size: 16px;
+  font-size: 15px;
   font-weight: 600;
   font-variant-numeric: tabular-nums;
   overflow-wrap: anywhere;
@@ -427,6 +429,10 @@ const interfaceFacts = computed(() => {
 .traffic-reset:disabled {
   opacity: 0.5;
   cursor: default;
+}
+.network-interface :deep(.rows .resource-fact) {
+  padding-block: 2px;
+  gap: 4px 10px;
 }
 .network-interface {
   @apply border-t border-border;
@@ -448,12 +454,12 @@ header > span {
   font-variant-numeric: tabular-nums;
 }
 .network-summary {
-  --resource-summary-height: 208px;
-  --resource-trend-height: 76px;
+  --resource-summary-height: 160px;
+  --resource-trend-height: 52px;
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  padding: 10px 12px;
+  gap: 4px;
+  padding: 8px 10px;
 }
 
 .network-heading {
@@ -465,7 +471,7 @@ header > span {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  min-height: 30px;
+  min-height: 24px;
   min-width: 0;
   max-width: 100%;
   text-align: left;
@@ -489,7 +495,7 @@ header > span {
 .network-rates {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  padding-block: 2px;
+  padding-block: 0;
   gap: 16px;
 }
 .rate-block {
@@ -502,8 +508,8 @@ header > span {
   font-variant-numeric: tabular-nums;
 }
 .rate-number strong {
-  font-size: clamp(24px, 7vw, 34px);
-  line-height: 1.2;
+  font-size: clamp(24px, 7vw, 30px);
+  line-height: 1.15;
   font-weight: 600;
   letter-spacing: -0.035em;
 }
@@ -518,7 +524,7 @@ header > span {
   align-items: center;
   gap: 5px;
   font-size: 11px;
-  margin-top: 4px;
+  margin-top: 2px;
 }
 .rate-label b {
   font-size: 14px;
@@ -531,7 +537,8 @@ header > span {
 }
 .network-history {
   flex: none;
-  height: 76px;
+  height: 52px;
+  margin-top: 2px;
   border-radius: 6px;
   background: var(--muted);
 }

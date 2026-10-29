@@ -2643,6 +2643,7 @@ dependencies = [
  "blake3",
  "block2",
  "cc",
+ "embed-resource",
  "gtk",
  "icns",
  "log",

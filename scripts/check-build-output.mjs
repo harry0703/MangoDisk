@@ -122,16 +122,24 @@ const localeChunkLimitOverrides = new Map([
   // Six Explorer integration strings measure de/es/fr/ja/ko/pt/ru raw bytes
   // 321701/323720/332309/345954/316033/317048/418069; ja/ko/zh-tw gzip is
   // 65730/63158/61441. Keep the increases local and application limits fixed.
-  ['fr-fr', { bytes: 333824, gzipBytes: 66736 }],
-  ['de-de', { bytes: 323168, gzipBytes: 67264 }],
-  ['es-es', { bytes: 325216, gzipBytes: 65088 }],
-  ['pt-br', { bytes: 318560, gzipBytes: 64112 }],
-  ['ko-kr', { bytes: 317536, gzipBytes: 63552 }],
+  // Nine public-egress labels add 0.7–1.1 KiB raw per locale. Measured gzip
+  // de/es/fr/ja/ko/pt/ru/tr/zh-cn/zh-tw: 67467/65274/66933/66344/63748/
+  // 64296/74981/63043/61496/61999 bytes. Keep application limits unchanged.
+  // Seven network-setting labels measure raw/gzip de: 324566/67600,
+  // es: 326531/65390, fr: 335211/67068, ja: 349142/66489, ko: 318946/63873,
+  // pt: 319926/64420, ru: 421852/75155, tr: 313586/63175.
+  // zh-cn/zh-tw gzip is 61610/62111; keep only locale-specific increases.
+  ['fr-fr', { bytes: 335360, gzipBytes: 67120 }],
+  ['de-de', { bytes: 324704, gzipBytes: 67648 }],
+  ['es-es', { bytes: 326752, gzipBytes: 65472 }],
+  ['pt-br', { bytes: 320096, gzipBytes: 64496 }],
+  ['ko-kr', { bytes: 319072, gzipBytes: 63936 }],
   // Retain the finishing-charge labels' additional 128 raw bytes for ja/ru.
-  ['ja-jp', { bytes: 347680, gzipBytes: 66160 }],
-  ['ru-ru', { bytes: 420032, gzipBytes: 74736 }],
-  ['zh-tw', { bytes: maximumLocaleChunkBytes, gzipBytes: 61824 }],
-  ['tr-tr', { bytes: 312320, gzipBytes: 62864 }],
+  ['ja-jp', { bytes: 349216, gzipBytes: 66544 }],
+  ['ru-ru', { bytes: 421952, gzipBytes: 75184 }],
+  ['zh-cn', { bytes: maximumLocaleChunkBytes, gzipBytes: 61696 }],
+  ['zh-tw', { bytes: maximumLocaleChunkBytes, gzipBytes: 62208 }],
+  ['tr-tr', { bytes: 313728, gzipBytes: 63248 }],
 ]);
 
 function fail(message) {

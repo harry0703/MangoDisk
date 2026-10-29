@@ -4507,6 +4507,16 @@
     "healthPercent": "健全度"
   },
   "networkDetails": {
+    "localTitle": "ローカルインターフェース",
+    "publicTitle": "パブリック IP",
+    "publicHint": "VPN やプロキシにより IP の所在地が変わる場合があります",
+    "publicRefresh": "更新",
+    "publicLoading": "取得中…",
+    "publicUnavailable": "一時的に利用不可",
+    "publicDisabled": "無効",
+    "publicStale": "未更新",
+    "publicLastKnown": "前回の結果",
+    "publicContextFailed": "ネットワークを確認できません。更新してください",
     "title": "通信量",
     "sessionHint": "今回の実行中にこのインターフェースで計測した通信量\nアプリの再起動やインターフェースの切替でリセット\n一時停止など未計測の時間は含みません",
     "linkHint": "システムが報告するリンク速度\nインターネットの実効速度ではありません",
@@ -4525,7 +4535,11 @@
     "resetDescription": "{name} の保存済み累計をリセットします。今回の通信量は保持されます",
     "resetFailed": "リセットを保存できませんでした。累計は変更されていません",
     "cumulativeHint": "開始：{since}\n監視した通信量をインターフェイスごとに保存\nLAN 内の通信を含み、未監視の期間は含みません",
-    "cumulativeUnavailable": "保存済みの累計は現在取得できません\n今回の通信量は引き続き記録されます"
+    "cumulativeUnavailable": "保存済みの累計は現在取得できません\n今回の通信量は引き続き記録されます",
+    "settings": "ネットワーク設定",
+    "publicEnabled": "パブリック IP",
+    "queryHint": "MangoDisk で IP と国を取得し、1 時間キャッシュします",
+    "settingsFailed": "設定を更新できません。再試行してください"
   },
   "diskDetails": {
     "activity": "ディスク動作",

@@ -19,6 +19,7 @@ mod preference_schema;
 pub mod preferences;
 mod presentation;
 mod process_cpu_sampling;
+pub mod public_network;
 pub mod runtime;
 mod sampling_diagnostics;
 mod sampling_schedule;
@@ -45,6 +46,7 @@ pub fn install(app: &tauri::AppHandle) -> tauri::Result<()> {
     memory_preferences::install(app);
     let preferences = preferences::load(app);
     let state = runtime::start(app, preferences.clone());
+    public_network::install(app, &preferences);
     let reading = state
         .reading
         .lock()

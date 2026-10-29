@@ -465,6 +465,6 @@ describe('disk health and network detail presentation', () => {
     expect(wrapper.text()).toContain('192.0.2.1');
     expect(wrapper.text()).toContain('02:00:00:00:00:01');
     await wrapper.setProps({ reading: { ...reading, network: { ...reading.network, status: 'disconnected' } } });
-    expect(wrapper.findAll('dd').every(value => value.text() === '—')).toBe(true);
+    expect(wrapper.findAll('.network-interface dd, .traffic-facts dd').every(value => value.text() === '—')).toBe(true);
   });
 });

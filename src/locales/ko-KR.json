@@ -4507,6 +4507,16 @@
     "healthPercent": "건강도"
   },
   "networkDetails": {
+    "localTitle": "로컬 인터페이스",
+    "publicTitle": "공인 IP",
+    "publicHint": "VPN 또는 프록시가 IP 위치를 변경할 수 있습니다",
+    "publicRefresh": "새로 고침",
+    "publicLoading": "가져오는 중…",
+    "publicUnavailable": "일시적으로 사용 불가",
+    "publicDisabled": "사용 안 함",
+    "publicStale": "업데이트 안 됨",
+    "publicLastKnown": "이전 결과",
+    "publicContextFailed": "네트워크를 확인할 수 없습니다. 새로 고침하세요",
     "title": "트래픽",
     "sessionHint": "이번 실행 중 현재 인터페이스에서 측정한 트래픽\n앱을 다시 시작하거나 인터페이스를 바꾸면 초기화됩니다\n일시 중지 등 측정하지 않은 구간은 제외됩니다",
     "linkHint": "시스템이 보고한 연결 속도\n실제 인터넷 속도가 아닙니다",
@@ -4525,7 +4535,11 @@
     "resetDescription": "{name}의 저장된 누적 트래픽을 초기화합니다. 이번 실행의 트래픽은 유지됩니다",
     "resetFailed": "초기화를 저장하지 못했습니다. 누적 트래픽은 변경되지 않았습니다",
     "cumulativeHint": "시작: {since}\n모니터링한 트래픽을 인터페이스별로 저장\n로컬 네트워크 트래픽을 포함하며 미관측 시간은 제외합니다",
-    "cumulativeUnavailable": "저장된 누적 트래픽을 일시적으로 사용할 수 없습니다\n이번 실행의 트래픽은 계속 기록됩니다"
+    "cumulativeUnavailable": "저장된 누적 트래픽을 일시적으로 사용할 수 없습니다\n이번 실행의 트래픽은 계속 기록됩니다",
+    "settings": "네트워크 설정",
+    "publicEnabled": "공인 IP",
+    "queryHint": "MangoDisk에서 IP와 국가를 조회하고 1시간 캐시합니다",
+    "settingsFailed": "설정을 변경할 수 없습니다. 다시 시도하세요"
   },
   "diskDetails": {
     "activity": "디스크 활동",

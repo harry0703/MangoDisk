@@ -4507,6 +4507,16 @@
     "healthPercent": "健康度"
   },
   "networkDetails": {
+    "localTitle": "本機網卡",
+    "publicTitle": "公網 IP",
+    "publicHint": "VPN 或代理可能改變 IP 所在地",
+    "publicRefresh": "重新整理",
+    "publicLoading": "取得中…",
+    "publicUnavailable": "暫時無法取得",
+    "publicDisabled": "未啟用",
+    "publicStale": "未更新",
+    "publicLastKnown": "上次查詢結果",
+    "publicContextFailed": "網路偵測失敗，請重新整理",
     "title": "流量",
     "sessionHint": "本次執行期間，目前介面的監測流量\n重新啟動應用程式或切換介面後重新累計\n暫停、斷線等未監測時段不計入",
     "linkHint": "系統回報的網卡連線速率\n不代表實際網際網路速度",
@@ -4525,7 +4535,11 @@
     "resetDescription": "重設 {name} 的累計流量，保留本次流量",
     "resetFailed": "無法儲存重設，累計流量未變更",
     "cumulativeHint": "開始於 {since}\n按網卡分別儲存監測到的流量\n包含區域網路流量，未監測時段不計入",
-    "cumulativeUnavailable": "累計資料暫時無法使用\n本次流量不受影響"
+    "cumulativeUnavailable": "累計資料暫時無法使用\n本次流量不受影響",
+    "settings": "網路設定",
+    "publicEnabled": "公網 IP",
+    "queryHint": "透過 MangoDisk 查詢 IP 和國家，快取 1 小時",
+    "settingsFailed": "設定暫時無法使用，請重試"
   },
   "diskDetails": {
     "activity": "磁碟活動",

@@ -4507,6 +4507,16 @@
     "healthPercent": "Salud"
   },
   "networkDetails": {
+    "localTitle": "Interfaz local",
+    "publicTitle": "IP pública",
+    "publicHint": "Una VPN o un proxy puede cambiar la ubicación de la IP",
+    "publicRefresh": "Actualizar",
+    "publicLoading": "Obteniendo…",
+    "publicUnavailable": "No disponible temporalmente",
+    "publicDisabled": "No habilitado",
+    "publicStale": "Sin actualizar",
+    "publicLastKnown": "Último resultado",
+    "publicContextFailed": "No se pudo comprobar la red. Actualiza para reintentar",
     "title": "Tráfico",
     "sessionHint": "Tráfico monitoreado en esta interfaz durante esta ejecución\nReiniciar la aplicación o cambiar de interfaz restablece el total\nSe excluyen las pausas y los intervalos no supervisados",
     "linkHint": "Tasa de enlace reportada por el sistema\nNo es tu velocidad de internet",
@@ -4525,7 +4535,11 @@
     "resetDescription": "Restablecer los totales guardados para {name}. El tráfico de la sesión se mantiene",
     "resetFailed": "No se pudo guardar el reinicio. Los totales no cambian",
     "cumulativeHint": "Desde {since}\nGuardado por separado para cada interfaz monitoreada\nIncluye tráfico de red local; Se excluyen los períodos no supervisados",
-    "cumulativeUnavailable": "Los totales guardados no están disponibles temporalmente\nEl tráfico de la sesión todavía está registrado"
+    "cumulativeUnavailable": "Los totales guardados no están disponibles temporalmente\nEl tráfico de la sesión todavía está registrado",
+    "settings": "Ajustes de red",
+    "publicEnabled": "IP pública",
+    "queryHint": "Consulta IP y país en MangoDisk. Caché de 1 hora",
+    "settingsFailed": "No se pudo actualizar la configuración. Reinténtalo"
   },
   "diskDetails": {
     "activity": "Actividad del disco",

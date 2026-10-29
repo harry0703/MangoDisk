@@ -62,14 +62,26 @@ pub async fn discard_feedback_attachments(
 #[tauri::command]
 pub async fn submit_feedback(
     app: AppHandle,
-    request: SubmitFeedbackRequest,
+    mut request: SubmitFeedbackRequest,
     store: State<'_, FeedbackDraftStore>,
 ) -> CommandResult<SubmitFeedbackResult> {
     let log_directory = into_command_result("submit_feedback", app.path().app_log_dir())?;
     let app_version = app.package_info().version.to_string();
+    let mut metadata = crate::services::client_request_metadata::collect(&app);
+    metadata.locale = request.locale.clone();
+    metadata.request_id = Some(request.request_id.clone());
+    // Reuse the frontend's freshly persisted identity if the native store read was unavailable.
+    metadata.install_id = metadata.install_id.or_else(|| request.install_id.clone());
+    request.install_id = metadata.install_id.clone();
     into_command_result(
         "submit_feedback",
-        FeedbackSubmissionService::submit(store.inner(), &log_directory, &app_version, request)
-            .await,
+        FeedbackSubmissionService::submit(
+            store.inner(),
+            &log_directory,
+            &app_version,
+            request,
+            &metadata,
+        )
+        .await,
     )
 }

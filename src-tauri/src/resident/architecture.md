@@ -230,7 +230,7 @@ returns that reserved slot directly, so centered buttons do not send the monitor
 to an unrelated outer gap. Unknown environments prefer right,
 and collision checks still apply. These defaults do not replace saved choices.
 
-Resident preferences use schema version 38; resource readings use version 36.
+Resident preferences use schema version 40; resource readings use version 36.
 The system-status editor can restore the native platform defaults through the
 existing revision-checked save transaction. Reset preserves the enabled state and
 all platform display modes. Floating placement is stored independently and is
@@ -241,7 +241,7 @@ the latest enabled state and display modes. Ordinary edits still rebase only
 disjoint fields. Reset completion follows the save result, independently of error
 flags that a queued native-preference refresh may clear.
 The runtime and IPC accept only the current structure. Persisted configurations from
-release tags v1.1.1–v1.1.9 (schemas 7, 8, 10, 21 and 25) and the previous monitoring schemas 28, 29, 30, 31, 32, 33, 34, 35, 36 and 37 upgrade directly to schema 38;
+release tags v1.1.1–v1.1.9 (schemas 7, 8, 10, 21 and 25) and the previous monitoring schemas 28 through 40 upgrade directly to schema 41;
 development-only schemas, including 26 and 27, have no migration contract. Each
 supported release has a frozen fixture beside the pure decoder. Upgrades retain
 saved order, visibility, colors, source choices and consent; newly introduced
@@ -405,6 +405,50 @@ retries next tick, with diagnostics only on failure/recovery transitions.
 Automatic selection avoids virtual/loopback interfaces; an explicit selection is
 never silently replaced. Only local writable/system or user-mounted disks are
 listed; a selected volume is identified independently of its current mount name.
+
+Public egress discovery is separate from the selected local adapter and traffic
+sampling. Core probes the anonymous versioned MangoDisk endpoint over IPv4 and
+IPv6 independently, constraining DNS and local source families while retaining
+normal HTTP proxy policy. The actual response family determines its displayed
+row; missing country metadata does not hide the IP. Country names are localized
+on hover or keyboard focus without flags.
+
+A resident `public_network` owner keeps a memory-only, one-hour cache with
+per-family in-flight requests and generations. It has no background timer and
+makes no requests at startup. Opening the network panel reuses a fresh cache or
+queries an expired one. Cache age starts when a query succeeds; failure of only
+one transport family does not expire the other family's usable result. Manual
+refresh bypasses cache age. Hidden panels receive no cache events or periodic
+work. Already-started requests may finish and populate the native cache.
+
+A visible panel reads versioned snapshots through `monitoring_network_addresses`
+and listens for newer revisions; reopening subscribes before reading the native
+cache, so older command responses cannot overwrite newer events. Five-second
+local configuration observations and online events check for network changes
+only while the panel is visible. They do not query an unchanged egress just
+because time passes.
+
+The network settings dialog contains only the public IP switch, enabled by
+default. Discovery requires both system monitoring and public IP to be enabled.
+Preference schema 41 removes the former refresh interval from schema 40 while
+preserving the public IP switch and unrelated settings. Disabling discovery clears
+addresses and rejects late responses. When disabled, the panel retains the IPv4
+row with a localized "Not enabled" state and keeps the settings button available;
+refresh is hidden. IPv6 requires an actual address while discovery is enabled.
+
+Before refreshing, Core reads a local interface/address/default-route token,
+including virtual interfaces. A changed token invalidates old addresses and
+responses. Same-network failed refreshes retain last known values with an explicit
+stale indicator. Disabling clears the cache, invalidates pending results, and
+stops visible observations; an already sent HTTP request may finish but cannot
+repopulate the disabled cache. Repeated requests coalesce per family, and obsolete
+completions restart only their own family when a newer request needs it.
+Each HTTP probe has a five-second connect timeout, ten-second total timeout,
+4 KiB response limit and no redirects or authentication credentials. Public-IP
+queries opt into the same first-party metadata headers as update discovery and
+feedback. Missing installation identity is omitted; lookup never creates an ID
+or prevents address discovery.
+Probe diagnostics contain only trigger, family and outcome, never IP addresses.
 
 ## Native and interaction boundaries
 

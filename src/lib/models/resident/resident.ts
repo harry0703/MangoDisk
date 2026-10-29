@@ -1,5 +1,6 @@
 import type { MetricColorRule } from '@/lib/models/resident/resident-color-rules';
 import type { MetricId, ResourceReadings } from '@/lib/models/system-resources/system-resources';
+import type { PublicNetworkPreferences } from '@/lib/models/system-resources/network-addresses';
 
 export type ResidentPanelPage = MetricId | 'overview' | 'power';
 
@@ -26,7 +27,7 @@ export type ResidentDisplayMetricId =
 export type GpuDisplaySelection = { mode: 'automatic' } | { mode: 'selected'; adapterIds: string[] };
 
 export interface ResidentPreferences {
-  schemaVersion: 39;
+  schemaVersion: 41;
   windowsCpuTemperatureEnabled: boolean;
   revision: number;
   enabled: boolean;
@@ -55,6 +56,7 @@ export interface ResidentPreferences {
   colorRules: MetricColorRule[];
   metrics: { id: ResidentDisplayMetricId; enabled: boolean }[];
   networkInterface: string | null;
+  publicNetwork: PublicNetworkPreferences;
   diskVolume: string | null;
   diskTemperatureDevice: string | null;
   gpuAdapter: string | null;

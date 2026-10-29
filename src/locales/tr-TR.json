@@ -4507,6 +4507,16 @@
     "healthPercent": "Sağlık"
   },
   "networkDetails": {
+    "localTitle": "Yerel arayüz",
+    "publicTitle": "Genel IP",
+    "publicHint": "VPN veya proxy, IP konumunu değiştirebilir",
+    "publicRefresh": "Yenile",
+    "publicLoading": "Alınıyor…",
+    "publicUnavailable": "Geçici olarak kullanılamıyor",
+    "publicDisabled": "Etkin değil",
+    "publicStale": "Güncellenmedi",
+    "publicLastKnown": "Son sonuç",
+    "publicContextFailed": "Ağ denetlenemedi. Yenileyip tekrar deneyin",
     "title": "Trafik",
     "sessionHint": "Bu çalıştırmada geçerli arayüzde izlenen trafik\nUygulamayı yeniden başlatmak veya arayüzü değiştirmek toplamı sıfırlar\nDuraklamalar ve izlenmeyen süreler sayılmaz",
     "linkHint": "Sistemin bildirdiği bağlantı hızı\nİnternet hızınız değildir",
@@ -4525,7 +4535,11 @@
     "resetDescription": "{name} için kaydedilen toplamlar sıfırlanır. Oturum trafiği korunur",
     "resetFailed": "Sıfırlama kaydedilemedi. Toplamlar değişmedi",
     "cumulativeHint": "Başlangıç: {since}\nİzlenen trafik her arayüz için ayrı kaydedilir\nYerel ağ trafiği dahildir; izlenmeyen süreler hariçtir",
-    "cumulativeUnavailable": "Kaydedilen toplamlar geçici olarak kullanılamıyor\nOturum trafiği kaydedilmeye devam eder"
+    "cumulativeUnavailable": "Kaydedilen toplamlar geçici olarak kullanılamıyor\nOturum trafiği kaydedilmeye devam eder",
+    "settings": "Ağ ayarları",
+    "publicEnabled": "Genel IP",
+    "queryHint": "IP ve ülkeyi MangoDisk üzerinden sorgular. 1 saat önbellekte tutulur",
+    "settingsFailed": "Ayarlar güncellenemedi. Tekrar deneyin"
   },
   "diskDetails": {
     "activity": "Disk etkinliği",

@@ -212,6 +212,7 @@ pub fn run() {
             commands::explorer_integration::explorer_integration_set_enabled,
             commands::explorer_integration::take_analysis_launch,
             commands::resident::monitoring_get_reading,
+            commands::network_addresses::monitoring_network_addresses,
             commands::resident::monitoring_reset_network_traffic,
             commands::resident::monitoring_refresh,
             commands::resident::monitoring_release_memory,

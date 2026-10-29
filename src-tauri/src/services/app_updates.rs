@@ -6,7 +6,6 @@ use std::{
     time::{Duration, SystemTime},
 };
 use tauri::Manager;
-use tauri_plugin_store::StoreExt;
 use tauri_plugin_updater::UpdaterExt;
 use tokio::sync::Notify;
 
@@ -206,61 +205,40 @@ impl AppUpdates {
 async fn discover(
     app: &tauri::AppHandle,
 ) -> tauri_plugin_updater::Result<Option<tauri_plugin_updater::Update>> {
-    let locale = super::native_labels::NativeLabels::load(app).locale;
-    let mut builder = app
-        .updater_builder()
-        .timeout(TIMEOUT)
-        .header("Accept-Language", &locale)?
-        .header("x-mangodisk-locale", &locale)?
-        .header(
-            "x-mangodisk-os-version",
-            super::app_update_os_version::telemetry_os_version(),
-        )?
-        .header(
-            "x-mangodisk-distribution",
-            crate::commands::app_distribution::current().diagnostic_name(),
-        )?;
-    // Keep the operating system locale separate from the selected UI language.
-    // Optional telemetry must not prevent a signed update when the OS has no locale.
-    if let Some(system_locale) = tauri_plugin_os::locale().and_then(valid_system_locale) {
-        builder = builder.header("x-mangodisk-system-locale", system_locale)?;
-    }
-    #[cfg(target_os = "windows")]
-    if let Some(native_arch) = super::app_update_native_arch::telemetry_native_arch() {
-        builder = builder.header("x-mangodisk-native-arch", native_arch)?;
-    }
-    // Reuse an existing identity without racing the frontend's first-time
-    // identity creation. Missing telemetry must never block signed updates.
-    if let Ok(store) = app
-        .store_builder("installation.json")
-        .disable_auto_save()
-        .build()
-    {
-        if let Some(identity) = store.get("identity") {
-            if identity.get("schemaVersion").and_then(|v| v.as_u64()) == Some(1) {
-                if let Some(id) = identity
-                    .get("installId")
-                    .and_then(|v| v.as_str())
-                    .and_then(|v| uuid::Uuid::parse_str(v).ok())
-                {
-                    builder = builder.header("x-mangodisk-install-id", id.to_string())?;
-                }
-            }
-        }
-    }
-    builder.build()?.check().await
+    let metadata = super::client_request_metadata::collect(app);
+    discover_with(app.updater_builder(), &metadata).await
 }
 
-fn valid_system_locale(locale: String) -> Option<String> {
-    let locale = locale.trim();
-    (locale.len() <= 32
-        && locale.len() >= 2
-        && !locale.starts_with('-')
-        && !locale.ends_with('-')
-        && locale
-            .bytes()
-            .all(|byte| byte.is_ascii_alphanumeric() || byte == b'-'))
-    .then(|| locale.to_string())
+async fn discover_with(
+    builder: tauri_plugin_updater::UpdaterBuilder,
+    metadata: &mangodisk_core::http_client::OfficialRequestMetadata,
+) -> tauri_plugin_updater::Result<Option<tauri_plugin_updater::Update>> {
+    use std::sync::atomic::{AtomicBool, Ordering};
+
+    super::client_request_metadata::log_request("update", metadata);
+    // The plugin shares this callback between discovery and later downloads.
+    // Discovery carries installation metadata; only downloads may follow CDN redirects.
+    let discovering = Arc::new(AtomicBool::new(true));
+    let discovery_phase = discovering.clone();
+    let mut update = builder
+        .timeout(TIMEOUT)
+        .headers(metadata.headers())
+        .configure_client(move |client| {
+            if discovery_phase.load(Ordering::Acquire) {
+                client.redirect(reqwest::redirect::Policy::none())
+            } else {
+                client
+            }
+        })
+        .build()?
+        .check()
+        .await?;
+    // Downloads may redirect to a CDN. Keep metadata on API discovery only.
+    if let Some(update) = &mut update {
+        update.headers = mangodisk_core::http_client::default_headers();
+    }
+    discovering.store(false, Ordering::Release);
+    Ok(update)
 }
 
 pub(crate) fn start(app: &tauri::AppHandle) {
@@ -290,19 +268,124 @@ pub(crate) fn start(app: &tauri::AppHandle) {
 mod tests {
     use super::*;
 
-    #[test]
-    fn preserves_unsupported_ui_languages_in_system_locale_telemetry() {
-        for locale in ["pt-BR", "it-IT", "zh-Hant-TW"] {
-            assert_eq!(valid_system_locale(locale.into()).as_deref(), Some(locale));
-        }
-        for locale in [
-            "",
-            "-en",
-            "en-",
-            "en-US\r\nother: value",
-            "a".repeat(33).as_str(),
-        ] {
-            assert_eq!(valid_system_locale(locale.into()), None);
+    #[tokio::test]
+    async fn update_discovery_does_not_forward_installation_metadata_across_redirects() {
+        use crate::services::client_request_metadata::tests::{metadata, serve};
+        use std::io::{Read, Write};
+        use std::sync::atomic::{AtomicBool, Ordering};
+        let listener = std::net::TcpListener::bind("127.0.0.1:0").unwrap();
+        listener.set_nonblocking(true).unwrap();
+        let destination = format!("http://{}/foreign", listener.local_addr().unwrap());
+        let stop = Arc::new(AtomicBool::new(false));
+        let stop_server = stop.clone();
+        let receiver = std::thread::spawn(move || {
+            let mut requests = Vec::new();
+            loop {
+                match listener.accept() {
+                    Ok((mut stream, _)) => {
+                        stream.set_nonblocking(false).unwrap();
+                        stream
+                            .set_read_timeout(Some(Duration::from_secs(5)))
+                            .unwrap();
+                        let mut buffer = [0; 4096];
+                        let count = stream.read(&mut buffer).unwrap();
+                        requests.push(String::from_utf8_lossy(&buffer[..count]).into_owned());
+                        stream.write_all(b"HTTP/1.1 204 No Content\r\nContent-Length: 0\r\nConnection: close\r\n\r\n").unwrap();
+                    }
+                    Err(error) if error.kind() == std::io::ErrorKind::WouldBlock => {
+                        if stop_server.load(Ordering::Acquire) {
+                            break;
+                        }
+                        std::thread::sleep(Duration::from_millis(5));
+                    }
+                    Err(error) => panic!("redirect fixture failed: {error}"),
+                }
+            }
+            requests
+        });
+        let (origin, server) = serve(|_| {
+            vec![(
+                "302 Found",
+                Vec::new(),
+                format!("Location: {destination}\r\n"),
+            )]
+        });
+        let mut context = tauri::test::mock_context(tauri::test::noop_assets());
+        context.config_mut().plugins.0.insert(
+            "updater".into(),
+            serde_json::json!({"pubkey":"fixture","dangerousInsecureTransportProtocol":true}),
+        );
+        let app = tauri::test::mock_builder()
+            .plugin(tauri_plugin_updater::Builder::new().build())
+            .build(context)
+            .unwrap();
+        let builder = app
+            .updater_builder()
+            .endpoints(vec![origin.parse().unwrap()])
+            .unwrap()
+            .no_proxy();
+        let result = discover_with(builder, &metadata()).await;
+        stop.store(true, Ordering::Release);
+        let forwarded = receiver.join().unwrap();
+        server.join().unwrap();
+        assert!(
+            forwarded.is_empty(),
+            "update discovery unexpectedly forwarded {} request(s) to another origin",
+            forwarded.len()
+        );
+        assert!(
+            result.is_err(),
+            "redirected discovery must fail without forwarding metadata"
+        );
+    }
+
+    #[tokio::test]
+    async fn real_updater_check_reuses_headers_and_downloads_do_not_forward_identity() {
+        use crate::services::client_request_metadata::tests::{assert_headers, metadata, serve};
+        for install_id in [None, Some(uuid::Uuid::new_v4().to_string())] {
+            let mut metadata = metadata();
+            metadata.install_id = install_id;
+            let (cdn, cdn_server) =
+                serve(|_| vec![("200 OK", b"unsigned fixture".to_vec(), String::new())]);
+            let (origin, server) = serve(|origin| {
+                vec![
+            ("200 OK",serde_json::to_vec(&serde_json::json!({"version":"999.0.0","platforms":{"fixture":{"url":format!("{origin}/download"),"signature":"invalid"}}})).unwrap(),"Content-Type: application/json\r\n".into()),
+            ("302 Found",Vec::new(),format!("Location: {cdn}/package\r\n"))]
+            });
+            let mut context = tauri::test::mock_context(tauri::test::noop_assets());
+            // Only the loopback fixture permits HTTP; production configuration stays HTTPS.
+            context.config_mut().plugins.0.insert(
+                "updater".into(),
+                serde_json::json!({"pubkey":"fixture","dangerousInsecureTransportProtocol":true}),
+            );
+            let app = tauri::test::mock_builder()
+                .plugin(tauri_plugin_updater::Builder::new().build())
+                .build(context)
+                .unwrap();
+            let builder = app
+                .updater_builder()
+                .endpoints(vec![format!("{origin}/check").parse().unwrap()])
+                .unwrap()
+                .target("fixture")
+                .no_proxy();
+            let update = discover_with(builder, &metadata).await.unwrap().unwrap();
+            assert_eq!(
+                update.headers,
+                mangodisk_core::http_client::default_headers()
+            );
+            assert!(
+                update.download(|_, _| {}, || {}).await.is_err(),
+                "unsigned fixture must never be accepted as an update"
+            );
+            let requests = server.join().unwrap();
+            assert_headers(&requests[0], &metadata);
+            for request in [&requests[1], &cdn_server.join().unwrap()[0]] {
+                assert!(request
+                    .to_ascii_lowercase()
+                    .contains("user-agent: mangodisk/"));
+                assert!(!request.to_ascii_lowercase().contains("x-mangodisk-"));
+                assert!(!request.to_ascii_lowercase().contains("x-request-id:"));
+            }
         }
     }
 

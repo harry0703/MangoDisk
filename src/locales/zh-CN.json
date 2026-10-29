@@ -4507,6 +4507,16 @@
     "healthPercent": "健康度"
   },
   "networkDetails": {
+    "localTitle": "本地网卡",
+    "publicTitle": "公网 IP",
+    "publicHint": "VPN 或代理可能改变 IP 归属地",
+    "publicRefresh": "刷新",
+    "publicLoading": "获取中…",
+    "publicUnavailable": "暂不可用",
+    "publicDisabled": "未启用",
+    "publicStale": "未更新",
+    "publicLastKnown": "上次查询结果",
+    "publicContextFailed": "网络检测失败，请刷新",
     "title": "流量",
     "sessionHint": "本轮运行中，当前接口的监测流量\n重启应用或切换接口后重新累计\n暂停、断网等未监测时段不计入",
     "linkHint": "系统报告的网卡连接速率\n不代表实际互联网速度",
@@ -4525,7 +4535,11 @@
     "resetDescription": "重置 {name} 的累计流量，保留本次流量",
     "resetFailed": "重置未能保存，累计流量未更改",
     "cumulativeHint": "开始于 {since}\n按网卡分别保存监测到的流量\n包含局域网流量，未监测时段不计入",
-    "cumulativeUnavailable": "累计数据暂不可用\n本次流量不受影响"
+    "cumulativeUnavailable": "累计数据暂不可用\n本次流量不受影响",
+    "settings": "网络设置",
+    "publicEnabled": "公网 IP",
+    "queryHint": "通过 MangoDisk 查询 IP 和国家，缓存 1 小时",
+    "settingsFailed": "设置暂不可用，请重试"
   },
   "diskDetails": {
     "activity": "磁盘活动",

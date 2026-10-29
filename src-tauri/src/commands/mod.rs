@@ -14,6 +14,7 @@ pub(crate) mod file_manager;
 pub(crate) mod folder_selection;
 pub(crate) mod history;
 pub(crate) mod large_files;
+pub(crate) mod network_addresses;
 pub(crate) mod permanent_delete;
 pub(crate) mod privacy;
 pub(crate) mod resident;

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onBeforeUnmount, ref } from 'vue';
+import { computed, onBeforeUnmount, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { toast } from 'vue-sonner';
 import MdIconAction from '@/components/custom/md-icon-action.vue';
@@ -9,13 +9,18 @@ import { ICON_NAMES } from '@/lib/models/presentation/ui';
 import { ClipboardService } from '@/lib/services/shell/clipboard-service';
 import { LoggerService } from '@/lib/services/diagnostics/logger-service';
 
-const props = withDefaults(defineProps<{ text: string; showText?: boolean; label?: string; active?: boolean }>(), {
-  active: true,
-  label: undefined,
-});
+const props = withDefaults(
+  defineProps<{ text: string; showText?: boolean; label?: string; active?: boolean; hint?: string }>(),
+  {
+    active: true,
+    label: undefined,
+    hint: undefined,
+  }
+);
 const { t } = useI18n();
 const copied = ref(false);
 const pending = ref(false);
+const hint = computed(() => (copied.value ? t('common.copied') : props.hint || t('common.copy')));
 let timer: ReturnType<typeof setTimeout> | undefined;
 let disposed = false;
 
@@ -46,7 +51,7 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <MdTooltip v-if="showText" :active="active" :text="t('common.copy')">
+  <MdTooltip v-if="showText" :active="active" :text="hint" multiline>
     <button
       type="button"
       class="copy-value"
@@ -57,7 +62,7 @@ onBeforeUnmount(() => {
     >
       <span>{{ text }}</span>
     </button>
-    <template #content>{{ t(copied ? 'common.copied' : 'common.copy') }}</template>
+    <template #content>{{ hint }}</template>
   </MdTooltip>
   <MdIconAction
     v-else

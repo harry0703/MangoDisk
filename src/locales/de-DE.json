@@ -4507,6 +4507,16 @@
     "healthPercent": "Gesundheit"
   },
   "networkDetails": {
+    "localTitle": "Lokale Schnittstelle",
+    "publicTitle": "Öffentliche IP",
+    "publicHint": "VPNs oder Proxys können den IP-Standort ändern",
+    "publicRefresh": "Aktualisieren",
+    "publicLoading": "Wird abgerufen…",
+    "publicUnavailable": "Vorübergehend nicht verfügbar",
+    "publicDisabled": "Nicht aktiviert",
+    "publicStale": "Nicht aktualisiert",
+    "publicLastKnown": "Letztes Ergebnis",
+    "publicContextFailed": "Netzwerkprüfung fehlgeschlagen. Bitte aktualisieren",
     "title": "Verkehr",
     "sessionHint": "Der Datenverkehr wurde während dieses Laufs auf dieser Schnittstelle überwacht\nDurch einen Neustart der App oder einen Schnittstellenwechsel wird die Gesamtsumme zurückgesetzt\nAusgenommen sind Pausen und unüberwachte Intervalle",
     "linkHint": "Vom System gemeldete Verbindungsrate\nNicht Ihre Internetgeschwindigkeit",
@@ -4525,7 +4535,11 @@
     "resetDescription": "Setzen Sie die gespeicherten Summen für {name} zurück. Der Sitzungsverkehr bleibt erhalten",
     "resetFailed": "Der Reset konnte nicht gespeichert werden. Die Summen bleiben unverändert",
     "cumulativeHint": "Seit {since}\nWird für jede überwachte Schnittstelle separat gespeichert\nBeinhaltet lokalen Netzwerkverkehr; unüberwachte Zeiträume sind ausgeschlossen",
-    "cumulativeUnavailable": "Gespeicherte Summen sind vorübergehend nicht verfügbar\nDer Sitzungsverkehr wird weiterhin aufgezeichnet"
+    "cumulativeUnavailable": "Gespeicherte Summen sind vorübergehend nicht verfügbar\nDer Sitzungsverkehr wird weiterhin aufgezeichnet",
+    "settings": "Netzwerkeinstellungen",
+    "publicEnabled": "Öffentliche IP",
+    "queryHint": "IP und Land über MangoDisk abrufen. Für 1 Stunde zwischengespeichert",
+    "settingsFailed": "Einstellungen nicht verfügbar. Erneut versuchen"
   },
   "diskDetails": {
     "activity": "Festplattenaktivität",

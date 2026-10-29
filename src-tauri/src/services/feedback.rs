@@ -260,6 +260,7 @@ impl FeedbackSubmissionService {
         log_directory: &Path,
         app_version: &str,
         request: SubmitFeedbackRequest,
+        metadata: &mangodisk_core::http_client::OfficialRequestMetadata,
     ) -> Result<SubmitFeedbackResult, FeedbackError> {
         validate_submission(&request)?;
         let started_at = Instant::now();
@@ -334,17 +335,8 @@ impl FeedbackSubmissionService {
             );
         }
 
-        let client = mangodisk_core::http_client::builder()
-            .connect_timeout(FEEDBACK_CONNECT_TIMEOUT)
-            .timeout(FEEDBACK_REQUEST_TIMEOUT)
-            .build()
-            .map_err(|_| FeedbackError::Network)?;
-        let response = client
-            .post(feedback_endpoint())
-            .multipart(form)
-            .send()
-            .await
-            .map_err(|_| FeedbackError::Network)?;
+        let client = client().build().map_err(|_| FeedbackError::Network)?;
+        let response = send(&client, &feedback_endpoint(), form, metadata).await?;
         if !response.status().is_success() {
             log::warn!(
                 "feedback_submission_rejected request_id={} status={}",
@@ -420,6 +412,29 @@ async fn prepare_feedback_submission(
     })
     .await
     .map_err(|_| FeedbackError::DraftStorage)?
+}
+
+fn client() -> reqwest::ClientBuilder {
+    mangodisk_core::http_client::builder()
+        .connect_timeout(FEEDBACK_CONNECT_TIMEOUT)
+        .timeout(FEEDBACK_REQUEST_TIMEOUT)
+        .redirect(reqwest::redirect::Policy::none())
+}
+
+async fn send(
+    client: &reqwest::Client,
+    endpoint: &str,
+    form: Form,
+    metadata: &mangodisk_core::http_client::OfficialRequestMetadata,
+) -> Result<reqwest::Response, FeedbackError> {
+    super::client_request_metadata::log_request("feedback", metadata);
+    client
+        .post(endpoint)
+        .headers(metadata.headers())
+        .multipart(form)
+        .send()
+        .await
+        .map_err(|_| FeedbackError::Network)
 }
 
 fn validate_submission(request: &SubmitFeedbackRequest) -> Result<(), FeedbackError> {
@@ -601,6 +616,30 @@ mod tests {
 
     fn test_directory(name: &str) -> PathBuf {
         std::env::temp_dir().join(format!("mangodisk-feedback-{name}-{}", Uuid::new_v4()))
+    }
+
+    #[tokio::test]
+    async fn real_feedback_transport_reuses_metadata_and_keeps_optional_identity_nonfatal() {
+        use crate::services::client_request_metadata::tests::{assert_headers, metadata, serve};
+        for install_id in [None, Some(uuid::Uuid::new_v4().to_string())] {
+            let mut metadata = metadata();
+            metadata.install_id = install_id;
+            let (url, server) = serve(|_| vec![("200 OK", b"{}".to_vec(), String::new())]);
+            let client = client().no_proxy().build().unwrap();
+            let response = send(
+                &client,
+                &url,
+                Form::new().text("payload", "fixture"),
+                &metadata,
+            )
+            .await
+            .unwrap();
+            assert_eq!(response.status(), reqwest::StatusCode::OK);
+            let requests = server.join().unwrap();
+            assert_headers(&requests[0], &metadata);
+            assert!(requests[0].contains("multipart/form-data; boundary="));
+            assert!(requests[0].contains("fixture"));
+        }
     }
 
     #[test]

@@ -4507,6 +4507,16 @@
     "healthPercent": "Health"
   },
   "networkDetails": {
+    "localTitle": "Local interface",
+    "publicTitle": "Public IP",
+    "publicHint": "VPNs or proxies may change the IP location",
+    "publicRefresh": "Refresh",
+    "publicLoading": "Fetching…",
+    "publicUnavailable": "Temporarily unavailable",
+    "publicDisabled": "Not enabled",
+    "publicStale": "Not updated",
+    "publicLastKnown": "Last result",
+    "publicContextFailed": "Could not check the network. Refresh to retry",
     "title": "Traffic",
     "sessionHint": "Traffic monitored on this interface during this run\nRestarting the app or switching interfaces resets the total\nPauses and unmonitored intervals are excluded",
     "linkHint": "Link rate reported by the system\nNot your internet speed",
@@ -4525,7 +4535,11 @@
     "resetDescription": "Reset the saved totals for {name}. Session traffic is kept",
     "resetFailed": "Could not save the reset. Totals are unchanged",
     "cumulativeHint": "Since {since}\nSaved separately for each monitored interface\nIncludes local-network traffic; unmonitored periods are excluded",
-    "cumulativeUnavailable": "Saved totals are temporarily unavailable\nSession traffic is still recorded"
+    "cumulativeUnavailable": "Saved totals are temporarily unavailable\nSession traffic is still recorded",
+    "settings": "Network settings",
+    "publicEnabled": "Public IP",
+    "queryHint": "Get IP and country via MangoDisk. Cached for 1 hour",
+    "settingsFailed": "Could not update settings. Try again"
   },
   "diskDetails": {
     "activity": "Disk activity",

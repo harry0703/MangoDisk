@@ -22,7 +22,7 @@ pub(crate) fn telemetry_native_arch() -> Option<&'static str> {
     };
     let Some(function) = function else {
         log::warn!(
-            "app_update_native_arch_unavailable stage=resolve_api code={} outcome=header_omitted",
+            "client_metadata_native_arch_unavailable stage=resolve_api code={} outcome=header_omitted",
             unsafe { GetLastError() }
         );
         return None;
@@ -42,7 +42,7 @@ pub(crate) fn telemetry_native_arch() -> Option<&'static str> {
     } == 0
     {
         log::warn!(
-            "app_update_native_arch_unavailable stage=is_wow64_process2 code={} outcome=header_omitted",
+            "client_metadata_native_arch_unavailable stage=is_wow64_process2 code={} outcome=header_omitted",
             unsafe { GetLastError() }
         );
         return None;
@@ -52,7 +52,7 @@ pub(crate) fn telemetry_native_arch() -> Option<&'static str> {
         IMAGE_FILE_MACHINE_ARM64 => Some("aarch64"),
         _ => {
             log::warn!(
-                "app_update_native_arch_unavailable stage=map_machine native_machine={native_machine:#06x} outcome=header_omitted"
+                "client_metadata_native_arch_unavailable stage=map_machine native_machine={native_machine:#06x} outcome=header_omitted"
             );
             None
         }

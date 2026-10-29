@@ -4507,6 +4507,16 @@
     "healthPercent": "Saúde"
   },
   "networkDetails": {
+    "localTitle": "Interface local",
+    "publicTitle": "IP público",
+    "publicHint": "VPNs ou proxies podem alterar a localização do IP",
+    "publicRefresh": "Atualizar",
+    "publicLoading": "Obtendo…",
+    "publicUnavailable": "Temporariamente indisponível",
+    "publicDisabled": "Não ativado",
+    "publicStale": "Não atualizado",
+    "publicLastKnown": "Último resultado",
+    "publicContextFailed": "Não foi possível verificar a rede. Atualize para tentar novamente",
     "title": "Tráfego",
     "sessionHint": "Tráfego monitorado nesta interface durante esta execução\nReiniciar o app ou trocar a interface reinicia o total\nPausas e períodos sem monitoramento são excluídos",
     "linkHint": "Taxa de conexão informada pelo sistema\nNão é a velocidade da internet",
@@ -4525,7 +4535,11 @@
     "resetDescription": "Redefinir os totais salvos de {name}. O tráfego da sessão é mantido",
     "resetFailed": "Não foi possível salvar a redefinição. Os totais não mudaram",
     "cumulativeHint": "Desde {since}\nTráfego monitorado salvo por interface\nInclui a rede local; períodos sem monitoramento são excluídos",
-    "cumulativeUnavailable": "Totais salvos indisponíveis no momento\nO tráfego da sessão continua sendo registrado"
+    "cumulativeUnavailable": "Totais salvos indisponíveis no momento\nO tráfego da sessão continua sendo registrado",
+    "settings": "Configurações de rede",
+    "publicEnabled": "IP público",
+    "queryHint": "Consulte IP e país no MangoDisk. Cache de 1 hora",
+    "settingsFailed": "Não foi possível atualizar as configurações. Tente novamente"
   },
   "diskDetails": {
     "activity": "Atividade do disco",

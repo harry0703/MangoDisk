@@ -24,6 +24,18 @@ Third-party clients use `http_client::default_headers()`; the Tauri updater
 receives these headers at plugin registration for update checks and downloads.
 AI custom headers can override `User-Agent` for their own requests.
 
+First-party update discovery, feedback and public-IP requests opt into
+`http_client::OfficialRequestMetadata::headers()`. The desktop collector owns
+locale, distribution, OS facts and read-only reuse of an existing installation ID;
+Core owns header names, bounded encoding and optional-value validation. Missing
+identity or other telemetry never blocks a request, and the generic HTTP builder
+never acquires this metadata. Feedback retains its existing multipart payload,
+with the same request and installation IDs in its headers. Update discovery does
+not follow redirects. Update downloads keep only the shared user agent because
+package URLs may redirect to a third-party CDN.
+Desktop Mock App tests use the same Windows manifest as the application, including
+Common Controls v6 and `asInvoker`; no machine-wide DLL configuration is required.
+
 ## Scan exclusions
 
 Adapters select per-module scopes and pass an immutable `ScanExclusionOptions`

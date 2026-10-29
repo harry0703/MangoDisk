@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 mod migrations;
 pub use migrations::decode;
 
-pub(super) const PREFERENCE_SCHEMA_VERSION: u32 = 39;
+pub(super) const PREFERENCE_SCHEMA_VERSION: u32 = 41;
 
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -220,6 +220,18 @@ pub struct DisplayMetric {
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct PublicNetworkPreferences {
+    pub enabled: bool,
+}
+
+impl Default for PublicNetworkPreferences {
+    fn default() -> Self {
+        Self { enabled: true }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct ResidentPreferences {
     pub schema_version: u32,
     pub revision: u64,
@@ -238,6 +250,7 @@ pub struct ResidentPreferences {
     pub color_rules: Vec<super::color_rules::MetricColorRule>,
     pub metrics: Vec<DisplayMetric>,
     pub network_interface: Option<String>,
+    pub public_network: PublicNetworkPreferences,
     pub disk_volume: Option<String>,
     pub disk_temperature_device: Option<String>,
     pub gpu_adapter: Option<String>,
@@ -306,6 +319,7 @@ impl Default for ResidentPreferences {
                 })
                 .collect(),
             network_interface: None,
+            public_network: PublicNetworkPreferences::default(),
             disk_volume: None,
             disk_temperature_device: None,
             gpu_adapter: None,
