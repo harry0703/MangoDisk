@@ -10,9 +10,17 @@ import { ClipboardService } from '@/lib/services/shell/clipboard-service';
 import { LoggerService } from '@/lib/services/diagnostics/logger-service';
 
 const props = withDefaults(
-  defineProps<{ text: string; showText?: boolean; label?: string; active?: boolean; hint?: string }>(),
+  defineProps<{
+    text: string;
+    showText?: boolean;
+    label?: string;
+    active?: boolean;
+    hint?: string;
+    truncate?: boolean;
+  }>(),
   {
     active: true,
+    truncate: false,
     label: undefined,
     hint: undefined,
   }
@@ -20,7 +28,11 @@ const props = withDefaults(
 const { t } = useI18n();
 const copied = ref(false);
 const pending = ref(false);
-const hint = computed(() => (copied.value ? t('common.copied') : props.hint || t('common.copy')));
+const hint = computed(() => {
+  if (copied.value) return t('common.copied');
+  const action = props.hint || t('common.copy');
+  return props.truncate ? `${props.text}\n${action}` : action;
+});
 let timer: ReturnType<typeof setTimeout> | undefined;
 let disposed = false;
 
@@ -55,7 +67,7 @@ onBeforeUnmount(() => {
     <button
       type="button"
       class="copy-value"
-      :class="{ copied }"
+      :class="{ copied, 'copy-value--truncate': truncate }"
       :aria-label="`${t(copied ? 'common.copied' : 'common.copy')}: ${label ?? text}`"
       :disabled="!text || pending"
       @click="copy"
@@ -88,6 +100,14 @@ onBeforeUnmount(() => {
 .copy-value span {
   min-width: 0;
   overflow-wrap: anywhere;
+}
+.copy-value--truncate {
+  min-width: 0;
+}
+.copy-value--truncate span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .copy-value:hover,
 .copy-value:focus-visible,

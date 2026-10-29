@@ -187,6 +187,7 @@ const interfaceFacts = computed(() => {
       value: value?.details?.addresses.filter(address => !address.includes(':')).join(', ') || '—',
       unit: '',
       copy: true,
+      truncate: true,
     },
     {
       key: 'ipv6',
@@ -194,6 +195,7 @@ const interfaceFacts = computed(() => {
       value: value?.details?.addresses.filter(address => address.includes(':')).join(', ') || '—',
       unit: '',
       copy: true,
+      truncate: true,
     },
   ];
   const wifi = value?.details?.wifi;

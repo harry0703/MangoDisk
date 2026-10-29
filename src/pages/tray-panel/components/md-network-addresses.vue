@@ -110,6 +110,7 @@ onBeforeUnmount(() => void store.setActive(false));
               :label="`${t('networkDetails.publicTitle')} ${row.family === 'ipv4' ? 'IPv4' : 'IPv6'}`"
               :hint="row.hint"
               show-text
+              truncate
             />
           </template>
           <span v-else class="address-state" role="status">{{
@@ -170,7 +171,7 @@ h2 {
   justify-content: space-between;
   gap: 4px 10px;
   padding: 2px 0;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
 }
 dt {
   @apply text-muted-foreground;
@@ -178,7 +179,8 @@ dt {
 }
 dd {
   display: flex;
-  flex-wrap: wrap;
+  flex: 1;
+  flex-wrap: nowrap;
   align-items: baseline;
   justify-content: flex-end;
   gap: 5px;
@@ -195,6 +197,10 @@ dd {
   @apply text-muted-foreground;
   font-size: 10px;
   font-weight: 400;
+}
+.address-state {
+  flex: none;
+  white-space: nowrap;
 }
 .context-error {
   margin-top: 4px;

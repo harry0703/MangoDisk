@@ -11,6 +11,7 @@ withDefaults(
       value: string;
       unit: string;
       copy?: boolean;
+      truncate?: boolean;
       hint?: string;
       liveHint?: boolean;
       tone?: 'success' | 'warning' | 'critical';
@@ -21,7 +22,12 @@ withDefaults(
 </script>
 <template>
   <dl v-if="facts.length" class="resource-facts" :class="{ compact: facts.length === 1, rows: layout === 'rows' }">
-    <div v-for="fact in facts" :key="fact.key" class="resource-fact">
+    <div
+      v-for="fact in facts"
+      :key="fact.key"
+      class="resource-fact"
+      :class="{ 'resource-fact--truncate': fact.truncate }"
+    >
       <dt>
         <MdTooltip v-if="fact.hint" :active="active" :text="fact.hint" :close-on-text-change="!fact.liveHint" multiline
           ><span tabindex="0">{{ fact.label }}</span></MdTooltip
@@ -34,6 +40,7 @@ withDefaults(
           :active="active"
           :text="fact.value"
           :label="fact.label"
+          :truncate="fact.truncate"
           show-text
         />
         <template v-else
@@ -131,5 +138,11 @@ small {
   min-width: 0;
   margin-left: auto;
   overflow-wrap: anywhere;
+}
+.rows .resource-fact--truncate {
+  flex-wrap: nowrap;
+}
+.rows .resource-fact--truncate dd {
+  flex: 1;
 }
 </style>

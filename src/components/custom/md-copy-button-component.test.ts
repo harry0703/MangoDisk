@@ -44,29 +44,31 @@ it('copies the current text and restores the copy icon after one second', async 
   wrapper.unmount();
 });
 
-it('copies an address without an icon and restores text feedback after one second', async () => {
+it('copies complete long addresses and restores text feedback after one second', async () => {
   vi.useFakeTimers();
   let finish!: () => void;
   mocks.writeText.mockImplementation(() => new Promise<void>(resolve => (finish = resolve)));
-  const wrapper = mountButton('192.0.2.1', true);
+  const addresses = ['2001:db8:1234:5678:90ab:cdef:1234:5678', '2001:db8:abcd:ef01:2345:6789:abcd:ef01'].join(', ');
+  const wrapper = mountButton(addresses, true);
+  await wrapper.setProps({ truncate: true });
   const button = wrapper.get('button');
-  expect(button.text()).toBe('192.0.2.1');
+  expect(button.text()).toBe(addresses);
   expect(wrapper.find('svg').exists()).toBe(false);
   expect(button.attributes('title')).toBeUndefined();
 
   await button.trigger('click');
   await button.trigger('click');
   expect(mocks.writeText).toHaveBeenCalledOnce();
-  expect(mocks.writeText).toHaveBeenCalledWith('192.0.2.1');
+  expect(mocks.writeText).toHaveBeenCalledWith(addresses);
   expect(button.attributes('disabled')).toBeDefined();
   finish();
   await flushPromises();
   expect(button.classes()).toContain('copied');
-  expect(button.attributes('aria-label')).toBe(`${i18n.global.t('common.copied')}: 192.0.2.1`);
+  expect(button.attributes('aria-label')).toBe(`${i18n.global.t('common.copied')}: ${addresses}`);
   expect(wrapper.find('svg').exists()).toBe(false);
   await vi.advanceTimersByTimeAsync(1000);
   expect(button.classes()).not.toContain('copied');
-  expect(button.attributes('aria-label')).toBe(`${i18n.global.t('common.copy')}: 192.0.2.1`);
+  expect(button.attributes('aria-label')).toBe(`${i18n.global.t('common.copy')}: ${addresses}`);
   wrapper.unmount();
 });
 
