@@ -205,31 +205,67 @@ struct MacOsMonitorBackend {
     owner: Mutex<Option<MonitorOwner>>,
 }
 
-/// The FSEvent stream and callback context form one lifecycle unit. This explicit RAII guard stops
-/// the stream and drains its queue before releasing the callback context even if the owner panics
-/// during startup, flush, or waiting, preventing CoreServices from accessing a dropped Rust value.
-struct OwnedEventStream<C> {
+struct EventStreamLifecycle {
     stream: FSEventStreamRef,
-    queue: DispatchRetained<DispatchQueue>,
-    _callback_context: Box<C>,
     started: bool,
+    #[cfg(test)]
+    observer: Option<Box<dyn Fn(EventStreamStage) + Send>>,
 }
 
-impl<C> Drop for OwnedEventStream<C> {
-    fn drop(&mut self) {
-        // SAFETY: The owner thread exclusively owns the stream. The context remains a guard field
-        // until Drop returns, and synchronously draining the serial queue guarantees that no
-        // callback can use it afterward.
+#[cfg(test)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum EventStreamStage {
+    Invalidation,
+    Release,
+}
+
+// SAFETY: FSEvents streams have no owner-thread affinity. After startup, OwnedEventStream lends
+// this state exclusively to its serial dispatch queue for teardown through exec_sync, blocking the
+// owner until completion. No other Rust thread accesses the lifecycle state during that borrow.
+unsafe impl Send for EventStreamLifecycle {}
+
+impl EventStreamLifecycle {
+    fn stop_and_invalidate(&mut self) {
+        #[cfg(test)]
+        if let Some(observer) = &self.observer {
+            observer(EventStreamStage::Invalidation);
+        }
+        // SAFETY: The owner has finished startup, and teardown runs on the callback queue. A
+        // connection-loss callback cannot replace or cancel an event source while Stop suspends
+        // it. Waiting for the queue only after Stop would leave that race unprotected.
         unsafe {
             if self.started {
                 FSEventStreamStop(self.stream);
             }
             FSEventStreamInvalidate(self.stream);
         }
-        self.queue.exec_sync(|| {});
-        unsafe {
-            FSEventStreamRelease(self.stream);
+    }
+
+    fn release(&mut self) {
+        #[cfg(test)]
+        if let Some(observer) = &self.observer {
+            observer(EventStreamStage::Release);
         }
+        // SAFETY: Invalidation and callbacks already submitted before it have finished on the
+        // serial queue. The guard retains the callback context until this final release returns.
+        unsafe { FSEventStreamRelease(self.stream) };
+    }
+}
+
+/// Keep native teardown on the callback queue and drain it before releasing the stream and context,
+/// including when the owner unwinds during startup or waiting.
+struct OwnedEventStream<C> {
+    lifecycle: EventStreamLifecycle,
+    queue: DispatchRetained<DispatchQueue>,
+    _callback_context: Box<C>,
+}
+
+impl<C> Drop for OwnedEventStream<C> {
+    fn drop(&mut self) {
+        let lifecycle = &mut self.lifecycle;
+        self.queue.exec_sync(|| lifecycle.stop_and_invalidate());
+        // A separate submission drains callbacks queued during invalidation before final release.
+        self.queue.exec_sync(|| lifecycle.release());
     }
 }
 
@@ -407,16 +443,20 @@ pub(super) fn impact_plan(
         ));
     }
     let mut owned_stream = OwnedEventStream {
-        stream,
+        lifecycle: EventStreamLifecycle {
+            stream,
+            started: false,
+            #[cfg(test)]
+            observer: None,
+        },
         queue,
         _callback_context: callback_context,
-        started: false,
     };
     unsafe {
         FSEventStreamSetDispatchQueue(stream, Some(&owned_stream.queue));
     }
     let stream_started = unsafe { FSEventStreamStart(stream) };
-    owned_stream.started = stream_started;
+    owned_stream.lifecycle.started = stream_started;
     if !stream_started {
         return Err(FilesystemChangeImpactError::Platform(
             "unable_to_start_fsevents_impact_stream".to_string(),
@@ -674,10 +714,14 @@ fn run_monitor_owner(
     }
 
     let mut owned_stream = OwnedEventStream {
-        stream,
+        lifecycle: EventStreamLifecycle {
+            stream,
+            started: false,
+            #[cfg(test)]
+            observer: None,
+        },
         queue,
         _callback_context: callback_context,
-        started: false,
     };
     // SAFETY: stream is a newly created valid reference, and the queue remains alive until after
     // invalidation and synchronous draining.
@@ -686,11 +730,11 @@ fn run_monitor_owner(
     }
     // SAFETY: The stream is bound to the serial queue and its callback context remains valid.
     let started_stream = unsafe { FSEventStreamStart(stream) };
-    owned_stream.started = started_stream;
+    owned_stream.lifecycle.started = started_stream;
     if started_stream {
         let _ = startup_sender.try_send(Ok(()));
-        // An asynchronous flush lets the initial history catch-up become clean promptly while the
-        // owner remains responsive to stop requests.
+        // Flush from the owner so a pending history callback is not held behind the flush RPC on
+        // its own queue. Only teardown must be serialized with the native connection callbacks.
         unsafe {
             FSEventStreamFlushAsync(stream);
         }
@@ -904,6 +948,10 @@ fn log_validation(status: FilesystemChangeStatus, started: Instant, monitor_star
         }
     }
 }
+
+#[cfg(test)]
+#[path = "change_tracking_lifecycle_tests.rs"]
+mod lifecycle_tests;
 
 #[cfg(test)]
 mod tests {
@@ -1224,5 +1272,38 @@ mod tests {
             .expect("the system volume should return a terminal monitor");
         assert_eq!(monitor.status(), FilesystemChangeStatus::HistoryUnavailable);
         fs::remove_dir_all(root).expect("FSEvents lifecycle fixture directory should be removed");
+    }
+
+    #[test]
+    #[ignore = "executed explicitly by the real FSEvents shutdown regression"]
+    fn real_monitor_repeated_start_and_cancel_releases_native_resources() {
+        let fixture = tempfile::tempdir().expect("create lifecycle fixture");
+        let root = fs::canonicalize(fixture.path()).expect("canonicalize lifecycle fixture");
+        let cycles = 256;
+        thread::scope(|scope| {
+            for worker in 0..4 {
+                let root = &root;
+                scope.spawn(move || {
+                    for cycle in 0..cycles {
+                        let token = capture_token(root)
+                            .expect("capture lifecycle token")
+                            .expect("system volume supports change tracking");
+                        let checks = std::sync::atomic::AtomicUsize::new(0);
+                        let result = start_monitor(root, &token, &|| {
+                            checks.fetch_add(1, Ordering::Relaxed) >= (cycle % 4 + 1)
+                        });
+                        match result {
+                            Ok(monitor) => drop(monitor),
+                            Err(error) => assert_eq!(error, "scan cancelled"),
+                        }
+                        if cycle % 64 == 0 {
+                            println!("lifecycle worker={worker} cycle={cycle}");
+                        }
+                    }
+                });
+            }
+        });
+        // Native cancellation handlers can finish after a stream's owner has returned.
+        thread::sleep(Duration::from_secs(1));
     }
 }

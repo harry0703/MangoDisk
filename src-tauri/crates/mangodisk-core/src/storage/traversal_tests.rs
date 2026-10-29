@@ -2132,3 +2132,15 @@ fn analysis_coverage_distinguishes_unreadable_excluded_and_linked_scopes() {
         .find(|entry| entry.name == "visible")
         .is_some_and(|entry| entry.size_status == crate::AnalysisEntrySizeStatus::Complete));
 }
+
+#[cfg(target_os = "macos")]
+#[test]
+#[ignore = "executed explicitly by the FSEvents teardown crash reproduction"]
+fn real_repeated_analysis_cache_teardown_does_not_crash() {
+    for cycle in 0..512 {
+        analysis_parent_deletion_preserves_resolved_exclusions_on_repeated_scans();
+        if cycle % 32 == 0 {
+            println!("analysis lifecycle cycle={cycle}");
+        }
+    }
+}
