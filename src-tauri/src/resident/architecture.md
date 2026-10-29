@@ -230,7 +230,7 @@ returns that reserved slot directly, so centered buttons do not send the monitor
 to an unrelated outer gap. Unknown environments prefer right,
 and collision checks still apply. These defaults do not replace saved choices.
 
-Resident preferences use schema version 40; resource readings use version 36.
+Resident preferences use schema version 42; resource readings use version 36.
 The system-status editor can restore the native platform defaults through the
 existing revision-checked save transaction. Reset preserves the enabled state and
 all platform display modes. Floating placement is stored independently and is
@@ -1725,3 +1725,20 @@ GPU power entries retain their sampled adapter identity on native and floating
 surfaces. Multi-GPU displays show the corresponding GPU number, and tooltips name
 the source adapter, so an independently selected utilization display cannot make
 one GPU's watts appear to belong to another. Single-GPU labels remain unchanged.
+
+Preference schema 42 adds nullable `taskbarMonitor`: null follows the Windows
+primary display; a fixed choice retains the monitor device-interface path across
+screen reordering and temporary disconnection. Existing schemas upgrade to the
+primary-display policy without changing other settings. RDP drivers without a
+physical monitor interface use the session display name as a best-effort identity.
+The versioned taskbar monitor catalogue exposes current screen numbers and names;
+identification shows short-lived, non-activating numeric labels.
+
+Shell geometry and the native child bind to the selected Explorer-owned taskbar.
+A missing display or taskbar temporarily falls back to the primary taskbar without
+rewriting the saved choice, and selection recovers when it becomes available.
+Secondary taskbars use fresh, collision-checked free space; the current XAML/classic
+reservation adapters remain restricted to the primary taskbar. Insufficient space
+keeps the existing tray fallback instead of modifying another screen's layout.
+Fullscreen checks, DPI, hit targets and detail-panel anchors use the selected
+screen. macOS menu-bar placement continues to follow AppKit.

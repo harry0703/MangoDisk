@@ -23,6 +23,7 @@ import MdFloatingAppearance from './md-floating-appearance.vue';
 import MdFloatingBehavior from './md-floating-behavior.vue';
 import MdSettingsGroup from '@/components/custom/md-settings-group.vue';
 import MdTaskbarPosition from './md-taskbar-position.vue';
+import MdTaskbarMonitor from './md-taskbar-monitor.vue';
 import MdStatusAppearance from './md-status-appearance.vue';
 import MdFanDisplaySettings from './md-fan-display-settings.vue';
 import MdDiskDisplaySettings from './md-disk-display-settings.vue';
@@ -619,8 +620,12 @@ defineExpose({
             <MdSettingsGroup
               v-if="settings.draft.windowsDisplayMode !== 'floating'"
               plain
-              :title="t('floatingMonitor.taskbar')"
+              :title="settings.draft.windowsDisplayMode === 'both' ? t('floatingMonitor.taskbar') : undefined"
             >
+              <MdTaskbarMonitor
+                :value="settings.draft.taskbarMonitor"
+                @change="settings.change({ taskbarMonitor: $event })"
+              />
               <MdTaskbarPosition
                 :preferences="settings.draft"
                 @position="settings.change({ taskbarPosition: $event })"
@@ -629,6 +634,7 @@ defineExpose({
             <MdFloatingBehavior
               v-if="settings.draft.windowsDisplayMode !== 'taskbar'"
               :preferences="settings.draft"
+              :show-title="settings.draft.windowsDisplayMode === 'both'"
               @change="settings.change($event)"
             />
           </template>

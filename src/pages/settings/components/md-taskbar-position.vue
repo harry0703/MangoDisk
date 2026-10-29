@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n';
 import type { ResidentPreferences } from '@/lib/models/resident/resident';
+import MdSettingsRow from '@/components/custom/md-settings-row.vue';
 defineProps<{ preferences: ResidentPreferences }>();
 const emit = defineEmits<{
   position: [position: ResidentPreferences['taskbarPosition']];
@@ -8,72 +9,49 @@ const emit = defineEmits<{
 const { t } = useI18n({ useScope: 'global' });
 </script>
 <template>
-  <div class="windows-display-settings">
-    <div class="taskbar-options">
-      <div class="display-field">
-        <span id="taskbar-position-label" class="field-label">{{ t('systemStatus.taskbarPosition') }}</span>
-        <div class="segmented-choice" role="radiogroup" aria-labelledby="taskbar-position-label">
-          <label v-for="position in ['auto', 'left', 'right'] as const" :key="position">
-            <input
-              type="radio"
-              name="taskbar-position"
-              :value="position"
-              :checked="preferences.taskbarPosition === position"
-              @change="emit('position', position)"
-            />
-            <span>{{
-              t(
-                position === 'auto'
-                  ? 'systemStatus.taskbarAuto'
-                  : position === 'left'
-                    ? 'systemStatus.taskbarLeft'
-                    : 'systemStatus.taskbarRight'
-              )
-            }}</span>
-          </label>
-        </div>
-      </div>
+  <MdSettingsRow
+    compact
+    controls="responsive"
+    :title="t('systemStatus.taskbarPosition')"
+    description=""
+    title-id="taskbar-position-label"
+  >
+    <div class="segmented-choice" role="radiogroup" aria-labelledby="taskbar-position-label">
+      <label v-for="position in ['auto', 'left', 'right'] as const" :key="position">
+        <input
+          type="radio"
+          name="taskbar-position"
+          :value="position"
+          :checked="preferences.taskbarPosition === position"
+          @change="emit('position', position)"
+        />
+        <span>{{
+          t(
+            position === 'auto'
+              ? 'systemStatus.taskbarAuto'
+              : position === 'left'
+                ? 'systemStatus.taskbarLeft'
+                : 'systemStatus.taskbarRight'
+          )
+        }}</span>
+      </label>
     </div>
-  </div>
+  </MdSettingsRow>
 </template>
 
 <style scoped>
 @reference "@assets/main.css";
-.windows-display-settings {
-  @apply text-foreground;
-  display: grid;
-  gap: 8px;
-  font-size: var(--font-content-body);
-  font-weight: 400;
-}
-.display-field {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  min-height: 36px;
-  gap: 12px;
-}
-.display-field {
-  flex-wrap: wrap;
-}
-.field-label {
-  min-width: 0;
-}
-.taskbar-options {
-  display: grid;
-  gap: 8px;
-}
 .segmented-choice {
   @apply bg-muted rounded-lg;
-  display: inline-flex;
+  display: flex;
   padding: 3px;
   gap: 2px;
-  max-width: 100%;
-  margin-left: auto;
+  width: 100%;
 }
 .segmented-choice label {
   position: relative;
   flex: 1;
+  min-width: 0;
   cursor: pointer;
 }
 .segmented-choice input {
@@ -81,12 +59,13 @@ const { t } = useI18n({ useScope: 'global' });
 }
 .segmented-choice span {
   @apply text-muted-foreground rounded-md;
-  display: block;
-  min-width: 4rem;
-  padding: 3px 12px;
+  display: grid;
+  align-items: center;
+  min-height: 26px;
+  padding: 3px 8px;
   text-align: center;
-  white-space: nowrap;
-  line-height: 20px;
+  overflow-wrap: anywhere;
+  line-height: 1.4;
   transition:
     color 150ms,
     background-color 150ms,

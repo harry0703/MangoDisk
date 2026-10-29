@@ -64,7 +64,15 @@ pub unsafe fn parent(shell: HWND) -> HWND {
     }
     // Explorer creates the rebar after its top-level taskbar. Wait for that
     // host instead of permanently attaching to a transient startup hierarchy.
-    FindWindowExW(shell, ptr::null_mut(), w!("ReBarWindow32"), ptr::null())
+    let rebar = FindWindowExW(shell, ptr::null_mut(), w!("ReBarWindow32"), ptr::null());
+    if rebar.is_null()
+        && super::monitors_windows::is_taskbar(shell)
+        && shell != FindWindowW(w!("Shell_TrayWnd"), ptr::null())
+    {
+        shell
+    } else {
+        rebar
+    }
 }
 
 /// Identify Explorer's Windows 10 pagination container and inner button list.
@@ -90,6 +98,11 @@ pub unsafe fn task_list(rebar: HWND) -> Option<(HWND, HWND)> {
 pub struct DpiContext(DPI_AWARENESS_CONTEXT);
 
 impl DpiContext {
+    pub unsafe fn physical() -> Self {
+        Self(SetThreadDpiAwarenessContext(
+            DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2,
+        ))
+    }
     pub unsafe fn enter(parent: HWND) -> Result<Self, (&'static str, u32)> {
         let context = GetWindowDpiAwarenessContext(parent);
         // All placement/model rectangles are physical pixels. Do not silently
@@ -111,8 +124,8 @@ impl DpiContext {
 
 impl Drop for DpiContext {
     fn drop(&mut self) {
-        // Only the native hosting thread changes context. Tauri/WebView threads
-        // retain their original DPI awareness throughout window creation.
+        // Restore the caller's awareness after native hosting or discovery.
+        // Other threads retain their own DPI context throughout this operation.
         unsafe {
             SetThreadDpiAwarenessContext(self.0);
         }

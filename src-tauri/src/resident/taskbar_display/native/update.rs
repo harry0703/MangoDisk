@@ -25,7 +25,7 @@ use windows_sys::{
 };
 
 impl Window {
-    fn release_reservation(&mut self) {
+    pub(super) fn release_reservation(&mut self) {
         if let Some(client) = self.reservation.take() {
             self.releasing = Some(client.release());
         }
@@ -45,7 +45,7 @@ impl Window {
             self.service.publish(DisplayStatus::Tray);
             return;
         }
-        if FindWindowW(w!("Shell_TrayWnd"), ptr::null()) != self.shell
+        if !super::super::monitors_windows::is_taskbar(self.shell)
             || GetParent(hwnd) != self.parent
             || IsWindow(self.parent) == 0
         {
@@ -67,7 +67,24 @@ impl Window {
         }
         // The sampler may still hold the old shell snapshot after a restart.
         // Wait for fresh geometry instead of repeatedly destroying the new child.
-        let Some(geometry) = geometry.filter(|g| g.shell as HWND == self.shell) else {
+        let requested_monitor = self
+            .service
+            .model
+            .lock()
+            .unwrap_or_else(|e| e.into_inner())
+            .monitor
+            .clone();
+        if geometry.as_ref().is_some_and(|g| {
+            g.requested_monitor == requested_monitor && g.shell as HWND != self.shell
+        }) {
+            self.release_reservation();
+            DestroyWindow(hwnd);
+            return;
+        }
+        let Some(geometry) = geometry
+            .filter(|g| g.shell as HWND == self.shell && g.requested_monitor == requested_monitor)
+        else {
+            self.release_reservation();
             self.hide(hwnd, Visibility::GeometryUnavailable);
             self.service.publish(DisplayStatus::ShellUnavailable);
             return;
@@ -122,21 +139,8 @@ impl Window {
         // UIA snapshots can report collapsed gaps; those are not NoSpace failures.
         // The taskbar bounds identify the monitor even before a strip is placed.
         let bounds = geometry.bar;
-        let center = POINT {
-            x: (bounds.left + bounds.right) / 2,
-            y: (bounds.top + bounds.bottom) / 2,
-        };
-        let monitor = MonitorFromPoint(center, MONITOR_DEFAULTTONULL);
-        let mut info = MONITORINFO {
-            cbSize: std::mem::size_of::<MONITORINFO>() as _,
-            ..Default::default()
-        };
-        let inside = !monitor.is_null()
-            && GetMonitorInfoW(monitor, &mut info) != 0
-            && bounds.left >= info.rcMonitor.left
-            && bounds.right <= info.rcMonitor.right
-            && bounds.top >= info.rcMonitor.top
-            && bounds.bottom <= info.rcMonitor.bottom;
+        let monitor_bounds = geometry.monitor_bounds;
+        let inside = bounds.fits_in(monitor_bounds);
         let mut front = RECT::default();
         let front_available = !foreground.is_null() && GetWindowRect(foreground, &mut front) != 0;
         let front_bounds = Bounds {
@@ -147,12 +151,6 @@ impl Window {
         };
         let style = GetWindowLongPtrW(foreground, GWL_STYLE);
         let maximized = IsZoomed(foreground) != 0;
-        let monitor_bounds = Bounds {
-            left: info.rcMonitor.left,
-            top: info.rcMonitor.top,
-            right: info.rcMonitor.right,
-            bottom: info.rcMonitor.bottom,
-        };
         let fullscreen = front_available
             && visibility::is_fullscreen(
                 front_bounds,
@@ -284,7 +282,11 @@ impl Window {
         // Unknown environments must not cache support without probing. Defer
         // the Windows 11 check until a usable snapshot identifies its taskbar,
         // including when an earlier registry read failed and later recovered.
-        let reservation_supported = peers_allow_reservation
+        // The embedded XAML adapter currently owns only the primary island.
+        // Secondary taskbars use collision-checked free space and must never
+        // reserve a slot in the primary taskbar on behalf of another display.
+        let reservation_supported = shell == FindWindowW(w!("Shell_TrayWnd"), ptr::null())
+            && peers_allow_reservation
             && hosting::reservation_visible(shell, self.parent, parent_bounds, placement_host)
             && match geometry.environment {
                 Environment::Unknown => false,

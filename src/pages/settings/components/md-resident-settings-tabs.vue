@@ -84,7 +84,7 @@ watch(
         v-for="tab in tabs"
         :key="tab"
         :value="tab"
-        class="settings-tab-panel scrollbar-stable-end"
+        class="settings-tab-panel scrollbar-stable-end @container/settings"
         @scroll.passive="rememberScroll(tab, $event)"
       >
         <slot :name="tab" />

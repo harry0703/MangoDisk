@@ -127,7 +127,7 @@ fn current_schema_rejects_development_versions_unknown_fields_and_missing_fields
     for version in (0..PREFERENCE_SCHEMA_VERSION)
         .filter(|v| {
             ![
-                7, 8, 10, 21, 25, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40,
+                7, 8, 10, 21, 25, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41,
             ]
             .contains(v)
         })
@@ -1108,7 +1108,7 @@ fn public_network_preferences_remove_preview_intervals_and_preserve_disabled_cho
         );
         assert!(!upgraded.public_network.enabled);
         let value = serde_json::to_value(upgraded).unwrap();
-        assert_eq!(value["schemaVersion"], 41);
+        assert_eq!(value["schemaVersion"], 42);
         assert_eq!(
             value["publicNetwork"],
             serde_json::json!({ "enabled": false })
@@ -1141,5 +1141,36 @@ fn public_network_preferences_reject_malformed_values_and_obsolete_fields_in_cur
         preview["schemaVersion"] = 40.into();
         preview["publicNetwork"]["refreshMinutes"] = invalid;
         assert!(decode(preview).is_err());
+    }
+}
+
+#[test]
+fn display_choice_upgrades_and_preserves_public_network_and_disconnected_identity() {
+    for version in [39, 41] {
+        let mut old = serde_json::to_value(ResidentPreferences::default()).unwrap();
+        old["schemaVersion"] = version.into();
+        old.as_object_mut().unwrap().remove("taskbarMonitor");
+        old["publicNetwork"]["enabled"] = false.into();
+        let migrated = decode(old).unwrap();
+        assert_eq!(migrated.taskbar_monitor, None);
+        if version == 41 {
+            assert!(!migrated.public_network.enabled);
+        }
+    }
+    let fixed = ResidentPreferences {
+        taskbar_monitor: Some("display-interface-42".into()),
+        ..Default::default()
+    };
+    assert_eq!(
+        decode(serde_json::to_value(&fixed).unwrap()).unwrap(),
+        fixed
+    );
+    for id in ["".to_string(), "x".repeat(1025), "a\0b".to_string()] {
+        assert!(ResidentPreferences {
+            taskbar_monitor: Some(id),
+            ..Default::default()
+        }
+        .normalize()
+        .is_err());
     }
 }

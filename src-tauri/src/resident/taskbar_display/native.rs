@@ -87,9 +87,22 @@ pub(super) fn start(service: Arc<Service>) {
             return;
         }
         let mut host_failure = None;
+        let mut pending_release = None;
         loop {
             clear_stale_quit();
-            let shell = FindWindowW(w!("Shell_TrayWnd"), ptr::null());
+            let requested_monitor = service
+                .model
+                .lock()
+                .unwrap_or_else(|e| e.into_inner())
+                .monitor
+                .clone();
+            let shell = service
+                .geometry
+                .lock()
+                .unwrap_or_else(|e| e.into_inner())
+                .as_ref()
+                .filter(|geometry| geometry.requested_monitor == requested_monitor)
+                .map_or(ptr::null_mut(), |geometry| geometry.shell as HWND);
             if shell.is_null() {
                 service.publish(DisplayStatus::ShellUnavailable);
                 std::thread::sleep(Duration::from_millis(200));
@@ -191,6 +204,7 @@ pub(super) fn start(service: Arc<Service>) {
             }
             log::info!("resident_taskbar_embedded hwnd={hwnd:?} parent={parent:?} shell={shell:?} dpi={} awareness={}", GetDpiForWindow(hwnd), GetAwarenessFromDpiAwarenessContext(GetWindowDpiAwarenessContext(hwnd)));
             drop(dpi_context);
+            data.get_mut().releasing = pending_release.take();
             service.window.store(hwnd as usize, Ordering::Relaxed);
             let subscription = shell_events::Subscription::install(hwnd);
             PostMessageW(hwnd, UPDATE, 0, 0);
@@ -207,6 +221,11 @@ pub(super) fn start(service: Arc<Service>) {
             if IsWindow(hwnd) != 0 {
                 DestroyWindow(hwnd);
             }
+            // Display changes destroy a healthy child while its old companion
+            // may still be restoring Explorer. Carry the completion barrier
+            // across windows so a rapid return cannot use the old reserved gap.
+            data.get_mut().release_reservation();
+            pending_release = data.get_mut().releasing.take();
             service.window.store(0, Ordering::Relaxed);
             service
                 .bounds

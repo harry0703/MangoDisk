@@ -19,6 +19,14 @@ pub fn decode(mut value: Value) -> Result<ResidentPreferences, &'static str> {
             .map_err(|_| "preferences_invalid")?
             .normalize();
     }
+    if version == 41 {
+        let object = value.as_object_mut().ok_or("preferences_invalid")?;
+        object.insert("schemaVersion".into(), PREFERENCE_SCHEMA_VERSION.into());
+        object.entry("taskbarMonitor").or_insert(Value::Null);
+        return serde_json::from_value::<ResidentPreferences>(value)
+            .map_err(|_| "preferences_invalid")?
+            .normalize();
+    }
     if version == 40 {
         let object = value.as_object_mut().ok_or("preferences_invalid")?;
         let network = object
@@ -483,6 +491,11 @@ fn decode_upgraded(mut value: Value) -> Result<ResidentPreferences, &'static str
         serde_json::to_value(super::PublicNetworkPreferences::default())
             .map_err(|_| "preferences_invalid")?,
     );
+    value
+        .as_object_mut()
+        .ok_or("preferences_invalid")?
+        .entry("taskbarMonitor")
+        .or_insert(Value::Null);
     add_component_defaults(&mut value)?;
     serde_json::from_value::<ResidentPreferences>(value)
         .map_err(|_| "preferences_invalid")?

@@ -201,4 +201,21 @@ withDefaults(
 .setting-row--compact.setting-row--without-icon {
   grid-template-columns: minmax(0, 1fr) auto;
 }
+/* Compact responsive rows share control columns and stack when text scaling
+   or a narrow dialog leaves too little room for both the label and controls. */
+.setting-row--compact.setting-row--responsive.setting-row--without-icon {
+  grid-template-columns: minmax(0, 1fr);
+}
+.setting-row--compact.setting-row--responsive.setting-row--without-icon > .setting-controls {
+  grid-column: 1;
+  width: 100%;
+}
+@container settings (min-width: 26rem) {
+  .setting-row--compact.setting-row--responsive.setting-row--without-icon {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 2fr);
+  }
+  .setting-row--compact.setting-row--responsive.setting-row--without-icon > .setting-controls {
+    grid-column: 2;
+  }
+}
 </style>

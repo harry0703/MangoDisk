@@ -5,12 +5,12 @@ import MdSettingsRow from '@/components/custom/md-settings-row.vue';
 import MdSwitch from '@/components/custom/md-switch.vue';
 import type { ResidentPreferences } from '@/lib/models/resident/resident';
 
-defineProps<{ preferences: ResidentPreferences }>();
+withDefaults(defineProps<{ preferences: ResidentPreferences; showTitle?: boolean }>(), { showTitle: true });
 const emit = defineEmits<{ change: [patch: Partial<ResidentPreferences>] }>();
 const { t } = useI18n();
 </script>
 <template>
-  <MdSettingsGroup plain :title="t('floatingMonitor.floating')">
+  <MdSettingsGroup plain :title="showTitle ? t('floatingMonitor.floating') : undefined">
     <MdSettingsRow compact :title="t('floatingMonitor.alwaysOnTop')" description="" label-for="floating-top">
       <MdSwitch
         id="floating-top"

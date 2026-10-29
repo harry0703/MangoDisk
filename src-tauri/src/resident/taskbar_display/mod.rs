@@ -42,6 +42,12 @@ mod transparent;
 #[cfg(any(windows, test))]
 mod visibility;
 
+#[cfg(windows)]
+mod identify;
+pub mod monitors;
+#[cfg(windows)]
+mod monitors_windows;
+
 use serde::Serialize;
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -72,6 +78,7 @@ struct Model {
     entries: Vec<DisplayEntry>,
     locale: String,
     position: super::preference_schema::TaskbarPosition,
+    monitor: Option<String>,
     background: bool,
     compact: bool,
 }
@@ -142,6 +149,7 @@ pub fn update(
         entries: entries.to_vec(),
         locale: locale.into(),
         position: preferences.taskbar_position,
+        monitor: preferences.taskbar_monitor.clone(),
         background: preferences.taskbar_background,
         compact: preferences.taskbar_compact,
     };
@@ -216,6 +224,29 @@ fn anchor_in_bounds(
                 (r.top + r.bottom) as f64 / 2.0,
             )
         })
+}
+
+/// Read-only display discovery is separate from shell accessibility inspection.
+pub fn monitors() -> Result<monitors::Catalogue, String> {
+    #[cfg(windows)]
+    let monitors = monitors_windows::enumerate()
+        .map_err(|code| format!("taskbar_monitors stage=enumerate code={code}"))?
+        .into_iter()
+        .map(|screen| screen.info)
+        .collect();
+    #[cfg(not(windows))]
+    let monitors = Vec::new();
+    Ok(monitors::Catalogue {
+        schema_version: 1,
+        monitors,
+    })
+}
+
+pub fn identify_monitors() -> Result<(), String> {
+    #[cfg(windows)]
+    return identify::show();
+    #[cfg(not(windows))]
+    Ok(())
 }
 
 #[cfg(test)]

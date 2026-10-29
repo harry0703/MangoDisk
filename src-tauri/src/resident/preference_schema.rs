@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 mod migrations;
 pub use migrations::decode;
 
-pub(super) const PREFERENCE_SCHEMA_VERSION: u32 = 41;
+pub(super) const PREFERENCE_SCHEMA_VERSION: u32 = 42;
 
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -243,6 +243,7 @@ pub struct ResidentPreferences {
     pub linux_display_mode: LinuxDisplayMode,
     pub floating: FloatingPreferences,
     pub taskbar_position: TaskbarPosition,
+    pub taskbar_monitor: Option<String>,
     pub taskbar_background: bool,
     pub taskbar_compact: bool,
     pub menu_bar_compact: bool,
@@ -300,6 +301,7 @@ impl Default for ResidentPreferences {
             linux_display_mode: LinuxDisplayMode::default(),
             floating: FloatingPreferences::default(),
             taskbar_position: TaskbarPosition::default(),
+            taskbar_monitor: None,
             taskbar_background: true,
             taskbar_compact: false,
             menu_bar_compact: false,
@@ -442,6 +444,7 @@ impl ResidentPreferences {
                 .any(|id| *id >= mangodisk_platform::system_resources::fans::MAX_FANS)
             || (self.fan_ids.len() == 2 && self.fan_ids[0] == self.fan_ids[1])
             || [
+                &self.taskbar_monitor,
                 &self.network_interface,
                 &self.disk_volume,
                 &self.disk_temperature_device,

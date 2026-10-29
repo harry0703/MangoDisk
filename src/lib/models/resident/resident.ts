@@ -27,7 +27,7 @@ export type ResidentDisplayMetricId =
 export type GpuDisplaySelection = { mode: 'automatic' } | { mode: 'selected'; adapterIds: string[] };
 
 export interface ResidentPreferences {
-  schemaVersion: 41;
+  schemaVersion: 42;
   windowsCpuTemperatureEnabled: boolean;
   revision: number;
   enabled: boolean;
@@ -48,6 +48,7 @@ export interface ResidentPreferences {
     hideOnFullscreen: boolean;
     background: 'default' | 'darkGray' | 'inkBlue' | 'warmWhite' | 'lightGray' | 'black' | 'white';
   };
+  taskbarMonitor: string | null;
   taskbarPosition: 'auto' | 'left' | 'right';
   taskbarBackground: boolean;
   taskbarCompact: boolean;

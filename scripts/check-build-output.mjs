@@ -109,6 +109,7 @@ const maximumLocaleGzipBytes = 60 * 1024;
 // CPU/GPU component power adds two display labels and one estimate hint.
 // Extend only exceeded locale limits to the next 32 raw / 16 gzip bytes;
 // application and unaffected locale limits remain unchanged.
+// Include pending taskbar-monitor labels; extend only measured combined locale sizes.
 const localeChunkLimitOverrides = new Map([
   // SystemTemp and administrator restart add six strings per locale. Measured
   // de/es/fr/ja/ko/pt/ru raw sizes: 318229/320136/328638/342040/312385/313458/413113.
@@ -129,17 +130,17 @@ const localeChunkLimitOverrides = new Map([
   // es: 326531/65390, fr: 335211/67068, ja: 349142/66489, ko: 318946/63873,
   // pt: 319926/64420, ru: 421852/75155, tr: 313586/63175.
   // zh-cn/zh-tw gzip is 61610/62111; keep only locale-specific increases.
-  ['fr-fr', { bytes: 335360, gzipBytes: 67120 }],
-  ['de-de', { bytes: 324704, gzipBytes: 67648 }],
-  ['es-es', { bytes: 326752, gzipBytes: 65472 }],
-  ['pt-br', { bytes: 320096, gzipBytes: 64496 }],
-  ['ko-kr', { bytes: 319072, gzipBytes: 63936 }],
+  ['fr-fr', { bytes: 335712, gzipBytes: 67120 }],
+  ['de-de', { bytes: 325088, gzipBytes: 67664 }],
+  ['es-es', { bytes: 327072, gzipBytes: 65472 }],
+  ['pt-br', { bytes: 320416, gzipBytes: 64496 }],
+  ['ko-kr', { bytes: 319520, gzipBytes: 63952 }],
   // Retain the finishing-charge labels' additional 128 raw bytes for ja/ru.
-  ['ja-jp', { bytes: 349216, gzipBytes: 66544 }],
-  ['ru-ru', { bytes: 421952, gzipBytes: 75184 }],
-  ['zh-cn', { bytes: maximumLocaleChunkBytes, gzipBytes: 61696 }],
-  ['zh-tw', { bytes: maximumLocaleChunkBytes, gzipBytes: 62208 }],
-  ['tr-tr', { bytes: 313728, gzipBytes: 63248 }],
+  ['ja-jp', { bytes: 349728, gzipBytes: 66576 }],
+  ['ru-ru', { bytes: 422304, gzipBytes: 75184 }],
+  ['zh-cn', { bytes: 311296, gzipBytes: 61696 }],
+  ['zh-tw', { bytes: 311296, gzipBytes: 62208 }],
+  ['tr-tr', { bytes: 314080, gzipBytes: 63248 }],
 ]);
 
 function fail(message) {

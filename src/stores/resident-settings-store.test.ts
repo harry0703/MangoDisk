@@ -85,6 +85,7 @@ describe('resident preference transactions', () => {
       revision: 17,
       enabled,
       windowsDisplayMode: 'both',
+      taskbarMonitor: 'external-display',
       macosDisplayMode: 'floating',
       linuxDisplayMode: 'both',
       metrics: [...defaults.metrics].reverse().map(metric => ({ ...metric, enabled: true })),
@@ -104,6 +105,7 @@ describe('resident preference transactions', () => {
       revision: 18,
       enabled,
       windowsDisplayMode: 'both',
+      taskbarMonitor: 'external-display',
       macosDisplayMode: 'floating',
       linuxDisplayMode: 'both',
     });
