@@ -2,12 +2,13 @@
 import { cachedMetricValue } from '@/lib/utils/system-resources/metric-reading';
 import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
-import type { ResourceReadings } from '@/lib/models/system-resources/system-resources';
+import { METRIC_STATUS_KEYS, type ResourceReadings } from '@/lib/models/system-resources/system-resources';
 import { ByteSizeService } from '@/lib/services/settings/byte-size-service';
 import MdTooltip from '@/components/custom/md-tooltip.vue';
 import MdResourceOverview from './md-resource-overview.vue';
 import MdResourceFacts from './md-resource-facts.vue';
 import MdResourceTrend from './md-resource-trend.vue';
+import MdMetricFreshness from './md-metric-freshness.vue';
 
 const HEALTH_LABEL_KEYS = {
   healthy: 'diskHealth.healthy',
@@ -151,7 +152,11 @@ const activities = computed(() => {
       :active="active"
     />
   </section>
-  <section class="disk-health" :aria-label="t('diskHealth.title')">
+  <section
+    class="disk-health"
+    :aria-label="t('diskHealth.title')"
+    :aria-busy="!health && reading.diskHealth.status === 'loading'"
+  >
     <header>
       <h2>{{ t('diskHealth.title') }}</h2>
       <MdTooltip
@@ -175,11 +180,21 @@ const activities = computed(() => {
           <template v-if="health">{{ t(HEALTH_LABEL_KEYS[health.status]) }}</template>
           <template v-if="health && reading.diskHealth.status === 'failed'"> · {{ t('systemStatus.failed') }}</template>
           <template v-if="!health">{{
-            t(reading.diskHealth.status === 'loading' ? 'systemStatus.loading' : 'diskHealth.unavailable')
+            t(
+              reading.diskHealth.status === 'ready'
+                ? 'diskHealth.unavailable'
+                : METRIC_STATUS_KEYS[reading.diskHealth.status]
+            )
           }}</template>
         </span>
       </MdTooltip>
     </header>
+    <MdMetricFreshness
+      v-if="health && reading.diskHealth.status === 'stale'"
+      :reading="reading.diskHealth"
+      :now="reading.observedAtMs"
+      :active="active"
+    />
     <div v-if="reading.disk.value" class="volume-identity">
       {{ reading.disk.value.volume.name
       }}<span v-if="reading.disk.value.volume.fileSystem"> · {{ reading.disk.value.volume.fileSystem }}</span>

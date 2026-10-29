@@ -7,6 +7,8 @@ pub struct Demand {
     pub frequency: bool,
     pub temperature: bool,
     pub battery: bool,
+    pub prepare_battery: bool,
+    pub disk_health: bool,
     pub system_power: bool,
     pub component_power: bool,
     pub fan_speed: bool,

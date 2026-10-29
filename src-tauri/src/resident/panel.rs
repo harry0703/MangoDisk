@@ -40,7 +40,33 @@ pub fn set_page(app: &tauri::AppHandle, page: PanelPage) -> PanelPage {
     } else {
         state.wake();
     }
+    if state.panel_open.load(Ordering::Relaxed) {
+        log_detail_snapshot(&state, page);
+    }
     page
+}
+
+fn log_detail_snapshot(state: &ResidentState, page: PanelPage) {
+    let reading = state
+        .published_reading
+        .lock()
+        .unwrap_or_else(|e| e.into_inner());
+    let (status, sampled_at_ms, has_value) = match page {
+        PanelPage::Power => {
+            let metric = &reading.resources.battery_details;
+            (metric.status, metric.sampled_at_ms, metric.value.is_some())
+        }
+        PanelPage::Disk => {
+            let metric = &reading.resources.disk_health;
+            (metric.status, metric.sampled_at_ms, metric.value.is_some())
+        }
+        _ => return,
+    };
+    log::info!(
+        "resident_panel_detail_snapshot page={page:?} revision={} status={status:?} has_value={has_value} sample_age_ms={:?}",
+        reading.revision,
+        sampled_at_ms.and_then(|at| super::sampling_workers::timestamp_ms().checked_sub(at))
+    );
 }
 
 pub fn toggle_from(
@@ -172,7 +198,9 @@ pub fn open(app: &tauri::AppHandle) -> tauri::Result<()> {
         state.panel_ready.load(Ordering::Relaxed)
     );
     state.panel_open.store(true, Ordering::Relaxed);
-    if *state.panel_page.lock().unwrap_or_else(|e| e.into_inner()) == PanelPage::Cpu {
+    let page = *state.panel_page.lock().unwrap_or_else(|e| e.into_inner());
+    log_detail_snapshot(&state, page);
+    if page == PanelPage::Cpu {
         state.refresh_cpu_processes();
     }
     // Showing never waits for Vue, preference I/O, samples, or icon resolution.

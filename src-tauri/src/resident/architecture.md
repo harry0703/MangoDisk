@@ -11,6 +11,7 @@ application termination, or memory-reclamation algorithms.
 | Platform `system_resources` | Native counters, interface identity, local volume identity and capacity |
 | Core `system_resources` | CPU/network/disk I/O deltas, selection policy, freshness, bounded trends and memory use cases |
 | `sampling_workers` / `sampling_schedule` | Bounded overview workers, demand, deadlines and generation checks |
+| `disk_sensor_sampling` | Independently scheduled physical health and temperature reads |
 | `process_cpu_sampling` | Independent application CPU cadence and coalesced immediate refresh |
 | `runtime` | Tauri-managed desktop state and application lifecycle wiring |
 | `runtime/demand` | Sampling demand derived from committed preferences and panel visibility |
@@ -1305,9 +1306,11 @@ displayed, rounded watt value. Native columns reserve three integer digits; whol
 when a rounded reading needs four digits (1000–3000 W).
 Resource version 21 carries independent freshness and source for all three readings.
 
-Battery telemetry runs on the existing CPU worker every two seconds only while
-at least one battery display item is selected. Disabling all three releases its SMC
-connection without stopping CPU sampling. SMC TB1T/TB2T provide the available
+Battery telemetry runs on the CPU auxiliary worker every two seconds while a
+battery item or Power details is requested. With resident monitoring enabled, an
+explicit preparation flag permits a cached observation at most every 30 seconds.
+CPU-only temperature consent does not grant battery preparation; stopping both
+battery demands releases its reader without stopping CPU sampling. SMC TB1T/TB2T provide the available
 sensor average, with AppleSmartBattery Temperature divided by 100 as fallback.
 SMC open or read failures release the connection and retry on the next scheduled
 sample. Diagnostics retain the native failure and record recovery; missing sensor
@@ -1396,7 +1399,7 @@ provide one inferred temperature. Unknown topology is labelled explicitly.
 bounded two-entry cache: volumes mapped to the same physical disk reuse successful
 observations with their own volume labels and the original timestamp. Failed reads
 remain volume-specific. Two distinct sources each retain the original 30-second
-cadence, only while demanded. The existing disk worker collects
+cadence, only while demanded. The independent disk-sensor worker collects
 temperature every 30 seconds only while its display item and resident monitoring
 are enabled, or while disk details are visible. Changing temperature selection rejects
 in-flight old-source results without resetting capacity or other metric baselines.
@@ -1419,7 +1422,7 @@ whose raw device access can require administrator permissions. Invalid native
 responses fail closed instead of substituting another reading. No additional
 driver is installed and collection does not automatically elevate. Unsupported
 virtual, RAID and bridged devices remain unavailable. Queries are bounded, run on
-the disk worker and do not block CPU/network sampling or the UI. Logs record source or failure transitions
+the disk-sensor worker and do not block capacity, CPU/network sampling or the UI. Logs record source or failure transitions
 with the volume name and native stage/code, avoiding per-sample repetition.
 
 The network catalogue exposes connected physical Wi-Fi/Ethernet links, ordered
@@ -1529,7 +1532,8 @@ of Kelvin; power uses signed milliwatts only when capacity is absolute. Relative
 units, unknown rates and contradictory direction flags never become watts. Multiple
 batteries expose their hottest valid temperature and complete net power; missing
 rates cannot silently undercount total power. Sampling stays on the CPU auxiliary
-worker at the existing two-second interval and stops when all battery items are deselected.
+worker at the existing two-second interval while requested. Otherwise, resident
+monitoring prepares one observation and refreshes it at most every 30 seconds.
 Expired optional-sensor observations are described as collected when enabled after
 their display items are disabled; actual read failures retain their failure status.
 
@@ -1620,7 +1624,8 @@ The `resident_get_panel_page` and `resident_select_panel_page` commands and
 `resident-panel-page` event share the same enum, including `overview` and `power`.
 Opening Power requests battery sampling on macOS/Windows even when those displays
 are absent from menu preferences. Closing it releases that additional battery
-demand; configured battery displays keep their own demand. macOS system power
+demand and retains the native reader for low-frequency preparation; configured
+battery displays keep their own demand. macOS system power
 keeps sampling while resident monitoring is enabled, so switching tabs or closing
 the panel only stops its rendering and does not interrupt history.
 Confirmed battery absence hides Power on macOS and Windows. An active or restored
@@ -1659,12 +1664,22 @@ and optimized charging is shown only for an explicit OS pause indication.
 
 Panel presentation shows the last valid observation while detail sampling resumes,
 including battery/adapter facts, disk health, temperatures and overview readings.
-Cached values retain their native timestamps and render without refresh badges.
-Actual failures remain visible. Cached values do not become fresh menu indicators
+Cached battery and disk-health values retain their native timestamps and show
+an update hint with the original observation time while stale. First battery
+loads show progress rather than an unknown native charge state. Actual failures
+remain visible. Cached values do not become fresh menu indicators
 or synthetic trend points. Battery presence and
 selected-device changes still invalidate observations. The cache lives in the
 resident process; restarting the application starts without previous observations.
-Background sampling intervals and on-demand detail collection are unchanged.
+The selected disk receives one initial health attempt before its panel opens.
+Hidden panels do not repeat SMART queries; visible detail refreshes retain the
+five-minute success/unsupported and 30-second failure cadence. Disabling resident
+monitoring prevents health warm-up, including catalogue-only requests. Health and
+temperature share one bounded sensor worker independently of capacity and disk I/O.
+Health/detail warm-up waits for the confirmed capacity identity; fixed-device
+temperature can still run independently. Hidden cache replay preserves the original
+sample time after a visibility change rejects an in-flight result. Sensor failures
+update only sensor statuses and never replace a valid capacity observation.
 
 Resource schema 38 exposes independent `cpuPower` and adapter-identified
 `gpuPower` readings with `ioReport` or `appleSmc` sources. Apple Silicon uses

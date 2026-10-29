@@ -4218,6 +4218,8 @@
     "loading": "Carregando…",
     "ready": "Atualizado",
     "stale": "Dados desatualizados",
+    "cachedReading": "Leitura anterior · atualizando…",
+    "lastUpdatedAt": "Última atualização: {time}",
     "disconnected": "Desconectado",
     "unsupported": "Não suportado",
     "failed": "Não foi possível ler os dados",

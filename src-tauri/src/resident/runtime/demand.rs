@@ -65,6 +65,10 @@ impl ResidentState {
                 && metric == MetricId::Cpu
                 && preferences.enabled
                 && (preferences.shows_battery() || power_page),
+            prepare_battery: DisplayMetricId::BatteryPower.supported_on_platform()
+                && metric == MetricId::Cpu
+                && preferences.enabled,
+            disk_health: preferences.enabled && metric == MetricId::Disk,
             temperature: (preferences.enabled
                 && metric == MetricId::Disk
                 && DisplayMetricId::DiskTemperature.supported_on_platform()

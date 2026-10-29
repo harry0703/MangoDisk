@@ -4218,6 +4218,8 @@
     "loading": "Laden…",
     "ready": "Auf dem neuesten Stand",
     "stale": "Daten sind veraltet",
+    "cachedReading": "Letzter Messwert · wird aktualisiert…",
+    "lastUpdatedAt": "Zuletzt aktualisiert: {time}",
     "disconnected": "Getrennt",
     "unsupported": "Nicht unterstützt",
     "failed": "Daten können nicht gelesen werden",

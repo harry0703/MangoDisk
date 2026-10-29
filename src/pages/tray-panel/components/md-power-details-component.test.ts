@@ -72,6 +72,43 @@ describe.each([
       },
     });
   }
+  it('shows first-load progress instead of an unknown battery state', () => {
+    const wrapper = render(emptyReadings());
+    expect(wrapper.get('.battery-state').text()).toContain(messages.systemStatus.loading);
+    expect(wrapper.get('.battery-state').text()).not.toContain(messages.power.states.unknown);
+    expect(wrapper.find('.battery-source').exists()).toBe(false);
+    expect(wrapper.get('.battery-status').attributes('aria-busy')).toBe('true');
+    wrapper.unmount();
+  });
+  it('keeps the previous battery reading visible and marks its original update time', () => {
+    const value = reading();
+    value.observedAtMs = 16000;
+    value.batteryDetails.status = 'stale';
+    const wrapper = render(value);
+    expect(wrapper.get('.battery-state').text()).toContain(messages.power.states.charging);
+    expect(wrapper.get('.battery-state').text()).toContain(messages.systemStatus.cachedReading);
+    expect(wrapper.get('.battery-level').text()).toContain('72');
+    expect(wrapper.find('.battery-shell.loading').exists()).toBe(false);
+    const time = new Intl.DateTimeFormat(locale, { hour: '2-digit', minute: '2-digit', second: '2-digit' }).format(
+      10000
+    );
+    expect(
+      wrapper
+        .findAllComponents(MdTooltip)
+        .some(tip => tip.props('text') === messages.systemStatus.lastUpdatedAt.replace('{time}', time))
+    ).toBe(true);
+    wrapper.unmount();
+  });
+  it.each(['unsupported', 'failed', 'disconnected'] as const)('distinguishes %s from first-load progress', status => {
+    const value = emptyReadings();
+    value.batteryDetails.status = status;
+    const wrapper = render(value);
+    expect(wrapper.get('.battery-state').text()).toContain(messages.systemStatus[status]);
+    expect(wrapper.get('.battery-state').text()).not.toContain(messages.power.states.unknown);
+    expect(wrapper.find('.battery-source').exists()).toBe(false);
+    expect(wrapper.get('.battery-status').attributes('aria-busy')).toBe('false');
+    wrapper.unmount();
+  });
   it('separates native power sources and exposes every battery fact without disclosure', () => {
     const wrapper = render();
     const text = wrapper.text();
@@ -175,21 +212,19 @@ describe.each([
     expect(wrapper.text()).not.toContain(messages.power.adapter);
     wrapper.unmount();
   });
-  it('keeps battery and adapter markup unchanged when a background refresh completes', async () => {
+  it('keeps measured values stable while the freshness hint changes after refresh', async () => {
     const value = reading();
     value.observedAtMs = 16000;
     value.batteryDetails.status = 'stale';
     value.batteryPower.status = 'stale';
     value.batteryTemperature.status = 'stale';
     const wrapper = render(value);
-    const before = ['.battery-status', '.battery-facts', '.adapter-facts'].map(selector =>
-      wrapper.get(selector).html()
-    );
+    const before = ['.battery-level', '.battery-facts', '.adapter-facts'].map(selector => wrapper.get(selector).html());
     const updated = reading();
     updated.observedAtMs = 16000;
     await wrapper.setProps({ reading: updated });
     expect(
-      ['.battery-status', '.battery-facts', '.adapter-facts'].map(selector => wrapper.get(selector).html())
+      ['.battery-level', '.battery-facts', '.adapter-facts'].map(selector => wrapper.get(selector).html())
     ).toEqual(before);
     wrapper.unmount();
   });
@@ -422,8 +457,8 @@ describe('power cache lifecycle', () => {
     const wrapper = render(value);
     expect(wrapper.get('.battery-level').text()).toContain('72');
     expect(wrapper.get('.adapter-facts').text()).toContain('35.1');
-    expect(wrapper.find('.battery-state [role="status"]').exists()).toBe(false);
-    expect(wrapper.get('.battery-state').text()).toContain('1 h 20 min');
+    expect(wrapper.get('.battery-state [role="status"]').text()).toBe(en.systemStatus.cachedReading);
+    expect(wrapper.get('.battery-state').text()).not.toContain('1 h 20 min');
     await wrapper.setProps({ active: false });
     await wrapper.setProps({ active: true });
     expect(wrapper.get('.battery-level').text()).toContain('72');

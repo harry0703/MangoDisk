@@ -4218,6 +4218,8 @@
     "loading": "Yükleniyor…",
     "ready": "Güncel",
     "stale": "Veriler güncel değil",
+    "cachedReading": "Önceki ölçüm · güncelleniyor…",
+    "lastUpdatedAt": "Son güncelleme: {time}",
     "disconnected": "Bağlantı kesildi",
     "unsupported": "Desteklenmiyor",
     "failed": "Veriler okunamadı",

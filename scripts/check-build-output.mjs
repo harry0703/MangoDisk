@@ -113,6 +113,8 @@ const maximumLocaleGzipBytes = 60 * 1024;
 // Include pending scan-coverage labels; extend only measured combined locale sizes.
 // The administrator access hint adds one string per locale. Round only exceeded
 // locale limits to 32 raw / 16 gzip bytes; retain all application chunk limits.
+// Cached-reading and observation-time hints add two localized strings.
+// Round only exceeded measured locale sizes to 32 raw / 16 gzip bytes.
 const localeChunkLimitOverrides = new Map([
   // SystemTemp and administrator restart add six strings per locale. Measured
   // de/es/fr/ja/ko/pt/ru raw sizes: 318229/320136/328638/342040/312385/313458/413113.
@@ -133,17 +135,17 @@ const localeChunkLimitOverrides = new Map([
   // es: 326531/65390, fr: 335211/67068, ja: 349142/66489, ko: 318946/63873,
   // pt: 319926/64420, ru: 421852/75155, tr: 313586/63175.
   // zh-cn/zh-tw gzip is 61610/62111; keep only locale-specific increases.
-  ['fr-fr', { bytes: 336960, gzipBytes: 67392 }],
-  ['de-de', { bytes: 326336, gzipBytes: 67936 }],
-  ['es-es', { bytes: 328288, gzipBytes: 65712 }],
-  ['pt-br', { bytes: 321664, gzipBytes: 64736 }],
-  ['ko-kr', { bytes: 320800, gzipBytes: 64208 }],
+  ['fr-fr', { bytes: 337120, gzipBytes: 67440 }],
+  ['de-de', { bytes: 326496, gzipBytes: 67984 }],
+  ['es-es', { bytes: 328448, gzipBytes: 65760 }],
+  ['pt-br', { bytes: 321824, gzipBytes: 64768 }],
+  ['ko-kr', { bytes: 320960, gzipBytes: 64256 }],
   // Retain the finishing-charge labels' additional 128 raw bytes for ja/ru.
-  ['ja-jp', { bytes: 351040, gzipBytes: 66848 }],
-  ['ru-ru', { bytes: 423936, gzipBytes: 75456 }],
-  ['zh-cn', { bytes: 311296, gzipBytes: 61952 }],
-  ['zh-tw', { bytes: 311296, gzipBytes: 62464 }],
-  ['tr-tr', { bytes: 315296, gzipBytes: 63504 }],
+  ['ja-jp', { bytes: 351200, gzipBytes: 66896 }],
+  ['ru-ru', { bytes: 424128, gzipBytes: 75504 }],
+  ['zh-cn', { bytes: 311296, gzipBytes: 62000 }],
+  ['zh-tw', { bytes: 311296, gzipBytes: 62512 }],
+  ['tr-tr', { bytes: 315456, gzipBytes: 63552 }],
 ]);
 
 function fail(message) {

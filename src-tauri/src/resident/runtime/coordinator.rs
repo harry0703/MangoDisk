@@ -35,6 +35,8 @@ pub(super) fn run(
     let mut slots: [SamplingSlot; 5] = std::array::from_fn(|_| SamplingSlot::default());
     let auxiliary = sampling_workers::start_cpu_auxiliary(origin, sender.clone());
     let mut auxiliary_slot = SamplingSlot::default();
+    let disk_sensors = sampling_workers::start_disk_sensors(origin, sender.clone());
+    let mut sensor_slot = SamplingSlot::default();
     let mut auxiliary_expired = false;
     let mut cache = ResourceCache::default();
     if let Some(traffic) = network_traffic::install(&app, &worker) {
@@ -87,7 +89,31 @@ pub(super) fn run(
         loop_delayed = delayed;
         let mut demands = worker.demands(observations.warm_icons);
         let auxiliary_demand = demands[0].clone();
-        demands[0] = metric_demand(MetricId::Cpu, demands[0].clone());
+        let sensor_demand = disk_sensor_demand(demands[4].clone(), cache.disk_volume());
+        for (metric, demand) in MetricId::ALL.into_iter().zip(&mut demands) {
+            *demand = metric_demand(metric, demand.clone());
+        }
+        if sensor_slot.demand.temperature_device != sensor_demand.temperature_device {
+            cache.clear_disk_temperature();
+        }
+        if sensor_slot.update(sensor_demand.clone()) && !sensor_demand.active {
+            let _ = disk_sensors.try_send(sampling_workers::Request::Release);
+        }
+        if let Some(generation) = sensor_slot.begin(
+            origin.elapsed().as_millis() as u64,
+            MetricId::Disk.interval_ms(),
+        ) {
+            if disk_sensors
+                .send(sampling_workers::Request::Sample {
+                    generation,
+                    baseline_generation: sensor_slot.baseline_generation(),
+                    demand: sensor_demand,
+                })
+                .is_err()
+            {
+                return;
+            }
+        }
         if auxiliary_slot.update(auxiliary_demand.clone()) && !auxiliary_demand.active {
             let _ = auxiliary.try_send(sampling_workers::Request::Release);
         }
@@ -170,6 +196,7 @@ pub(super) fn run(
                     .min()
                     .unwrap_or(1000)
                     .min(auxiliary_slot.wait_ms(origin.elapsed().as_millis() as u64))
+                    .min(sensor_slot.wait_ms(origin.elapsed().as_millis() as u64))
                     .min(disk_slot.wait_ms(origin.elapsed().as_millis() as u64))
                     .min(process_cpu.wait_ms(origin.elapsed().as_millis() as u64))
                     .min(display_pending.map_or(1000, |deadline| {
@@ -228,6 +255,46 @@ pub(super) fn run(
                     }
                 } else {
                     diagnostics.discard(Query::CpuAuxiliary);
+                }
+                None
+            }
+            Some(SamplingEvent::DiskSensors(mut completion)) => {
+                let demand = disk_sensor_demand(
+                    worker.demands(observations.warm_icons)[4].clone(),
+                    cache.disk_volume(),
+                );
+                if sensor_slot.demand.temperature_device != demand.temperature_device {
+                    cache.clear_disk_temperature();
+                }
+                sensor_slot.update(demand);
+                if !sensor_slot.demand.active {
+                    let _ = disk_sensors.try_send(sampling_workers::Request::Release);
+                }
+                if sensor_slot.complete(completion.generation) {
+                    diagnostics.record(Query::DiskSensors, completion.duration_ms);
+                    if completion.duration_ms > MetricId::Disk.freshness_ms() {
+                        diagnostics.discard(Query::DiskSensors);
+                        completion.result = Ok(sampling_workers::Observation::DiskSensors(
+                            Box::new(Err(mangodisk_platform::PlatformError::new(
+                                mangodisk_platform::PlatformErrorCode::OperationFailed,
+                                "disk_sensors stage=sample reason=observation_expired",
+                            ))),
+                        ));
+                    }
+                    changed = true;
+                    observations.apply(
+                        *completion,
+                        &mut cache,
+                        &mut sensor_slot,
+                        ObservationContext {
+                            catalogue: &worker.catalogue,
+                            now_ms: &|| origin.elapsed().as_millis() as u64,
+                            previous_status: previous_status[4],
+                        },
+                        |_| {},
+                    );
+                } else {
+                    diagnostics.discard(Query::DiskSensors);
                 }
                 None
             }
@@ -472,7 +539,76 @@ fn metric_demand(metric: MetricId, demand: Demand) -> Demand {
             active: demand.active,
             ..Default::default()
         }
+    } else if metric == MetricId::Disk {
+        Demand {
+            active: demand.active,
+            selection: demand.selection,
+            ..Default::default()
+        }
     } else {
         demand
+    }
+}
+
+fn disk_sensor_demand(
+    mut demand: Demand,
+    confirmed: Option<&mangodisk_platform::system_resources::disk::ResourceVolume>,
+) -> Demand {
+    // Core attributes health/details to a confirmed capacity source. Wait for that
+    // identity before warm-up; an independently selected temperature stays usable.
+    let matches = confirmed.is_some_and(|volume| {
+        demand
+            .selection
+            .as_ref()
+            .map_or(volume.system, |id| id == &volume.id)
+    });
+    demand.disk_health &= matches;
+    demand.detailed &= matches;
+    demand.active = demand.active && (demand.disk_health || demand.temperature || demand.detailed);
+    demand
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use mangodisk_platform::system_resources::disk::ResourceVolume;
+
+    #[test]
+    fn sensors_wait_for_matching_capacity_without_blocking_independent_temperature() {
+        let volume = ResourceVolume {
+            id: "system".into(),
+            name: "Disk".into(),
+            system: true,
+            mount_point: "/".into(),
+            mount_points: vec![],
+            file_system: None,
+            devices: vec![],
+        };
+        let demand = Demand {
+            active: true,
+            disk_health: true,
+            detailed: true,
+            ..Default::default()
+        };
+        assert!(!disk_sensor_demand(demand.clone(), None).active);
+        assert!(disk_sensor_demand(demand.clone(), Some(&volume)).active);
+        let changed = Demand {
+            selection: Some("other".into()),
+            ..demand.clone()
+        };
+        assert!(!disk_sensor_demand(changed, Some(&volume)).active);
+        let temperature = disk_sensor_demand(
+            Demand {
+                temperature: true,
+                temperature_device: Some("fixed-device".into()),
+                ..demand.clone()
+            },
+            None,
+        );
+        assert!(temperature.active && temperature.temperature);
+        assert!(!temperature.disk_health && !temperature.detailed);
+        let capacity = metric_demand(MetricId::Disk, demand);
+        assert!(capacity.active);
+        assert!(!capacity.disk_health && !capacity.detailed && !capacity.temperature);
     }
 }

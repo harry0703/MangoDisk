@@ -4218,6 +4218,8 @@
     "loading": "取得中…",
     "ready": "更新済み",
     "stale": "データが古くなっています",
+    "cachedReading": "前回のデータ · 更新中…",
+    "lastUpdatedAt": "最終更新：{time}",
     "disconnected": "未接続",
     "unsupported": "非対応",
     "failed": "データを取得できません",

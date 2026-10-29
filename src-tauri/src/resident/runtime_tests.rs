@@ -61,6 +61,42 @@ fn disk_temperature_only_collects_when_selected_and_resident_enabled() {
     let catalogue = state.demands(false)[4].clone();
     assert!(catalogue.active);
     assert!(!catalogue.temperature);
+    assert!(!catalogue.disk_health);
+}
+
+#[test]
+fn disk_health_prepares_only_the_selected_disk_while_resident_is_enabled() {
+    let state = test_state();
+    state.panel_open.store(false, Ordering::Relaxed);
+    let demands = state.demands(false);
+    assert!(demands[4].disk_health);
+    assert!(!demands[4].detailed);
+    assert!(demands[..4].iter().all(|demand| !demand.disk_health));
+    state.preferences.lock().unwrap().enabled = false;
+    state.catalogue.store(2, Ordering::Relaxed);
+    assert!(state
+        .demands(false)
+        .iter()
+        .all(|demand| !demand.disk_health));
+}
+
+#[test]
+fn battery_preparation_requires_enabled_resident_even_with_cpu_temperature_consent() {
+    let state = test_state();
+    let demands = state.demands(false);
+    assert_eq!(
+        demands[0].prepare_battery,
+        cfg!(any(target_os = "macos", windows))
+    );
+    assert!(demands[1..].iter().all(|demand| !demand.prepare_battery));
+    let mut preferences = state.preferences.lock().unwrap();
+    preferences.enabled = false;
+    preferences.windows_cpu_temperature_enabled = true;
+    drop(preferences);
+    let disabled = state.demands(false);
+    assert!(!disabled[0].battery && !disabled[0].prepare_battery);
+    #[cfg(windows)]
+    assert!(disabled[0].active && disabled[0].temperature);
 }
 
 #[test]

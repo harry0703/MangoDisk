@@ -19,12 +19,13 @@ use std::{
 use super::sampling_schedule::Demand;
 
 pub enum Observation {
+    DiskSensors(Box<mangodisk_platform::PlatformResult<super::disk_sensor_sampling::Observation>>),
     #[cfg(test)]
     Unsupported,
     Cpu {
         sample: mangodisk_platform::PlatformResult<CpuSample>,
     },
-    CpuAuxiliary(super::cpu_auxiliary_sampling::Observation),
+    CpuAuxiliary(Box<super::cpu_auxiliary_sampling::Observation>),
     GpuCatalogue(Vec<GpuAdapter>),
     Gpu {
         power: Option<
@@ -53,24 +54,6 @@ pub enum Observation {
             Box<ResourceVolume>,
             mangodisk_platform::PlatformResult<VolumeCapacity>,
         )>,
-        health: Option<(
-            u64,
-            mangodisk_platform::PlatformResult<
-                mangodisk_platform::system_resources::disk_health::DiskHealth,
-            >,
-        )>,
-        temperature: Option<(
-            u64,
-            mangodisk_platform::PlatformResult<
-                mangodisk_platform::system_resources::disk_temperature::DiskTemperature,
-            >,
-        )>,
-        detail_temperature: Option<(
-            u64,
-            mangodisk_platform::PlatformResult<
-                mangodisk_platform::system_resources::disk_temperature::DiskTemperature,
-            >,
-        )>,
     },
 }
 
@@ -95,6 +78,7 @@ pub enum SamplingEvent {
     DiskIo(super::disk_activity::Completion),
     Completed(Box<Completion>),
     CpuAuxiliary(Box<Completion>),
+    DiskSensors(Box<Completion>),
     ProcessCpu(super::process_cpu_sampling::Completion),
 }
 
@@ -123,18 +107,21 @@ pub fn start(
 enum WorkerKind {
     Metric(MetricId),
     CpuAuxiliary,
+    DiskSensors,
 }
 impl WorkerKind {
     fn metric(self) -> MetricId {
         match self {
             Self::Metric(metric) => metric,
             Self::CpuAuxiliary => MetricId::Cpu,
+            Self::DiskSensors => MetricId::Disk,
         }
     }
     fn completion(self, value: Box<Completion>) -> SamplingEvent {
         match self {
             Self::Metric(_) => SamplingEvent::Completed(value),
             Self::CpuAuxiliary => SamplingEvent::CpuAuxiliary(value),
+            Self::DiskSensors => SamplingEvent::DiskSensors(value),
         }
     }
 }
@@ -146,6 +133,19 @@ pub fn start_cpu_auxiliary(
     std::thread::spawn(move || {
         run_worker(WorkerKind::CpuAuxiliary, origin, events, requests, || {
             Sensor::CpuAuxiliary(Box::default())
+        })
+    });
+    sender
+}
+
+pub fn start_disk_sensors(
+    origin: Instant,
+    events: SyncSender<SamplingEvent>,
+) -> SyncSender<Request> {
+    let (sender, requests) = mpsc::sync_channel(1);
+    std::thread::spawn(move || {
+        run_worker(WorkerKind::DiskSensors, origin, events, requests, || {
+            Sensor::DiskSensors(Box::default())
         })
     });
     sender
@@ -213,12 +213,9 @@ enum Sensor {
     Memory(Box<SystemResourceService>),
     Network(NetworkReader),
     Disk {
-        health: Box<super::disk_health_sampling::HealthSampler>,
-        temperature: Box<super::disk_temperature_sampling::TemperatureSampler>,
-        temperature_state: Option<String>,
-        detail_temperature_state: Option<String>,
         capacity_state: Option<String>,
     },
+    DiskSensors(Box<super::disk_sensor_sampling::Reader>),
     #[cfg(test)]
     Probe(tests::Probe),
 }
@@ -235,10 +232,6 @@ impl Sensor {
             MetricId::Memory => Self::Memory(Box::default()),
             MetricId::Network => Self::Network(NetworkReader::default()),
             MetricId::Disk => Self::Disk {
-                health: Default::default(),
-                temperature: Default::default(),
-                temperature_state: None,
-                detail_temperature_state: None,
                 capacity_state: None,
             },
         }
@@ -264,7 +257,7 @@ impl Sensor {
             Self::Cpu { reader } => Observation::Cpu {
                 sample: reader.read(),
             },
-            Self::CpuAuxiliary(reader) => Observation::CpuAuxiliary(reader.read(demand)),
+            Self::CpuAuxiliary(reader) => Observation::CpuAuxiliary(Box::new(reader.read(demand))),
             Self::Gpu(reader) if demand.catalogue_only => {
                 Observation::GpuCatalogue(reader.catalogue()?)
             }
@@ -315,58 +308,15 @@ impl Sensor {
                 Observation::Memory(reader.sample(demand.detailed, timestamp_ms)?)
             }
             Self::Network(reader) => Observation::Network(reader.read()?),
-            Self::Disk {
-                health,
-                temperature: temperature_sampler,
-                temperature_state,
-                detail_temperature_state,
-                capacity_state,
-            } => {
+            Self::DiskSensors(reader) => {
+                Observation::DiskSensors(Box::new(reader.read(demand, timestamp_ms)))
+            }
+            Self::Disk { capacity_state } => {
                 let volumes = disk::list()?;
                 let selected = mangodisk_core::system_resources::disk::select(
                     &volumes,
                     demand.selection.as_deref(),
                 );
-                let health_reading = if demand.detailed {
-                    selected.map(|volume| health.read(volume, timestamp_ms))
-                } else {
-                    None
-                };
-                if selected.is_none() {
-                    health.clear();
-                }
-                let temperature_volume = mangodisk_core::system_resources::disk::temperature_volume(
-                    &volumes,
-                    demand.selection.as_deref(),
-                    demand.temperature_device.as_deref(),
-                );
-                if temperature_volume.is_none() && selected.is_none() {
-                    temperature_sampler.clear();
-                }
-                let temperature = if demand.temperature {
-                    temperature_volume.map(|volume| {
-                        temperature_sampler.read(
-                            volume,
-                            timestamp_ms,
-                            health_reading.as_ref(),
-                            temperature_state,
-                        )
-                    })
-                } else {
-                    None
-                };
-                let detail_temperature = if demand.detailed && demand.temperature {
-                    selected.map(|volume| {
-                        temperature_sampler.read(
-                            volume,
-                            timestamp_ms,
-                            health_reading.as_ref(),
-                            detail_temperature_state,
-                        )
-                    })
-                } else {
-                    None
-                };
                 let selected = selected.map(|volume| {
                     let capacity = disk::capacity(volume);
                     let identity = match &capacity {
@@ -393,13 +343,7 @@ impl Sensor {
                     }
                     (Box::new(volume.clone()), capacity)
                 });
-                Observation::Disk {
-                    volumes,
-                    selected,
-                    health: health_reading,
-                    temperature,
-                    detail_temperature,
-                }
+                Observation::Disk { volumes, selected }
             }
             #[cfg(test)]
             Self::Probe(probe) => {
@@ -416,6 +360,62 @@ mod tests {
     use super::*;
     use std::sync::{Arc, Mutex, Weak};
     use std::time::Duration;
+
+    #[test]
+    fn blocked_disk_sensors_do_not_hold_native_capacity_observations() {
+        let (events, completions) = mpsc::sync_channel(4);
+        let capacity = start(MetricId::Disk, Instant::now(), events.clone());
+        let (sensors, requests) = mpsc::sync_channel(1);
+        let (started, starts) = mpsc::channel();
+        let (proceed, wait) = mpsc::channel();
+        let (retired, _) = mpsc::channel();
+        let worker = std::thread::spawn(move || {
+            let mut probe = Some(Probe {
+                owner: None,
+                started,
+                proceed: wait,
+                retired,
+                resets: Default::default(),
+            });
+            run_worker(
+                WorkerKind::DiskSensors,
+                Instant::now(),
+                events,
+                requests,
+                || Sensor::Probe(probe.take().unwrap()),
+            );
+        });
+        let request = || Request::Sample {
+            generation: 1,
+            baseline_generation: 1,
+            demand: Demand {
+                active: true,
+                disk_health: true,
+                ..Default::default()
+            },
+        };
+        sensors.send(request()).unwrap();
+        starts.recv_timeout(Duration::from_secs(3)).unwrap();
+        capacity.send(request()).unwrap();
+        let completion = completions.recv_timeout(Duration::from_secs(30));
+        // Always release and join the controlled query, including assertion failures.
+        proceed.send(()).unwrap();
+        drop(sensors);
+        drop(capacity);
+        worker.join().unwrap();
+        let SamplingEvent::Completed(result) =
+            completion.expect("capacity must finish before the slow sensor is released")
+        else {
+            panic!("expected independent capacity observation")
+        };
+        assert!(matches!(
+            result.result,
+            Ok(Observation::Disk {
+                selected: Some((_, Ok(_))),
+                ..
+            })
+        ));
+    }
 
     pub(super) struct Probe {
         owner: Option<Arc<()>>,

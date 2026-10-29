@@ -17,6 +17,26 @@ fn volume(id: &str) -> ResourceVolume {
         mount_point: "/".into(),
     }
 }
+
+#[test]
+fn disk_sensor_source_requires_a_confirmed_available_capacity_observation() {
+    use super::metrics::MetricId;
+    let mut cache = ResourceCache::default();
+    assert!(cache.disk_volume().is_none());
+    cache.disk(
+        volume("one"),
+        VolumeCapacity {
+            total_bytes: 100,
+            available_bytes: 50,
+        },
+        1000,
+    );
+    assert_eq!(cache.disk_volume().unwrap().id, "one");
+    cache.fail(MetricId::Disk, MetricStatus::Disconnected);
+    assert!(cache.disk_volume().is_none());
+    cache.reset(MetricId::Disk);
+    assert!(cache.disk_volume().is_none());
+}
 fn health(id: &str) -> DiskHealth {
     DiskHealth {
         volume_id: id.into(),
@@ -35,6 +55,41 @@ fn health(id: &str) -> DiskHealth {
         ata: None,
         nvme: None,
     }
+}
+
+#[test]
+fn capacity_failures_preserve_independent_sensor_identity_and_removal_invalidates_details() {
+    use mangodisk_platform::system_resources::disk_temperature::DiskTemperature;
+    let mut cache = ResourceCache::default();
+    cache.disk(
+        volume("selected"),
+        VolumeCapacity {
+            total_bytes: 100,
+            available_bytes: 50,
+        },
+        1000,
+    );
+    cache.disk_health(Ok(health("selected")), 1000);
+    cache.disk_temperature(
+        Ok(DiskTemperature {
+            volume_id: "other".into(),
+            volume_name: "Other disk".into(),
+            celsius: 35.0,
+            source: DiskTemperatureSource::NvmeSmart,
+        }),
+        1000,
+    );
+    cache.fail_disk_capacity(MetricStatus::Failed);
+    let reading = cache.snapshot(1000);
+    assert_eq!(reading.disk.status, MetricStatus::Failed);
+    assert_eq!(reading.disk_health.status, MetricStatus::Ready);
+    assert_eq!(reading.disk_temperature.status, MetricStatus::Ready);
+    cache.fail_disk_capacity(MetricStatus::Disconnected);
+    let reading = cache.snapshot(1000);
+    assert_eq!(reading.disk_health.status, MetricStatus::Disconnected);
+    assert!(reading.disk_health.value.is_none());
+    assert_eq!(reading.disk_temperature.value.unwrap().volume_id, "other");
+    assert_eq!(reading.disk_temperature.status, MetricStatus::Ready);
 }
 #[test]
 fn health_has_independent_freshness_and_rejects_other_devices_or_failed_observations() {

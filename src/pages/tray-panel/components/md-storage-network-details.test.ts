@@ -201,6 +201,7 @@ describe('disk health and network detail presentation', () => {
     expect(wrapper.text()).toContain('100%');
     await wrapper.setProps({ reading: disk() });
     expect(wrapper.get('.health-status').text()).toBe(en.diskHealth.healthy);
+    expect(wrapper.text()).not.toContain(en.systemStatus.cachedReading);
   });
   it('keeps expired health fields visible while the same disk refreshes in the background', () => {
     const reading = disk();
@@ -211,6 +212,7 @@ describe('disk health and network detail presentation', () => {
     expect(wrapper.text()).toContain('100%');
     expect(wrapper.get('.health-status').text()).toBe(en.diskHealth.healthy);
     expect(wrapper.text()).not.toContain(en.diskHealth.unavailable);
+    expect(wrapper.text()).toContain(en.systemStatus.cachedReading);
   });
   it('never restores expired health for a changed disk or a future observation', async () => {
     const reading = disk();
@@ -228,7 +230,7 @@ describe('disk health and network detail presentation', () => {
     const reading = disk();
     reading.diskHealth.status = status;
     const wrapper = render(DiskDetails, reading);
-    expect(wrapper.text()).toContain(en.diskHealth.unavailable);
+    expect(wrapper.text()).toContain(en.systemStatus[status]);
     expect(wrapper.find('.health-status').exists()).toBe(false);
   });
   it('keeps the temperature slot and metadata order while live readings are unavailable', async () => {

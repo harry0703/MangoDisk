@@ -4218,6 +4218,8 @@
     "loading": "正在获取…",
     "ready": "已更新",
     "stale": "数据已过期",
+    "cachedReading": "上次数据 · 正在更新…",
+    "lastUpdatedAt": "上次更新：{time}",
     "disconnected": "未连接",
     "unsupported": "暂不支持",
     "failed": "暂时无法获取",

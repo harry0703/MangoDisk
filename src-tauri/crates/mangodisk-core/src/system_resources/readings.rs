@@ -564,7 +564,31 @@ impl ResourceCache {
             }
             self.readings.disk = MetricReading::ready(value, timestamp_ms);
         } else {
-            self.fail(MetricId::Disk, MetricStatus::Failed);
+            self.fail_disk_capacity(MetricStatus::Failed);
+        }
+    }
+
+    /// Expose only the confirmed cached source, without cloning histories or process lists.
+    pub fn disk_volume(&self) -> Option<&ResourceVolume> {
+        matches!(
+            self.readings.disk.status,
+            MetricStatus::Ready | MetricStatus::Stale
+        )
+        .then(|| self.readings.disk.value.as_ref().map(|disk| &disk.volume))
+        .flatten()
+    }
+
+    /// Capacity failures cannot invalidate independently sampled physical sensors.
+    pub fn fail_disk_capacity(&mut self, status: MetricStatus) {
+        self.readings.disk.status = status;
+        if matches!(
+            status,
+            MetricStatus::Disconnected | MetricStatus::Unsupported
+        ) {
+            self.readings.disk_health.mark_unavailable(status);
+            self.readings
+                .disk_detail_temperature
+                .mark_unavailable(status);
         }
     }
 

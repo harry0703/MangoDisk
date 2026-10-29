@@ -56,7 +56,7 @@ impl ObservationState {
                     cpu_power,
                     battery_present,
                     fan_speed,
-                } = observation;
+                } = *observation;
                 if matches!(&details.frequency, Some(Ok(None))) {
                     if self.frequency_retries < 2 {
                         self.frequency_retries += 1;
@@ -213,22 +213,47 @@ impl ObservationState {
                 );
                 catalogue.fetch_and(!1, Ordering::Relaxed);
             }
-            Ok(Observation::Disk {
-                volumes,
-                selected,
-                health,
-                temperature,
-                detail_temperature,
-            }) => {
+            Ok(Observation::Disk { volumes, selected }) => {
                 cache.volumes(volumes);
                 if let Some((volume, capacity)) = selected {
                     match capacity {
                         Ok(capacity) => cache.disk(*volume, capacity, completion.timestamp_ms),
-                        Err(_) => cache.fail(MetricId::Disk, MetricStatus::Failed),
+                        Err(_) => cache.fail_disk_capacity(MetricStatus::Failed),
                     }
                 } else {
-                    cache.fail(MetricId::Disk, MetricStatus::Disconnected);
+                    cache.fail_disk_capacity(MetricStatus::Disconnected);
                 }
+                catalogue.fetch_and(!2, Ordering::Relaxed);
+            }
+            Ok(Observation::DiskSensors(result)) => {
+                let super::super::disk_sensor_sampling::Observation {
+                    health,
+                    temperature,
+                    detail_temperature,
+                } = match *result {
+                    Ok(observation) => observation,
+                    Err(error) => {
+                        log::warn!(
+                            "resident_disk_sensors_failed code={:?} error={}",
+                            error.code(),
+                            mangodisk_platform::diagnostics::text(&error)
+                        );
+                        super::super::disk_sensor_sampling::Observation {
+                            health: slot
+                                .demand
+                                .disk_health
+                                .then(|| (completion.timestamp_ms, Err(error.clone()))),
+                            temperature: slot
+                                .demand
+                                .temperature
+                                .then(|| (completion.timestamp_ms, Err(error.clone()))),
+                            detail_temperature: slot
+                                .demand
+                                .detailed
+                                .then_some((completion.timestamp_ms, Err(error))),
+                        }
+                    }
+                };
                 if let Some((sampled_at_ms, temperature)) = temperature {
                     cache.disk_temperature(temperature, sampled_at_ms);
                 } else if slot.demand.temperature {
@@ -253,8 +278,14 @@ impl ObservationState {
                 // observation's lifetime. Source changes still reset it.
                 if let Some((sampled_at_ms, health)) = health {
                     cache.disk_health(health, sampled_at_ms);
+                } else if slot.demand.disk_health {
+                    cache.disk_health(
+                        Err(mangodisk_platform::PlatformError::item_changed(
+                            "disk_health selected volume unavailable",
+                        )),
+                        completion.timestamp_ms,
+                    );
                 }
-                catalogue.fetch_and(!2, Ordering::Relaxed);
             }
             #[cfg(test)]
             Ok(Observation::Unsupported) => {
@@ -272,7 +303,11 @@ impl ObservationState {
                         mangodisk_platform::diagnostics::text(&error)
                     );
                 }
-                cache.fail(completion.metric, MetricStatus::Failed);
+                if completion.metric == MetricId::Disk {
+                    cache.fail_disk_capacity(MetricStatus::Failed);
+                } else {
+                    cache.fail(completion.metric, MetricStatus::Failed);
+                }
                 if completion.metric == MetricId::Network {
                     catalogue.fetch_and(!1, Ordering::Relaxed);
                 }

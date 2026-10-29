@@ -4218,6 +4218,8 @@
     "loading": "불러오는 중…",
     "ready": "최신 상태",
     "stale": "데이터가 오래되었습니다",
+    "cachedReading": "이전 데이터 · 업데이트 중…",
+    "lastUpdatedAt": "마지막 업데이트: {time}",
     "disconnected": "연결 끊김",
     "unsupported": "미지원",
     "failed": "데이터를 읽을 수 없습니다",

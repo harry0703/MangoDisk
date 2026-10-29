@@ -184,7 +184,7 @@ fn auxiliary_failures_preserve_fresh_utilization_and_history() {
     state.apply(
         completion(
             MetricId::Cpu,
-            Ok(Observation::CpuAuxiliary(
+            Ok(Observation::CpuAuxiliary(Box::new(
                 crate::resident::cpu_auxiliary_sampling::Observation {
                     cpu_power: None,
                     details: CpuDetails {
@@ -203,7 +203,7 @@ fn auxiliary_failures_preserve_fresh_utilization_and_history() {
                     battery_present: None,
                     fan_speed: None,
                 },
-            )),
+            ))),
         ),
         &mut cache,
         &mut slot,
@@ -220,4 +220,58 @@ fn auxiliary_failures_preserve_fresh_utilization_and_history() {
     assert_eq!(reading.cpu_history.len(), 1);
     assert_eq!(reading.cpu_frequency.status, MetricStatus::Unsupported);
     assert_eq!(reading.cpu_temperature.status, MetricStatus::Failed);
+}
+
+#[test]
+fn sensor_discovery_failure_never_overwrites_confirmed_capacity() {
+    use mangodisk_platform::{
+        system_resources::disk::{ResourceVolume, VolumeCapacity},
+        PlatformError, PlatformErrorCode,
+    };
+    let mut state = ObservationState::new(false);
+    let mut cache = ResourceCache::default();
+    cache.disk(
+        ResourceVolume {
+            id: "one".into(),
+            name: "Disk".into(),
+            system: true,
+            mount_point: "/".into(),
+            mount_points: vec![],
+            file_system: None,
+            devices: vec![],
+        },
+        VolumeCapacity {
+            total_bytes: 100,
+            available_bytes: 50,
+        },
+        1000,
+    );
+    let mut slot = SamplingSlot::default();
+    slot.update(Demand {
+        active: true,
+        disk_health: true,
+        ..Default::default()
+    });
+    let catalogue = AtomicU8::new(0);
+    state.apply(
+        completion(
+            MetricId::Disk,
+            Ok(Observation::DiskSensors(Box::new(Err(PlatformError::new(
+                PlatformErrorCode::Io,
+                "disk sensors catalogue unavailable",
+            ))))),
+        ),
+        &mut cache,
+        &mut slot,
+        ObservationContext {
+            catalogue: &catalogue,
+            now_ms: &|| 1000,
+            previous_status: MetricStatus::Ready,
+        },
+        |_| {},
+    );
+    let reading = cache.snapshot(1000);
+    assert_eq!(reading.disk.status, MetricStatus::Ready);
+    assert_eq!(reading.disk.value.unwrap().volume.id, "one");
+    assert_eq!(reading.disk_health.status, MetricStatus::Failed);
 }

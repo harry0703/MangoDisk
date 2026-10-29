@@ -13,6 +13,7 @@ import type { BatteryDetails } from '@/lib/models/system-resources/power';
 import { cachedMetricValue } from '@/lib/utils/system-resources/metric-reading';
 import MdResourceTrend from './md-resource-trend.vue';
 import MdResourceFacts from './md-resource-facts.vue';
+import MdMetricFreshness from './md-metric-freshness.vue';
 
 const props = withDefaults(
   defineProps<{ reading: ResourceReadings; active: boolean; systemPowerSupported?: boolean }>(),
@@ -49,6 +50,16 @@ const STATE_KEYS: Record<BatteryDetails['chargeState'], string> = {
 };
 const CAPACITY_KEYS = { fullCharge: 'power.fullCharge', design: 'power.design' };
 const batteryState = computed(() => battery.value?.chargeState ?? 'unknown');
+const batteryPending = computed(() => !battery.value && props.reading.batteryDetails.status === 'loading');
+const batteryLabel = computed(() =>
+  battery.value
+    ? t(STATE_KEYS[batteryState.value])
+    : t(
+        METRIC_STATUS_KEYS[
+          props.reading.batteryDetails.status === 'ready' ? 'stale' : props.reading.batteryDetails.status
+        ]
+      )
+);
 const batteryIcon = computed(() => {
   const value = battery.value;
   if (!value) return ICON_NAMES.battery;
@@ -62,6 +73,7 @@ const batteryIcon = computed(() => {
   return percent <= 75 ? ICON_NAMES.batteryMedium : ICON_NAMES.batteryFull;
 });
 const batterySourceIcon = computed(() => {
+  if (!battery.value) return null;
   if (batteryIcon.value === ICON_NAMES.batteryCharging) return ICON_NAMES.zap;
   if (batteryIcon.value === ICON_NAMES.plug) return ICON_NAMES.plug;
   return batteryState.value === 'unknown' ? ICON_NAMES.help : null;
@@ -198,9 +210,14 @@ const adapterFacts = computed(() => [
       class="battery-status"
       :data-level-tone="batteryLevelTone"
       :data-status-tone="batteryStatusTone"
+      :aria-busy="batteryPending"
     >
       <div class="battery-level">
-        <div class="battery-shell" :class="{ unknown: batteryLevel == null }" aria-hidden="true">
+        <div
+          class="battery-shell"
+          :class="{ unknown: batteryLevel == null && !batteryPending, loading: batteryPending }"
+          aria-hidden="true"
+        >
           <div class="battery-fill" :style="{ width: `${batteryLevel ?? 0}%` }" />
           <span v-if="batterySourceIcon" class="battery-source" :data-source="batterySourceIcon">
             <MdIcon
@@ -220,12 +237,14 @@ const adapterFacts = computed(() => [
         </MdTooltip>
       </div>
       <div class="battery-state">
-        <span class="battery-state-label"
-          ><MdIcon :name="batteryIcon" :size="12" />{{ t(STATE_KEYS[batteryState]) }}</span
-        ><small v-if="reading.batteryDetails.status === 'failed'" role="status">{{
-          t(METRIC_STATUS_KEYS.failed)
-        }}</small
-        ><small v-else-if="time">{{ time }}</small>
+        <span class="battery-state-label"><MdIcon :name="batteryIcon" :size="12" />{{ batteryLabel }}</span>
+        <MdMetricFreshness
+          v-if="battery"
+          :reading="reading.batteryDetails"
+          :now="reading.observedAtMs"
+          :active="active"
+        />
+        <small v-if="time && reading.batteryDetails.status === 'ready'">{{ time }}</small>
       </div>
     </header>
     <section v-if="systemPowerSupported && reading.systemPower.status !== 'unsupported'" class="system-power">
@@ -368,6 +387,10 @@ const adapterFacts = computed(() => [
 .battery-shell.unknown {
   border-style: dashed;
 }
+.battery-shell.loading {
+  @apply bg-muted;
+  opacity: 0.55;
+}
 .battery-level strong {
   font-size: 32px;
   line-height: 1;
@@ -385,6 +408,8 @@ const adapterFacts = computed(() => [
   flex-direction: column;
   align-items: center;
   gap: 4px;
+  /* Reserve the estimate/update line so a refresh does not move the facts. */
+  min-height: 44px;
   text-align: center;
   font-size: 11px;
   max-width: 100%;

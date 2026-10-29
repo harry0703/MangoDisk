@@ -4,6 +4,7 @@ mod color_rules;
 mod cpu_auxiliary_sampling;
 pub(crate) mod diagnostics;
 mod disk_health_sampling;
+mod disk_sensor_sampling;
 mod disk_temperature_sampling;
 pub mod floating_monitor;
 pub mod main_window;
