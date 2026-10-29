@@ -81,6 +81,7 @@ fn bounded_analysis_ranking_matches_full_sort_at_limits_and_equal_byte_ties() {
         let mut entries = (0..count)
             .rev()
             .map(|index| super::DirectoryEntryInfo {
+                size_status: Default::default(),
                 name: format!("file-{index}"),
                 path: format!("/fixture/file-{index:05}"),
                 bytes: (index * 7919 % 97) as u64,
@@ -112,6 +113,7 @@ fn bounded_analysis_ranking_matches_full_sort_at_limits_and_equal_byte_ties() {
 fn benchmark_bounded_analysis_ranking() {
     let source = (0..100_000)
         .map(|index| super::DirectoryEntryInfo {
+            size_status: Default::default(),
             name: format!("file-{index}"),
             path: format!("/fixture/file-{index:06}"),
             bytes: (index * 7919 % 104729) as u64,
@@ -333,4 +335,61 @@ fn analysis_result_bounds_large_projections_and_preserves_exact_totals() {
         serde_json::to_value(limited).unwrap()["totalEntryCount"],
         ANALYSIS_VISIBLE_ENTRY_LIMIT + 1
     );
+}
+
+#[test]
+fn unreadable_directory_status_does_not_contaminate_known_empty_siblings() {
+    let fixture = tempfile::tempdir().unwrap();
+    let root = current_platform()
+        .canonicalize_no_links(fixture.path())
+        .unwrap();
+    let empty = root.join("empty");
+    let unavailable = root.join("unavailable");
+    fs::create_dir(&empty).unwrap();
+    fs::create_dir(&unavailable).unwrap();
+    let denied = DirectoryAggregate {
+        skipped_count: 1,
+        omissions: mangodisk_platform::ScanOmissionCounts {
+            permission_denied: 1,
+            ..Default::default()
+        },
+        ..Default::default()
+    };
+    let directories = HashMap::from([
+        (empty, DirectoryAggregate::default()),
+        (unavailable.clone(), denied),
+    ]);
+    for retained_file_limit in [0, 1000] {
+        let result = analysis_result_from_snapshot(
+            &root,
+            DirectoryAggregate {
+                retained_file_limit,
+                ..denied
+            },
+            &directories,
+            &HashMap::new(),
+            &[],
+            &Default::default(),
+            1,
+        )
+        .unwrap();
+        assert_eq!(
+            result
+                .entries
+                .iter()
+                .find(|entry| entry.name == "empty")
+                .unwrap()
+                .size_status,
+            crate::AnalysisEntrySizeStatus::Complete
+        );
+        assert_eq!(
+            result
+                .entries
+                .iter()
+                .find(|entry| entry.name == "unavailable")
+                .unwrap()
+                .size_status,
+            crate::AnalysisEntrySizeStatus::Unavailable
+        );
+    }
 }

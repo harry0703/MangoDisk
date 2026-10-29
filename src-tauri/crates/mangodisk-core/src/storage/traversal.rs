@@ -30,6 +30,8 @@ use mangodisk_platform::{
     LargeFileCandidateSummary, Platform, ScanPurpose,
 };
 
+mod analysis_omissions;
+use analysis_omissions::Omission;
 mod analysis_diagnostics;
 mod index_sink;
 mod indexed_scopes;
@@ -130,6 +132,7 @@ struct AnalysisTraversal<'a> {
     sink: &'a mut IndexRecordSink,
     cancelled: &'a AtomicBool,
     scan_exclusions: Option<&'a StorageScanExclusions>,
+    skip_log_budget: Arc<std::sync::atomic::AtomicUsize>,
 }
 
 struct LargeFileStreamValidation<'a> {
@@ -353,7 +356,10 @@ impl StorageTraversal {
                 &root,
                 ScanPurpose::Analysis,
                 scan_mode.into(),
-                exclusions.configuration_fingerprint(),
+                crate::storage::analysis::coverage::configuration_fingerprint(
+                    exclusions.configuration_fingerprint(),
+                    crate::storage::analysis::coverage::process_elevation(),
+                ),
                 &|| operation.cancelled().load(Ordering::Relaxed),
             )
             .map_err(traversal_core_error)?
@@ -505,7 +511,11 @@ impl StorageTraversal {
                 refresh,
                 generation: operation.id(),
                 expected_mutation_revision: cache_mutation_revision,
-                configuration_fingerprint: exclusions.configuration_fingerprint(),
+                configuration_fingerprint:
+                    crate::storage::analysis::coverage::configuration_fingerprint(
+                        exclusions.configuration_fingerprint(),
+                        crate::storage::analysis::coverage::process_elevation(),
+                    ),
                 excluded_roots: exclusions.roots(),
             },
         )?;
@@ -942,6 +952,7 @@ fn add_analysis_child(
     read.aggregate.logical_bytes += child.logical_bytes;
     read.aggregate.file_count += child.file_count;
     read.aggregate.skipped_count += child.skipped_count;
+    read.aggregate.omissions.merge(child.omissions);
     if purpose != ScanPurpose::LargeFiles {
         if let Some(entry) = metadata_fingerprint_entry(path, metadata, child.fingerprint) {
             read.fingerprint_entries.push(entry);
@@ -999,13 +1010,26 @@ fn read_analysis_directory_with_file_queries(
     };
     // Directory work can wait behind other entries or workers. Revalidate at execution time
     // so earlier enumeration attributes never authorize following a replacement junction.
-    let live = fs::symlink_metadata(path).ok();
+    let live = fs::symlink_metadata(path);
+    if let Err(error) = &live {
+        traversal.skip_io(&mut aggregate, path, error);
+    }
+    let live = live.ok();
     if !live.as_ref().is_some_and(|metadata| {
         metadata.is_dir()
             && !is_link_like(metadata)
             && current_platform().is_same_filesystem(&traversal.root_metadata, metadata)
     }) {
-        aggregate.skipped_count = 1;
+        if aggregate.skipped_count == 0 {
+            traversal.skip(
+                &mut aggregate,
+                if live.as_ref().is_some_and(|metadata| metadata.is_dir()) {
+                    Omission::LinkOrMount
+                } else {
+                    Omission::Other
+                },
+            );
+        }
         return Ok(AnalysisDirectoryRead {
             aggregate,
             fingerprint_entries: Vec::new(),
@@ -1014,15 +1038,19 @@ fn read_analysis_directory_with_file_queries(
             analysis_files: AnalysisCandidates::new(0),
         });
     }
-    let Ok(entries) = fs::read_dir(path) else {
-        aggregate.skipped_count = 1;
-        return Ok(AnalysisDirectoryRead {
-            aggregate,
-            fingerprint_entries: Vec::new(),
-            children: Vec::new(),
-            files: Vec::new(),
-            analysis_files: AnalysisCandidates::new(0),
-        });
+    let entries = fs::read_dir(path);
+    let entries = match entries {
+        Ok(entries) => entries,
+        Err(error) => {
+            traversal.skip_io(&mut aggregate, path, &error);
+            return Ok(AnalysisDirectoryRead {
+                aggregate,
+                fingerprint_entries: Vec::new(),
+                children: Vec::new(),
+                files: Vec::new(),
+                analysis_files: AnalysisCandidates::new(0),
+            });
+        }
     };
     let mut fingerprint_entries = Vec::new();
     let mut children = Vec::new();
@@ -1034,30 +1062,39 @@ fn read_analysis_directory_with_file_queries(
         if traversal.cancelled.load(Ordering::Relaxed) {
             return Err(OPERATION_CANCELLED_ERROR.to_string());
         }
-        let Ok(entry) = entry else {
-            aggregate.skipped_count += 1;
-            continue;
+        let entry = match entry {
+            Ok(entry) => entry,
+            Err(error) => {
+                traversal.skip_io(&mut aggregate, path, &error);
+                continue;
+            }
         };
         let child_path = entry.path();
         if traversal
             .scan_exclusions
             .is_some_and(|exclusions| exclusions.matches(&child_path))
         {
+            if traversal.purpose == ScanPurpose::Analysis {
+                traversal.skip(&mut aggregate, Omission::Excluded);
+            }
             continue;
         }
         if current_platform()
             .should_skip(&child_path, traversal.scan_root, traversal.purpose)
             .is_some()
         {
-            aggregate.skipped_count += 1;
+            traversal.skip(&mut aggregate, Omission::Excluded);
             continue;
         }
-        let Ok(metadata) = scan_entry_metadata(&entry, &child_path) else {
-            aggregate.skipped_count += 1;
-            continue;
+        let metadata = match scan_entry_metadata(&entry, &child_path) {
+            Ok(metadata) => metadata,
+            Err(error) => {
+                traversal.skip_io(&mut aggregate, &child_path, &error);
+                continue;
+            }
         };
         if is_link_like(&metadata) {
-            aggregate.skipped_count += 1;
+            traversal.skip(&mut aggregate, Omission::LinkOrMount);
             continue;
         }
         if !current_platform().is_same_filesystem(&traversal.root_metadata, &metadata) {
@@ -1070,7 +1107,7 @@ fn read_analysis_directory_with_file_queries(
                 diagnostic_path(traversal.scan_root),
                 diagnostic_path(&child_path)
             );
-            aggregate.skipped_count += 1;
+            traversal.skip(&mut aggregate, Omission::LinkOrMount);
             continue;
         }
         if metadata.is_dir() {
@@ -1092,7 +1129,7 @@ fn read_analysis_directory_with_file_queries(
                 )?;
             }
         } else {
-            aggregate.skipped_count += 1;
+            traversal.skip(&mut aggregate, Omission::Other);
         }
     }
     // Small directories stay one task. Large direct-file sets can share the same bounded
@@ -1213,13 +1250,29 @@ fn read_analysis_file_batch(
         files: Vec::new(),
         analysis_files: AnalysisCandidates::new(ANALYSIS_FILES_PER_DIRECTORY),
     };
-    let live_directory = fs::symlink_metadata(directory).ok();
+    let live_directory = fs::symlink_metadata(directory);
+    if let Err(error) = &live_directory {
+        traversal.skip_io(&mut read.aggregate, directory, error);
+    }
+    let live_directory = live_directory.ok();
     if !live_directory.as_ref().is_some_and(|metadata| {
         metadata.is_dir()
             && !is_link_like(metadata)
             && current_platform().is_same_filesystem(&traversal.root_metadata, metadata)
     }) {
-        read.aggregate.skipped_count = 1;
+        if read.aggregate.skipped_count == 0 {
+            traversal.skip(
+                &mut read.aggregate,
+                if live_directory
+                    .as_ref()
+                    .is_some_and(|metadata| metadata.is_dir())
+                {
+                    Omission::LinkOrMount
+                } else {
+                    Omission::Other
+                },
+            );
+        }
         return Ok(read);
     }
     for file in files {
@@ -1228,12 +1281,22 @@ fn read_analysis_file_batch(
         }
         // File work also waits in the queue. Keep a live no-follow check here, even though it
         // costs an extra query, rather than following a file replaced by a link while queued.
-        let Ok(metadata) = fs::symlink_metadata(&file.path) else {
-            read.aggregate.skipped_count += 1;
-            continue;
+        let metadata = match fs::symlink_metadata(&file.path) {
+            Ok(metadata) => metadata,
+            Err(error) => {
+                traversal.skip_io(&mut read.aggregate, &file.path, &error);
+                continue;
+            }
         };
         if !metadata.is_file() || is_link_like(&metadata) {
-            read.aggregate.skipped_count += 1;
+            traversal.skip(
+                &mut read.aggregate,
+                if is_link_like(&metadata) {
+                    Omission::LinkOrMount
+                } else {
+                    Omission::Other
+                },
+            );
             continue;
         }
         measure_analysis_file(
@@ -1324,6 +1387,7 @@ impl<'a> FastAnalysisStreamValidation<'a> {
                 file_count,
                 direct_file_count,
                 skipped_count,
+                omissions,
             } => {
                 self.directory_count = self.directory_count.checked_add(1).ok_or_else(|| {
                     "the platform analysis directory count overflowed".to_string()
@@ -1357,6 +1421,7 @@ impl<'a> FastAnalysisStreamValidation<'a> {
                     file_count,
                     direct_file_count,
                     skipped_count,
+                    omissions: omissions.with_unclassified(skipped_count),
                     scanned_at_ms: self.scanned_at_ms,
                     // Native fast paths validate snapshots with a platform change token rather
                     // than the generic traversal's directory metadata fingerprint. Without a
@@ -1720,6 +1785,7 @@ fn traverse_once(
     let root_metadata = fs::symlink_metadata(root)
         .map_err(|error| format!("failed to read scan-root metadata: {error}"))?;
     let mut traversal = AnalysisTraversal {
+        skip_log_budget: Default::default(),
         scan_root: root,
         root_metadata,
         purpose,

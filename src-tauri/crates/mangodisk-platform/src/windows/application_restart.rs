@@ -1,5 +1,11 @@
 //! A fixed-current-executable UAC handoff, completed before single-instance initialization.
-use std::{ffi::OsString, io, os::windows::ffi::OsStrExt, path::PathBuf, ptr};
+use std::{
+    ffi::OsString,
+    io,
+    os::windows::ffi::OsStrExt,
+    path::{Path, PathBuf},
+    ptr,
+};
 
 use windows_sys::Win32::{
     Foundation::{CloseHandle, GetLastError, HANDLE, WAIT_OBJECT_0, WAIT_TIMEOUT},
@@ -69,6 +75,33 @@ fn current_executable() -> PlatformResult<PathBuf> {
 /// Returns false only when the user cancels UAC. The caller must exit only after true.
 /// Neither a caller-controlled executable nor inherited command-line arguments are elevated.
 pub fn restart_current_application_elevated() -> PlatformResult<bool> {
+    restart_with_analysis(None)
+}
+
+pub fn restart_current_application_elevated_for_analysis(root: &Path) -> PlatformResult<bool> {
+    restart_with_analysis(Some(root))
+}
+
+fn analysis_arguments(root: &Path) -> PlatformResult<String> {
+    let value = root
+        .to_str()
+        .ok_or_else(|| PlatformError::invalid_path("invalid analysis root"))?;
+    if !root.is_absolute() || value.chars().any(char::is_control) || value.contains('"') {
+        return Err(PlatformError::invalid_path("invalid analysis root"));
+    }
+    // Windows argv parsing consumes backslashes before a closing quote. Preserve a volume root.
+    let trailing = value
+        .chars()
+        .rev()
+        .take_while(|value| *value == '\\')
+        .count();
+    Ok(format!(
+        " --analyze-directory \"{value}{}\"",
+        "\\".repeat(trailing)
+    ))
+}
+
+fn restart_with_analysis(root: Option<&Path>) -> PlatformResult<bool> {
     if super::windows_process_is_elevated()? {
         return Err(PlatformError::operation_failed(
             "the application is already elevated",
@@ -96,7 +129,11 @@ pub fn restart_current_application_elevated() -> PlatformResult<bool> {
         "create_proceed",
     )?;
     let executable = wide(current_executable()?);
-    let arguments = wide(format!("{RESTART_FLAG} {pid} {nonce}"));
+    let analysis = root
+        .map(analysis_arguments)
+        .transpose()?
+        .unwrap_or_default();
+    let arguments = wide(format!("{RESTART_FLAG} {pid} {nonce}{analysis}"));
     let verb = wide("runas");
     let com = unsafe {
         CoInitializeEx(
@@ -170,8 +207,14 @@ fn commit_ready_child(
 
 fn parse_handoff(arguments: &[OsString]) -> PlatformResult<(u32, String)> {
     let invalid = || PlatformError::operation_failed("invalid administrator restart arguments");
-    if arguments.len() != 4 || arguments[1] != RESTART_FLAG {
+    if !matches!(arguments.len(), 4 | 6) || arguments[1] != RESTART_FLAG {
         return Err(invalid());
+    }
+    if arguments.len() == 6 {
+        if arguments[4] != "--analyze-directory" {
+            return Err(invalid());
+        }
+        analysis_arguments(Path::new(&arguments[5]))?;
     }
     let pid = arguments[2]
         .to_str()
@@ -255,6 +298,32 @@ fn complete_handoff(arguments: &[OsString]) -> PlatformResult<()> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn analysis_restart_preserves_quoted_roots_and_rejects_mixed_arguments() {
+        assert_eq!(
+            analysis_arguments(Path::new(r"C:\")).unwrap(),
+            " --analyze-directory \"C:\\\\\""
+        );
+        assert_eq!(
+            analysis_arguments(Path::new(r"C:\Folder & \u{4e2d}")).unwrap(),
+            " --analyze-directory \"C:\\Folder & \\u{4e2d}\""
+        );
+        assert!(analysis_arguments(Path::new("relative")).is_err());
+        assert!(analysis_arguments(Path::new("C:\\bad\nfolder")).is_err());
+        let args = vec![
+            "app".into(),
+            RESTART_FLAG.into(),
+            "123".into(),
+            "0123456789abcdef0123456789abcdef".into(),
+            "--analyze-directory".into(),
+            r"C:\".into(),
+        ];
+        assert_eq!(parse_handoff(&args).unwrap().0, 123);
+        let mut mixed = args;
+        mixed.push("--background".into());
+        assert!(parse_handoff(&mixed).is_err());
+    }
 
     fn test_event(signaled: bool) -> Handle {
         Handle::new(

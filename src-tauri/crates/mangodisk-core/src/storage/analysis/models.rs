@@ -71,6 +71,7 @@ pub struct AnalysisDirectoryNode {
 
 #[derive(Debug, Clone)]
 pub struct DirectoryEntryInfo {
+    pub size_status: AnalysisEntrySizeStatus,
     pub name: String,
     pub path: String,
     /// Bytes in the owning result's scan metric.
@@ -83,11 +84,21 @@ pub struct DirectoryEntryInfo {
     pub content_fingerprint: Option<String>,
 }
 
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub enum AnalysisEntrySizeStatus {
+    #[default]
+    Complete,
+    Partial,
+    Unavailable,
+}
+
 impl Serialize for DirectoryEntryInfo {
     fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
         use serde::ser::SerializeStruct;
         let protection = super::deletion::deletion_protection(std::path::Path::new(&self.path));
-        let mut entry = serializer.serialize_struct("DirectoryEntryInfo", 8)?;
+        let mut entry = serializer.serialize_struct("DirectoryEntryInfo", 9)?;
+        entry.serialize_field("sizeStatus", &self.size_status)?;
         entry.serialize_field("name", &self.name)?;
         entry.serialize_field("path", &self.path)?;
         entry.serialize_field("bytes", &self.bytes)?;
@@ -107,6 +118,7 @@ mod entry_protocol_tests {
     #[test]
     fn entry_transport_retains_accounting_and_exposes_native_delete_protection() {
         let entry = DirectoryEntryInfo {
+            size_status: Default::default(),
             name: "hiberfil.sys".into(),
             path: r"C:\hiberfil.sys".into(),
             bytes: 10,
@@ -119,7 +131,7 @@ mod entry_protocol_tests {
         let value = serde_json::to_value(&entry).unwrap();
         assert_eq!(value["bytes"], 10);
         assert!(value.get("logicalBytes").is_none());
-        assert_eq!(value.as_object().unwrap().len(), 8);
+        assert_eq!(value.as_object().unwrap().len(), 9);
         if cfg!(windows) {
             assert_eq!(value["deletionProtection"], "systemManagedFile");
         } else {
@@ -131,6 +143,8 @@ mod entry_protocol_tests {
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct AnalysisResult {
+    pub policy_version: u32,
+    pub coverage: super::AnalysisCoverage,
     pub scan_mode: AnalysisScanMode,
     pub scan_id: u64,
     pub root: String,

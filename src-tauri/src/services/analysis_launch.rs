@@ -24,10 +24,16 @@ pub struct State(Mutex<Option<Request>>);
 
 #[cfg(any(windows, test))]
 pub fn parse(arguments: &[String]) -> Option<String> {
-    if arguments.len() != 3 || arguments[1] != ARGUMENT {
-        return None;
-    }
-    let path = &arguments[2];
+    // The elevated form is consumed only after startup validates the parent/child handshake.
+    let path = match arguments {
+        [_, argument, path] if argument == ARGUMENT => path,
+        [_, restart, _, _, argument, path]
+            if restart == "--mangodisk-admin-restart-v1" && argument == ARGUMENT =>
+        {
+            path
+        }
+        _ => return None,
+    };
     if path.is_empty() || path.chars().any(char::is_control) || !Path::new(path).is_absolute() {
         return None;
     }
@@ -98,6 +104,26 @@ mod tests {
         assert_eq!(request.schema_version, 1);
         assert_eq!(request.path, "latest");
         assert!(state.take().is_none());
+    }
+
+    #[test]
+    fn authenticated_administrator_restart_retains_one_analysis_request() {
+        let path = std::env::temp_dir()
+            .join("analysis & unicode-\u{4e2d}")
+            .to_string_lossy()
+            .into_owned();
+        let args = vec![
+            "app".into(),
+            "--mangodisk-admin-restart-v1".into(),
+            "123".into(),
+            "nonce".into(),
+            ARGUMENT.into(),
+            path.clone(),
+        ];
+        assert_eq!(parse(&args), Some(path));
+        let mut mixed = args.clone();
+        mixed.push("--background".into());
+        assert!(parse(&mixed).is_none());
     }
     #[test]
     fn analysis_launch_rejects_relative_and_mixed_helper_arguments() {

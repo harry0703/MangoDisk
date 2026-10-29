@@ -57,10 +57,36 @@ pub(super) fn publish_result_with_exclusions(
         exclusions,
     });
     sessions.truncate(ANALYSIS_RESULT_SESSION_LIMIT);
+    log::info!(
+        "analysis_coverage_published scan_id={} root={} policy_version={} elevated={:?} permission_denied={} read_errors={} excluded={} link_or_mount={} other={} skipped_count={}",
+        result.scan_id,
+        mangodisk_platform::diagnostics::text(&result.root),
+        result.policy_version,
+        result.coverage.elevated,
+        result.coverage.omissions.permission_denied,
+        result.coverage.omissions.read_errors,
+        result.coverage.omissions.excluded,
+        result.coverage.omissions.link_or_mount,
+        result.coverage.omissions.other,
+        result.skipped_count,
+    );
     Ok(result)
 }
 
 /// Resolves a UI selection back to the complete snapshot owned by Core.
+pub(super) fn rescan_root(scan_id: u64) -> Result<String, String> {
+    let sessions = lock_sessions()?;
+    let root = sessions
+        .iter()
+        .find(|session| session.result.scan_id == scan_id)
+        .ok_or_else(|| "the analysis session is no longer available".to_string())?
+        .result
+        .root
+        .clone();
+    // Readability may have changed; the fresh scan validates links and filesystem identity again.
+    Ok(root)
+}
+
 pub(super) fn resolve_entry_candidate(
     scan_id: u64,
     selected_path: &str,
@@ -292,6 +318,8 @@ mod tests {
 
     fn result(path: &str) -> AnalysisResult {
         AnalysisResult {
+            policy_version: super::super::ANALYSIS_SCAN_POLICY_VERSION,
+            coverage: super::super::AnalysisCoverage::new(Default::default(), 0),
             scan_mode: Default::default(),
             scan_id: 0,
             root: "/fixture".to_string(),
@@ -305,6 +333,7 @@ mod tests {
             shared_allocations: Default::default(),
             shared_entries: Default::default(),
             entries: vec![DirectoryEntryInfo {
+                size_status: Default::default(),
                 name: "sample.bin".to_string(),
                 path: path.to_string(),
                 bytes: 4,
@@ -384,6 +413,14 @@ mod tests {
         assert!(resolve_open_path(published.scan_id + 10000, "/context-fixture/A/B").is_err());
         invalidate_changed_path(Path::new("/context-fixture/A")).unwrap();
         assert!(resolve_open_path(published.scan_id, "/context-fixture/A/B").is_err());
+    }
+
+    #[test]
+    fn administrator_rescan_resolves_only_authoritative_scan_ids() {
+        let _operation_lock = crate::shared::operation::test_operation_lock();
+        let published = publish_result_session(result("/rescan-fixture/child")).unwrap();
+        assert_eq!(rescan_root(published.scan_id).unwrap(), published.root);
+        assert!(rescan_root(u64::MAX).is_err());
     }
 
     #[cfg(windows)]

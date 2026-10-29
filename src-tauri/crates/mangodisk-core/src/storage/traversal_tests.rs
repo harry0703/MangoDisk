@@ -1271,6 +1271,7 @@ fn fast_analysis_contract_validates_record_counts_before_publish() {
     validation
         .consume(
             FastAnalysisRecord::Directory {
+                omissions: Default::default(),
                 retained_file_limit: 0,
                 path: root.join("child"),
                 logical_bytes: 5,
@@ -1285,6 +1286,7 @@ fn fast_analysis_contract_validates_record_counts_before_publish() {
     validation
         .consume(
             FastAnalysisRecord::Directory {
+                omissions: Default::default(),
                 retained_file_limit: 0,
                 path: root.to_path_buf(),
                 logical_bytes: 5,
@@ -2005,4 +2007,128 @@ fn hierarchy_projects_medium_files_below_large_file_floor_in_native_and_fallback
     assert_eq!(fallback_node.total_entry_count, 96);
     assert_eq!(fallback.total_bytes, result.total_bytes);
     cache::clear_all().unwrap();
+}
+
+#[test]
+#[cfg(unix)]
+fn native_analysis_reports_user_exclusions_like_portable_traversal() {
+    let _operation_lock = crate::shared::operation::test_operation_lock();
+    let fixture = tempfile::tempdir().unwrap();
+    let root = current_platform()
+        .canonicalize_no_links(fixture.path())
+        .unwrap();
+    fs::create_dir(root.join("excluded")).unwrap();
+    fs::create_dir(root.join("branch")).unwrap();
+    fs::write(root.join("excluded/hidden"), [1; 32]).unwrap();
+    fs::write(root.join("branch/ignored.bin"), [1; 32]).unwrap();
+    fs::write(root.join("visible"), [1; 64]).unwrap();
+    let exclusions = StorageScanExclusions::resolve_options(
+        &root,
+        &crate::filesystem::ScanExclusionOptions {
+            paths: vec![root.join("excluded").to_string_lossy().into_owned()],
+            names: vec![mangodisk_platform::ScanNameExclusion {
+                name: "ignored.bin".into(),
+                kind: mangodisk_platform::ExcludedNameKind::File,
+            }],
+        },
+    )
+    .unwrap();
+    let progress = Arc::new(ProgressTracker::new(0, |_| {}, 0));
+    let cancelled = AtomicBool::new(false);
+    let (portable, _) = traverse_memory_only(
+        &root,
+        TraversalKind::Analysis(AnalysisScanMode::Standard),
+        1,
+        None,
+        &progress,
+        &cancelled,
+        Some(&exclusions),
+    )
+    .unwrap();
+    let mut sink = IndexRecordSink::memory(None);
+    let (native, _) =
+        stream_fast_analysis_once(&root, 1, &progress, &cancelled, &exclusions, &mut sink)
+            .unwrap()
+            .expect("Unix native analysis should enumerate the real fixture");
+    assert_eq!(native.file_count, 1);
+    assert_eq!(native.file_count, portable.file_count);
+    assert_eq!(portable.omissions.excluded, 2);
+    assert_eq!(native.skipped_count, portable.skipped_count);
+    assert_eq!(native.omissions, portable.omissions);
+}
+
+#[test]
+#[cfg(unix)]
+fn analysis_coverage_distinguishes_unreadable_excluded_and_linked_scopes() {
+    use std::os::unix::fs::{symlink, PermissionsExt};
+    let _operation_lock = crate::shared::operation::test_operation_lock();
+    let fixture = tempfile::tempdir().unwrap();
+    let root = current_platform()
+        .canonicalize_no_links(fixture.path())
+        .unwrap();
+    let denied = root.join("denied");
+    fs::create_dir(&denied).unwrap();
+    fs::write(denied.join("hidden"), [1; 32]).unwrap();
+    struct Restore(PathBuf);
+    impl Drop for Restore {
+        fn drop(&mut self) {
+            let _ = fs::set_permissions(&self.0, fs::Permissions::from_mode(0o700));
+        }
+    }
+    let _restore = Restore(denied.clone());
+    fs::set_permissions(&denied, fs::Permissions::from_mode(0o000)).unwrap();
+    assert_eq!(
+        fs::read_dir(&denied).unwrap_err().kind(),
+        std::io::ErrorKind::PermissionDenied
+    );
+    let excluded = root.join("excluded");
+    fs::create_dir(&excluded).unwrap();
+    fs::write(excluded.join("not-in-scope"), [1; 128]).unwrap();
+    symlink(&root, root.join("loop")).unwrap();
+    fs::write(root.join("visible"), [1; 64]).unwrap();
+    let exclusions =
+        StorageScanExclusions::resolve(&root, &[excluded.to_string_lossy().into_owned()]).unwrap();
+    let progress = Arc::new(ProgressTracker::new(0, |_| {}, 0));
+    let (aggregate, snapshot) = traverse_memory_only(
+        &root,
+        TraversalKind::Analysis(AnalysisScanMode::Standard),
+        1,
+        None,
+        &progress,
+        &AtomicBool::new(false),
+        Some(&exclusions),
+    )
+    .unwrap();
+    assert_eq!(aggregate.file_count, 1);
+    assert_eq!(aggregate.skipped_count, 3);
+    assert_eq!(aggregate.omissions.permission_denied, 1);
+    assert_eq!(aggregate.omissions.excluded, 1);
+    assert_eq!(aggregate.omissions.link_or_mount, 1);
+    assert_eq!(aggregate.omissions.read_errors, 0);
+    let result = crate::storage::analysis::index_projection::analysis_result_from_snapshot(
+        &root,
+        aggregate,
+        &snapshot.directories,
+        &snapshot.files,
+        exclusions.roots(),
+        exclusions.names(),
+        1,
+    )
+    .unwrap();
+    let unavailable = result
+        .entries
+        .iter()
+        .find(|entry| Path::new(&entry.path) == denied)
+        .unwrap();
+    assert_eq!(
+        unavailable.size_status,
+        crate::AnalysisEntrySizeStatus::Unavailable
+    );
+    assert_eq!(result.coverage.omissions.permission_denied, 1);
+    assert_eq!(result.coverage.omissions.total(), result.skipped_count);
+    assert!(result
+        .entries
+        .iter()
+        .find(|entry| entry.name == "visible")
+        .is_some_and(|entry| entry.size_status == crate::AnalysisEntrySizeStatus::Complete));
 }

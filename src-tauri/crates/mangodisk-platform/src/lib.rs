@@ -94,9 +94,9 @@ pub use windows::{
     estimate_windows_previous_installations_with_privileges, execute_windows_disk_cleanup,
     execute_windows_previous_installations_with_privileges, fresh_windows_disk_cleanup_estimates,
     prepare_elevated_restart_startup, probe_windows_file_delete_access,
-    restart_current_application_elevated, run_application_record_helper_mode,
-    windows_disk_cleanup_estimates, windows_process_is_elevated,
-    windows_system_temporary_directory,
+    restart_current_application_elevated, restart_current_application_elevated_for_analysis,
+    run_application_record_helper_mode, windows_disk_cleanup_estimates,
+    windows_process_is_elevated, windows_system_temporary_directory,
 };
 
 #[cfg(test)]

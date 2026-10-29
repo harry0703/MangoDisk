@@ -122,6 +122,7 @@ pub(crate) fn build_directory_hierarchy(
                     });
                 }
                 HierarchyEntry::File(file) => file_nodes.push(DirectoryEntryInfo {
+                    size_status: Default::default(),
                     name,
                     path: display_path(path),
                     bytes: file.bytes,

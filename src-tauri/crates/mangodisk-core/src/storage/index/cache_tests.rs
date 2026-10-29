@@ -502,3 +502,49 @@ fn marking_a_root_recent_updates_its_eviction_recency() {
     drop(cache);
     clear_all().expect("cache should clear");
 }
+
+#[test]
+fn directory_removal_reconciles_omissions_in_ancestors() {
+    let _operation_lock = crate::shared::operation::test_operation_lock();
+    clear_all().unwrap();
+    let root = PathBuf::from("/coverage-removal");
+    let child = root.join("child");
+    let aggregate = DirectoryAggregate {
+        bytes: 4096,
+        logical_bytes: 4096,
+        file_count: 1,
+        skipped_count: 2,
+        omissions: mangodisk_platform::ScanOmissionCounts {
+            permission_denied: 2,
+            ..Default::default()
+        },
+        ..Default::default()
+    };
+    store_memory_only(
+        &root,
+        aggregate,
+        HashMap::from([(root.clone(), aggregate), (child.clone(), aggregate)]),
+        HashMap::new(),
+        SnapshotPublication::new(
+            ScanPurpose::Analysis,
+            true,
+            None,
+            10,
+            mutation_revision().unwrap(),
+        ),
+    )
+    .unwrap();
+    remove_entry(
+        &child,
+        FileSpaceUsage {
+            logical_bytes: 4096,
+            allocated_bytes: 4096,
+        },
+        1,
+        true,
+    );
+    let snapshot = cache().lock().unwrap().directories[&root];
+    assert_eq!(snapshot.skipped_count, 0);
+    assert_eq!(snapshot.omissions.total(), 0);
+    clear_all().unwrap();
+}

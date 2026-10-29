@@ -149,6 +149,7 @@ pub(super) fn measure(
     let (tasks, task_receiver) = mpsc::channel::<Task>();
     let task_receiver = Mutex::new(task_receiver);
     let (results, result_receiver) = mpsc::sync_channel(workers * 2);
+    let skip_log_budget = &traversal.skip_log_budget;
     thread::scope(|scope| {
         let mut handles = Vec::with_capacity(workers);
         let mut outcome = Ok(None);
@@ -181,6 +182,7 @@ pub(super) fn measure(
                     let result = catch_unwind(AssertUnwindSafe(|| {
                         let mut partial = IndexRecordSink::memory(None);
                         let mut local = AnalysisTraversal {
+            skip_log_budget: Arc::clone(skip_log_budget),
                             scan_root,
                             root_metadata: root_metadata.clone(),
                             purpose,
@@ -331,6 +333,10 @@ pub(super) fn measure(
                     directory.aggregate.direct_file_count += read.aggregate.direct_file_count;
                     directory.aggregate.skipped_count += read.aggregate.skipped_count;
                     directory
+                        .aggregate
+                        .omissions
+                        .merge(read.aggregate.omissions);
+                    directory
                         .fingerprint_entries
                         .extend(read.fingerprint_entries);
                     for file in read.analysis_files.into_files() {
@@ -415,6 +421,7 @@ mod tests {
         let cancelled = AtomicBool::new(false);
         let mut sink = IndexRecordSink::memory(None);
         let mut traversal = AnalysisTraversal {
+            skip_log_budget: Default::default(),
             scan_root: root,
             root_metadata: fs::symlink_metadata(root).unwrap(),
             purpose: ScanPurpose::Analysis,
@@ -553,6 +560,7 @@ mod tests {
         let cancelled = AtomicBool::new(false);
         let mut sink = IndexRecordSink::memory(None);
         let mut traversal = AnalysisTraversal {
+            skip_log_budget: Default::default(),
             scan_root: root.path(),
             root_metadata: fs::symlink_metadata(root.path()).unwrap(),
             purpose: ScanPurpose::Analysis,
@@ -588,6 +596,7 @@ mod tests {
         ));
         let mut sink = IndexRecordSink::memory(None);
         let mut traversal = AnalysisTraversal {
+            skip_log_budget: Default::default(),
             scan_root: root.path(),
             root_metadata: fs::symlink_metadata(root.path()).unwrap(),
             purpose: ScanPurpose::Analysis,
@@ -633,6 +642,7 @@ mod tests {
         let cancelled = AtomicBool::new(false);
         let mut sink = IndexRecordSink::memory(None);
         let mut traversal = AnalysisTraversal {
+            skip_log_budget: Default::default(),
             scan_root: root.path(),
             root_metadata: fs::symlink_metadata(root.path()).unwrap(),
             purpose: ScanPurpose::Analysis,
@@ -675,6 +685,7 @@ mod tests {
         let cancelled = AtomicBool::new(false);
         let mut sink = IndexRecordSink::memory(None);
         let mut traversal = AnalysisTraversal {
+            skip_log_budget: Default::default(),
             scan_root: root.path(),
             root_metadata,
             purpose: ScanPurpose::Analysis,

@@ -502,6 +502,7 @@ fn cached_navigation_entries(
     let mut entries: Vec<_> = direct_files
         .into_iter()
         .map(|(path, file)| DirectoryEntryInfo {
+            size_status: Default::default(),
             name: path
                 .file_name()
                 .unwrap_or_default()
@@ -521,6 +522,7 @@ fn cached_navigation_entries(
             continue;
         }
         entries.push(DirectoryEntryInfo {
+            size_status: super::coverage::entry_size_status(*directory),
             name: path
                 .file_name()
                 .unwrap_or_default()
@@ -595,6 +597,11 @@ fn build_analysis_result_from_entries(
     rank_visible_analysis_entries(&mut entries);
 
     AnalysisResult {
+        policy_version: super::ANALYSIS_SCAN_POLICY_VERSION,
+        coverage: super::AnalysisCoverage::new(
+            root_aggregate.omissions,
+            root_aggregate.skipped_count,
+        ),
         scan_mode: root_aggregate.byte_metric.into(),
         scan_id: 0,
         root: display_path(root),
@@ -621,7 +628,14 @@ fn build_analysis_entries(
         .into_iter()
         .map(|(entry, path, metadata)| {
             let aggregate = if metadata.is_dir() {
-                directory_aggregate(&path).unwrap_or_default()
+                directory_aggregate(&path).unwrap_or(DirectoryAggregate {
+                    skipped_count: 1,
+                    omissions: mangodisk_platform::ScanOmissionCounts {
+                        other: 1,
+                        ..Default::default()
+                    },
+                    ..Default::default()
+                })
             } else {
                 let usage = indexed_file(&path)
                     // Reopened read-only lists must reflect changed ordinary files.
@@ -640,6 +654,7 @@ fn build_analysis_entries(
                 }
             };
             DirectoryEntryInfo {
+                size_status: super::coverage::entry_size_status(aggregate),
                 name: entry.file_name().to_string_lossy().into_owned(),
                 path: display_path(&path),
                 bytes: aggregate.bytes,
@@ -715,6 +730,7 @@ fn shared_allocations_for_identities(
             group.owner = display_path(path);
         }
         group.files.push(DirectoryEntryInfo {
+            size_status: Default::default(),
             name: path
                 .file_name()
                 .map(|name| name.to_string_lossy().into_owned())

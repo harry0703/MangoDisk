@@ -109,9 +109,9 @@ pub use startup::{
     StartupTrustState, STARTUP_CATALOG_SCHEMA_VERSION, STARTUP_CHANGE_PLAN_SCHEMA_VERSION,
 };
 pub use storage::analysis::{
-    AnalysisDeleteBatchResult, AnalysisDeleteFailure, AnalysisDeleteResult, AnalysisRemainderPage,
-    AnalysisRemainderRequest, AnalysisResult, AnalysisScanMode, AnalysisService,
-    DirectoryEntryInfo,
+    AnalysisCoverage, AnalysisDeleteBatchResult, AnalysisDeleteFailure, AnalysisDeleteResult,
+    AnalysisEntrySizeStatus, AnalysisRemainderPage, AnalysisRemainderRequest, AnalysisResult,
+    AnalysisScanMode, AnalysisService, DirectoryEntryInfo, ANALYSIS_SCAN_POLICY_VERSION,
 };
 pub use storage::duplicates::{
     DuplicateEntryDeletePolicy, DuplicateFileEntry, DuplicateFileService, DuplicateFilesResult,

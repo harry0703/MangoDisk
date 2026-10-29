@@ -30,6 +30,7 @@ struct DirectoryTotals {
     file_count: u64,
     direct_file_count: u64,
     skipped_count: u64,
+    excluded_count: u64,
 }
 
 impl DirectoryTotals {
@@ -78,6 +79,22 @@ impl DirectoryTotals {
             .skipped_count
             .checked_add(child.skipped_count)
             .ok_or_else(|| platform_error("directory_skipped_count_overflow"))?;
+        self.excluded_count = self
+            .excluded_count
+            .checked_add(child.excluded_count)
+            .ok_or_else(|| platform_error("directory_excluded_count_overflow"))?;
+        Ok(())
+    }
+
+    fn exclude_entry(&mut self, purpose: ScanPurpose) -> Result<(), FastAnalysisScanError> {
+        // Discovery pruning is not a failure. Analysis additionally reports intentional omissions.
+        if purpose == ScanPurpose::Analysis {
+            self.skip_entry()?;
+            self.excluded_count = self
+                .excluded_count
+                .checked_add(1)
+                .ok_or_else(|| platform_error("directory_excluded_count_overflow"))?;
+        }
         Ok(())
     }
 
@@ -492,6 +509,7 @@ fn read_directory(
             .name_exclusions
             .matches_entry(&path, metadata.is_dir())
         {
+            totals.exclude_entry(policy.purpose)?;
             continue;
         }
         if metadata.is_dir() {
@@ -500,6 +518,7 @@ fn read_directory(
                 .iter()
                 .any(|excluded| path.starts_with(excluded))
             {
+                totals.exclude_entry(policy.purpose)?;
                 continue;
             }
             if (policy.should_prune_directory)(&path) || should_skip(&path, policy.purpose, true) {
@@ -642,6 +661,11 @@ fn emit_directory(
         file_count: totals.file_count,
         direct_file_count: totals.direct_file_count,
         skipped_count: totals.skipped_count,
+        omissions: crate::ScanOmissionCounts {
+            excluded: totals.excluded_count,
+            ..Default::default()
+        }
+        .with_unclassified(totals.skipped_count),
     })
     .map_err(FastAnalysisScanError::Consumer)?;
     diagnostics.consumer_elapsed += started.elapsed();

@@ -26,6 +26,10 @@ use super::session::{
 pub struct AnalysisService;
 
 impl AnalysisService {
+    /// Rescans may use only a root from an authoritative, retained analysis session.
+    pub fn rescan_root(scan_id: u64) -> CoreResult<String> {
+        super::session::rescan_root(scan_id).map_err(crate::shared::CoreError::invalid_input)
+    }
     pub fn list_remainder(request: AnalysisRemainderRequest) -> CoreResult<AnalysisRemainderPage> {
         if request.schema_version != AnalysisRemainderRequest::SCHEMA_VERSION {
             return Err(crate::shared::CoreError::invalid_input(

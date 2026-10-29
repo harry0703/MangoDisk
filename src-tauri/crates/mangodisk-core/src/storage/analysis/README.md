@@ -38,6 +38,29 @@ local drive device paths, Win32 trailing-dot/space aliases, and file streams.
 Verbatim trailing dots and spaces remain literal names rather than aliases.
 Use the corresponding system setting instead of deleting these files directly.
 
+## Scan coverage and privilege
+
+Analysis includes readable Windows system directories such as WinSxS, System32 and
+Installer. Read access never authorizes deletion: protected-path classification,
+link handling and deletion preflight remain independent of analysis inclusion.
+Scan policy version 2 is part of native cache fingerprints and frontend cache
+acceptance. Native cache identity also includes the process elevation state, so
+an unelevated snapshot cannot conceal newly readable directories after restart.
+These indexes are session-scoped and incompatible snapshots are rebuilt.
+
+Coverage schema version 1 reports omitted entries by permission denial, read error,
+configured or platform exclusion, link/mount boundary, and unclassified reason.
+Counts describe encountered omissions, not all descendants of an unreadable
+folder. Native readers that cannot identify a reason report it as unclassified.
+Directories with no measurable data and read failures expose an unavailable size;
+known empty directories retain a complete zero-byte measurement.
+
+On Windows, a permission-denied result from a confirmed non-elevated process can
+request an administrator restart. The adapter resolves the scan ID through Core,
+then uses the authenticated parent/child restart handshake. The child consumes one
+validated directory argument and forces a new scan. Failed or canceled elevation
+leaves the existing result available; ordinary restarts do not replay the request.
+
 ## Current-directory batch deletion
 
 `AnalysisService::delete_entries_permanently` accepts at most 500 unique paths

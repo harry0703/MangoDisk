@@ -28,6 +28,54 @@ pub enum SkipReason {
     PermissionDenied,
 }
 
+/// Counts omitted filesystem entries, not the unknown descendants below them.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ScanOmissionCounts {
+    pub permission_denied: u64,
+    pub read_errors: u64,
+    pub excluded: u64,
+    pub link_or_mount: u64,
+    pub other: u64,
+}
+
+impl ScanOmissionCounts {
+    pub fn total(self) -> u64 {
+        self.permission_denied
+            .saturating_add(self.read_errors)
+            .saturating_add(self.excluded)
+            .saturating_add(self.link_or_mount)
+            .saturating_add(self.other)
+    }
+
+    pub fn merge(&mut self, other: Self) {
+        self.permission_denied = self
+            .permission_denied
+            .saturating_add(other.permission_denied);
+        self.read_errors = self.read_errors.saturating_add(other.read_errors);
+        self.excluded = self.excluded.saturating_add(other.excluded);
+        self.link_or_mount = self.link_or_mount.saturating_add(other.link_or_mount);
+        self.other = self.other.saturating_add(other.other);
+    }
+
+    pub fn replace_subtree(&mut self, old: Self, new: Self) {
+        self.permission_denied = self.permission_denied.saturating_sub(old.permission_denied);
+        self.read_errors = self.read_errors.saturating_sub(old.read_errors);
+        self.excluded = self.excluded.saturating_sub(old.excluded);
+        self.link_or_mount = self.link_or_mount.saturating_sub(old.link_or_mount);
+        self.other = self.other.saturating_sub(old.other);
+        self.merge(new);
+    }
+
+    /// Older native producers may only know a combined count. Preserve that uncertainty.
+    pub fn with_unclassified(mut self, skipped: u64) -> Self {
+        self.other = self
+            .other
+            .saturating_add(skipped.saturating_sub(self.total()));
+        self
+    }
+}
+
 /// A filesystem change boundary captured before a full scan. Volume identity
 /// identifies the mounted object, while history identity identifies the event
 /// log generation. They remain separate because rebuilding a Windows USN
@@ -342,6 +390,7 @@ pub enum FastAnalysisRecord {
         /// Direct files with positive allocation, before Core reconciles hard links.
         direct_file_count: u64,
         skipped_count: u64,
+        omissions: ScanOmissionCounts,
     },
     LargeFileCandidate(PathBuf),
     /// Bounded supplemental files for analysis charts; no extra metadata read is required.

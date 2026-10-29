@@ -272,7 +272,7 @@ fn parse_layout_page(
                         }
                         let totals = collection.direct_totals.entry(name.parent_id).or_default();
                         if is_reparse || is_remote_placeholder {
-                            totals.checked_add_skipped()?;
+                            totals.checked_add_skipped(crate::SkipReason::LinkOrMount)?;
                         } else {
                             totals.checked_add_file(space_usage)?;
                             if mode == LayoutCollectionMode::AnalysisWithFiles
@@ -700,6 +700,7 @@ mod tests {
         assert_eq!(
             collection.direct_totals[&42],
             DirectoryTotals {
+                omissions: Default::default(),
                 logical_bytes: 123,
                 allocated_bytes: 123,
                 file_count: 1,
@@ -761,6 +762,10 @@ mod tests {
         assert_eq!(
             collection.direct_totals[&42],
             DirectoryTotals {
+                omissions: crate::ScanOmissionCounts {
+                    link_or_mount: 1,
+                    ..Default::default()
+                },
                 logical_bytes: 0,
                 allocated_bytes: 0,
                 file_count: 0,
@@ -821,6 +826,7 @@ mod tests {
         assert_eq!(
             collection.direct_totals[&42],
             DirectoryTotals {
+                omissions: Default::default(),
                 logical_bytes: 123,
                 allocated_bytes: 0,
                 file_count: 1,

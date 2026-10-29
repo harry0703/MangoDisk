@@ -37,6 +37,7 @@ struct DirectoryTotals {
     file_count: u64,
     direct_file_count: u64,
     skipped_count: u64,
+    excluded_count: u64,
 }
 
 impl DirectoryTotals {
@@ -90,6 +91,22 @@ impl DirectoryTotals {
             .skipped_count
             .checked_add(child.skipped_count)
             .ok_or_else(|| platform_error("directory_skipped_count_overflow"))?;
+        self.excluded_count = self
+            .excluded_count
+            .checked_add(child.excluded_count)
+            .ok_or_else(|| platform_error("directory_excluded_count_overflow"))?;
+        Ok(())
+    }
+
+    fn exclude_entry(&mut self, purpose: ScanPurpose) -> Result<(), FastAnalysisScanError> {
+        // Discovery pruning is not a failure. Analysis additionally reports intentional omissions.
+        if purpose == ScanPurpose::Analysis {
+            self.skip_entry()?;
+            self.excluded_count = self
+                .excluded_count
+                .checked_add(1)
+                .ok_or_else(|| platform_error("directory_excluded_count_overflow"))?;
+        }
         Ok(())
     }
 
@@ -805,7 +822,7 @@ fn process_entry(
         .name_exclusions
         .matches_entry(&path, entry.object_type == VNODE_TYPE_DIRECTORY)
     {
-        return Ok(());
+        return accumulator.totals.exclude_entry(policy.purpose);
     }
     match entry.object_type {
         VNODE_TYPE_DIRECTORY => {
@@ -821,9 +838,7 @@ fn process_entry(
                 .iter()
                 .any(|root| path.starts_with(root))
             {
-                // This subtree belongs to another selected root or an explicit exclusion;
-                // it is not an inaccessible entry and must not inflate failure statistics.
-                return Ok(());
+                return accumulator.totals.exclude_entry(policy.purpose);
             }
             if (policy.should_prune_directory)(&path) {
                 return accumulator.totals.skip_entry();
@@ -956,6 +971,11 @@ fn emit_directory(
         file_count: totals.file_count,
         direct_file_count: totals.direct_file_count,
         skipped_count: totals.skipped_count,
+        omissions: crate::ScanOmissionCounts {
+            excluded: totals.excluded_count,
+            ..Default::default()
+        }
+        .with_unclassified(totals.skipped_count),
     })
     .map_err(FastAnalysisScanError::Consumer)?;
     diagnostics.consumer_elapsed += started.elapsed();

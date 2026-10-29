@@ -74,7 +74,8 @@ pub use scan::{
     FilesystemChangeImpactUnavailable, FilesystemChangeMonitor, FilesystemChangeStatus,
     FilesystemChangeToken, LargeFileCandidateScanError, LargeFileCandidateSummary,
     PhysicalFileIdentity, ProjectMarkerCandidateProgress, ProjectMarkerCandidateQuery,
-    ProjectMarkerCandidateScanError, ProjectMarkerCandidateSummary, ScanPurpose, SkipReason,
+    ProjectMarkerCandidateScanError, ProjectMarkerCandidateSummary, ScanOmissionCounts,
+    ScanPurpose, SkipReason,
 };
 pub use startup::{
     PlatformStartupArtifact, PlatformStartupChangeRequest, PlatformStartupChangeResult,

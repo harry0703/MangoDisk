@@ -2,6 +2,7 @@ mod allocated_content;
 mod application_restart;
 pub use application_restart::{
     prepare_elevated_restart_startup, restart_current_application_elevated,
+    restart_current_application_elevated_for_analysis,
 };
 mod change_tracking;
 mod directories;
@@ -506,7 +507,9 @@ impl Platform for WindowsPlatform {
         scan_root: &Path,
         purpose: ScanPurpose,
     ) -> Option<SkipReason> {
-        if purpose == ScanPurpose::Cleanup {
+        // Read-only analysis may measure protected scopes. Mutation authorization remains
+        // independent through is_protected_deletion_path and the deletion preflight.
+        if matches!(purpose, ScanPurpose::Cleanup | ScanPurpose::Analysis) {
             return None;
         }
         let mut components = path.components().filter_map(|component| match component {
@@ -829,6 +832,36 @@ pub(crate) use registration_removal::APPLICATION_RECORD_HELPER_FLAG;
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn analysis_measures_system_scopes_without_authorizing_deletion() {
+        let platform = WindowsPlatform;
+        for path in [
+            r"C:\Windows\WinSxS",
+            r"C:\Windows\System32\drivers",
+            r"C:\Windows\Installer",
+            r"C:\$Recycle.Bin",
+            r"C:\Recovery",
+            r"C:\System Volume Information",
+        ] {
+            let path = Path::new(path);
+            assert_eq!(
+                platform.should_skip(path, Path::new(r"C:\"), ScanPurpose::Analysis),
+                None
+            );
+            assert!(
+                platform.is_protected_deletion_path(path),
+                "{} must remain protected",
+                path.display()
+            );
+            for purpose in [ScanPurpose::LargeFiles, ScanPurpose::DuplicateFiles] {
+                assert_eq!(
+                    platform.should_skip(path, Path::new(r"C:\"), purpose),
+                    Some(SkipReason::SystemCritical)
+                );
+            }
+        }
+    }
 
     #[test]
     fn remote_storage_attributes_fail_closed_without_reparse_points() {

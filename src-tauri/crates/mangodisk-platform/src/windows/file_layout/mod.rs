@@ -53,6 +53,7 @@ struct DirectoryTotals {
     file_count: u64,
     direct_file_count: u64,
     skipped_count: u64,
+    omissions: crate::ScanOmissionCounts,
 }
 
 impl DirectoryTotals {
@@ -65,6 +66,7 @@ impl DirectoryTotals {
     }
 
     fn checked_add_assign(&mut self, other: Self) -> Result<(), LayoutScanError> {
+        self.omissions.merge(other.omissions);
         self.logical_bytes = self
             .logical_bytes
             .checked_add(other.logical_bytes)
@@ -108,7 +110,12 @@ impl DirectoryTotals {
         Ok(())
     }
 
-    fn checked_add_skipped(&mut self) -> Result<(), LayoutScanError> {
+    fn checked_add_skipped(&mut self, reason: crate::SkipReason) -> Result<(), LayoutScanError> {
+        match reason {
+            crate::SkipReason::LinkOrMount => self.omissions.link_or_mount += 1,
+            crate::SkipReason::PermissionDenied => self.omissions.permission_denied += 1,
+            crate::SkipReason::SystemCritical => self.omissions.excluded += 1,
+        }
         self.skipped_count = self.skipped_count.checked_add(1).ok_or_else(|| {
             LayoutScanError::Platform("directory_skipped_count_overflow".to_string())
         })?;
@@ -425,6 +432,7 @@ fn collect_analysis(
             file_count: totals.file_count,
             direct_file_count: totals.direct_file_count,
             skipped_count: totals.skipped_count,
+            omissions: totals.omissions.with_unclassified(totals.skipped_count),
         })
         .map_err(LayoutScanError::Consumer)?;
     }
@@ -580,7 +588,12 @@ fn prepare_analysis(
             totals
                 .get_mut(&node.parent_id)
                 .expect("a visible parent must have an aggregate slot")
-                .checked_add_skipped()?;
+                .checked_add_skipped(match node.boundary {
+                    DirectoryBoundary::Reparse | DirectoryBoundary::RemotePlaceholder => {
+                        crate::SkipReason::LinkOrMount
+                    }
+                    _ => crate::SkipReason::SystemCritical,
+                })?;
         }
     }
 
@@ -932,6 +945,7 @@ mod tests {
                 (
                     root_id,
                     DirectoryTotals {
+                        omissions: Default::default(),
                         logical_bytes: 100,
                         allocated_bytes: 100,
                         file_count: 1,
@@ -942,6 +956,7 @@ mod tests {
                 (
                     10,
                     DirectoryTotals {
+                        omissions: Default::default(),
                         logical_bytes: 10,
                         allocated_bytes: 10,
                         file_count: 1,
@@ -952,6 +967,10 @@ mod tests {
                 (
                     11,
                     DirectoryTotals {
+                        omissions: crate::ScanOmissionCounts {
+                            link_or_mount: 1,
+                            ..Default::default()
+                        },
                         logical_bytes: 5,
                         allocated_bytes: 5,
                         file_count: 1,
@@ -962,6 +981,7 @@ mod tests {
                 (
                     20,
                     DirectoryTotals {
+                        omissions: Default::default(),
                         logical_bytes: 1_000,
                         allocated_bytes: 1_000,
                         file_count: 1,
@@ -972,6 +992,7 @@ mod tests {
                 (
                     21,
                     DirectoryTotals {
+                        omissions: Default::default(),
                         logical_bytes: 2_000,
                         allocated_bytes: 2_000,
                         file_count: 1,
@@ -982,6 +1003,7 @@ mod tests {
                 (
                     31,
                     DirectoryTotals {
+                        omissions: Default::default(),
                         logical_bytes: 4_000,
                         allocated_bytes: 4_000,
                         file_count: 1,
@@ -992,6 +1014,7 @@ mod tests {
                 (
                     41,
                     DirectoryTotals {
+                        omissions: Default::default(),
                         logical_bytes: 8_000,
                         allocated_bytes: 8_000,
                         file_count: 1,
@@ -1017,17 +1040,25 @@ mod tests {
         assert_eq!(
             prepared.root_totals,
             DirectoryTotals {
-                logical_bytes: 1_115,
-                allocated_bytes: 1_115,
-                file_count: 4,
+                omissions: crate::ScanOmissionCounts {
+                    link_or_mount: 2,
+                    ..Default::default()
+                },
+                logical_bytes: 3_115,
+                allocated_bytes: 3_115,
+                file_count: 5,
                 direct_file_count: 1,
-                // Reparse file under sample-user, System32, and junction.
-                skipped_count: 3,
+                // Reparse file under sample-user and the junction; System32 is readable.
+                skipped_count: 2,
             }
         );
         assert_eq!(
             prepared.totals[&10],
             DirectoryTotals {
+                omissions: crate::ScanOmissionCounts {
+                    link_or_mount: 1,
+                    ..Default::default()
+                },
                 logical_bytes: 15,
                 allocated_bytes: 15,
                 file_count: 2,
@@ -1039,14 +1070,15 @@ mod tests {
         assert_eq!(
             prepared.totals[&20],
             DirectoryTotals {
-                logical_bytes: 1_000,
-                allocated_bytes: 1_000,
-                file_count: 1,
+                omissions: Default::default(),
+                logical_bytes: 3_000,
+                allocated_bytes: 3_000,
+                file_count: 2,
                 direct_file_count: 1,
-                skipped_count: 1,
+                skipped_count: 0,
             }
         );
-        assert!(!prepared.totals.contains_key(&21));
+        assert_eq!(prepared.totals[&21].allocated_bytes, 2_000);
         assert!(!prepared.totals.contains_key(&30));
         assert!(!prepared.totals.contains_key(&40));
     }
@@ -1057,6 +1089,7 @@ mod tests {
         collection.direct_totals.insert(
             999,
             DirectoryTotals {
+                omissions: Default::default(),
                 logical_bytes: 1,
                 allocated_bytes: 1,
                 file_count: 1,
@@ -1085,6 +1118,7 @@ mod tests {
     #[test]
     fn duplicate_progress_uses_logical_bytes_without_changing_disk_usage() {
         let totals = DirectoryTotals {
+            omissions: Default::default(),
             logical_bytes: 64 * 1024 * 1024,
             allocated_bytes: 4_096,
             file_count: 1,

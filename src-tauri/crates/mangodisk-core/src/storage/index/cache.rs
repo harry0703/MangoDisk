@@ -31,6 +31,7 @@ pub(crate) struct DirectoryAggregate {
     /// Direct files with positive charged allocation, after hard-link reconciliation.
     pub(crate) direct_file_count: u64,
     pub(crate) skipped_count: u64,
+    pub(crate) omissions: mangodisk_platform::ScanOmissionCounts,
     pub(crate) scanned_at_ms: u64,
     pub(crate) fingerprint: Option<[u8; 32]>,
 }
@@ -358,6 +359,9 @@ pub(crate) fn store_memory_only(
                             .skipped_count
                             .saturating_sub(previous.skipped_count)
                             .saturating_add(root_aggregate.skipped_count);
+                        aggregate
+                            .omissions
+                            .replace_subtree(previous.omissions, root_aggregate.omissions);
                         aggregate.scanned_at_ms = root_aggregate.scanned_at_ms;
                     }
                 }
@@ -519,6 +523,9 @@ pub(crate) fn remove_entry_with_allocation_credits(
         for root in shared_roots {
             shared_monitors.extend(evict_cached_root(&mut cache, &root));
         }
+        let removed_aggregate = is_directory
+            .then(|| cache.directories.get(target).copied())
+            .flatten();
         let removed_usage = if is_directory {
             cache
                 .directories
@@ -573,6 +580,14 @@ pub(crate) fn remove_entry_with_allocation_credits(
                     && aggregate.byte_metric.displayed_bytes(removed_usage) > 0
                 {
                     aggregate.direct_file_count = aggregate.direct_file_count.saturating_sub(1);
+                }
+                if let Some(removed) = removed_aggregate {
+                    aggregate.skipped_count = aggregate
+                        .skipped_count
+                        .saturating_sub(removed.skipped_count);
+                    aggregate
+                        .omissions
+                        .replace_subtree(removed.omissions, Default::default());
                 }
                 aggregate.fingerprint = None;
             }
