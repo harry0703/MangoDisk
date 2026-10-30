@@ -192,14 +192,28 @@ describe.each([
     expect(wrapper.text()).toContain('—');
     wrapper.unmount();
   });
-  it('omits unsupported system meters and adapters without native facts', async () => {
+  it('shows external power independently of unavailable adapter measurements', async () => {
     const value = reading();
     value.batteryDetails.value!.adapter = null;
     const wrapper = render(value);
     await wrapper.setProps({ systemPowerSupported: false });
     expect(wrapper.find('.system-power').exists()).toBe(false);
-    expect(wrapper.text()).not.toContain(messages.power.adapter);
+    expect(wrapper.get('.adapter-connection').text()).toBe(messages.power.adapterConnected);
+    expect(wrapper.get('.adapter-unavailable').text()).toBe(messages.power.adapterUnavailable);
+    expect(wrapper.find('.adapter-facts .resource-facts').exists()).toBe(false);
     expect(wrapper.text()).toContain(messages.power.details);
+    wrapper.unmount();
+  });
+  it('distinguishes disconnected and unknown external power without showing old adapter measurements', async () => {
+    const value = reading();
+    value.batteryDetails.value!.externalConnected = false;
+    const wrapper = render(value);
+    expect(wrapper.get('.adapter-connection').text()).toBe(messages.power.adapterDisconnected);
+    expect(wrapper.find('.adapter-facts .resource-facts').exists()).toBe(false);
+    expect(wrapper.find('.adapter-unavailable').exists()).toBe(false);
+    value.batteryDetails.value!.externalConnected = null;
+    await wrapper.setProps({ reading: structuredClone(value) });
+    expect(wrapper.find('.adapter-facts').exists()).toBe(false);
     wrapper.unmount();
   });
   it('keeps system power on desktops without a battery section', () => {
@@ -470,7 +484,8 @@ describe('power cache lifecycle', () => {
     updated.batteryDetails.value!.externalConnected = false;
     updated.batteryDetails.value!.adapter = null;
     await wrapper.setProps({ reading: structuredClone(updated) });
-    expect(wrapper.find('.adapter-facts').exists()).toBe(false);
+    expect(wrapper.get('.adapter-connection').text()).toBe(en.power.adapterDisconnected);
+    expect(wrapper.find('.adapter-facts .resource-facts').exists()).toBe(false);
     wrapper.unmount();
   });
   it('retains failure context beside the last facts and clears them on physical removal', async () => {

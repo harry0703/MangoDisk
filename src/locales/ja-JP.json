@@ -4162,6 +4162,9 @@
     "lastMinute": "直近1分間",
     "trendLabel": "直近1分間のシステム電力（ワット）",
     "adapter": "電源アダプタ",
+    "adapterConnected": "接続済み",
+    "adapterDisconnected": "未接続",
+    "adapterUnavailable": "アダプターの電力と電圧の情報は現在取得できません",
     "details": "電池の詳細",
     "noMeasurements": "このデバイスでは電源の測定値を取得できません",
     "states": {

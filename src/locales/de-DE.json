@@ -4162,6 +4162,9 @@
     "lastMinute": "Letzte Minute",
     "trendLabel": "Systemleistung der letzten Minute in Watt",
     "adapter": "Netzteil",
+    "adapterConnected": "Verbunden",
+    "adapterDisconnected": "Nicht verbunden",
+    "adapterUnavailable": "Leistungs- und Spannungsdaten des Netzteils sind derzeit nicht verfügbar",
     "details": "Akkudetails",
     "noMeasurements": "Für dieses Gerät sind keine Energiemesswerte verfügbar",
     "states": {

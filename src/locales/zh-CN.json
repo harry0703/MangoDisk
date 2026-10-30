@@ -4162,6 +4162,9 @@
     "lastMinute": "最近一分钟",
     "trendLabel": "最近一分钟的整机功率，单位瓦",
     "adapter": "电源适配器",
+    "adapterConnected": "已连接",
+    "adapterDisconnected": "未连接",
+    "adapterUnavailable": "暂时无法获取适配器的功率和电压信息",
     "details": "电池详情",
     "noMeasurements": "此设备没有可用的电源测量数据",
     "states": {

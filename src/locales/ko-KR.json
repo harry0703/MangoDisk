@@ -4162,6 +4162,9 @@
     "lastMinute": "최근 1분",
     "trendLabel": "최근 1분간 시스템 전력(와트)",
     "adapter": "전원 어댑터",
+    "adapterConnected": "연결됨",
+    "adapterDisconnected": "연결되지 않음",
+    "adapterUnavailable": "현재 어댑터의 전력 및 전압 정보를 가져올 수 없습니다",
     "details": "배터리 상세 정보",
     "noMeasurements": "이 기기에서는 전원 측정값을 사용할 수 없습니다",
     "states": {

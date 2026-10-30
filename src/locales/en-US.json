@@ -4162,6 +4162,9 @@
     "lastMinute": "Last minute",
     "trendLabel": "System power over the last minute, in watts",
     "adapter": "Power adapter",
+    "adapterConnected": "Connected",
+    "adapterDisconnected": "Not connected",
+    "adapterUnavailable": "Adapter power and voltage details are currently unavailable",
     "details": "Battery details",
     "noMeasurements": "No power measurements are available on this device",
     "states": {

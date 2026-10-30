@@ -4162,6 +4162,9 @@
     "lastMinute": "Dernière minute",
     "trendLabel": "Puissance du système sur la dernière minute, en watts",
     "adapter": "Adaptateur secteur",
+    "adapterConnected": "Connecté",
+    "adapterDisconnected": "Non connecté",
+    "adapterUnavailable": "Les données de puissance et de tension de l’adaptateur sont actuellement indisponibles",
     "details": "Détails de la batterie",
     "noMeasurements": "Aucune mesure d’alimentation n’est disponible sur cet appareil",
     "states": {

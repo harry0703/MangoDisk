@@ -4162,6 +4162,9 @@
     "lastMinute": "Son dakika",
     "trendLabel": "Son dakikadaki sistem gücü, watt cinsinden",
     "adapter": "Güç adaptörü",
+    "adapterConnected": "Bağlı",
+    "adapterDisconnected": "Bağlı değil",
+    "adapterUnavailable": "Adaptörün güç ve voltaj bilgileri şu anda kullanılamıyor",
     "details": "Pil ayrıntıları",
     "noMeasurements": "Bu cihazda kullanılabilir güç ölçümü yok",
     "states": {

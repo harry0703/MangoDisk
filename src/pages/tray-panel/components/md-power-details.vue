@@ -295,9 +295,20 @@ const adapterFacts = computed(() => [
           </div>
         </div>
       </section>
-      <section v-if="battery?.externalConnected && battery.adapter" class="power-section adapter-facts">
-        <h2>{{ t('power.adapter') }}</h2>
-        <MdResourceFacts :facts="adapterFacts" :active="active" layout="rows" />
+      <section v-if="battery && battery.externalConnected !== null" class="power-section adapter-facts">
+        <div class="adapter-heading">
+          <h2>{{ t('power.adapter') }}</h2>
+          <span class="adapter-connection" :data-connected="battery.externalConnected">{{
+            t(battery.externalConnected ? 'power.adapterConnected' : 'power.adapterDisconnected')
+          }}</span>
+        </div>
+        <MdResourceFacts
+          v-if="battery.externalConnected && battery.adapter"
+          :facts="adapterFacts"
+          :active="active"
+          layout="rows"
+        />
+        <p v-else-if="battery.externalConnected" class="adapter-unavailable">{{ t('power.adapterUnavailable') }}</p>
       </section>
     </template>
     <p v-else-if="!system" class="power-unavailable">{{ t('power.noMeasurements') }}</p>
@@ -557,6 +568,20 @@ const adapterFacts = computed(() => [
 .adapter-facts {
   @apply border-t border-border;
   padding-top: 8px;
+}
+.adapter-heading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+.adapter-connection,
+.adapter-unavailable {
+  @apply text-muted-foreground;
+  font-size: 11px;
+}
+.adapter-connection[data-connected='true'] {
+  @apply text-success-foreground;
 }
 .power-unavailable {
   display: block;

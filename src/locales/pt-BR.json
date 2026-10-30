@@ -4162,6 +4162,9 @@
     "lastMinute": "Último minuto",
     "trendLabel": "Potência do sistema no último minuto, em watts",
     "adapter": "Adaptador de energia",
+    "adapterConnected": "Conectado",
+    "adapterDisconnected": "Não conectado",
+    "adapterUnavailable": "Os dados de potência e tensão do adaptador estão indisponíveis no momento",
     "details": "Detalhes da bateria",
     "noMeasurements": "Não há medições de energia disponíveis neste dispositivo",
     "states": {

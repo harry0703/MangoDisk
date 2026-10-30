@@ -4162,6 +4162,9 @@
     "lastMinute": "最近一分鐘",
     "trendLabel": "最近一分鐘的整機功率，單位瓦",
     "adapter": "電源變壓器",
+    "adapterConnected": "已連接",
+    "adapterDisconnected": "未連接",
+    "adapterUnavailable": "暫時無法取得變壓器的功率與電壓資訊",
     "details": "電池詳細資訊",
     "noMeasurements": "此裝置沒有可用的電源測量資料",
     "states": {
