@@ -16,6 +16,9 @@ details.
 
 - Use Node.js 24 and the pnpm version declared in `package.json`.
 - Use the Rust toolchain declared by the repository.
+- Windows Explorer packaging honors `WindowsSdkDir` from the developer shell.
+  Set it to the installed SDK root when the SDK uses a custom location; otherwise
+  the build uses the standard Windows Kits directory.
 - Keep user-facing text synchronized across every supported locale resource.
 - Use generic deterministic paths in tests.
 - Never commit credentials, personal paths, private file names, raw scan

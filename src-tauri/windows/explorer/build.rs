@@ -5,6 +5,7 @@ pub fn build() {
     for name in [
         "MANGODISK_EXPLORER_PUBLISHER",
         "MANGODISK_EXPLORER_SIGN_COMMAND",
+        "WindowsSdkDir",
     ] {
         println!("cargo:rerun-if-env-changed={name}");
     }
@@ -135,8 +136,14 @@ fn xml(value: &str) -> String {
 }
 
 fn sdk_tool(name: &str) -> PathBuf {
-    let root = PathBuf::from(env::var_os("ProgramFiles(x86)").expect("Windows SDK location"))
-        .join("Windows Kits/10/bin");
+    // Developer shells may select an SDK installed outside Program Files.
+    // Honor that selection instead of assuming the default installation drive.
+    let root = env::var_os("WindowsSdkDir")
+        .map(|directory| PathBuf::from(directory).join("bin"))
+        .unwrap_or_else(|| {
+            PathBuf::from(env::var_os("ProgramFiles(x86)").expect("Windows SDK location"))
+                .join("Windows Kits/10/bin")
+        });
     let mut versions: Vec<_> = fs::read_dir(&root)
         .expect("installed Windows SDK")
         .flatten()
