@@ -942,7 +942,7 @@ describe('memory presentation', () => {
     });
     expect(wrapper.get('.resource-share').attributes('style')).toContain('width: 0%');
   });
-  it('keeps expanded details stationary and marks missing rows unavailable', async () => {
+  it('keeps live expanded details stationary and removes absent memory rows after a fresh sample', async () => {
     const first = snapshot.memory.value!.processes!.applications[0]!;
     const second = { ...first, id: 'second', name: 'Second', iconPath: null, canQuit: false };
     const summary = { applications: [first, second], readableProcessCount: 4, omittedProcessCount: 0 };
@@ -957,7 +957,27 @@ describe('memory presentation', () => {
     expect(wrapper.get('.application-details').text()).toContain('monitoring.locationUnavailable');
     expect(wrapper.find('.reveal-button').exists()).toBe(false);
     await wrapper.setProps({ summary: { ...summary, applications: [first] } });
-    expect(wrapper.get('.application-details').text()).toContain('monitoring.applicationUnavailable');
+    expect(wrapper.find('.application-details').exists()).toBe(false);
+    expect(wrapper.findAll('.application-row')).toHaveLength(1);
+    expect(wrapper.text()).not.toContain('Second');
+    const newcomer = { ...first, id: 'newcomer', name: 'Newcomer', usedBytes: 500 };
+    await wrapper.setProps({ summary: { ...summary, applications: [first, newcomer] } });
+    expect(wrapper.text()).toContain('Newcomer');
+  });
+
+  it('does not remove expanded memory rows when a sample fails or the memory value is unreadable', async () => {
+    const summary = snapshot.memory.value!.processes!;
+    const { wrapper } = render(ApplicationList, { summary });
+    await wrapper.get('.application-row').trigger('click');
+    await wrapper.setProps({ status: 'failed', summary: { ...summary, applications: [] } });
+    expect(wrapper.find('.application-details').exists()).toBe(true);
+    await wrapper.setProps({
+      status: 'ready',
+      summary: { ...summary, applications: [{ ...summary.applications[0]!, usedBytes: null }] },
+    });
+    expect(wrapper.find('.application-details').exists()).toBe(true);
+    await wrapper.setProps({ summary: { ...summary, applications: [] } });
+    expect(wrapper.find('.application-row').exists()).toBe(false);
   });
 
   it('reveals the selected image through the shared adapter and keeps errors local and retryable', async () => {
@@ -1017,8 +1037,95 @@ describe('memory presentation', () => {
     expect(wrapper.find('.application-details > [role="status"]').exists()).toBe(false);
     expect(wrapper.findAll('li')).toHaveLength(1);
     await wrapper.setProps({ summary: { applications: [], readableProcessCount: 0, omittedProcessCount: 0 } });
-    expect(wrapper.find('li').exists()).toBe(true);
-    expect(wrapper.get('.quit-application-button').attributes('disabled')).toBeDefined();
+    expect(wrapper.find('li').exists()).toBe(false);
+    expect(wrapper.text()).not.toContain('Request sent');
+  });
+
+  it('retains a pending quit through an early empty sample and removes the row when the request settles', async () => {
+    let finish!: (status: 'requested') => void;
+    vi.mocked(ResidentService.quitApplication).mockReturnValueOnce(new Promise(resolve => (finish = resolve)));
+    const { wrapper } = render(ApplicationList, { summary: snapshot.memory.value!.processes }, false, enUS);
+    await wrapper.get('.application-row').trigger('click');
+    await wrapper.get('.quit-application-button').trigger('click');
+    await wrapper.setProps({ summary: { applications: [], readableProcessCount: 0, omittedProcessCount: 0 } });
+    expect(wrapper.get('.quit-application-button').attributes('aria-busy')).toBe('true');
+    finish('requested');
+    await flushPromises();
+    expect(wrapper.find('.application-row').exists()).toBe(false);
+  });
+
+  it.each(['quit', 'force'] as const)(
+    'clears the %s retention marker when the panel hides during IPC',
+    async action => {
+      let finish!: () => void;
+      if (action === 'quit') {
+        vi.mocked(ResidentService.quitApplication).mockReturnValueOnce(
+          new Promise(resolve => (finish = () => resolve('requested')))
+        );
+      } else {
+        vi.mocked(ResidentService.forceQuitApplication).mockReturnValueOnce(
+          new Promise(resolve => {
+            finish = () =>
+              resolve({
+                schemaVersion: 1,
+                operationId: 'operation',
+                status: 'completed',
+                matchedProcessCount: 1,
+                requestedProcessCount: 1,
+                remainingProcesses: [],
+              });
+          })
+        );
+      }
+      const summary = snapshot.memory.value!.processes!;
+      const { wrapper } = render(ApplicationList, { summary });
+      await wrapper.get('.application-row').trigger('click');
+      if (action === 'quit') await wrapper.get('.quit-application-button').trigger('click');
+      else {
+        await wrapper.get('.quit-options-button').trigger('keydown', { key: 'ArrowDown' });
+        await flushPromises();
+        wrapper.getComponent(DropdownMenuItem).vm.$emit('select', new Event('select'));
+        await flushPromises();
+        wrapper.getComponent(MdConfirmDialog).vm.$emit('confirm');
+        await flushPromises();
+      }
+      await wrapper.setProps({ active: false, summary: { ...summary, applications: [] } });
+      expect(wrapper.findComponent(ApplicationRow).exists()).toBe(false);
+      finish();
+      await flushPromises();
+      await wrapper.setProps({ active: true, summary });
+      await flushPromises();
+      await wrapper.get('.application-row').trigger('click');
+      await wrapper.setProps({ summary: { ...summary, applications: [] } });
+      expect(wrapper.find('.application-row').exists()).toBe(false);
+    }
+  );
+
+  it('keeps a force confirmation busy until Core settles even when a sample no longer contains its target', async () => {
+    let finish!: (result: Awaited<ReturnType<typeof ResidentService.forceQuitApplication>>) => void;
+    vi.mocked(ResidentService.forceQuitApplication).mockReturnValueOnce(new Promise(resolve => (finish = resolve)));
+    const summary = snapshot.memory.value!.processes!;
+    const { wrapper } = render(ApplicationList, { summary }, false, enUS);
+    await wrapper.get('.application-row').trigger('click');
+    await wrapper.get('.quit-options-button').trigger('keydown', { key: 'ArrowDown' });
+    await flushPromises();
+    wrapper.getComponent(DropdownMenuItem).vm.$emit('select', new Event('select'));
+    await flushPromises();
+    wrapper.getComponent(MdConfirmDialog).vm.$emit('confirm');
+    await flushPromises();
+    await wrapper.setProps({ summary: { ...summary, applications: [] } });
+    expect(wrapper.getComponent(MdConfirmDialog).props('busy')).toBe(true);
+    finish({
+      schemaVersion: 1,
+      operationId: 'operation',
+      status: 'completed',
+      matchedProcessCount: 1,
+      requestedProcessCount: 1,
+      remainingProcesses: [],
+    });
+    await flushPromises();
+    expect(wrapper.find('.application-row').exists()).toBe(false);
+    expect(document.querySelector('[role="dialog"]')).toBeNull();
   });
 
   it('keeps rejected quit requests retryable and hides the action for ineligible rows', async () => {

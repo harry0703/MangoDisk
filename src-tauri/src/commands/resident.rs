@@ -177,7 +177,7 @@ pub async fn monitoring_quit_application(
         mangodisk_core::request_running_application_quit(&application_id)
     })
     .await;
-    state.wake();
+    state.refresh_application_processes();
     result
 }
 

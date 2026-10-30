@@ -8,7 +8,7 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
 } from 'reka-ui';
-import { computed, ref, watch } from 'vue';
+import { computed, onBeforeUnmount, ref, watch } from 'vue';
 import { useMemoryReleaseStore } from '@/stores/memory-release-store';
 import { OperatingSystemService } from '@/lib/services/settings/operating-system-service';
 import { useI18n } from 'vue-i18n';
@@ -66,7 +66,7 @@ const locationMessage = computed(() => {
       : 'monitoring.locationUnavailable';
 });
 const memoryActions = computed(() => props.metric === 'memory' && windows);
-const emit = defineEmits<{ toggle: [] }>();
+const emit = defineEmits<{ toggle: []; 'operation-pending': [pending: boolean] }>();
 const { t } = useI18n({ useScope: 'global' });
 const memorySettings = useMemoryReleaseStore();
 const windows = OperatingSystemService.isWindows();
@@ -87,6 +87,12 @@ const forceLabels = {
   failed: 'monitoring.forceQuitFailed',
 } as const;
 const actionBusy = computed(() => quitting.value || forcing.value);
+watch(actionBusy, pending => emit('operation-pending', pending), { flush: 'sync' });
+onBeforeUnmount(() => {
+  // Hidden panels and virtualization can dispose the row before IPC settles.
+  // Release its list retention marker while component events are still active.
+  if (actionBusy.value) emit('operation-pending', false);
+});
 const forceMessage = computed(() => (forceStatus.value ? t(forceLabels[forceStatus.value]) : ''));
 function requestForce() {
   if (!props.available || !props.active || !props.application.canForceQuit || actionBusy.value) return;

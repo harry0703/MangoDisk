@@ -34,6 +34,7 @@ void store.loadSort();
 const sort = computed(() => store.sortPreferences[props.metric]);
 const expandedId = ref<string | null>(null);
 const focusedId = ref<string | null>(null);
+const pendingApplications = new Set<string>();
 const viewport = ref<HTMLElement | null>(null);
 const rows = shallowRef<ResourceListRow[]>([]);
 const hasHistory = computed(() => props.summary !== null);
@@ -43,15 +44,26 @@ const largestValue = computed(() =>
 );
 
 function update(forceSort = false) {
+  const applications = props.summary?.applications ?? [];
+  const present = new Set(applications.map(application => application.id));
+  const discardMissing = props.metric === 'memory' && props.status === 'ready' && props.summary !== null;
+  const retain = (id: string) => !discardMissing || present.has(id) || pendingApplications.has(id);
+  // Ranking stability must not keep an exited memory application indefinitely.
+  // A failed sample is not evidence of exit, and accepted operations must settle first.
+  if (expandedId.value && !retain(expandedId.value)) expandedId.value = null;
+  if (focusedId.value && !retain(focusedId.value)) focusedId.value = null;
   const locked = expandedId.value !== null;
-  const next = updateResourceRows(rows.value, props.summary?.applications ?? [], locked);
+  const next = updateResourceRows(rows.value, applications, locked).filter(row => retain(row.application.id));
   rows.value = locked && !forceSort ? next : sortResourceRows(next, sort.value, locale.value);
 }
-watch(
-  () => props.summary,
-  () => update(),
-  { immediate: true }
-);
+function operationPending(id: string, pending: boolean) {
+  if (pending) pendingApplications.add(id);
+  else {
+    pendingApplications.delete(id);
+    update();
+  }
+}
+watch([() => props.summary, () => props.status], () => update(), { immediate: true });
 watch([sort, locale], () => update());
 watch(
   () => props.active,
@@ -207,6 +219,7 @@ function measure(element: Element | ComponentPublicInstance | null) {
           @focusin="focusedId = row.application.id"
           @focusout="focusedId = null"
           @toggle="toggle(row.application.id)"
+          @operation-pending="pending => operationPending(row.application.id, pending)"
         />
       </ol>
     </div>

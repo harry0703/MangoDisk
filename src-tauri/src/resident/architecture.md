@@ -1786,6 +1786,12 @@ does not guarantee a drop in total system memory or prevent a later supervisor
 restart. Both platforms check for a bounded quiet interval and terminate newly observed
 matching instances within the shared deadline. A later supervisor restart remains
 possible.
+Both quit commands bring forward the existing serialized memory/CPU workers.
+Expanded memory rows retain their ranking while present, but a ready sample removes
+absent applications and unlocks their details. Failed samples and unreadable memory
+values do not prove exit. Pending operations retain their row until they settle.
+Unmounting a row releases that retention marker, including when the panel hides
+before the IPC request returns; native termination continues independently.
 Resource schema 39 and nested memory
 schema 5 add the shared `canForceQuit` capability and reject incompatible snapshots.
 Diagnostics include an operation ID, resolved image, request counts, remaining
