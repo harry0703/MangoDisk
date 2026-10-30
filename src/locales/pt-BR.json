@@ -4132,7 +4132,15 @@
       "criticalHint": "Pressão de memória: alta\nPode haver lentidão; feche aplicativos desnecessários",
       "unavailableHint": "Pressão de memória: indisponível\nLeitura indisponível; a porcentagem indica o uso",
       "staleHint": "Pressão de memória: desatualizada\nAguardando atualização; a porcentagem indica o uso"
-    }
+    },
+    "forceQuitAction": "Forçar encerramento",
+    "forceQuitCompleted": "Aplicativo encerrado",
+    "forceQuitStillRunning": "Alguns processos ainda estão em execução",
+    "forceQuitBlocked": "Não é possível forçar o encerramento deste aplicativo",
+    "forceQuitFailed": "Não foi possível encerrar o aplicativo",
+    "quitOptions": "Opções de encerramento",
+    "forceQuitTitle": "Forçar o encerramento de {name}?",
+    "forceQuitDescription": "O aplicativo será fechado imediatamente. Alterações não salvas podem ser perdidas"
   },
   "power": {
     "title": "Energia",

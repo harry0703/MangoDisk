@@ -4132,7 +4132,15 @@
       "criticalHint": "Memory pressure: high\nResponses may slow down; close unnecessary apps",
       "unavailableHint": "Memory pressure: unavailable\nTemporarily unreadable; the percentage shows usage",
       "staleHint": "Memory pressure: out of date\nWaiting for an update; the percentage shows usage"
-    }
+    },
+    "forceQuitAction": "Force quit",
+    "forceQuitCompleted": "Application ended",
+    "forceQuitStillRunning": "Some processes are still running",
+    "forceQuitBlocked": "This application cannot be force quit",
+    "forceQuitFailed": "Could not end the application",
+    "quitOptions": "Quit options",
+    "forceQuitTitle": "Force quit {name}?",
+    "forceQuitDescription": "The application will close immediately. Unsaved changes may be lost"
   },
   "power": {
     "title": "Power",

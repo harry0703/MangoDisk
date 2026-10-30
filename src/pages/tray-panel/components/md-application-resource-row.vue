@@ -1,5 +1,13 @@
 <script setup lang="ts">
 import MdTooltip from '@/components/custom/md-tooltip.vue';
+import MdConfirmDialog from '@/components/custom/md-confirm-dialog.vue';
+import {
+  DropdownMenuRoot,
+  DropdownMenuTrigger,
+  DropdownMenuPortal,
+  DropdownMenuContent,
+  DropdownMenuItem,
+} from 'reka-ui';
 import { computed, ref, watch } from 'vue';
 import { useMemoryReleaseStore } from '@/stores/memory-release-store';
 import { OperatingSystemService } from '@/lib/services/settings/operating-system-service';
@@ -8,7 +16,7 @@ import MdNativeFileIcon from '@/components/custom/md-native-file-icon.vue';
 import MdApplicationIcon from '@/components/custom/md-application-icon.vue';
 import MdIcon from '@/components/icons/md-icon.vue';
 import type { ResourceListRow } from '@/lib/models/system-resources/application-resource-list';
-import type { ApplicationQuitStatus } from '@/lib/models/resident/resident';
+import type { ApplicationForceQuitResult, ApplicationQuitStatus } from '@/lib/models/resident/resident';
 import type { ApplicationMemory, ApplicationCpu } from '@/lib/models/system-resources/system-resources';
 import { ICON_NAMES } from '@/lib/models/presentation/ui';
 import { ByteSizeService } from '@/lib/services/settings/byte-size-service';
@@ -68,6 +76,53 @@ const revealing = ref(false);
 const failed = ref(false);
 const quitting = ref(false);
 const quitStatus = ref<ApplicationQuitStatus | 'failed' | null>(null);
+const forceTarget = ref<{ id: string; name: string } | null>(null);
+const forcing = ref(false);
+const forceStatus = ref<ApplicationForceQuitResult['status'] | 'failed' | null>(null);
+const forceLabels = {
+  completed: 'monitoring.forceQuitCompleted',
+  stillRunning: 'monitoring.forceQuitStillRunning',
+  unavailable: 'monitoring.quitButtonUnavailable',
+  blocked: 'monitoring.forceQuitBlocked',
+  failed: 'monitoring.forceQuitFailed',
+} as const;
+const actionBusy = computed(() => quitting.value || forcing.value);
+const forceMessage = computed(() => (forceStatus.value ? t(forceLabels[forceStatus.value]) : ''));
+function requestForce() {
+  if (!props.available || !props.active || !props.application.canForceQuit || actionBusy.value) return;
+  forceTarget.value = { id: props.application.id, name: props.application.name };
+}
+async function forceQuit() {
+  const target = forceTarget.value;
+  if (!target || actionBusy.value) return;
+  if (!props.active || !props.available || !props.application.canForceQuit || props.application.id !== target.id) {
+    forceTarget.value = null;
+    return;
+  }
+  forcing.value = true;
+  forceStatus.value = null;
+  quitStatus.value = null;
+  try {
+    const result = await ResidentService.forceQuitApplication(target.id);
+    forceStatus.value = result.status;
+  } catch (error) {
+    forceStatus.value = 'failed';
+    LoggerService.warn('monitoring', 'application_force_quit_failed', {
+      applicationId: target.id,
+      applicationName: target.name,
+      error,
+    });
+  } finally {
+    forcing.value = false;
+    forceTarget.value = null;
+  }
+}
+watch(
+  () => props.active,
+  active => {
+    if (!active && !forcing.value) forceTarget.value = null;
+  }
+);
 const quitMessages = {
   requested: 'monitoring.quitRequested',
   unavailable: 'monitoring.quitUnavailable',
@@ -81,7 +136,7 @@ const quitLabels = {
   failed: 'monitoring.quitButtonFailed',
 } as const;
 const quitLabel = computed(() =>
-  quitting.value
+  actionBusy.value
     ? 'monitoring.quittingApplication'
     : quitStatus.value
       ? quitLabels[quitStatus.value]
@@ -92,19 +147,25 @@ watch(
   () => {
     failed.value = false;
     quitStatus.value = null;
+    forceStatus.value = null;
   }
 );
 
 async function quit() {
-  if (!props.available || !props.application.canQuit || quitting.value) return;
+  if (!props.available || !props.application.canQuit || actionBusy.value) return;
   quitting.value = true;
   quitStatus.value = null;
+  forceStatus.value = null;
   try {
     // The backend resolves this identity again; no PID or path is supplied by UI.
     quitStatus.value = await ResidentService.quitApplication(props.application.id);
-  } catch {
+  } catch (error) {
     quitStatus.value = 'failed';
-    LoggerService.warn('monitoring', 'application_quit_failed');
+    LoggerService.warn('monitoring', 'application_quit_failed', {
+      applicationId: props.application.id,
+      applicationName: props.application.name,
+      error,
+    });
   } finally {
     quitting.value = false;
   }
@@ -162,7 +223,13 @@ async function reveal() {
       <MdIcon class="disclosure" :name="expanded ? ICON_NAMES.chevronUp : ICON_NAMES.chevronDown" :size="12" />
     </button>
     <div v-if="expanded" :id="`application-details-${application.id}`" class="application-details">
-      <span v-if="!available" role="status">{{
+      <span
+        v-if="forceStatus"
+        :role="forceStatus === 'completed' || forceStatus === 'unavailable' ? 'status' : 'alert'"
+        class="force-quit-result"
+        >{{ forceMessage }}</span
+      >
+      <span v-if="!available && forceStatus !== 'completed'" role="status">{{
         t(
           'usedBytes' in application && application.usedBytes === null
             ? 'monitoring.memoryUnavailable'
@@ -211,28 +278,75 @@ async function reveal() {
             </span>
           </button></MdTooltip
         >
-        <MdTooltip
-          v-if="application.canQuit"
-          :active="active"
-          :text="quitStatus ? t(quitMessages[quitStatus]) : t('monitoring.quitApplication')"
-          ><button
-            class="quit-application-button"
-            :disabled="!available || quitting"
-            :aria-busy="quitting"
-            :aria-label="t('monitoring.quitNamedApplication', { name: application.name })"
-            @click="quit"
+        <div v-if="application.canQuit || application.canForceQuit" class="quit-actions">
+          <MdTooltip
+            v-if="application.canQuit"
+            :active="active"
+            :text="quitStatus ? t(quitMessages[quitStatus]) : t('monitoring.quitApplication')"
+            ><button
+              class="quit-application-button"
+              :disabled="!available || actionBusy"
+              :aria-busy="actionBusy"
+              :aria-label="t('monitoring.quitNamedApplication', { name: application.name })"
+              @click="quit"
+            >
+              <MdIcon
+                :name="
+                  actionBusy ? ICON_NAMES.refresh : quitStatus === 'requested' ? ICON_NAMES.check : ICON_NAMES.startup
+                "
+                :class="{ 'animate-spin motion-reduce:animate-none': actionBusy }"
+                :size="13"
+              />
+              <span class="quit-label">
+                <span :role="quitStatus === 'failed' ? 'alert' : 'status'" aria-atomic="true">{{ t(quitLabel) }}</span>
+              </span>
+            </button></MdTooltip
           >
-            <MdIcon
-              :name="quitting ? ICON_NAMES.refresh : quitStatus === 'requested' ? ICON_NAMES.check : ICON_NAMES.startup"
-              :class="{ 'animate-spin motion-reduce:animate-none': quitting }"
-              :size="13"
-            />
-            <span class="quit-label">
-              <span :role="quitStatus === 'failed' ? 'alert' : 'status'" aria-atomic="true">{{ t(quitLabel) }}</span>
-            </span>
-          </button></MdTooltip
-        >
+          <DropdownMenuRoot v-if="application.canForceQuit">
+            <DropdownMenuTrigger as-child>
+              <button
+                class="quit-options-button"
+                :disabled="!available || !active || actionBusy"
+                :aria-label="t('monitoring.quitOptions')"
+              >
+                <MdIcon :name="ICON_NAMES.chevronDown" :size="12" />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuPortal>
+              <DropdownMenuContent
+                class="z-50 min-w-36 rounded-md border border-border bg-popover p-1 text-popover-foreground shadow-md"
+                :side-offset="4"
+                align="end"
+              >
+                <DropdownMenuItem
+                  class="cursor-pointer rounded-sm px-2 py-1.5 text-xs text-destructive-text outline-none focus:bg-accent"
+                  :disabled="!available || actionBusy"
+                  @select="requestForce"
+                >
+                  {{ t('monitoring.forceQuitAction') }}
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenuPortal>
+          </DropdownMenuRoot>
+        </div>
       </div>
+      <MdConfirmDialog
+        v-if="forceTarget"
+        presentation="panel"
+        :open="true"
+        :title="t('monitoring.forceQuitTitle', { name: forceTarget.name })"
+        :description="t('monitoring.forceQuitDescription')"
+        :cancel-label="t('common.cancel')"
+        :confirm-label="t('monitoring.forceQuitAction')"
+        confirm-variant="destructive"
+        :busy="forcing"
+        @update:open="
+          open => {
+            if (!open && !forcing) forceTarget = null;
+          }
+        "
+        @confirm="forceQuit"
+      />
       <span v-if="failed" role="alert">{{ t('monitoring.revealFailed') }}</span>
     </div>
   </li>
@@ -342,10 +456,32 @@ strong {
   background-color: transparent;
 }
 /* Keep status feedback inside the existing control, including at narrow widths. */
+.quit-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-inline-start: auto;
+  min-width: 0;
+}
+.quit-options-button {
+  display: grid;
+  place-items: center;
+  min-width: 24px;
+  min-height: 24px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+.quit-options-button:hover:not(:disabled) {
+  @apply bg-accent;
+}
+.quit-options-button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
 .quit-application-button {
   max-width: 100%;
   min-width: 0;
-  margin-inline-start: auto;
+  margin-inline-start: 0;
 }
 .quit-application-button > :first-child {
   flex: none;

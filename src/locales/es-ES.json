@@ -4132,7 +4132,15 @@
       "criticalHint": "Presión de memoria: alta\nLas respuestas pueden ralentizarse; cerrar aplicaciones innecesarias",
       "unavailableHint": "Presión de memoria: no disponible\nTemporalmente ilegible; el porcentaje muestra el uso",
       "staleHint": "Presión de memoria: desactualizada\nEsperando una actualización; el porcentaje muestra el uso"
-    }
+    },
+    "forceQuitAction": "Forzar cierre",
+    "forceQuitCompleted": "Aplicación cerrada",
+    "forceQuitStillRunning": "Algunos procesos siguen en ejecución",
+    "forceQuitBlocked": "No se puede forzar el cierre de esta aplicación",
+    "forceQuitFailed": "No se pudo cerrar la aplicación",
+    "quitOptions": "Opciones de cierre",
+    "forceQuitTitle": "¿Forzar el cierre de {name}?",
+    "forceQuitDescription": "La aplicación se cerrará de inmediato. Es posible que se pierdan los cambios sin guardar"
   },
   "power": {
     "title": "Energía",

@@ -4132,7 +4132,15 @@
       "criticalHint": "Pression mémoire : élevée\nLes réponses peuvent ralentir ; fermez les applications inutiles",
       "unavailableHint": "Pression mémoire : indisponible\nTemporairement illisible ; le pourcentage montre l'utilisation",
       "staleHint": "Pression mémoire : obsolète\nEn attente d'une mise à jour ; le pourcentage montre l'utilisation"
-    }
+    },
+    "forceQuitAction": "Forcer à quitter",
+    "forceQuitCompleted": "Application arrêtée",
+    "forceQuitStillRunning": "Certains processus sont encore actifs",
+    "forceQuitBlocked": "Cette application ne peut pas être arrêtée de force",
+    "forceQuitFailed": "Impossible d’arrêter l’application",
+    "quitOptions": "Options de fermeture",
+    "forceQuitTitle": "Forcer {name} à quitter ?",
+    "forceQuitDescription": "L’application se fermera immédiatement. Les modifications non enregistrées risquent d’être perdues"
   },
   "power": {
     "title": "Énergie",

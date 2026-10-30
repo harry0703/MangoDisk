@@ -35,6 +35,24 @@ fn resolve_and_request(
     current_pid: u32,
     request: impl FnOnce(&std::path::Path) -> CoreResult<ApplicationQuitStatus>,
 ) -> CoreResult<ApplicationQuitStatus> {
+    match resolve_target(id, processes, current_pid) {
+        QuitTarget::Available(path) => request(&path),
+        QuitTarget::Unavailable => Ok(ApplicationQuitStatus::Unavailable),
+        QuitTarget::Unsupported(_) => Ok(ApplicationQuitStatus::Unsupported),
+    }
+}
+
+pub(super) enum QuitTarget {
+    Available(std::path::PathBuf),
+    Unavailable,
+    Unsupported(Option<std::path::PathBuf>),
+}
+
+pub(super) fn resolve_target(
+    id: &str,
+    processes: &[ProcessMemory],
+    current_pid: u32,
+) -> QuitTarget {
     let own_path = processes
         .iter()
         .find(|process| process.pid == current_pid)
@@ -48,19 +66,18 @@ fn resolve_and_request(
         if running_identity::id(path.as_deref(), process.pid) != id {
             continue;
         }
-        let Some(path) = path
+        if let Some(path) = path
             .as_ref()
             .filter(|path| running_identity::can_quit(path, own_path.as_deref()))
-        else {
-            log::info!("application_quit_target_rejected path={} own_path={} stage=validate_identity reason=not_quittable_or_current_application outcome=unchanged",
-                mangodisk_platform::diagnostics::text(&path.as_deref().map(|path| path.display().to_string()).unwrap_or_else(|| "unavailable".into())),
-                mangodisk_platform::diagnostics::text(&own_path.as_deref().map(|path| path.display().to_string()).unwrap_or_else(|| "unavailable".into())));
-            return Ok(ApplicationQuitStatus::Unsupported);
-        };
-        // Native adapters recheck the live identity before sending a normal quit request.
-        return request(path);
+        {
+            return QuitTarget::Available(path.clone());
+        }
+        log::info!("application_quit_target_rejected process_id={} stage=validate_identity reason=not_quittable_or_current_application path={} own_path={} outcome=unchanged", process.pid,
+            mangodisk_platform::diagnostics::text(&path.as_deref().unwrap_or_else(|| std::path::Path::new("")).display()),
+            mangodisk_platform::diagnostics::text(&own_path.as_deref().unwrap_or_else(|| std::path::Path::new("")).display()));
+        return QuitTarget::Unsupported(path);
     }
-    Ok(ApplicationQuitStatus::Unavailable)
+    QuitTarget::Unavailable
 }
 
 #[cfg(test)]

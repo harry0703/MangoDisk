@@ -93,7 +93,7 @@ pub struct ResourceReadings {
 impl Default for ResourceReadings {
     fn default() -> Self {
         Self {
-            schema_version: 38,
+            schema_version: 39,
             observed_at_ms: 0,
             cpu: MetricReading::default(),
             cpu_identity: None,

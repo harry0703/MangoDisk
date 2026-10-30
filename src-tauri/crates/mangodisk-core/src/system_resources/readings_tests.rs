@@ -948,7 +948,7 @@ fn snapshots_share_immutable_rankings_and_keep_the_wire_shape() {
         second.cpu_processes.value.as_ref().unwrap()
     ));
     let wire = serde_json::to_value(&second).unwrap();
-    assert_eq!(wire["schemaVersion"], 38);
+    assert_eq!(wire["schemaVersion"], 39);
     assert_eq!(wire["cpuProcesses"]["value"]["readableProcessCount"], 12);
     assert!(!cache.expire(2000));
     assert!(cache.expire(6001));
@@ -960,7 +960,7 @@ fn memory_overview_updates_preserve_detail_timestamp_and_empty_samples_clear_row
     use super::super::models::{MemoryOverview, ProcessMemorySummary};
     let mut cache = ResourceCache::default();
     let sample = |at, processes| SystemResourceSnapshot {
-        schema_version: 4,
+        schema_version: 5,
         sampled_at_ms: at,
         memory: MemoryOverview {
             total_bytes: 100,
@@ -1069,7 +1069,7 @@ fn application_cpu_readings_expire_and_clear_without_erasing_overview_history() 
         },
         1000,
     ));
-    assert_eq!(cache.snapshot(1000).schema_version, 38);
+    assert_eq!(cache.snapshot(1000).schema_version, 39);
     assert_eq!(
         cache.snapshot(6001).cpu_processes.status,
         MetricStatus::Stale
@@ -1216,7 +1216,7 @@ fn memory_history_contains_occupancy_and_clears_on_demand_reset() {
     let mut cache = ResourceCache::default();
     for time in [0, 3000, 6000] {
         cache.memory(SystemResourceSnapshot {
-            schema_version: 4,
+            schema_version: 5,
             sampled_at_ms: time,
             memory: super::super::models::MemoryOverview {
                 total_bytes: 100,

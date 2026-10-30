@@ -67,7 +67,7 @@ impl ResidentState {
         self.wake();
     }
 
-    pub fn refresh_cpu_processes(&self) {
+    pub fn refresh_application_processes(&self) {
         self.process_refresh.store(true, Ordering::Relaxed);
         self.wake();
     }

@@ -1,5 +1,6 @@
 pub(crate) mod binary_optimization;
 pub(crate) mod catalog;
+pub mod force_quit;
 pub mod leftovers;
 pub mod process_control;
 pub mod quit;

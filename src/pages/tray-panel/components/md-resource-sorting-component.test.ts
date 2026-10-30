@@ -23,6 +23,7 @@ const app = (id: string, usedPercent: number): ApplicationCpu => ({
   iconPath: null,
   isBundle: false,
   canQuit: false,
+  canForceQuit: false,
 });
 const summary = (applications: ApplicationCpu[]): ProcessCpuSummary => ({
   applications,

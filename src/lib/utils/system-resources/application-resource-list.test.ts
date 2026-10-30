@@ -7,7 +7,17 @@ import {
 } from '@/lib/utils/system-resources/application-resource-list';
 import type { ApplicationCpu } from '@/lib/models/system-resources/system-resources';
 function app(id: string, usage: number, name = id): ApplicationCpu {
-  return { id, name, usedPercent: usage, pid: 1, processCount: 1, isBundle: false, canQuit: false, iconPath: null };
+  return {
+    id,
+    name,
+    usedPercent: usage,
+    pid: 1,
+    processCount: 1,
+    isBundle: false,
+    canQuit: false,
+    canForceQuit: false,
+    iconPath: null,
+  };
 }
 describe('resource list interaction order', () => {
   it('updates measurements while retaining identities, missing rows and member positions', () => {
@@ -84,6 +94,7 @@ it('keeps unreadable memory last in both usage directions without treating it as
     processCount: 1,
     isBundle: false,
     canQuit: false,
+    canForceQuit: false,
     iconPath: null,
   });
   const rows = updateResourceRows([], [memory('unknown', null), memory('zero', 0), memory('busy', 100)], false);

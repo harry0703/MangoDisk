@@ -41,6 +41,7 @@ it('excludes all matching image processes from the ranking without quitting or r
         iconPath: 'C:\\Apps\\Code.exe',
         isBundle: false,
         canQuit: true,
+        canForceQuit: true,
       },
       expanded: true,
       share: 100,
@@ -74,6 +75,7 @@ it('expands a CPU application into individual PID readings without app-wide acti
         iconPath: 'C:\\Apps\\Code.exe',
         isBundle: false,
         canQuit: false,
+        canForceQuit: false,
         processes: [
           { pid: 10, startedAt: 1, usedPercent: 2 },
           { pid: 11, startedAt: 1, usedPercent: 1 },
@@ -102,6 +104,7 @@ it('expands a CPU application into individual PID readings without app-wide acti
       iconPath: null,
       isBundle: false,
       canQuit: false,
+      canForceQuit: false,
       locationStatus: 'denied',
     },
   });
@@ -124,6 +127,7 @@ it.each([en, zhCN, zhTW, jaJP, koKR])(
           iconPath: null,
           isBundle: true,
           canQuit: false,
+          canForceQuit: false,
         },
         metric: 'memory',
         expanded: true,

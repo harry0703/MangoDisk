@@ -4132,7 +4132,15 @@
       "criticalHint": "内存压力：过高\n可能影响响应速度，建议关闭不需要的应用",
       "unavailableHint": "内存压力：不可用\n暂时无法读取，右侧百分比表示内存使用率",
       "staleHint": "内存压力：未更新\n等待数据更新，右侧百分比表示内存使用率"
-    }
+    },
+    "forceQuitAction": "强制结束",
+    "forceQuitCompleted": "应用已结束",
+    "forceQuitStillRunning": "仍有进程在运行",
+    "forceQuitBlocked": "无法强制结束此应用",
+    "forceQuitFailed": "结束应用失败",
+    "quitOptions": "退出选项",
+    "forceQuitTitle": "强制结束 {name}？",
+    "forceQuitDescription": "应用将立即关闭，未保存的更改可能丢失"
   },
   "power": {
     "title": "电源",

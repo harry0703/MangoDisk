@@ -4132,7 +4132,15 @@
       "criticalHint": "メモリプレッシャー：高い\n応答が遅くなる場合があります。不要なアプリを閉じてください",
       "unavailableHint": "メモリプレッシャー：取得不可\n一時的に取得できません。右側は使用率です",
       "staleHint": "メモリプレッシャー：未更新\n更新を待っています。右側は使用率です"
-    }
+    },
+    "forceQuitAction": "強制終了",
+    "forceQuitCompleted": "アプリを終了しました",
+    "forceQuitStillRunning": "一部のプロセスが実行中です",
+    "forceQuitBlocked": "このアプリは強制終了できません",
+    "forceQuitFailed": "アプリを終了できませんでした",
+    "quitOptions": "終了オプション",
+    "forceQuitTitle": "{name} を強制終了しますか？",
+    "forceQuitDescription": "アプリは直ちに終了します。未保存の変更が失われる場合があります"
   },
   "power": {
     "title": "電源",

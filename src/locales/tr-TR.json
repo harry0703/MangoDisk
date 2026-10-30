@@ -4132,7 +4132,15 @@
       "criticalHint": "Bellek baskısı: yüksek\nYanıtlar yavaşlayabilir; gereksiz uygulamaları kapatın",
       "unavailableHint": "Bellek baskısı: okunamıyor\nGeçici olarak okunamıyor; sağdaki yüzde kullanımdır",
       "staleHint": "Bellek baskısı: güncel değil\nGüncelleme bekleniyor; sağdaki yüzde kullanımdır"
-    }
+    },
+    "forceQuitAction": "Zorla kapat",
+    "forceQuitCompleted": "Uygulama kapatıldı",
+    "forceQuitStillRunning": "Bazı işlemler hâlâ çalışıyor",
+    "forceQuitBlocked": "Bu uygulama zorla kapatılamaz",
+    "forceQuitFailed": "Uygulama kapatılamadı",
+    "quitOptions": "Kapatma seçenekleri",
+    "forceQuitTitle": "{name} zorla kapatılsın mı?",
+    "forceQuitDescription": "Uygulama hemen kapanacak. Kaydedilmemiş değişiklikler kaybolabilir"
   },
   "power": {
     "title": "Güç",

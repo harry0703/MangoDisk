@@ -221,7 +221,7 @@ describe('resource details', () => {
           status: 'ready',
           sampledAtMs: 1000,
           value: {
-            schemaVersion: 4,
+            schemaVersion: 5,
             sampledAtMs: 1000,
             memory: { totalBytes: 100, usedBytes: 88, freeBytes: 12, swapUsedBytes: 0, usedPercent: 88, pressure },
             processes: null,
@@ -254,7 +254,7 @@ describe('resource details', () => {
       status: 'ready',
       sampledAtMs: 1000,
       value: {
-        schemaVersion: 4,
+        schemaVersion: 5,
         sampledAtMs: 1000,
         memory: {
           totalBytes: 100,
@@ -290,7 +290,7 @@ describe('resource details', () => {
       status: 'ready',
       sampledAtMs: 1000,
       value: {
-        schemaVersion: 4,
+        schemaVersion: 5,
         sampledAtMs: 1000,
         memory: {
           totalBytes: 100,

@@ -4132,7 +4132,15 @@
       "criticalHint": "Speicherdruck: hoch\nDie Reaktionen können sich verlangsamen; Schließen Sie unnötige Apps",
       "unavailableHint": "Speicherdruck: nicht verfügbar\nVorübergehend unlesbar; Der Prozentsatz zeigt die Nutzung an",
       "staleHint": "Speicherdruck: veraltet\nWarten auf ein Update; Der Prozentsatz zeigt die Nutzung an"
-    }
+    },
+    "forceQuitAction": "Sofort beenden",
+    "forceQuitCompleted": "Anwendung beendet",
+    "forceQuitStillRunning": "Einige Prozesse laufen noch",
+    "forceQuitBlocked": "Diese Anwendung kann nicht sofort beendet werden",
+    "forceQuitFailed": "Anwendung konnte nicht beendet werden",
+    "quitOptions": "Optionen zum Beenden",
+    "forceQuitTitle": "{name} sofort beenden?",
+    "forceQuitDescription": "Die Anwendung wird sofort geschlossen. Ungespeicherte Änderungen können verloren gehen"
   },
   "power": {
     "title": "Energie",

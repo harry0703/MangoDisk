@@ -221,6 +221,7 @@ pub fn run() {
             commands::resident::memory_release_applications,
             commands::resident::memory_release_open_settings,
             commands::resident::monitoring_quit_application,
+            commands::resident::monitoring_force_quit_application,
             commands::resident::resident_get_preferences,
             commands::resident::resident_floating_ready,
             commands::resident::resident_floating_layout,

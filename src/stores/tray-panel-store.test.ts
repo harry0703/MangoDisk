@@ -41,7 +41,7 @@ describe('tray panel snapshots', () => {
     expect(store.error).toBe(false);
   });
 
-  it.each([35, 99])('rejects schema %s without turning failures into zero readings', async schemaVersion => {
+  it.each([35, 38, 99])('rejects schema %s without turning failures into zero readings', async schemaVersion => {
     const store = useTrayPanelStore();
     const future = reading(1);
     Object.assign(future, { schemaVersion });
@@ -52,6 +52,18 @@ describe('tray panel snapshots', () => {
     await store.load();
     expect(store.reading.memory.value).toBeNull();
     expect(store.error).toBe(true);
+  });
+
+  it('rejects old nested memory snapshots and recovers with current capabilities', () => {
+    const store = useTrayPanelStore();
+    const legacy = reading(1);
+    Object.assign(legacy.memory.value!, { schemaVersion: 4 });
+    store.accept(legacy);
+    expect(store.error).toBe(true);
+    expect(store.reading.memory.value).toBeNull();
+    store.accept(reading(2));
+    expect(store.error).toBe(false);
+    expect(store.reading.memory.value?.schemaVersion).toBe(5);
   });
 
   it('coalesces in-flight refresh requests and allows retry after failure', async () => {

@@ -7,6 +7,7 @@ use crate::resident::{
     network_traffic, presentation, process_cpu_sampling,
     sampling_diagnostics::{Query, SamplingDiagnostics},
     sampling_dispatch::PollingWorkers,
+    sampling_policy::Task,
     sampling_workers::{self, SamplingEvent},
     tray_display,
 };
@@ -88,6 +89,10 @@ pub(super) fn run(
         }
         was_active = active;
         loop_delayed = delayed;
+        let process_refresh = worker.process_refresh.swap(false, Ordering::Relaxed);
+        if process_refresh {
+            jobs.slot(Task::MemoryProcesses).request_now();
+        }
         let demands = worker.demands(observations.warm_icons);
         let failed = jobs.dispatch(&demands, &mut cache, origin.elapsed().as_millis() as u64);
         let mut changed = !failed.is_empty();
@@ -98,7 +103,7 @@ pub(super) fn run(
         changed |= process_cpu.poll(
             active,
             active && worker.cpu_processes_visible(),
-            worker.process_refresh.swap(false, Ordering::Relaxed),
+            process_refresh,
             origin.elapsed().as_millis() as u64,
             &mut cache,
         );

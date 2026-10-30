@@ -25,7 +25,7 @@ pub fn monitoring_get_reading(
 
 #[tauri::command]
 pub fn monitoring_refresh(state: tauri::State<'_, Arc<ResidentState>>) {
-    state.refresh_cpu_processes();
+    state.refresh_application_processes();
 }
 
 #[tauri::command]
@@ -178,6 +178,25 @@ pub async fn monitoring_quit_application(
     })
     .await;
     state.wake();
+    result
+}
+
+#[tauri::command]
+pub async fn monitoring_force_quit_application(
+    window: tauri::WebviewWindow,
+    state: tauri::State<'_, Arc<ResidentState>>,
+    application_id: String,
+) -> CommandResult<mangodisk_core::ApplicationForceQuitResult> {
+    if window.label() != resident::PANEL_LABEL {
+        return Err(super::error::CommandError::invalid_input(
+            "monitoring_force_quit_application",
+        ));
+    }
+    let result = super::error::run_blocking("monitoring_force_quit_application", move || {
+        mangodisk_core::force_quit_running_application(&application_id)
+    })
+    .await;
+    state.refresh_application_processes();
     result
 }
 

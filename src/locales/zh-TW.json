@@ -4132,7 +4132,15 @@
       "criticalHint": "記憶體壓力：過高\n可能影響回應速度，建議關閉不需要的應用程式",
       "unavailableHint": "記憶體壓力：無法取得\n暫時無法讀取，右側百分比表示記憶體使用率",
       "staleHint": "記憶體壓力：未更新\n等待資料更新，右側百分比表示記憶體使用率"
-    }
+    },
+    "forceQuitAction": "強制結束",
+    "forceQuitCompleted": "應用程式已結束",
+    "forceQuitStillRunning": "仍有程序正在執行",
+    "forceQuitBlocked": "無法強制結束此應用程式",
+    "forceQuitFailed": "結束應用程式失敗",
+    "quitOptions": "結束選項",
+    "forceQuitTitle": "強制結束 {name}？",
+    "forceQuitDescription": "應用程式將立即關閉，未儲存的變更可能遺失"
   },
   "power": {
     "title": "電源",

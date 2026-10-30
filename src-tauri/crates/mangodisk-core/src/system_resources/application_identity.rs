@@ -48,6 +48,10 @@ pub(super) fn identify(
             && path
                 .as_deref()
                 .is_some_and(|path| running_identity::can_quit(path, own_path)),
+        can_force_quit: !service_host
+            && path
+                .as_deref()
+                .is_some_and(|path| running_identity::can_force_quit(path, own_path)),
         process_count: 0,
     }
 }

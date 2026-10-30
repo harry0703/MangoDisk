@@ -98,6 +98,7 @@ impl ProcessCpuDelta {
             application.name = process_name;
             application.process_count = 1;
             application.can_quit = false;
+            application.can_force_quit = false;
             let used_percent =
                 (delta as f64 * 100.0 / interval as f64 / divisor).clamp(0.0, capacity);
             applications.push(ApplicationCpu {
@@ -238,6 +239,7 @@ mod tests {
         assert_eq!(value.applications[0].used_percent, 10.0);
         assert_eq!(value.applications[0].processes.len(), 40);
         assert!(!value.applications[0].application.can_quit);
+        assert!(!value.applications[0].application.can_force_quit);
         assert_eq!(value.readable_process_count, 43);
     }
 
@@ -297,6 +299,7 @@ mod tests {
         );
         assert_eq!(value.applications[0].pid, 1);
         assert!(!value.applications[0].application.can_quit);
+        assert!(!value.applications[0].application.can_force_quit);
         assert_eq!(value.applications[2].used_percent, 0.0);
         let json = serde_json::to_value(value).unwrap();
         assert!(json["applications"][0]["id"].is_string());

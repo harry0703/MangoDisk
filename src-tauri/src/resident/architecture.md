@@ -235,7 +235,7 @@ returns that reserved slot directly, so centered buttons do not send the monitor
 to an unrelated outer gap. Unknown environments prefer right,
 and collision checks still apply. These defaults do not replace saved choices.
 
-Resident preferences use schema version 42; resource readings use version 38.
+Resident preferences use schema version 42; resource readings use version 39.
 The system-status editor can restore the native platform defaults through the
 existing revision-checked save transaction. Reset preserves the enabled state and
 all platform display modes. Floating placement is stored independently and is
@@ -268,7 +268,7 @@ GPU display is disabled by default. Compact mode reduces horizontal cells from 3
 to 34/55 DIP (percentage/network), with abbreviated network units
 (B/K/M/G/T) and unchanged numeric precision. Taskbar labels and values use 13 DIP Segoe UI. The shared size converts to physical pixels with nearest-pixel
 rounding at the monitor DPI; paint and hit testing share those bounds.
-Writes accept only the current validated structure. Memory snapshots use version 4; release results retain their separate version 1 contract.
+Writes accept only the current validated structure. Memory snapshots use version 5; release results retain their separate version 1 contract.
 
 Preference writes retain native revision checks across WebViews. A stale writer
 receives the typed `preferencesConflict` reason and rereads committed preferences.
@@ -780,7 +780,7 @@ shared tray text and tooltips keep their existing precision.
 
 ### Overview history and disk activity
 
-Resource readings use schema version 38 and nested `SystemResourceSnapshot` payloads use version 4; frontend adapters reject mismatched versions. Memory history records occupancy from the existing three-second sampler. CPU, GPU and memory use a fixed 0–100% scale. Network and disk activity share a symmetric scale: upload/write above zero, download/read below it. Gaps remain blank. The frontend buffers one sampling interval plus 250 ms before revealing each completed segment from the right; numeric readings remain live. Core retains up to 80 seconds / 96 samples so a reopened chart can reconstruct the buffered minute and offscreen endpoints. The frontend retains two additional intervals at the left edge. During a brief delivery delay, the playhead waits for completed data and catches up at no more than 1.1× speed; genuinely expired data still scrolls out. Pausing demand preserves existing readings and history with their original timestamps, while source changes clear the corresponding history. Rate scales hold their range for 30 seconds before a substantial reduction, and range changes ease over 600 ms using a shared SVG group. Continuous SVG updates are capped at 30 frames per second regardless of display refresh rate, without changing sample cadence or live numeric updates. Horizontal scrolling uses that group’s native transform instead of a composited CSS bitmap, preserving vector strokes at fractional positions. Reduced-motion mode applies scale changes immediately and disables continuous scrolling; hidden or fully expired charts stop their frame loop.
+Resource readings use schema version 39 and nested `SystemResourceSnapshot` payloads use version 5; frontend adapters reject mismatched versions. Memory history records occupancy from the existing three-second sampler. CPU, GPU and memory use a fixed 0–100% scale. Network and disk activity share a symmetric scale: upload/write above zero, download/read below it. Gaps remain blank. The frontend buffers one sampling interval plus 250 ms before revealing each completed segment from the right; numeric readings remain live. Core retains up to 80 seconds / 96 samples so a reopened chart can reconstruct the buffered minute and offscreen endpoints. The frontend retains two additional intervals at the left edge. During a brief delivery delay, the playhead waits for completed data and catches up at no more than 1.1× speed; genuinely expired data still scrolls out. Pausing demand preserves existing readings and history with their original timestamps, while source changes clear the corresponding history. Rate scales hold their range for 30 seconds before a substantial reduction, and range changes ease over 600 ms using a shared SVG group. Continuous SVG updates are capped at 30 frames per second regardless of display refresh rate, without changing sample cadence or live numeric updates. Horizontal scrolling uses that group’s native transform instead of a composited CSS bitmap, preserving vector strokes at fractional positions. Reduced-motion mode applies scale changes immediately and disables continuous scrolling; hidden or fully expired charts stop their frame loop.
 
 Memory pressure is independent of occupancy. macOS reads `kern.memorystatus_vm_pressure_level` in the existing three-second memory sample and decodes dispatch flags 1/2/4 as normal/warning/critical. Unknown flags, unexpected lengths and read errors publish unavailable; Windows and Linux publish unsupported. The panel hides unsupported pressure and marks non-ready samples as not updated. Diagnostics record the first observation, transitions, failures and recovery rather than every sample.
 
@@ -1765,3 +1765,28 @@ reservation adapters remain restricted to the primary taskbar. Insufficient spac
 keeps the existing tray fallback instead of modifying another screen's layout.
 Fullscreen checks, DPI, hit targets and detail-panel anchors use the selected
 screen. macOS menu-bar placement continues to follow AppKit.
+
+### Explicit force quit
+
+Memory application rows retain normal quit and expose force quit through a separate
+menu and destructive confirmation naming the selected application. Cancelling
+does not invoke Core. Force quit never follows an unsuccessful normal quit
+automatically. CPU rows and shared hosts do not expose this action.
+
+The panel-only command accepts an opaque application ID, not a PID or path. Core
+resolves it against a fresh full process sample and rejects the current application,
+unknown self identity, OS service images, and shared hosts. The platform reuses
+its exact-image/bundle process closer with live identity and current-user checks;
+Windows also requires the current session and rejects critical processes. It does
+not elevate or authorize unrelated executables solely through ancestry.
+
+Result schema 1 separates completed, still-running, unavailable and blocked states.
+Completion requires a final process observation with no matching survivors; it
+does not guarantee a drop in total system memory or prevent a later supervisor
+restart. Both platforms check for a bounded quiet interval and terminate newly observed
+matching instances within the shared deadline. A later supervisor restart remains
+possible.
+Resource schema 39 and nested memory
+schema 5 add the shared `canForceQuit` capability and reject incompatible snapshots.
+Diagnostics include an operation ID, resolved image, request counts, remaining
+process names, elapsed time, and native per-process reasons/codes.

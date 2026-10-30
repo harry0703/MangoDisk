@@ -4132,7 +4132,15 @@
       "criticalHint": "메모리 압력: 높음\n응답이 느려질 수 있으니 필요 없는 앱을 닫으세요",
       "unavailableHint": "메모리 압력: 확인 불가\n일시적으로 읽을 수 없습니다; 오른쪽은 사용률입니다",
       "staleHint": "메모리 압력: 미갱신\n업데이트 대기 중; 오른쪽은 사용률입니다"
-    }
+    },
+    "forceQuitAction": "강제 종료",
+    "forceQuitCompleted": "앱이 종료되었습니다",
+    "forceQuitStillRunning": "일부 프로세스가 실행 중입니다",
+    "forceQuitBlocked": "이 앱은 강제 종료할 수 없습니다",
+    "forceQuitFailed": "앱을 종료하지 못했습니다",
+    "quitOptions": "종료 옵션",
+    "forceQuitTitle": "{name} 앱을 강제 종료할까요?",
+    "forceQuitDescription": "앱이 즉시 종료됩니다. 저장하지 않은 변경 사항이 손실될 수 있습니다"
   },
   "power": {
     "title": "전원",

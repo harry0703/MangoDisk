@@ -81,6 +81,7 @@ mod tests {
                     icon_path: path.map(String::from),
                     is_bundle,
                     can_quit: false,
+                    can_force_quit: false,
                 },
                 used_bytes: Some(10),
                 readable_process_count: 1,

@@ -84,7 +84,7 @@ fn accepted_memory_observations_warm_icons_once_without_changing_the_snapshot() 
     let mut warm_count = 0;
     for _ in 0..2 {
         let mut snapshot = SystemResourceSnapshot {
-            schema_version: 4,
+            schema_version: 5,
             sampled_at_ms: 1000,
             memory: MemoryOverview {
                 total_bytes: 100,

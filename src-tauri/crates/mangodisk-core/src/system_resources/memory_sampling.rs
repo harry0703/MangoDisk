@@ -28,7 +28,7 @@ impl<S: MemorySource> MemorySamplingService<S> {
         let raw = self.source.sample(include_processes)?;
         let memory = memory::overview(&raw)?;
         Ok(SystemResourceSnapshot {
-            schema_version: 4,
+            schema_version: 5,
             sampled_at_ms,
             memory,
             processes: raw.processes.map(|processes| {
@@ -91,7 +91,7 @@ mod tests {
             .is_empty());
         let overview = service.sample(false, 30).unwrap();
         let json = serde_json::to_value(overview).unwrap();
-        assert_eq!(json["schemaVersion"], 4);
+        assert_eq!(json["schemaVersion"], 5);
         assert_eq!(json["sampledAtMs"], 30);
         assert_eq!(json["memory"]["usedPercent"], 45);
         assert_eq!(json["memory"]["pressure"], "unsupported");

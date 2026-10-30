@@ -77,7 +77,7 @@ export const useTrayPanelStore = defineStore('tray-panel', {
       // backwards or show an incompatible protocol as a plausible measurement.
       if (
         reading.schemaVersion !== RESOURCE_READINGS_SCHEMA_VERSION ||
-        (reading.memory.value && reading.memory.value.schemaVersion !== 4)
+        (reading.memory.value && reading.memory.value.schemaVersion !== 5)
       ) {
         this.error = true;
         return;

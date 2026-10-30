@@ -21,6 +21,7 @@ pub struct ApplicationIdentity {
     pub icon_path: Option<String>,
     pub is_bundle: bool,
     pub can_quit: bool,
+    pub can_force_quit: bool,
 }
 
 #[derive(Debug, Clone, Serialize)]

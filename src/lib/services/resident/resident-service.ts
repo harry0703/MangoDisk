@@ -4,6 +4,7 @@ import { getCurrentWindow } from '@tauri-apps/api/window';
 
 import type {
   ApplicationQuitStatus,
+  ApplicationForceQuitResult,
   MemoryReleaseResult,
   ResidentDestination,
   ResidentDisplayStatus,
@@ -33,6 +34,9 @@ export class ResidentService {
   }
   static quitApplication(applicationId: string): Promise<ApplicationQuitStatus> {
     return invoke('monitoring_quit_application', { applicationId });
+  }
+  static forceQuitApplication(applicationId: string): Promise<ApplicationForceQuitResult> {
+    return invoke('monitoring_force_quit_application', { applicationId });
   }
   static onPreferencesChanged(callback: () => void): Promise<UnlistenFn> {
     return listen<number>('resident-preferences-changed', callback);

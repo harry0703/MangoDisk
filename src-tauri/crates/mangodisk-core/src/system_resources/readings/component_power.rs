@@ -65,7 +65,7 @@ mod tests {
             1000,
         );
         let wire = serde_json::to_value(cache.snapshot(1000)).unwrap();
-        assert_eq!(wire["schemaVersion"], 38);
+        assert_eq!(wire["schemaVersion"], 39);
         assert_eq!(wire["cpuPower"]["value"]["source"], "appleSmc");
         assert_eq!(wire["cpuPower"]["value"]["watts"], 12.5);
         assert_eq!(cache.snapshot(6001).cpu_power.status, MetricStatus::Stale);

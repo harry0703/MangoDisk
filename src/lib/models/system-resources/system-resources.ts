@@ -1,7 +1,7 @@
 import type { BatteryDetails } from './power';
 import type { GpuDetails } from '@/lib/models/system-resources/gpu-details';
 
-export const RESOURCE_READINGS_SCHEMA_VERSION = 38;
+export const RESOURCE_READINGS_SCHEMA_VERSION = 39;
 export const TEMPERATURE_DIAGNOSTIC_RETENTION_MS = 30_000;
 export const METRIC_IDS = ['cpu', 'gpu', 'memory', 'network', 'disk'] as const;
 export type MetricId = (typeof METRIC_IDS)[number];
@@ -42,6 +42,7 @@ export interface ApplicationIdentity {
   iconPath: string | null;
   isBundle: boolean;
   canQuit: boolean;
+  canForceQuit: boolean;
 }
 export interface ApplicationMemory extends ApplicationIdentity {
   usedBytes: number | null;
@@ -66,7 +67,7 @@ export interface ProcessMemorySummary {
   omittedProcessCount: number;
 }
 export interface SystemResourceSnapshot {
-  schemaVersion: 4;
+  schemaVersion: 5;
   sampledAtMs: number;
   memory: MemoryOverview;
   processes: ProcessMemorySummary | null;

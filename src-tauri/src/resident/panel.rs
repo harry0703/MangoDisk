@@ -36,7 +36,7 @@ pub fn set_page(app: &tauri::AppHandle, page: PanelPage) -> PanelPage {
         .lock()
         .unwrap_or_else(|error| error.into_inner()) = page;
     if page == PanelPage::Cpu && state.panel_open.load(Ordering::Relaxed) {
-        state.refresh_cpu_processes();
+        state.refresh_application_processes();
     } else {
         state.wake();
     }
@@ -201,7 +201,7 @@ pub fn open(app: &tauri::AppHandle) -> tauri::Result<()> {
     let page = *state.panel_page.lock().unwrap_or_else(|e| e.into_inner());
     log_detail_snapshot(&state, page);
     if page == PanelPage::Cpu {
-        state.refresh_cpu_processes();
+        state.refresh_application_processes();
     }
     // Showing never waits for Vue, preference I/O, samples, or icon resolution.
     // Usually startup has already prepared the hidden WebView; an early click

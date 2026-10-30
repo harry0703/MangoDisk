@@ -78,3 +78,12 @@ export interface MemoryReleaseResult {
 export type ApplicationQuitStatus = 'requested' | 'unavailable' | 'unsupported';
 
 export type ResidentDisplayStatus = 'tray' | 'taskbar' | 'noSpace' | 'unsupportedLayout' | 'shellUnavailable';
+
+export interface ApplicationForceQuitResult {
+  schemaVersion: 1;
+  operationId: string;
+  status: 'completed' | 'stillRunning' | 'unavailable' | 'blocked';
+  matchedProcessCount: number;
+  requestedProcessCount: number;
+  remainingProcesses: string[];
+}

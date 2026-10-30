@@ -17,6 +17,10 @@ mod system_settings;
 
 pub const APPLICATION_IDENTIFIER: &str = "app.mangodisk.desktop";
 
+pub use applications::force_quit::{
+    execute as force_quit_running_application, ApplicationForceQuitResult,
+    ApplicationForceQuitStatus,
+};
 pub use applications::leftovers::{
     ApplicationLeftoverActionReason, ApplicationLeftoverActionResult,
     ApplicationLeftoverActionStatus, ApplicationLeftoverCandidate, ApplicationLeftoverConfidence,
