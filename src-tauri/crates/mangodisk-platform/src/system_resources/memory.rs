@@ -66,10 +66,7 @@ pub struct MemorySampler {
     #[cfg(target_os = "macos")]
     pressure: super::memory_macos::PressureReader,
     system: System,
-    #[cfg(target_os = "macos")]
-    processes: super::process_snapshot_macos::ProcessSnapshotReader,
-    #[cfg(windows)]
-    processes: super::process_snapshot_windows::ProcessSnapshotReader,
+    processes: Option<ProcessMemorySampler>,
 }
 
 impl Default for MemorySampler {
@@ -79,10 +76,7 @@ impl Default for MemorySampler {
             system: System::new(),
             #[cfg(target_os = "macos")]
             pressure: Default::default(),
-            #[cfg(windows)]
-            processes: Default::default(),
-            #[cfg(target_os = "macos")]
-            processes: Default::default(),
+            processes: None,
         }
     }
 }
@@ -98,67 +92,12 @@ impl MemorySource for MemorySampler {
             ));
         }
         let processes = if include_processes {
-            #[cfg(windows)]
-            let processes = self
-                .processes
-                .read()
-                .ok_or_else(|| {
-                    PlatformError::new(
-                        PlatformErrorCode::OperationFailed,
-                        "private working set counters unavailable",
-                    )
-                })?
-                .into_iter()
-                .map(|row| ProcessMemory {
-                    pid: row.counter.pid,
-                    name: row.counter.name,
-                    executable: row.counter.executable,
-                    used_bytes: Some(row.private_working_set_bytes),
-                    is_application: false,
-                })
-                .collect();
-            #[cfg(target_os = "macos")]
-            let processes = self
-                .processes
-                .read()?
-                .into_iter()
-                .map(|row| ProcessMemory {
-                    pid: row.counter.pid,
-                    name: row.counter.name,
-                    executable: row.counter.executable,
-                    used_bytes: row.footprint,
-                    is_application: false,
-                })
-                .collect::<Vec<_>>();
-            #[cfg(not(any(windows, target_os = "macos")))]
-            let processes = {
-                // RSS platforms need one process pass for identity and resident memory.
-                let refresh = ProcessRefreshKind::nothing()
-                    // Linux tasks share process RSS and must not become application rows.
-                    .without_tasks()
-                    .with_exe(UpdateKind::OnlyIfNotSet)
-                    .with_memory();
-                self.system
-                    .refresh_processes_specifics(ProcessesToUpdate::All, true, refresh);
-                self.system
-                    .processes()
-                    .iter()
-                    .map(|(pid, process)| ProcessMemory {
-                        pid: pid.as_u32(),
-                        name: process.name().to_string_lossy().into_owned(),
-                        executable: process.exe().map(PathBuf::from),
-                        used_bytes: Some(process.memory()),
-                        is_application: false,
-                    })
-                    .collect::<Vec<_>>()
-            };
-            #[cfg(target_os = "macos")]
-            let processes = {
-                let mut rows = processes;
-                super::memory_macos::fill_application_metadata(&mut rows);
-                rows
-            };
-            Some(processes)
+            Some(
+                self.processes
+                    .get_or_insert_with(Default::default)
+                    .sample_processes()?
+                    .processes,
+            )
         } else {
             None
         };
@@ -176,6 +115,94 @@ impl MemorySource for MemorySampler {
             #[cfg(not(target_os = "macos"))]
             pressure: MemoryPressure::Unsupported,
             process_memory_kind: ProcessMemoryKind::native(),
+            processes,
+        })
+    }
+}
+
+pub struct NativeProcessMemorySnapshot {
+    pub kind: ProcessMemoryKind,
+    pub processes: Vec<ProcessMemory>,
+}
+
+pub trait ProcessMemorySource: Send {
+    fn sample_processes(&mut self) -> PlatformResult<NativeProcessMemorySnapshot>;
+}
+
+/// Process enumeration owns no dependency on machine-wide memory counters.
+#[derive(Default)]
+pub struct ProcessMemorySampler {
+    #[cfg(target_os = "macos")]
+    native: super::process_snapshot_macos::ProcessSnapshotReader,
+    #[cfg(windows)]
+    native: super::process_snapshot_windows::ProcessSnapshotReader,
+    #[cfg(not(any(windows, target_os = "macos")))]
+    system: System,
+}
+impl ProcessMemorySource for ProcessMemorySampler {
+    fn sample_processes(&mut self) -> PlatformResult<NativeProcessMemorySnapshot> {
+        #[cfg(windows)]
+        let processes = self
+            .native
+            .read()
+            .ok_or_else(|| {
+                PlatformError::new(
+                    PlatformErrorCode::OperationFailed,
+                    "private working set counters unavailable",
+                )
+            })?
+            .into_iter()
+            .map(|row| ProcessMemory {
+                pid: row.counter.pid,
+                name: row.counter.name,
+                executable: row.counter.executable,
+                used_bytes: Some(row.private_working_set_bytes),
+                is_application: false,
+            })
+            .collect();
+        #[cfg(target_os = "macos")]
+        let processes = self
+            .native
+            .read()?
+            .into_iter()
+            .map(|row| ProcessMemory {
+                pid: row.counter.pid,
+                name: row.counter.name,
+                executable: row.counter.executable,
+                used_bytes: row.footprint,
+                is_application: false,
+            })
+            .collect::<Vec<_>>();
+        #[cfg(not(any(windows, target_os = "macos")))]
+        let processes = {
+            // RSS platforms need one process pass for identity and resident memory.
+            let refresh = ProcessRefreshKind::nothing()
+                // Linux tasks share process RSS and must not become application rows.
+                .without_tasks()
+                .with_exe(UpdateKind::OnlyIfNotSet)
+                .with_memory();
+            self.system
+                .refresh_processes_specifics(ProcessesToUpdate::All, true, refresh);
+            self.system
+                .processes()
+                .iter()
+                .map(|(pid, process)| ProcessMemory {
+                    pid: pid.as_u32(),
+                    name: process.name().to_string_lossy().into_owned(),
+                    executable: process.exe().map(PathBuf::from),
+                    used_bytes: Some(process.memory()),
+                    is_application: false,
+                })
+                .collect::<Vec<_>>()
+        };
+        #[cfg(target_os = "macos")]
+        let processes = {
+            let mut rows = processes;
+            super::memory_macos::fill_application_metadata(&mut rows);
+            rows
+        };
+        Ok(NativeProcessMemorySnapshot {
+            kind: ProcessMemoryKind::native(),
             processes,
         })
     }

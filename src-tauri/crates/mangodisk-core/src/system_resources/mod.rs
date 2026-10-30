@@ -7,16 +7,17 @@ pub mod disk_io;
 pub mod fans;
 pub mod gpu;
 mod memory;
+pub mod memory_sampling;
 pub mod metrics;
 pub mod models;
 pub mod network;
 pub mod network_addresses;
 pub mod network_traffic;
 pub mod process_cpu;
+pub mod process_memory;
 pub mod readings;
 pub mod release;
 pub mod release_policy;
-pub mod service;
 
 mod gpu_history;
 #[cfg(test)]

@@ -1,7 +1,7 @@
 //! Bounded native workers: a slow disk cannot delay CPU, network, or window callbacks.
 use mangodisk_core::{
     system_resources::{
-        metrics::MetricId, models::SystemResourceSnapshot, service::SystemResourceService,
+        memory_sampling::MemorySamplingService, metrics::MetricId, models::SystemResourceSnapshot,
     },
     CoreResult,
 };
@@ -210,7 +210,7 @@ enum Sensor {
     },
     CpuAuxiliary(Box<super::cpu_auxiliary_sampling::Reader>),
     Gpu(Box<GpuReader>),
-    Memory(Box<SystemResourceService>),
+    Memory(Box<MemorySamplingService>),
     Network(NetworkReader),
     Disk {
         capacity_state: Option<String>,

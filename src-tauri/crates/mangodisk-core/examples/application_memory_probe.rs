@@ -1,5 +1,5 @@
 //! Compare raw PID measurements and grouped publication from the exact same native sample.
-use mangodisk_core::system_resources::service::SystemResourceService;
+use mangodisk_core::system_resources::memory_sampling::MemorySamplingService;
 use mangodisk_platform::{
     system_resources::memory::{MemorySampler, MemorySource, NativeMemorySnapshot},
     PlatformResult,
@@ -32,7 +32,7 @@ fn main() {
         .iter()
         .map(|row| serde_json::json!({"pid":row.pid,"name":row.name,"usedBytes":row.used_bytes}))
         .collect::<Vec<_>>();
-    let snapshot = SystemResourceService::new(Source(Some(raw)))
+    let snapshot = MemorySamplingService::new(Source(Some(raw)))
         .sample(true, sampled_at_ms)
         .unwrap();
     println!(

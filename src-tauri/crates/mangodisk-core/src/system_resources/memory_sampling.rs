@@ -3,17 +3,17 @@ use mangodisk_platform::system_resources::memory::{MemorySampler, MemorySource};
 use super::{memory, models::SystemResourceSnapshot};
 use crate::CoreResult;
 
-pub struct SystemResourceService<S = MemorySampler> {
+pub struct MemorySamplingService<S = MemorySampler> {
     source: S,
 }
 
-impl Default for SystemResourceService {
+impl Default for MemorySamplingService {
     fn default() -> Self {
         Self::new(MemorySampler::default())
     }
 }
 
-impl<S: MemorySource> SystemResourceService<S> {
+impl<S: MemorySource> MemorySamplingService<S> {
     pub fn new(source: S) -> Self {
         Self { source }
     }
@@ -79,7 +79,7 @@ mod tests {
 
     #[test]
     fn protocol_distinguishes_unrequested_processes_from_exited_processes() {
-        let mut service = SystemResourceService::new(Source { reads: 0 });
+        let mut service = MemorySamplingService::new(Source { reads: 0 });
         let first = service.sample(true, 10).unwrap();
         assert_eq!(first.processes.unwrap().applications.len(), 1);
         assert!(service
