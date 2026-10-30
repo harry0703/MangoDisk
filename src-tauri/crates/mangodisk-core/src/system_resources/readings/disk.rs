@@ -1,28 +1,47 @@
 use super::ResourceCache;
-use crate::system_resources::{
-    disk,
-    metrics::{MetricReading, MetricStatus},
-};
+use crate::system_resources::metrics::{MetricReading, MetricStatus};
 use mangodisk_platform::system_resources::disk::{ResourceVolume, VolumeCapacity};
 use std::sync::Arc;
 
 impl ResourceCache {
+    pub fn volumes(&mut self, volumes: Vec<ResourceVolume>) {
+        let temperature_source_invalid =
+            self.readings
+                .disk_temperature
+                .value
+                .as_ref()
+                .is_some_and(|reading| {
+                    let next = volumes.iter().find(|volume| volume.id == reading.volume_id);
+                    let previous = self
+                        .readings
+                        .volumes
+                        .iter()
+                        .find(|volume| volume.id == reading.volume_id);
+                    next.is_none_or(|next| {
+                        previous.is_some_and(|previous| !same_source(previous, next))
+                    })
+                });
+        if temperature_source_invalid {
+            self.clear_disk_temperature();
+        }
+        if let Some(previous) = self.readings.disk.value.as_ref() {
+            if let Some(next) = volumes
+                .iter()
+                .find(|volume| volume.id == previous.volume.id)
+            {
+                self.invalidate_disk_source(next);
+            }
+        }
+        self.readings.volumes = volumes.into();
+    }
+
     pub fn volume_catalogue(&self) -> Arc<[ResourceVolume]> {
         Arc::clone(&self.readings.volumes)
     }
 
-    pub fn reset_disk_selection(&mut self) {
-        self.readings.disk = MetricReading::default();
-        self.readings.disk_health = MetricReading::default();
-        self.readings.disk_detail_temperature = MetricReading::default();
-    }
-
-    pub fn volumes(&mut self, volumes: Vec<ResourceVolume>) {
-        self.readings.volumes = volumes.into();
-    }
-
     pub fn disk(&mut self, volume: ResourceVolume, capacity: VolumeCapacity, timestamp_ms: u64) {
-        if let Some(value) = disk::usage(volume, capacity) {
+        self.invalidate_disk_source(&volume);
+        if let Some(value) = crate::system_resources::disk::usage(volume, capacity) {
             if self
                 .readings
                 .disk_health
@@ -50,6 +69,34 @@ impl ResourceCache {
     }
 
     /// Capacity failures cannot invalidate independently sampled physical sensors.
+    pub fn reset_disk_selection(&mut self) {
+        self.readings.disk = MetricReading::default();
+        self.readings.disk_health = MetricReading::default();
+        self.readings.disk_detail_temperature = MetricReading::default();
+    }
+
+    fn invalidate_disk_source(&mut self, next: &ResourceVolume) {
+        let Some(previous) = self.readings.disk.value.as_ref() else {
+            return;
+        };
+        let same_volume = previous.volume.id == next.id;
+        let replaced = same_volume && !same_source(&previous.volume, next);
+        if !same_volume || replaced {
+            self.readings.disk_health = MetricReading::default();
+            self.readings.disk_detail_temperature = MetricReading::default();
+        }
+        if replaced
+            && self
+                .readings
+                .disk_temperature
+                .value
+                .as_ref()
+                .is_some_and(|reading| reading.volume_id == next.id)
+        {
+            self.clear_disk_temperature();
+        }
+    }
+
     pub fn fail_disk_capacity(&mut self, status: MetricStatus) {
         self.readings.disk.status = status;
         if matches!(
@@ -153,4 +200,16 @@ impl ResourceCache {
             ),
         }
     }
+}
+
+fn device_ids(volume: &ResourceVolume) -> Vec<&str> {
+    let mut ids: Vec<_> = volume.devices.iter().map(|disk| disk.id.as_str()).collect();
+    ids.sort();
+    ids
+}
+
+fn same_source(previous: &ResourceVolume, next: &ResourceVolume) -> bool {
+    previous.id == next.id
+        && previous.mount_point == next.mount_point
+        && device_ids(previous) == device_ids(next)
 }

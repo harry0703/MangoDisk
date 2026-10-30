@@ -9,7 +9,7 @@ use mangodisk_platform::{
 
 #[derive(Default)]
 pub(super) struct HealthSampler {
-    identity: Option<(String, String)>,
+    identity: Option<(String, String, Vec<String>)>,
     attempted_at: Option<u64>,
     retry_ms: u64,
     outcome: Option<String>,
@@ -18,11 +18,7 @@ pub(super) struct HealthSampler {
 
 impl HealthSampler {
     fn needs_initial_read(&self, volume: &ResourceVolume) -> bool {
-        self.cached.is_none()
-            || self
-                .identity
-                .as_ref()
-                .is_none_or(|(id, mount)| id != &volume.id || mount != &volume.mount_point)
+        self.cached.is_none() || self.identity.as_ref() != Some(&source_identity(volume))
     }
 
     pub fn observation(
@@ -57,7 +53,7 @@ impl HealthSampler {
         now_ms: u64,
         read: impl FnOnce() -> PlatformResult<DiskHealth>,
     ) -> Option<PlatformResult<DiskHealth>> {
-        let identity = (volume.id.clone(), volume.mount_point.clone());
+        let identity = source_identity(volume);
         if self.identity.as_ref() != Some(&identity) {
             self.identity = Some(identity);
             self.attempted_at = None;
@@ -126,6 +122,16 @@ impl HealthSampler {
     pub fn clear(&mut self) {
         *self = Self::default();
     }
+}
+
+fn source_identity(volume: &ResourceVolume) -> (String, String, Vec<String>) {
+    let mut devices: Vec<_> = volume
+        .devices
+        .iter()
+        .map(|device| device.id.clone())
+        .collect();
+    devices.sort();
+    (volume.id.clone(), volume.mount_point.clone(), devices)
 }
 
 #[cfg(test)]
