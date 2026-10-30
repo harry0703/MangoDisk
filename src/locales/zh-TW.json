@@ -4517,7 +4517,7 @@
   },
   "diskHealth": {
     "title": "磁碟健康",
-    "healthy": "未回報異常",
+    "healthy": "健康",
     "warning": "警告",
     "unhealthy": "異常",
     "unknown": "未知",

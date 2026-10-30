@@ -4517,7 +4517,7 @@
   },
   "diskHealth": {
     "title": "ディスクの状態",
-    "healthy": "異常報告なし",
+    "healthy": "正常",
     "warning": "警告",
     "unhealthy": "異常",
     "unknown": "不明",

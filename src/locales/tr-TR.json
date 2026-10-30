@@ -4517,7 +4517,7 @@
   },
   "diskHealth": {
     "title": "Disk sağlığı",
-    "healthy": "Sorun bildirilmedi",
+    "healthy": "Sağlıklı",
     "warning": "Uyarı",
     "unhealthy": "Anormal",
     "unknown": "Bilinmiyor",

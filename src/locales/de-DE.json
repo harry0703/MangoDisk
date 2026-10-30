@@ -4517,7 +4517,7 @@
   },
   "diskHealth": {
     "title": "Festplattenzustand",
-    "healthy": "Keine Probleme gemeldet",
+    "healthy": "Gesund",
     "warning": "Warnung",
     "unhealthy": "Abnormal",
     "unknown": "Unbekannt",

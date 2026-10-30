@@ -197,7 +197,8 @@ describe('disk health and network detail presentation', () => {
     reading.diskHealth.status = 'failed';
     const wrapper = render(DiskDetails, reading);
 
-    expect(wrapper.get('.health-status').text()).toContain(en.systemStatus.failed);
+    expect(wrapper.get('.health-state [role="status"]').text()).toContain(en.systemStatus.failed);
+    expect(wrapper.get('.health-status').attributes('data-current')).toBe('false');
     expect(wrapper.text()).toContain('100%');
     await wrapper.setProps({ reading: disk() });
     expect(wrapper.get('.health-status').text()).toBe(en.diskHealth.healthy);
@@ -214,6 +215,33 @@ describe('disk health and network detail presentation', () => {
     expect(wrapper.text()).not.toContain(en.diskHealth.unavailable);
     expect(wrapper.text()).toContain(en.systemStatus.cachedReading);
   });
+  it('keeps the health heading and data anchors when cached refresh or failure indicators appear', async () => {
+    const wrapper = render(DiskDetails, disk());
+    const header = wrapper.get('.disk-health header').element;
+    const identity = wrapper.get('.volume-identity').element;
+    const facts = wrapper.get('.disk-health .resource-facts').element;
+    for (const status of ['stale', 'failed', 'ready'] as const) {
+      const reading = disk();
+      reading.diskHealth.status = status;
+      await wrapper.setProps({ reading });
+      expect(wrapper.get('.disk-health header').element).toBe(header);
+      expect(wrapper.get('.volume-identity').element).toBe(identity);
+      expect(wrapper.get('.disk-health .resource-facts').element).toBe(facts);
+      expect(wrapper.get('.health-status').text()).toBe(en.diskHealth.healthy);
+      expect(wrapper.find('.disk-health > [role="status"]').exists()).toBe(false);
+      expect(wrapper.find('.health-freshness [role="status"]').exists()).toBe(status !== 'ready');
+    }
+  });
+  it.each(['healthy', 'warning', 'unhealthy', 'unknown'] as const)(
+    'preserves the native %s health classification',
+    status => {
+      const reading = disk();
+      reading.diskHealth.value!.status = status;
+      const wrapper = render(DiskDetails, reading);
+      expect(wrapper.get('.health-status').text()).toBe(en.diskHealth[status]);
+      expect(wrapper.get('.health-status').attributes('data-status')).toBe(status);
+    }
+  );
   it('never restores expired health for a changed disk or a future observation', async () => {
     const reading = disk();
     reading.observedAtMs = 601_001;

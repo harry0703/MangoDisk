@@ -4517,7 +4517,7 @@
   },
   "diskHealth": {
     "title": "Saúde do disco",
-    "healthy": "Nenhum problema relatado",
+    "healthy": "Saudável",
     "warning": "Aviso",
     "unhealthy": "Anormal",
     "unknown": "Desconhecido",
