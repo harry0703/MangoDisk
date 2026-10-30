@@ -139,6 +139,9 @@ impl Cache {
     fn expired(&self) -> bool {
         self.cached_at
             .is_none_or(|cached_at| cached_at.elapsed() >= CACHE_AGE)
+            || super::sampling_workers::timestamp_ms()
+                .checked_sub(self.snapshot.updated_at_ms)
+                .is_none_or(|age| age >= CACHE_AGE.as_millis() as u64)
             || (self.snapshot.probes.ipv4.failed && self.snapshot.probes.ipv6.failed)
     }
 }

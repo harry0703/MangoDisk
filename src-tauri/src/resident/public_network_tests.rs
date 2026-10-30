@@ -298,3 +298,19 @@ async fn waiting_for_obsolete_probes_advances_the_snapshot_revision() {
     assert!(waiting.probes.ipv4.loading);
     assert!(waiting.revision > before_wait.revision, "distinct loading states must not share a revision that permits an older response to replace them");
 }
+
+#[test]
+fn cached_addresses_expire_after_sleep_even_if_the_monotonic_clock_pauses() {
+    let cache = Cache {
+        cached_at: Some(Instant::now()),
+        snapshot: Snapshot {
+            updated_at_ms: super::super::sampling_workers::timestamp_ms().saturating_sub(3_600_001),
+            ..Default::default()
+        },
+        ..Default::default()
+    };
+    assert!(
+        cache.expired(),
+        "sleep time must count toward the address cache lifetime"
+    );
+}
