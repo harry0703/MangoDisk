@@ -3022,6 +3022,11 @@
         "description": "WeCom이 생성한 암호화된 진단, 네트워크, 통화, 프레임워크 및 설치 로그입니다.",
         "impact": "계정, 메시지, 애플릿, 설정, 앱 데이터는 유지됩니다. 정리 전에 WeCom을 닫으세요."
       },
+      "app.vesktop-cache": {
+        "name": "Vesktop 캐시",
+        "description": "Vesktop의 웹 응답 및 코드 캐시입니다.",
+        "impact": "Vesktop을 종료한 후 정리합니다. 로그인, 설정, 테마는 유지됩니다."
+      },
       "app.discord-cache": {
         "name": "Discord 캐시",
         "description": "Discord에서 생성된 웹 응답, 스크립트 및 그래픽 캐시로, 다시 생성할 수 있습니다.",

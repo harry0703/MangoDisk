@@ -891,6 +891,10 @@ fn update_hash_field(hasher: &mut Sha256, value: &[u8]) {
 #[cfg(test)]
 include!("service_tests/common.rs");
 
+#[cfg(all(test, any(windows, target_os = "macos")))]
+#[path = "service_tests/vesktop.rs"]
+mod vesktop_tests;
+
 #[cfg(all(test, target_os = "macos"))]
 include!("service_tests/macos.rs");
 

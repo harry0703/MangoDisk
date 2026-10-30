@@ -3022,6 +3022,11 @@
         "description": "WeCom が生成する暗号化された診断、ネットワーク、通話、フレームワーク、インストーラーのログ。",
         "impact": "アカウント、メッセージ、ミニアプリ、設定、アプリデータは保持されます。クリーンアップ前に WeCom を終了してください。"
       },
+      "app.vesktop-cache": {
+        "name": "Vesktop キャッシュ",
+        "description": "Vesktop のウェブ応答とコードのキャッシュ。",
+        "impact": "Vesktop の終了後に削除します。ログイン状態、設定、テーマは保持されます。"
+      },
       "app.discord-cache": {
         "name": "Discord キャッシュ",
         "description": "Discord が生成する再作成可能な Web 応答、スクリプト、グラフィックキャッシュ。",

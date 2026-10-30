@@ -3022,6 +3022,11 @@
         "description": "企業微信產生的加密診斷、網路、通話、框架與安裝記錄檔",
         "impact": "不會刪除帳號、訊息、小程式、設定或應用程式資料；關閉企業微信後清理。"
       },
+      "app.vesktop-cache": {
+        "name": "Vesktop 快取",
+        "description": "Vesktop 的網頁回應快取與程式碼快取。",
+        "impact": "結束 Vesktop 後清理，保留登入狀態、設定與佈景主題。"
+      },
       "app.discord-cache": {
         "name": "Discord 應用程式快取",
         "description": "Discord 產生的網頁回應、腳本和圖形渲染快取",

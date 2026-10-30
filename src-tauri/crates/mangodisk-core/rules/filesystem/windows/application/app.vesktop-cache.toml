@@ -1,0 +1,38 @@
+id = "app.vesktop-cache"
+schema_version = 3
+rule_version = 1
+platform = "windows"
+category = "application"
+risk = "recoverable"
+default_selected = false
+recommended_selected = false
+required_stopped_processes = ["Vesktop.exe"]
+
+[[applicability]]
+kind = "anyRootExists"
+
+[[roots]]
+template = "${roaming_app_data}/vesktop/sessionData/Cache"
+verified_rebuildable = true
+
+[[roots]]
+template = "${roaming_app_data}/vesktop/sessionData/Code Cache"
+verified_rebuildable = true
+
+[matcher]
+kind = "all"
+
+[execution]
+kind = "deleteMatchingContents"
+requires_app_close = true
+
+[verification]
+lifecycle = "verified"
+evidence = "Standard Vesktop installs keep session data under roaming vesktop/sessionData. Only response and code cache leaves are selected after exit. Portable data, custom roots, authentication, settings, themes and vencordFiles are retained"
+verified_at = "2026-10-30"
+verified_platform = "windows"
+references = [
+  "https://github.com/Vencord/Vesktop/blob/55987580de68d2a74a59c3121fc437a5ceccd345/src/main/constants.ts",
+  "https://github.com/Vencord/Vesktop/blob/55987580de68d2a74a59c3121fc437a5ceccd345/package.json",
+  "https://www.electronjs.org/docs/latest/api/app#appgetpathname",
+]

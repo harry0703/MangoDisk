@@ -135,19 +135,19 @@ const localeChunkLimitOverrides = new Map([
   // es: 326531/65390, fr: 335211/67068, ja: 349142/66489, ko: 318946/63873,
   // pt: 319926/64420, ru: 421852/75155, tr: 313586/63175.
   // zh-cn/zh-tw gzip is 61610/62111; keep only locale-specific increases.
-  // Combine the locale-only growth for force-quit and adapter labels.
+  // Combine the locale-only growth for force-quit, cleanup, and adapter labels.
   // Application chunk limits remain fixed.
-  ['fr-fr', { bytes: 338080, gzipBytes: 67632 }],
-  ['de-de', { bytes: 327392, gzipBytes: 68160 }],
-  ['es-es', { bytes: 329344, gzipBytes: 65952 }],
-  ['pt-br', { bytes: 322752, gzipBytes: 64960 }],
-  ['ko-kr', { bytes: 321856, gzipBytes: 64432 }],
+  ['fr-fr', { bytes: 338416, gzipBytes: 67696 }],
+  ['de-de', { bytes: 327728, gzipBytes: 68224 }],
+  ['es-es', { bytes: 329664, gzipBytes: 66016 }],
+  ['pt-br', { bytes: 323072, gzipBytes: 65024 }],
+  ['ko-kr', { bytes: 322208, gzipBytes: 64496 }],
   // Retain the finishing-charge labels' additional 128 raw bytes for ja/ru.
-  ['ja-jp', { bytes: 352128, gzipBytes: 67056 }],
-  ['ru-ru', { bytes: 425312, gzipBytes: 75696 }],
-  ['zh-cn', { bytes: 311296, gzipBytes: 62160 }],
-  ['zh-tw', { bytes: 311296, gzipBytes: 62672 }],
-  ['tr-tr', { bytes: 316288, gzipBytes: 63696 }],
+  ['ja-jp', { bytes: 352528, gzipBytes: 67120 }],
+  ['ru-ru', { bytes: 425728, gzipBytes: 75760 }],
+  ['zh-cn', { bytes: 311296, gzipBytes: 62224 }],
+  ['zh-tw', { bytes: 311296, gzipBytes: 62736 }],
+  ['tr-tr', { bytes: 316640, gzipBytes: 63760 }],
 ]);
 
 function fail(message) {

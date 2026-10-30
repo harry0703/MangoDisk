@@ -19,6 +19,7 @@ describe('cleanup rule icons', () => {
     expect(cleanupRuleIcon('browser.2345-cache', 'browser')).toBe(ICON_NAMES.brand360Browser);
     expect(cleanupRuleIcon('dev.node-tooling-cache', 'development')).toBe(ICON_NAMES.brandNodejs);
     expect(cleanupRuleIcon('dev.uv-cache', 'development')).toBe(ICON_NAMES.brandUv);
+    expect(cleanupRuleIcon('app.vesktop-cache', 'application')).toBe(ICON_NAMES.brandVesktop);
     expect(cleanupRuleIcon('dev.dart-analysis-cache', 'development')).toBe(ICON_NAMES.brandDart);
     expect(cleanupRuleIcon('dev.cargo-extracted-sources', 'development')).toBe(ICON_NAMES.brandRust);
     expect(cleanupRuleIcon('dev.qclaw-compile-cache', 'development')).toBe(ICON_NAMES.brandNodejs);

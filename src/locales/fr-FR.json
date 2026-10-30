@@ -3022,6 +3022,11 @@
         "description": "Journaux cryptés de diagnostic, de réseau, d'appel, de structure et d'installation générés par WeCom",
         "impact": "Les comptes, messages, applets, paramètres et données d'application sont conservés. Fermez WeCom avant de nettoyer"
       },
+      "app.vesktop-cache": {
+        "name": "Cache de Vesktop",
+        "description": "Caches des réponses web et du code de Vesktop.",
+        "impact": "Quittez Vesktop avant. Connexion, réglages et thèmes conservés."
+      },
       "app.discord-cache": {
         "name": "Cache Discord",
         "description": "Réponse Web régénérable, script et cache graphique générés par Discord",

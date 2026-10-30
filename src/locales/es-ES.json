@@ -3022,6 +3022,11 @@
         "description": "Registros cifrados de diagnóstico, red, llamadas, marco e instalación generados por WeCom",
         "impact": "Se conservan cuentas, mensajes, subprogramas, configuraciones y datos de aplicaciones. Cierra WeCom antes de limpiar"
       },
+      "app.vesktop-cache": {
+        "name": "Caché de Vesktop",
+        "description": "Cachés de respuestas web y código de Vesktop.",
+        "impact": "Cierra Vesktop antes. Se conservan la sesión, los ajustes y los temas."
+      },
       "app.discord-cache": {
         "name": "Caché de Discord",
         "description": "Caché de gráficos, scripts y respuesta web regenerable generado por Discord",

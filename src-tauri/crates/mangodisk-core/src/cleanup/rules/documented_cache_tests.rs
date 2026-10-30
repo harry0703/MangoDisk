@@ -15,6 +15,82 @@ use crate::{
 const CACHE: &[u8] = b"rebuildable fixture";
 const STATE: &[u8] = b"persistent fixture must remain unchanged";
 
+#[cfg(any(windows, target_os = "macos"))]
+#[test]
+fn vesktop_cache_cleanup_preserves_authentication_settings_and_themes() {
+    let _lock = crate::shared::operation::test_operation_lock();
+    let sandbox = tempfile::Builder::new()
+        .prefix("mangodisk-vesktop-")
+        .tempdir()
+        .unwrap();
+    #[cfg(target_os = "macos")]
+    let data = sandbox
+        .path()
+        .join("home/Library/Application Support/vesktop");
+    #[cfg(windows)]
+    let data = sandbox.path().join("home/AppData/Roaming/vesktop");
+    #[cfg(any(windows, target_os = "macos"))]
+    {
+        let caches = [
+            data.join("sessionData/Cache/Cache_Data/fixture.bin"),
+            data.join("sessionData/Code Cache/js/fixture.bin"),
+        ];
+        let state = [
+            data.join("sessionData/Cookies"),
+            data.join("sessionData/IndexedDB/account.bin"),
+            data.join("sessionData/Local Storage/account.bin"),
+            data.join("settings/settings.json"),
+            data.join("themes/custom.css"),
+            data.join("vencordFiles/renderer.js"),
+        ];
+        for path in &caches {
+            write_fixture(path, CACHE);
+        }
+        for path in &state {
+            write_fixture(path, STATE);
+        }
+        let plan = isolated_plan("app.vesktop-cache", sandbox.path());
+        execute_fixture(&plan, 0, true);
+        for path in &caches {
+            assert_eq!(fs::read(path).unwrap(), CACHE);
+        }
+        execute_fixture(&plan, 0, false);
+        for path in &caches {
+            assert!(!path.exists());
+        }
+        for path in &state {
+            assert_eq!(fs::read(path).unwrap(), STATE);
+        }
+        assert_eq!(
+            measure_owned_rule(&plan, 0, None, &CleanupExclusions::default())
+                .unwrap()
+                .bytes,
+            0
+        );
+        for path in &caches {
+            write_fixture(path, CACHE);
+        }
+        assert!(
+            measure_owned_rule(&plan, 0, None, &CleanupExclusions::default())
+                .unwrap()
+                .bytes
+                > 0
+        );
+    }
+}
+
+#[test]
+fn vesktop_cache_roots_have_exclusive_ownership() {
+    let catalog = parse_current_platform_catalog().unwrap();
+    for source in &catalog {
+        for root in &source.roots {
+            if root.template.contains("vesktop/") {
+                assert_eq!(source.id, "app.vesktop-cache");
+            }
+        }
+    }
+}
+
 fn write_fixture(path: &Path, content: &[u8]) {
     fs::create_dir_all(path.parent().unwrap()).unwrap();
     fs::write(path, content).unwrap();

@@ -3022,6 +3022,11 @@
         "description": "Von WeCom generierte verschlüsselte Diagnose-, Netzwerk-, Anruf-, Framework- und Installationsprotokolle",
         "impact": "Konten, Nachrichten, Applets, Einstellungen und Anwendungsdaten bleiben erhalten. Schließen Sie WeCom vor der Bereinigung"
       },
+      "app.vesktop-cache": {
+        "name": "Vesktop-Cache",
+        "description": "Webantwort- und Code-Caches von Vesktop.",
+        "impact": "Vesktop vorher beenden. Anmeldung, Einstellungen und Designs bleiben erhalten."
+      },
       "app.discord-cache": {
         "name": "Discord-Cache",
         "description": "Von Discord generierter, neu erstellbarer Web-Antwort-, Skript- und Grafik-Cache",

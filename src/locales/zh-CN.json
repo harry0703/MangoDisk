@@ -3022,6 +3022,11 @@
         "description": "企业微信生成的加密诊断、网络、通话、框架与安装日志",
         "impact": "不会删除账号、消息、小程序、设置或应用数据；关闭企业微信后清理。"
       },
+      "app.vesktop-cache": {
+        "name": "Vesktop 缓存",
+        "description": "Vesktop 的网页响应缓存和代码缓存。",
+        "impact": "退出 Vesktop 后清理，保留登录状态、设置和主题。"
+      },
       "app.discord-cache": {
         "name": "Discord 应用缓存",
         "description": "Discord 生成的网页响应、脚本和图形渲染缓存",

@@ -51,6 +51,7 @@ const CLEANUP_RULE_ICONS: Readonly<Record<string, IconName>> = {
   'app.slack-cache': ICON_NAMES.brandSlack,
   'app.claude-cache': ICON_NAMES.brandClaude,
   'app.discord-cache': ICON_NAMES.brandDiscord,
+  'app.vesktop-cache': ICON_NAMES.brandVesktop,
   'app.zoom-cache': ICON_NAMES.brandZoom,
   'app.teams-cache': ICON_NAMES.brandTeams,
   'app.teams-msix-cache': ICON_NAMES.brandTeams,

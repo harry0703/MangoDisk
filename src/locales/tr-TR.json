@@ -3022,6 +3022,11 @@
         "description": "WeCom'un oluşturduğu şifreli tanılama, ağ, arama, altyapı ve kurulum günlükleri",
         "impact": "Hesaplar, mesajlar, küçük uygulamalar, ayarlar ve uygulama verileri korunur. Temizlemeden önce WeCom'u kapatın"
       },
+      "app.vesktop-cache": {
+        "name": "Vesktop önbelleği",
+        "description": "Vesktop'un web yanıtı ve kod önbellekleri.",
+        "impact": "Önce Vesktop'u kapatın. Oturum, ayarlar ve temalar korunur."
+      },
       "app.discord-cache": {
         "name": "Discord önbelleği",
         "description": "Discord tarafından oluşturulan yeniden oluşturulabilir web yanıtı, betik ve grafik önbelleği.",

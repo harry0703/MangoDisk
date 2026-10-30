@@ -128,6 +128,7 @@ export const ICON_NAMES = {
   brandDingtalk: 'brandDingtalk',
   brandDart: 'brandDart',
   brandDiscord: 'brandDiscord',
+  brandVesktop: 'brandVesktop',
   brandDocker: 'brandDocker',
   brandDropbox: 'brandDropbox',
   brandDuckDuckGo: 'brandDuckDuckGo',

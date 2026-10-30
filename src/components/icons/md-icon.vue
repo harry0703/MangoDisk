@@ -206,6 +206,7 @@ import {
 import { computed, type Component } from 'vue';
 
 import MdIcon360Browser from '@/components/icons/md-icon-360-browser.vue';
+import MdIconVesktop from '@/components/icons/md-icon-vesktop.vue';
 import MdIconAdobe from '@/components/icons/md-icon-adobe.vue';
 import MdIconAiModel from '@/components/icons/md-icon-ai-model.vue';
 import MdIconBaiduNetdisk from '@/components/icons/md-icon-baidu-netdisk.vue';
@@ -384,6 +385,7 @@ const iconMap: Record<IconName, IconDefinition> = {
   brandDart: simpleBrand(siDart),
   brandDeno: tabler(IconBrandDeno),
   brandDiscord: tabler(IconBrandDiscord),
+  brandVesktop: custom(MdIconVesktop),
   brandDocker: simpleBrand(siDocker),
   brandDropbox: custom(MdIconDropbox),
   brandDuckDuckGo: simpleBrand(siDuckduckgo),
