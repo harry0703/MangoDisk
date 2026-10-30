@@ -32,6 +32,8 @@ mod process_image_windows;
 
 #[cfg(target_os = "macos")]
 mod macos_smc;
+#[cfg(target_os = "macos")]
+mod temperature_samples;
 
 pub mod component_power;
 #[cfg(target_os = "macos")]

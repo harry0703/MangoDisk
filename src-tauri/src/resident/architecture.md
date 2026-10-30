@@ -1188,13 +1188,26 @@ to 0–100 degrees and expands in twenty-degree steps when retained samples exce
 history with an explicit recovery gap. Changed sensor meaning or revoked capability
 clears that source history.
 
-macOS reads only mapped CPU SMC keys, caches their metadata, and requires all
-selected sensors to be valid before publishing a reading. Apple Silicon
+macOS reads only mapped CPU SMC keys and caches their metadata. CPU sampling
+excludes invalid or unreadable sensors individually; one valid identified sensor
+is sufficient. A per-key metadata failure does not block other identified CPU
+sensors; only failed metadata is retried on subsequent observations, and recovered
+keys rejoin the sample. Absent or unsupported model variants are not polled.
+When all sensors fail, native transport/permission errors take precedence over
+invalid numeric readings so source recovery can reopen a failed connection.
+Apple Silicon reports the valid sensors' average and their actual
+count. SMC failure with no valid readings still permits the named CPU HID fallback;
+HID CPU readings use the same partial-availability policy. Diagnostics retain the
+source, total/valid/invalid counts, affected sensor names, numeric values or native
+failure reasons on transitions and at most once per minute for unchanged states.
+Sensor enumeration order alone does not count as an availability transition.
+GPU group validation remains independent and requires its complete selected set.
+Apple Silicon
 M1–M6 mappings distinguish CPU keys from GPU, PMU, battery and proximity sensors;
 unknown chips are unsupported. Apple Silicon publishes the selected cores' average.
 Intel prefers the CPU package key TCAD. When absent, machines with one to eight
 physical cores can use the highest TC1C–TC8C core temperature, bounded by
-`hw.physicalcpu_max` and requiring the complete selected set. Unused slots are
+`hw.physicalcpu_max`, using any valid sensors in that identified set. Unused slots are
 excluded because they can expose plausible-looking sentinel values. A core maximum
 is explicitly labeled as such, never as a package reading. If those readings are
 unavailable or contain disabled-sensor sentinels, Intel falls back to the first

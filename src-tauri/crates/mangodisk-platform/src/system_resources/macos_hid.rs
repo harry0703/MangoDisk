@@ -44,6 +44,24 @@ fn owned(raw: CFTypeRef) -> Option<CFType> {
 }
 
 pub(super) fn read(sensor: Sensor) -> PlatformResult<(f64, u32)> {
+    let samples = read_samples(sensor)?;
+    if !samples.failures.is_empty() {
+        return Err(PlatformError::new(
+            PlatformErrorCode::Unsupported,
+            format!("source=iohid sensor={sensor:?} reason=no_identified_temperature"),
+        ));
+    }
+    average(&samples.values).ok_or_else(|| {
+        PlatformError::new(
+            PlatformErrorCode::Unsupported,
+            format!("source=iohid sensor={sensor:?} reason=no_identified_temperature"),
+        )
+    })
+}
+
+pub(super) fn read_samples(
+    sensor: Sensor,
+) -> PlatformResult<super::temperature_samples::TemperatureSamples> {
     let unavailable = || {
         PlatformError::new(
             PlatformErrorCode::Unsupported,
@@ -79,11 +97,33 @@ pub(super) fn read(sensor: Sensor) -> PlatformResult<(f64, u32)> {
         if !identified(&name.to_string(), sensor) {
             continue;
         }
-        let event = owned(unsafe { IOHIDServiceClientCopyEvent(service, 15, 0, 0) })
-            .ok_or_else(unavailable)?;
-        values.push(unsafe { IOHIDEventGetFloatValue(event.as_CFTypeRef(), 15 << 16) });
+        let value = owned(unsafe { IOHIDServiceClientCopyEvent(service, 15, 0, 0) })
+            .ok_or_else(|| {
+                PlatformError::new(
+                    PlatformErrorCode::OperationFailed,
+                    "HID temperature event unavailable",
+                )
+            })
+            .and_then(|event| {
+                let value = unsafe { IOHIDEventGetFloatValue(event.as_CFTypeRef(), 15 << 16) };
+                reported_temperature(value)
+            });
+        values.push((name.to_string(), value));
     }
-    average(&values).ok_or_else(unavailable)
+    Ok(super::temperature_samples::TemperatureSamples::collect(
+        values,
+    ))
+}
+
+fn reported_temperature(value: f64) -> PlatformResult<Option<f64>> {
+    if value == 128.0 {
+        Err(PlatformError::new(
+            PlatformErrorCode::InvalidData,
+            "HID temperature sentinel value=128",
+        ))
+    } else {
+        Ok(Some(value))
+    }
 }
 
 fn average(values: &[f64]) -> Option<(f64, u32)> {
@@ -124,6 +164,27 @@ pub(super) fn fallback<T>(
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn hid_cpu_partial_group_keeps_a_real_reading_after_sentinels_and_missing_events() {
+        let samples = super::super::temperature_samples::TemperatureSamples::collect([
+            ("pACC MTR Temp Sensor0".into(), reported_temperature(128.0)),
+            ("pACC MTR Temp Sensor1".into(), reported_temperature(0.0)),
+            (
+                "eACC MTR Temp Sensor0".into(),
+                Err(PlatformError::new(
+                    PlatformErrorCode::OperationFailed,
+                    "HID temperature event unavailable",
+                )),
+            ),
+            ("eACC MTR Temp Sensor1".into(), reported_temperature(57.0)),
+        ]);
+        assert_eq!(samples.failures.len(), 3);
+        assert_eq!(samples.into_values().unwrap(), [57.0]);
+        assert!(
+            average(&[128.0, 0.0, 57.0]).is_none(),
+            "GPU complete-group validation remains strict"
+        );
+    }
     #[test]
     fn only_identified_sensors_and_complete_valid_groups_are_accepted() {
         assert!(identified("pACC MTR Temp Sensor0", Sensor::Cpu));

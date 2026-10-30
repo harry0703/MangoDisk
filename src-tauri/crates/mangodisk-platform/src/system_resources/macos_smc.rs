@@ -233,35 +233,58 @@ impl ValueReader {
 
 pub(crate) struct TemperatureSensors {
     connection: Connection,
-    sensors: Vec<(u32, KeyInfo)>,
+    discovery: SensorDiscovery,
 }
 impl TemperatureSensors {
     pub(crate) fn new(keys: &[[u8; 4]]) -> PlatformResult<Self> {
         let connection = Connection::open()?;
-        let sensors = discover(&connection, keys)?;
+        let sensors = discover_with(keys, |key| temperature_metadata(&connection, key))?;
         Ok(Self {
             connection,
-            sensors,
+            discovery: SensorDiscovery {
+                sensors,
+                ..Default::default()
+            },
+        })
+    }
+    pub(crate) fn new_cpu(keys: &[[u8; 4]]) -> PlatformResult<Self> {
+        let connection = Connection::open()?;
+        let discovery = discover_cpu_with(keys, |key| temperature_metadata(&connection, key))?;
+        Ok(Self {
+            connection,
+            discovery,
         })
     }
     #[cfg(target_arch = "x86_64")]
     pub(crate) fn select(&mut self, keys: &[[u8; 4]]) -> PlatformResult<()> {
-        self.sensors = discover(&self.connection, keys)?;
+        self.discovery =
+            discover_cpu_with(keys, |key| temperature_metadata(&self.connection, key))?;
         Ok(())
     }
     pub(crate) fn len(&self) -> usize {
-        self.sensors.len()
+        self.discovery.sensors.len()
     }
     #[cfg(target_arch = "x86_64")]
-    pub(crate) fn has_valid_readings(&self) -> PlatformResult<bool> {
-        for &(key, info) in &self.sensors {
-            if self.read_sensor(key, info)?.is_none() {
-                return Ok(false);
-            }
+    pub(crate) fn has_valid_readings(&mut self) -> PlatformResult<bool> {
+        let samples = self.read_available();
+        if !samples.values.is_empty() {
+            return Ok(true);
         }
-        Ok(!self.sensors.is_empty())
+        if let Some((_, error)) = samples
+            .failures
+            .into_iter()
+            .find(|(_, error)| error.code() != PlatformErrorCode::InvalidData)
+        {
+            return Err(error);
+        }
+        Ok(false)
     }
     fn read_sensor(&self, key: u32, info: KeyInfo) -> PlatformResult<Option<f64>> {
+        Ok(self
+            .read_raw_sensor(key, info)?
+            .filter(|value| value.is_finite() && *value > 0.0 && *value <= 150.0))
+    }
+    fn read_raw_sensor(&self, key: u32, info: KeyInfo) -> PlatformResult<Option<f64>> {
         let packet = self
             .connection
             .query(Packet {
@@ -276,13 +299,29 @@ impl TemperatureSensors {
                     format!("SMC sensor disappeared key={key:08x}"),
                 )
             })?;
-        Ok(decode(info, &packet.bytes)
-            .filter(|value| value.is_finite() && *value > 0.0 && *value <= 150.0))
+        Ok(decode(info, &packet.bytes))
+    }
+    pub(crate) fn read_available(&mut self) -> super::temperature_samples::TemperatureSamples {
+        self.discovery
+            .retry_with(|key| temperature_metadata(&self.connection, key));
+        let mut samples = super::temperature_samples::TemperatureSamples::collect(
+            self.discovery
+                .sensors
+                .iter()
+                .map(|&(key, info)| (sensor_name(key), self.read_raw_sensor(key, info))),
+        );
+        samples.failures.extend(
+            self.discovery
+                .unavailable
+                .iter()
+                .map(|(key, error)| (sensor_name(*key), error.clone())),
+        );
+        samples
     }
     pub(crate) fn read(&self) -> PlatformResult<Vec<f64>> {
-        // Every selected sensor must remain readable; changing the denominator
-        // during a sample would silently change an average's meaning.
-        self.sensors
+        // GPU readings keep a fixed denominator; CPU explicitly uses read_available.
+        self.discovery
+            .sensors
             .iter()
             .map(|&(key, info)| {
                 self.read_sensor(key, info)?.ok_or_else(|| {
@@ -295,23 +334,88 @@ impl TemperatureSensors {
             .collect()
     }
 }
-fn discover(connection: &Connection, keys: &[[u8; 4]]) -> PlatformResult<Vec<(u32, KeyInfo)>> {
-    let mut sensors = Vec::new();
-    for key in keys {
-        let key = u32::from_be_bytes(*key);
-        let Some(packet) = connection.query(Packet {
+fn sensor_name(key: u32) -> String {
+    String::from_utf8_lossy(&key.to_be_bytes()).into_owned()
+}
+fn temperature_metadata(connection: &Connection, key: u32) -> PlatformResult<Option<KeyInfo>> {
+    connection
+        .query(Packet {
             key,
             command: 9,
             ..Default::default()
-        })?
-        else {
+        })
+        .map(|packet| packet.map(|packet| packet.info))
+        .map_err(|error| {
+            PlatformError::new(error.code(), format!("SMC metadata key={key:08x}: {error}"))
+        })
+}
+fn discover_with(
+    keys: &[[u8; 4]],
+    mut query: impl FnMut(u32) -> PlatformResult<Option<KeyInfo>>,
+) -> PlatformResult<Vec<(u32, KeyInfo)>> {
+    let mut sensors = Vec::new();
+    for key in keys {
+        let key = u32::from_be_bytes(*key);
+        let Some(info) = query(key)? else {
             continue;
         };
-        if temperature_encoding(packet.info) {
-            sensors.push((key, packet.info));
+        if temperature_encoding(info) {
+            sensors.push((key, info));
         }
     }
     Ok(sensors)
+}
+
+#[derive(Default)]
+struct SensorDiscovery {
+    sensors: Vec<(u32, KeyInfo)>,
+    unavailable: Vec<(u32, PlatformError)>,
+}
+impl SensorDiscovery {
+    fn retry_with(&mut self, mut query: impl FnMut(u32) -> PlatformResult<Option<KeyInfo>>) {
+        // Only failed metadata is retried. Absent model variants do not add
+        // recurring native calls; recovered keys join the next CPU observation.
+        let mut pending = Vec::new();
+        for (key, _) in self.unavailable.drain(..) {
+            match query(key) {
+                Ok(Some(info)) if temperature_encoding(info) => self.sensors.push((key, info)),
+                Ok(Some(_)) => {}
+                Ok(None) => pending.push((
+                    key,
+                    PlatformError::new(
+                        PlatformErrorCode::OperationFailed,
+                        format!("SMC metadata disappeared key={key:08x}"),
+                    ),
+                )),
+                Err(error) => pending.push((key, error)),
+            }
+        }
+        self.unavailable = pending;
+    }
+}
+fn discover_cpu_with(
+    keys: &[[u8; 4]],
+    mut query: impl FnMut(u32) -> PlatformResult<Option<KeyInfo>>,
+) -> PlatformResult<SensorDiscovery> {
+    let mut discovery = SensorDiscovery::default();
+    for key in keys {
+        let key = u32::from_be_bytes(*key);
+        match query(key) {
+            Ok(Some(info)) if temperature_encoding(info) => discovery.sensors.push((key, info)),
+            Ok(_) => {}
+            Err(error) => discovery.unavailable.push((key, error)),
+        }
+    }
+    if discovery.sensors.is_empty() && !discovery.unavailable.is_empty() {
+        super::temperature_samples::TemperatureSamples::collect(
+            discovery
+                .unavailable
+                .iter()
+                .map(|(key, error)| (sensor_name(*key), Err(error.clone()))),
+        )
+        .into_values()?;
+    }
+    Ok(discovery)
 }
 
 fn supported_encoding(info: KeyInfo) -> bool {
@@ -361,6 +465,129 @@ fn decode(info: KeyInfo, bytes: &[u8; 32]) -> Option<f64> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn one_cpu_metadata_failure_keeps_other_identified_temperature_sensors() {
+        let discovery = discover_cpu_with(&[*b"Tp0Y", *b"Te05"], |key| {
+            if key == u32::from_be_bytes(*b"Tp0Y") {
+                Err(PlatformError::new(
+                    PlatformErrorCode::OperationFailed,
+                    "SMC key metadata unavailable",
+                ))
+            } else {
+                Ok(Some(KeyInfo {
+                    size: 4,
+                    kind: u32::from_be_bytes(*b"flt "),
+                    ..Default::default()
+                }))
+            }
+        })
+        .unwrap();
+        assert_eq!(discovery.sensors.len(), 1);
+        assert_eq!(discovery.unavailable.len(), 1);
+    }
+    fn float_metadata() -> KeyInfo {
+        KeyInfo {
+            size: 4,
+            kind: u32::from_be_bytes(*b"flt "),
+            ..Default::default()
+        }
+    }
+    #[test]
+    fn failed_cpu_metadata_retries_until_recovery_without_duplicate_sensors() {
+        let failed = u32::from_be_bytes(*b"Tp0Y");
+        let mut discovery = discover_cpu_with(&[*b"Tp0Y", *b"Te05"], |key| {
+            if key == failed {
+                Err(PlatformError::operation_failed("metadata native_code=1"))
+            } else {
+                Ok(Some(float_metadata()))
+            }
+        })
+        .unwrap();
+        discovery.retry_with(|key| {
+            assert_eq!(key, failed);
+            Ok(None)
+        });
+        assert_eq!(discovery.sensors.len(), 1);
+        assert_eq!(discovery.unavailable.len(), 1);
+        discovery.retry_with(|key| {
+            assert_eq!(key, failed);
+            Ok(Some(float_metadata()))
+        });
+        assert_eq!(discovery.sensors.len(), 2);
+        assert!(discovery.unavailable.is_empty());
+        discovery.retry_with(|_| panic!("recovered metadata must not be queried again"));
+        assert_eq!(discovery.sensors.len(), 2);
+    }
+    #[test]
+    fn absent_or_unsupported_cpu_keys_are_not_retried_and_all_native_errors_propagate() {
+        let discovery = discover_cpu_with(&[*b"Tp0Y", *b"Te05"], |key| {
+            if key == u32::from_be_bytes(*b"Tp0Y") {
+                Ok(None)
+            } else {
+                Ok(Some(KeyInfo {
+                    size: 1,
+                    kind: u32::from_be_bytes(*b"ui8 "),
+                    ..Default::default()
+                }))
+            }
+        })
+        .unwrap();
+        assert!(discovery.sensors.is_empty() && discovery.unavailable.is_empty());
+        let error = discover_cpu_with(&[*b"Tp0Y"], |_| {
+            Err(PlatformError::new(
+                PlatformErrorCode::AccessDenied,
+                "metadata denied native_code=1234",
+            ))
+        })
+        .err()
+        .unwrap();
+        assert_eq!(error.code(), PlatformErrorCode::AccessDenied);
+        assert!(
+            error.diagnostic().contains("Tp0Y") && error.diagnostic().contains("native_code=1234")
+        );
+        assert!(
+            discover_with(&[*b"Tp0Y", *b"Te05"], |key| {
+                if key == u32::from_be_bytes(*b"Tp0Y") {
+                    Ok(Some(float_metadata()))
+                } else {
+                    Err(PlatformError::operation_failed("GPU metadata failure"))
+                }
+            })
+            .is_err(),
+            "GPU discovery must keep its strict semantics"
+        );
+    }
+    #[test]
+    #[ignore = "requires an Apple M3 Mac with readable Te05 and Te0L CPU sensors"]
+    fn native_cpu_metadata_failure_recovers_on_the_same_connection() {
+        let connection = Connection::open().unwrap();
+        let discovery = discover_cpu_with(&[*b"Te05", *b"Te0L"], |key| {
+            if key == u32::from_be_bytes(*b"Te05") {
+                Err(PlatformError::operation_failed("injected metadata failure"))
+            } else {
+                temperature_metadata(&connection, key)
+            }
+        })
+        .unwrap();
+        assert_eq!(discovery.sensors.len(), 1);
+        assert_eq!(discovery.unavailable.len(), 1);
+        let mut sensors = TemperatureSensors {
+            connection,
+            discovery,
+        };
+        let (key, info) = sensors.discovery.sensors[0];
+        let initial = sensors.read_raw_sensor(key, info).unwrap().unwrap();
+        assert!(initial.is_finite() && initial > 0.0 && initial <= 150.0);
+        println!("native_cpu_metadata_partial valid=1 invalid=1 celsius={initial}");
+        let samples = sensors.read_available();
+        assert_eq!(samples.values.len(), 2);
+        assert!(samples.failures.is_empty());
+        assert!(sensors.discovery.unavailable.is_empty());
+        println!(
+            "native_cpu_metadata_recovered valid=2 values={:?}",
+            samples.values
+        );
+    }
     #[test]
     fn macbook_package_power_sp87_preserves_fraction_sign_and_bounds() {
         let info = KeyInfo {
