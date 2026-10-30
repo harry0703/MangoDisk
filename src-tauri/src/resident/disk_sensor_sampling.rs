@@ -4,7 +4,7 @@ use super::{
     sampling_schedule::Demand,
 };
 use mangodisk_platform::{
-    system_resources::{disk, disk_health::DiskHealth, disk_temperature::DiskTemperature},
+    system_resources::{disk_health::DiskHealth, disk_temperature::DiskTemperature},
     PlatformResult,
 };
 
@@ -33,9 +33,9 @@ impl Reader {
             temperature_state,
             detail_temperature_state,
         } = self;
-        let volumes = disk::list()?;
+        let volumes = demand.volumes.as_deref().unwrap_or(&[]);
         let selected =
-            mangodisk_core::system_resources::disk::select(&volumes, demand.selection.as_deref());
+            mangodisk_core::system_resources::disk::select(volumes, demand.selection.as_deref());
         let health_reading = selected
             .filter(|_| demand.disk_health || demand.detailed)
             .map(|volume| health.observation(volume, timestamp_ms, demand.detailed));
@@ -43,7 +43,7 @@ impl Reader {
             health.clear();
         }
         let temperature_volume = mangodisk_core::system_resources::disk::temperature_volume(
-            &volumes,
+            volumes,
             demand.selection.as_deref(),
             demand.temperature_device.as_deref(),
         );

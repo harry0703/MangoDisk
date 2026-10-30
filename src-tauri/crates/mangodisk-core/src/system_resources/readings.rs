@@ -80,7 +80,7 @@ pub struct ResourceReadings {
     pub disk_io: MetricReading<DiskIoRate>,
     pub disk_health: MetricReading<mangodisk_platform::system_resources::disk_health::DiskHealth>,
     pub interfaces: Vec<NetworkInterface>,
-    pub volumes: Vec<ResourceVolume>,
+    pub volumes: Arc<[ResourceVolume]>,
     pub gpu_adapters: Vec<mangodisk_platform::system_resources::gpu::GpuAdapter>,
     pub gpu_devices: Vec<GpuDeviceReading>,
     pub cpu_history: TrendHistory,
@@ -128,7 +128,7 @@ impl Default for ResourceReadings {
             disk_io: MetricReading::default(),
             disk_health: MetricReading::default(),
             interfaces: Vec::new(),
-            volumes: Vec::new(),
+            volumes: Arc::from([]),
             gpu_adapters: Vec::new(),
             gpu_devices: Vec::new(),
             cpu_history: Default::default(),
@@ -423,6 +423,25 @@ impl ResourceCache {
         // them normally; explicit disabling still clears the ranking and its identity.
     }
 
+    pub fn memory_processes(
+        &mut self,
+        reading: MetricReading<super::models::ProcessMemorySummary>,
+    ) {
+        if reading.value.is_some() || self.readings.memory_processes.value.is_none() {
+            self.readings.memory_processes = MetricReading {
+                status: reading.status,
+                sampled_at_ms: reading.sampled_at_ms,
+                value: reading.value.map(Arc::new),
+            };
+        } else if reading.status != MetricStatus::Loading {
+            self.readings.memory_processes.status = reading.status;
+        }
+    }
+
+    pub fn fail_memory_overview(&mut self, status: MetricStatus) {
+        self.readings.memory.status = status;
+    }
+
     pub fn clear_cpu_processes(&mut self) {
         self.readings.cpu_processes = MetricReading::default();
     }
@@ -470,7 +489,9 @@ impl ResourceCache {
     pub fn suspend(&mut self, metric: MetricId) {
         match metric {
             MetricId::Cpu => self.cpu_delta.reset(),
-            MetricId::Network => self.network_delta.reset(),
+            MetricId::Network => {
+                self.network_delta.reset();
+            }
             MetricId::Memory => self.readings.memory_processes = MetricReading::default(),
             MetricId::Gpu | MetricId::Disk => {}
         }
@@ -512,6 +533,15 @@ impl ResourceCache {
                 self.readings.disk_detail_temperature = MetricReading::default();
             }
         }
+    }
+
+    /// Resume counter baselines without inventing activity across suspension.
+    pub fn resume_sampling(&mut self) {
+        self.cpu_delta.reset();
+        self.network_delta.reset();
+        self.disk_io_delta.reset();
+        self.cpu_temperature_interrupted = true;
+        self.system_power_interrupted = true;
     }
 
     /// Update freshness without copying application identities or rebuilding histories.

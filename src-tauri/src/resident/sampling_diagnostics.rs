@@ -1,38 +1,17 @@
 //! Bounded query timings stay separated so cheap sensors cannot hide slow enumeration.
-use mangodisk_core::system_resources::metrics::MetricId;
 use std::collections::VecDeque;
 
-#[derive(Debug, Clone, Copy)]
-pub enum Query {
-    Cpu,
-    Gpu,
-    Memory,
-    Network,
-    Disk,
-    DiskIo,
-    CpuProcesses,
-    CpuAuxiliary,
-    DiskSensors,
-}
-impl From<MetricId> for Query {
-    fn from(metric: MetricId) -> Self {
-        match metric {
-            MetricId::Cpu => Self::Cpu,
-            MetricId::Gpu => Self::Gpu,
-            MetricId::Memory => Self::Memory,
-            MetricId::Network => Self::Network,
-            MetricId::Disk => Self::Disk,
-        }
-    }
-}
+pub use super::sampling_policy::Task as Query;
 #[derive(Default)]
 struct Timings {
     durations: VecDeque<u64>,
     discarded: u64,
+    queue_ms: VecDeque<u64>,
+    delivery_ms: VecDeque<u64>,
 }
 #[derive(Default)]
 pub struct SamplingDiagnostics {
-    queries: [Timings; 9],
+    queries: [Timings; Query::ALL.len()],
 }
 impl SamplingDiagnostics {
     pub fn record(&mut self, query: Query, duration_ms: u64) {
@@ -42,6 +21,22 @@ impl SamplingDiagnostics {
         }
         timings.durations.push_back(duration_ms);
     }
+    pub fn completed(&mut self, completion: &super::sampling_workers::Completion, now_ms: u64) {
+        self.record(completion.task, completion.duration_ms);
+        let timings = &mut self.queries[completion.task as usize];
+        for (values, value) in [
+            (&mut timings.queue_ms, completion.queue_ms),
+            (
+                &mut timings.delivery_ms,
+                now_ms.saturating_sub(completion.monotonic_ms),
+            ),
+        ] {
+            if values.len() == 1200 {
+                values.pop_front();
+            }
+            values.push_back(value);
+        }
+    }
     pub fn discard(&mut self, query: Query) {
         self.queries[query as usize].discarded += 1;
     }
@@ -49,17 +44,7 @@ impl SamplingDiagnostics {
         *self = Self::default();
     }
     pub fn log_and_reset(&mut self, window_ms: u128) {
-        for query in [
-            Query::Cpu,
-            Query::Gpu,
-            Query::Memory,
-            Query::Network,
-            Query::Disk,
-            Query::DiskIo,
-            Query::CpuProcesses,
-            Query::CpuAuxiliary,
-            Query::DiskSensors,
-        ] {
+        for query in Query::ALL {
             let timings = &self.queries[query as usize];
             if timings.durations.is_empty() && timings.discarded == 0 {
                 continue;
@@ -72,7 +57,16 @@ impl SamplingDiagnostics {
                     .copied()
                     .unwrap_or(0)
             };
-            log::info!("resident_query_summary query={query:?} window_ms={window_ms} samples={} p50_ms={} p95_ms={} max_ms={} discarded={}", durations.len(), percentile(50), percentile(95), durations.last().copied().unwrap_or(0), timings.discarded);
+            let percentile_of = |values: &VecDeque<u64>| {
+                let mut sorted: Vec<_> = values.iter().copied().collect();
+                sorted.sort_unstable();
+                sorted
+                    .get(sorted.len().saturating_sub(1) * 95 / 100)
+                    .map_or_else(|| "unmeasured".to_owned(), u64::to_string)
+            };
+            let queue_p95_ms = percentile_of(&timings.queue_ms);
+            let delivery_p95_ms = percentile_of(&timings.delivery_ms);
+            log::info!("resident_query_summary query={query:?} window_ms={window_ms} samples={} p50_ms={} p95_ms={} max_ms={} queue_p95_ms={queue_p95_ms} delivery_p95_ms={delivery_p95_ms} discarded={}", durations.len(), percentile(50), percentile(95), durations.last().copied().unwrap_or(0), timings.discarded);
         }
         self.reset();
     }

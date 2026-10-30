@@ -4,10 +4,21 @@ use crate::system_resources::{
     metrics::{MetricReading, MetricStatus},
 };
 use mangodisk_platform::system_resources::disk::{ResourceVolume, VolumeCapacity};
+use std::sync::Arc;
 
 impl ResourceCache {
+    pub fn volume_catalogue(&self) -> Arc<[ResourceVolume]> {
+        Arc::clone(&self.readings.volumes)
+    }
+
+    pub fn reset_disk_selection(&mut self) {
+        self.readings.disk = MetricReading::default();
+        self.readings.disk_health = MetricReading::default();
+        self.readings.disk_detail_temperature = MetricReading::default();
+    }
+
     pub fn volumes(&mut self, volumes: Vec<ResourceVolume>) {
-        self.readings.volumes = volumes;
+        self.readings.volumes = volumes.into();
     }
 
     pub fn disk(&mut self, volume: ResourceVolume, capacity: VolumeCapacity, timestamp_ms: u64) {

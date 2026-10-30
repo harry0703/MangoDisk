@@ -42,7 +42,8 @@ fn disk_temperature_formats_fresh_samples_without_usage_or_history() {
             name: "System".into(),
             system: true,
             mount_point: String::new(),
-        }],
+        }]
+        .into(),
         disk_temperature: MetricReading::ready(
             DiskTemperature {
                 volume_id: "disk".into(),

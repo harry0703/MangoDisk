@@ -1254,3 +1254,131 @@ fn one_metric_failure_preserves_other_values_and_expires_them_independently() {
     assert!(resumed.cpu_history.is_empty());
     assert_eq!(resumed.network.status, MetricStatus::Failed);
 }
+
+#[test]
+fn alternating_routes_after_disconnect_restore_live_rates_without_mixing_sources() {
+    use mangodisk_platform::system_resources::network::{InterfaceKind, NetworkCounters};
+    let directory = tempfile::tempdir().unwrap();
+    let traffic = std::sync::Arc::new(
+        super::super::network_traffic::NetworkTraffic::open(directory.path().join("traffic.json"))
+            .unwrap(),
+    );
+    let mut cache = ResourceCache::default();
+    cache.set_network_traffic(traffic.clone());
+    for second in 0u64..=8 {
+        let rows = ["manual", "wifi", "ethernet"]
+            .into_iter()
+            .enumerate()
+            .map(|(index, id)| InterfaceSample {
+                interface: NetworkInterface {
+                    details: None,
+                    id: id.into(),
+                    name: id.into(),
+                    kind: InterfaceKind::Ethernet,
+                    physical: true,
+                    connected: index != 0 || second == 0,
+                    default_route_metric: Some(if index == 0 {
+                        0
+                    } else if second % 2 == index as u64 % 2 {
+                        1
+                    } else {
+                        2
+                    }),
+                },
+                counters: Some(NetworkCounters {
+                    received: index as u64 * 100_000 + second * (index as u64 + 1) * 1000,
+                    transmitted: 0,
+                    ..Default::default()
+                }),
+            })
+            .collect();
+        cache.network(rows, Some("manual"), second * 1000, second * 1000 + 1);
+        if second >= 3 {
+            let snapshot = cache.snapshot(second * 1000 + 1);
+            assert_eq!(snapshot.network.status, MetricStatus::Ready);
+            let rate = snapshot.network.value.unwrap();
+            assert_eq!(rate.interface.id, "wifi");
+            assert_eq!(rate.received_bytes_per_second, 2000.0);
+            assert_eq!(rate.received_bytes_since_start, (second - 2) * 2000);
+            assert_eq!(snapshot.network_history.len(), (second - 2) as usize);
+        }
+    }
+    assert!(traffic.total("manual").is_none());
+    assert!(traffic.total("ethernet").is_none());
+    assert_eq!(traffic.total("wifi").unwrap().received_bytes, "12000");
+}
+
+#[test]
+#[ignore = "requires an active native network interface"]
+fn native_network_fallback_reports_measured_counters_without_a_matching_preference() {
+    use mangodisk_platform::system_resources::network::NetworkReader;
+    let mut reader = NetworkReader::default();
+    let mut cache = ResourceCache::default();
+    let origin = std::time::Instant::now();
+    let mut previous = None;
+    let mut verified = 0;
+    for sample in 0..3 {
+        let rows = reader.read().expect("native network sampling must succeed");
+        let time = origin.elapsed().as_millis() as u64;
+        cache.network(
+            rows.clone(),
+            Some("native-test-missing-interface"),
+            time,
+            time + 1,
+        );
+        let snapshot = cache.snapshot(time + 1);
+        if let Some(rate) = snapshot.network.value {
+            assert_eq!(snapshot.network.status, MetricStatus::Ready);
+            assert!(rate.interface.connected && rate.interface.physical);
+            assert_ne!(rate.selection_reason, super::NetworkSelectionReason::Manual);
+            let counters = rows
+                .iter()
+                .find(|row| row.interface.id == rate.interface.id)
+                .and_then(|row| row.counters)
+                .expect("actual source must have native counters");
+            if let Some((id, received, transmitted, then)) = previous.as_ref() {
+                assert_eq!(
+                    &rate.interface.id, id,
+                    "native verification requires a stable connected source"
+                );
+                let elapsed = (time - then) as f64;
+                assert_eq!(
+                    rate.received_bytes_per_second,
+                    (counters.received - received) as f64 * 1000.0 / elapsed
+                );
+                assert_eq!(
+                    rate.transmitted_bytes_per_second,
+                    (counters.transmitted - transmitted) as f64 * 1000.0 / elapsed
+                );
+                verified += 1;
+            }
+        }
+        let baseline = rows.iter().find(|row| {
+            row.interface.physical
+                && row.interface.connected
+                && Some(row.interface.id.as_str()) == cache.selected_interface.as_deref()
+        });
+        previous = baseline.and_then(|row| {
+            row.counters.map(|counters| {
+                (
+                    row.interface.id.clone(),
+                    counters.received,
+                    counters.transmitted,
+                    time,
+                )
+            })
+        });
+        if sample < 2 {
+            std::thread::sleep(std::time::Duration::from_millis(1100));
+        }
+    }
+    assert_eq!(verified, 2, "both native intervals must produce live rates");
+    assert_eq!(
+        cache
+            .snapshot(origin.elapsed().as_millis() as u64 + 1)
+            .network
+            .status,
+        MetricStatus::Ready
+    );
+    eprintln!("native_network_fallback verified=true samples=3 source=physical preference=missing");
+}

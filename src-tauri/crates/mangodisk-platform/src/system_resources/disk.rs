@@ -11,7 +11,7 @@ mod native;
 #[path = "disk/linux.rs"]
 mod native;
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ResourceDisk {
     /// Hardware identity when available; a volume-bound fallback never aliases a replacement.
@@ -20,7 +20,7 @@ pub struct ResourceDisk {
     pub model: Option<String>,
 }
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ResourceVolume {
     /// Stable native identity, persisted locally and never logged.

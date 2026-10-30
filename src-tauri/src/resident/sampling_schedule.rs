@@ -9,12 +9,15 @@ pub struct Demand {
     pub battery: bool,
     pub prepare_battery: bool,
     pub disk_health: bool,
+    pub disk_io: bool,
     pub system_power: bool,
     pub component_power: bool,
     pub fan_speed: bool,
     pub catalogue_only: bool,
     pub selection: Option<String>,
     pub temperature_device: Option<String>,
+    pub volumes:
+        Option<std::sync::Arc<[mangodisk_platform::system_resources::disk::ResourceVolume]>>,
 }
 
 #[derive(Debug, Default)]
@@ -46,6 +49,19 @@ impl SamplingSlot {
         true
     }
 
+    pub fn resume(&mut self) {
+        self.generation = self.generation.wrapping_add(1);
+        self.baseline_generation = self.baseline_generation.wrapping_add(1);
+        self.due_ms = 0;
+        // The old native call still owns its in-flight slot until it exits.
+    }
+
+    /// Only a confirmed exited thread can relinquish an unfinished native query.
+    pub fn retire(&mut self) {
+        self.in_flight = None;
+        self.resume();
+    }
+
     pub fn baseline_generation(&self) -> u64 {
         self.baseline_generation
     }
@@ -62,6 +78,10 @@ impl SamplingSlot {
     /// Bring forward a bounded recovery attempt after a baseline-only sample.
     pub fn retry_after(&mut self, now_ms: u64, delay_ms: u64) {
         self.due_ms = self.due_ms.min(now_ms.saturating_add(delay_ms));
+    }
+
+    pub fn postpone_after(&mut self, now_ms: u64, delay_ms: u64) {
+        self.due_ms = self.due_ms.max(now_ms.saturating_add(delay_ms));
     }
 
     pub fn request_now(&mut self) {

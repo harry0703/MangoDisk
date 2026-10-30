@@ -230,10 +230,22 @@ fn stalled_preference_update_does_not_block_sampling_demand() {
     let (committed, commit) = mpsc::channel();
     let thread = std::thread::spawn(move || {
         sampled
-            .send((sampler.demands(false), sampler.disk_activity_demand()))
+            .send((
+                sampler.demands(false),
+                crate::resident::sampling_policy::Task::DiskIo.demand(
+                    &sampler.demands(false),
+                    &mangodisk_core::system_resources::readings::ResourceCache::default(),
+                ),
+            ))
             .unwrap();
         commit.recv().unwrap();
-        (sampler.demands(false), sampler.disk_activity_demand())
+        (
+            sampler.demands(false),
+            crate::resident::sampling_policy::Task::DiskIo.demand(
+                &sampler.demands(false),
+                &mangodisk_core::system_resources::readings::ResourceCache::default(),
+            ),
+        )
     });
     // Keep the same gate held by native application/save/rollback. The
     // sampler must finish before it is released, even with every entry off.
@@ -304,9 +316,23 @@ fn process_detail_visibility_never_changes_overview_cadence() {
                 || (metric == MetricId::Gpu && cfg!(any(target_os = "macos", windows)))
         );
     }
-    assert!(state.disk_activity_demand().active);
+    assert!(
+        crate::resident::sampling_policy::Task::DiskIo
+            .demand(
+                &state.demands(false),
+                &mangodisk_core::system_resources::readings::ResourceCache::default()
+            )
+            .active
+    );
     state.preferences.lock().unwrap().enabled = false;
-    assert!(!state.disk_activity_demand().active);
+    assert!(
+        !crate::resident::sampling_policy::Task::DiskIo
+            .demand(
+                &state.demands(false),
+                &mangodisk_core::system_resources::readings::ResourceCache::default()
+            )
+            .active
+    );
     for (metric, demand) in MetricId::ALL.into_iter().zip(state.demands(false)) {
         assert_eq!(demand.active, cfg!(windows) && metric == MetricId::Cpu);
         assert_eq!(demand.temperature, cfg!(windows) && metric == MetricId::Cpu);
