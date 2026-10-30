@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { GpuTemperature, MetricReading } from '@/lib/models/system-resources/system-resources';
-import { currentGpuTemperature } from '@/lib/utils/system-resources/gpu-temperature';
+import { currentGpuTemperature, observedGpuTemperature } from '@/lib/utils/system-resources/gpu-temperature';
 function reading(celsius = 51): MetricReading<GpuTemperature> {
   return {
     status: 'ready',
@@ -26,4 +26,11 @@ describe('identified GPU temperatures', () => {
     value.status = 'failed';
     expect(currentGpuTemperature(value, 1000)).toBeNull();
   });
+});
+
+it('bounds retained temperature diagnostics without extending the native sample age', () => {
+  const sample = { ...reading(), status: 'failed' as const };
+  expect(observedGpuTemperature(sample, 31_000)).not.toBeNull();
+  expect(observedGpuTemperature(sample, 31_001)).toBeNull();
+  expect(observedGpuTemperature(sample, 999)).toBeNull();
 });

@@ -1,5 +1,7 @@
 //! Per-device temperature history remains independent of utilization failures.
-use super::metrics::{MetricReading, MetricStatus, Trend, TrendHistory, TrendPoint};
+use super::metrics::{
+    MetricReading, MetricStatus, Trend, TrendHistory, TrendPoint, TEMPERATURE_RETENTION_MS,
+};
 use mangodisk_platform::{
     system_resources::gpu::temperature::{
         GpuTemperature, GpuTemperatureSample, GPU_TEMPERATURE_FRESHNESS_MS,
@@ -12,10 +14,20 @@ use std::collections::BTreeMap;
 struct DeviceTemperature {
     reading: MetricReading<GpuTemperature>,
     history: Trend,
+    interrupted: bool,
+    identity: Option<TemperatureIdentity>,
+}
+#[derive(PartialEq, Eq)]
+struct TemperatureIdentity {
+    name: String,
+    kind: mangodisk_platform::system_resources::gpu::temperature::GpuTemperatureKind,
+    source: mangodisk_platform::system_resources::gpu::temperature::GpuTemperatureSource,
+    count: u32,
 }
 impl DeviceTemperature {
     fn fail(&mut self, status: MetricStatus) {
         self.reading.status = status;
+        self.interrupted = true;
         if matches!(
             status,
             MetricStatus::Unsupported | MetricStatus::Disconnected
@@ -23,37 +35,57 @@ impl DeviceTemperature {
             self.reading.value = None;
             self.reading.sampled_at_ms = None;
             self.history.clear();
+            self.identity = None;
+        }
+    }
+    fn fail_error(&mut self, error: &PlatformError) {
+        self.fail(error_status(error));
+        if matches!(
+            error.code(),
+            PlatformErrorCode::AccessDenied | PlatformErrorCode::ItemChanged
+        ) {
+            self.reading.value = None;
+            self.reading.sampled_at_ms = None;
+            self.history.clear();
+            self.identity = None;
         }
     }
     fn apply(&mut self, sample: GpuTemperatureSample, now: u64) {
         match sample.reading {
             Ok(value) if value.valid() && value.adapter_id == sample.adapter_id => {
-                if self.reading.value.as_ref().is_some_and(|previous| {
-                    previous.adapter_name != value.adapter_name
-                        || previous.kind != value.kind
-                        || previous.source != value.source
-                        || previous.sensor_count != value.sensor_count
-                }) {
+                let identity = TemperatureIdentity {
+                    name: value.adapter_name.clone(),
+                    kind: value.kind,
+                    source: value.source,
+                    count: value.sensor_count,
+                };
+                if self
+                    .identity
+                    .as_ref()
+                    .is_some_and(|previous| previous != &identity)
+                {
                     self.history.clear();
                 }
+                self.identity = Some(identity);
                 self.history.push(TrendPoint {
                     sampled_at_ms: now,
                     primary: value.celsius,
                     secondary: None,
-                    gap_before: false,
+                    gap_before: self.interrupted,
                 });
+                self.interrupted = false;
                 self.reading = MetricReading::ready(value, now);
             }
             Ok(_) => self.fail(MetricStatus::Failed),
-            Err(error) => self.fail(error_status(&error)),
+            Err(error) => self.fail_error(&error),
         }
     }
 }
 fn error_status(error: &PlatformError) -> MetricStatus {
-    if error.code() == PlatformErrorCode::Unsupported {
-        MetricStatus::Unsupported
-    } else {
-        MetricStatus::Failed
+    match error.code() {
+        PlatformErrorCode::Unsupported => MetricStatus::Unsupported,
+        PlatformErrorCode::ItemChanged => MetricStatus::Disconnected,
+        _ => MetricStatus::Failed,
     }
 }
 
@@ -147,7 +179,7 @@ impl GpuTemperatureCache {
         // A failed batch supplies no trustworthy status for any cached device.
         // Per-device failures still affect only their own entry in apply().
         for device in self.devices.values_mut() {
-            device.fail(status);
+            device.fail_error(error);
         }
         self.refresh_reading();
         self.reading.status = status;
@@ -178,9 +210,15 @@ impl GpuTemperatureCache {
     pub fn expire(&mut self, now: u64) -> bool {
         let mut changed = false;
         for device in self.devices.values_mut() {
-            let previous = device.reading.status;
-            device.reading.expire(now, GPU_TEMPERATURE_FRESHNESS_MS);
-            changed |= previous != device.reading.status;
+            let had_value = device.reading.value.is_some();
+            changed |= device.reading.expire_retained(
+                now,
+                GPU_TEMPERATURE_FRESHNESS_MS,
+                TEMPERATURE_RETENTION_MS,
+            );
+            if had_value && device.reading.value.is_none() {
+                device.interrupted = true;
+            }
         }
         self.refresh_reading();
         changed
@@ -441,5 +479,41 @@ mod tests {
         cache.apply(vec![], None, None, 2000);
         cache.expire(3000);
         assert_eq!(cache.reading.status, MetricStatus::Unsupported);
+    }
+    #[test]
+    fn revoked_temperature_access_discards_cached_values_and_history() {
+        let mut cache = GpuTemperatureCache::default();
+        cache.apply(vec![sample("a", 51.0)], None, Some("a"), 1000);
+        cache.error(&PlatformError::new(
+            PlatformErrorCode::AccessDenied,
+            "access revoked",
+        ));
+        assert!(cache.reading.value.is_none());
+        assert!(cache.history(2000).is_empty());
+    }
+    #[test]
+    fn diagnostic_eviction_preserves_source_identity_and_recovery_gap() {
+        let mut cache = GpuTemperatureCache::default();
+        cache.apply(vec![sample("a", 51.0)], None, Some("a"), 1000);
+        cache.error(&PlatformError::new(
+            PlatformErrorCode::OperationFailed,
+            "temporary error",
+        ));
+        assert!(!cache.expire(31000));
+        assert!(cache.reading.value.is_some());
+        assert!(cache.expire(31001));
+        assert!(cache.reading.value.is_none());
+        cache.apply(vec![sample("a", 52.0)], None, Some("a"), 33000);
+        assert_eq!(cache.history(33000).len(), 2);
+        assert!(cache.history(33000)[1].gap_before);
+        cache.expire(64000);
+        let mut replacement = sample("a", 53.0);
+        replacement.reading.as_mut().unwrap().adapter_name = "Replacement".into();
+        cache.apply(vec![replacement], None, Some("a"), 65000);
+        assert_eq!(
+            cache.history(65000).len(),
+            1,
+            "evicting the old numeric value cannot forget the source meaning"
+        );
     }
 }

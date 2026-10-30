@@ -59,24 +59,44 @@ struct Adapter {
     temperature: Option<super::macos_temperature::Reader>,
     temperature_error: Option<(crate::PlatformError, Instant)>,
     temperature_diagnostic: Option<String>,
+    temperature_failures: u8,
+    temperature_retry_ms: u64,
+    temperature_identified: bool,
 }
 
 impl Adapter {
     fn observe_temperature_error(&mut self, error: &crate::PlatformError, now: Instant) {
-        // A gated GPU can produce an invalid temperature without losing its SMC
-        // connection. The normal four-second cadence must be able to detect wakeup.
         if error.code() == crate::PlatformErrorCode::InvalidData {
             self.temperature_error = None;
+            self.temperature_failures = 0;
+            self.temperature_retry_ms = super::temperature::GPU_TEMPERATURE_INTERVAL_MS;
             return;
         }
         self.temperature = None;
         if self
             .temperature_error
             .as_ref()
-            .is_none_or(|(_, at)| now >= *at)
+            .is_some_and(|(previous, at)| now < *at && previous.code() == error.code())
         {
-            self.temperature_error = Some((error.clone(), now + Duration::from_secs(30)));
+            return;
         }
+        if self
+            .temperature_error
+            .as_ref()
+            .is_none_or(|(previous, _)| previous.code() != error.code())
+        {
+            self.temperature_failures = 0;
+        }
+        self.temperature_failures = self.temperature_failures.saturating_add(1);
+        self.temperature_retry_ms = crate::system_resources::temperature_retry::delay_ms(
+            error.code(),
+            self.temperature_failures,
+            super::temperature::GPU_TEMPERATURE_INTERVAL_MS,
+        );
+        self.temperature_error = Some((
+            error.clone(),
+            now + Duration::from_millis(self.temperature_retry_ms),
+        ));
     }
 
     fn read_temperature(
@@ -127,9 +147,22 @@ impl Adapter {
                 )
             }
         })();
+        let reading = reading.map_err(|error| {
+            if self.temperature_identified && error.code() == crate::PlatformErrorCode::Unsupported
+            {
+                crate::PlatformError::new(
+                    crate::PlatformErrorCode::OperationFailed,
+                    format!("identified GPU temperature temporarily unavailable: {error}"),
+                )
+            } else {
+                error
+            }
+        });
         let diagnostic = match &reading {
             Ok(value) => {
                 self.temperature_error = None;
+                self.temperature_failures = 0;
+                self.temperature_identified = true;
                 format!(
                     "ready:{:?}:{:?}:{}",
                     value.source, value.kind, value.sensor_count
@@ -137,7 +170,7 @@ impl Adapter {
             }
             Err(error) => {
                 self.observe_temperature_error(error, Instant::now());
-                format!("{:?}:{}", error.code(), error)
+                format!("{:?}:{}:{}", error.code(), error, self.temperature_retry_ms)
             }
         };
         if self.temperature_diagnostic.as_ref() != Some(&diagnostic) {
@@ -158,11 +191,7 @@ impl Adapter {
                     );
                 }
                 Err(error) => {
-                    let retry_after_ms = if error.code() == crate::PlatformErrorCode::InvalidData {
-                        super::temperature::GPU_TEMPERATURE_INTERVAL_MS
-                    } else {
-                        30_000
-                    };
+                    let retry_after_ms = self.temperature_retry_ms;
                     log::warn!(
                         "gpu_temperature_read_failed adapter={} name={} code={:?} error={} retry_after_ms={retry_after_ms}",
                         text(&self.id), text(&self.name), error.code(), text(error)
@@ -396,6 +425,9 @@ impl GpuReader {
                 acpi_path,
                 temperature: None,
                 temperature_error: None,
+                temperature_failures: 0,
+                temperature_retry_ms: 0,
+                temperature_identified: false,
                 temperature_diagnostic: None,
             });
         }
@@ -701,12 +733,12 @@ mod tests {
         assert!(adapter.temperature.is_none());
         assert_eq!(
             adapter.temperature_error.as_ref().unwrap().1,
-            now + Duration::from_secs(30)
+            now + Duration::from_secs(4)
         );
-        adapter.observe_temperature_error(&failure, next);
+        adapter.observe_temperature_error(&failure, now + Duration::from_secs(2));
         assert_eq!(
             adapter.temperature_error.as_ref().unwrap().1,
-            now + Duration::from_secs(30),
+            now + Duration::from_secs(4),
             "a cached failure must not extend its retry deadline"
         );
         let blocked = adapter
@@ -722,7 +754,7 @@ mod tests {
         assert!(reopened.valid());
         assert!(adapter.temperature.is_some());
         assert!(adapter.temperature_error.is_none());
-        println!("native_gpu_temperature_recovery model={} initial_celsius={} recovered_celsius={} reopened_celsius={} invalid_retry_ms={} transport_retry_ms=30000", adapter.name, initial.celsius, recovered.celsius, reopened.celsius, super::super::temperature::GPU_TEMPERATURE_INTERVAL_MS);
+        println!("native_gpu_temperature_recovery model={} initial_celsius={} recovered_celsius={} reopened_celsius={} invalid_retry_ms={} transport_retry_ms=4000", adapter.name, initial.celsius, recovered.celsius, reopened.celsius, super::super::temperature::GPU_TEMPERATURE_INTERVAL_MS);
     }
     #[test]
     fn driver_models_accept_strings_and_pci_bytes_without_empty_or_invalid_labels() {

@@ -7,7 +7,7 @@ use mangodisk_platform::system_resources::{
     battery::{BatteryPower, BatteryTemperature, ChargingPower, BATTERY_FRESHNESS_MS},
     cpu::{
         details::{CpuFrequency, CpuIdentity},
-        temperature::{CpuTemperature, TEMPERATURE_FRESHNESS_MS},
+        temperature::CpuTemperature,
     },
     disk::ResourceVolume,
     network::{InterfaceSample, NetworkInterface},
@@ -150,6 +150,8 @@ pub struct ResourceCache {
     system_power_interrupted: bool,
     cpu_history: Trend,
     cpu_temperature_history: Trend,
+    cpu_temperature_interrupted: bool,
+    cpu_temperature_identity: Option<cpu::TemperatureIdentity>,
     gpu_temperature: super::gpu_temperature::GpuTemperatureCache,
     gpu_history: Trend,
     gpu_device_histories: BTreeMap<String, super::gpu_history::GpuDeviceHistory>,
@@ -484,6 +486,8 @@ impl ResourceCache {
                 self.readings.cpu_frequency = MetricReading::default();
                 self.readings.cpu_temperature = MetricReading::default();
                 self.cpu_temperature_history.clear();
+                self.cpu_temperature_interrupted = false;
+                self.cpu_temperature_identity = None;
             }
             MetricId::Memory => {
                 self.readings.memory = MetricReading::default();
@@ -575,9 +579,7 @@ impl ResourceCache {
         self.readings
             .cpu_frequency
             .expire(now_ms, MetricId::Cpu.freshness_ms());
-        self.readings
-            .cpu_temperature
-            .expire(now_ms, TEMPERATURE_FRESHNESS_MS);
+        let temperature_cleared = self.expire_cpu_temperature(now_ms);
         self.readings
             .memory_processes
             .expire(now_ms, MetricId::Memory.freshness_ms());
@@ -587,7 +589,7 @@ impl ResourceCache {
         self.readings
             .gpu_details
             .expire(now_ms, MetricId::Gpu.freshness_ms());
-        gpu_changed || before != self.statuses()
+        temperature_cleared || gpu_changed || before != self.statuses()
     }
 
     fn statuses(&self) -> [MetricStatus; 23] {

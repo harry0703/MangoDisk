@@ -9,7 +9,7 @@ const SUMMARY_INTERVAL: Duration = Duration::from_secs(60);
 
 #[derive(Default)]
 pub(super) struct Diagnostics {
-    previous_error: Option<(&'static str, PlatformError)>,
+    previous_error: Option<(&'static str, PlatformError, u64)>,
     previous_sample: Option<(CpuTemperatureSource, u64)>,
     previous_request: Option<Instant>,
     reported_at: Option<Instant>,
@@ -28,12 +28,14 @@ impl Diagnostics {
         model: Option<&str>,
         stage: &'static str,
         error: &PlatformError,
+        retry_after_ms: u64,
     ) {
         if self
             .previous_error
             .as_ref()
-            .is_some_and(|(previous_stage, previous)| {
+            .is_some_and(|(previous_stage, previous, previous_retry)| {
                 *previous_stage == stage
+                    && *previous_retry == retry_after_ms
                     && previous.code() == error.code()
                     && previous.diagnostic() == error.diagnostic()
             })
@@ -44,16 +46,16 @@ impl Diagnostics {
         let diagnostic = crate::diagnostics::text(error);
         if error.code() == PlatformErrorCode::Unsupported {
             log::info!(
-                "cpu_temperature_unsupported model={model} stage={stage} code={:?} reason={diagnostic} retry_after_ms=30000",
+                "cpu_temperature_unsupported model={model} stage={stage} code={:?} reason={diagnostic} retry_after_ms={retry_after_ms}",
                 error.code()
             );
         } else {
             log::warn!(
-                "cpu_temperature_read_failed model={model} stage={stage} code={:?} error={diagnostic} retry_after_ms=30000",
+                "cpu_temperature_read_failed model={model} stage={stage} code={:?} error={diagnostic} retry_after_ms={retry_after_ms}",
                 error.code()
             );
         }
-        self.previous_error = Some((stage, error.clone()));
+        self.previous_error = Some((stage, error.clone(), retry_after_ms));
     }
 
     pub(super) fn observe(&mut self, value: &CpuTemperature, requested_at: Instant) {
@@ -194,17 +196,17 @@ mod tests {
         let failed = PlatformError::new(PlatformErrorCode::OperationFailed, "SMC native_code=0x1");
         for error in [&unavailable, &absent, &failed] {
             for _ in 0..3 {
-                diagnostics.observe_error(Some("Apple M7"), "initialize", error);
+                diagnostics.observe_error(Some("Apple M7"), "initialize", error, 30_000);
             }
         }
         assert!(diagnostics.previous_sample.is_none());
         assert_eq!(diagnostics.requests, 0);
         diagnostics.observe_at(&reading(1000), Instant::now(), 1001);
         assert!(diagnostics.previous_error.is_none());
-        diagnostics.observe_error(Some("Apple M7"), "initialize", &unavailable);
-        diagnostics.observe_error(Some("Apple M7"), "initialize", &unavailable);
-        diagnostics.observe_error(Some("Apple M7"), "read", &unavailable);
-        diagnostics.observe_error(Some("Apple M7"), "read", &unavailable);
+        diagnostics.observe_error(Some("Apple M7"), "initialize", &unavailable, 30_000);
+        diagnostics.observe_error(Some("Apple M7"), "initialize", &unavailable, 30_000);
+        diagnostics.observe_error(Some("Apple M7"), "read", &unavailable, 30_000);
+        diagnostics.observe_error(Some("Apple M7"), "read", &unavailable, 30_000);
         let logs = LOG.0.lock().unwrap();
         let unsupported: Vec<_> = logs
             .iter()
@@ -223,7 +225,7 @@ mod tests {
             assert!(line.contains("model=\"Apple M7\""));
             assert!(line.contains("code=Unsupported"));
             assert!(line.contains("reason="));
-            assert!(line.contains("retry_after_ms=30000"));
+            assert!(line.contains("retry_after_ms={retry_after_ms}"));
         }
         assert_eq!(
             logs.iter()

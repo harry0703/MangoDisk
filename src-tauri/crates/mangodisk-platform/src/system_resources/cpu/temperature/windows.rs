@@ -48,9 +48,31 @@ impl Reader {
                 status: CapabilityStatus::UnsupportedHardware,
                 ..
             } => Err(unsupported()),
-            _ => Err(PlatformError::new(
+            Reply::CpuTemperature {
+                status: CapabilityStatus::DriverAccessDenied,
+                ..
+            } => Err(PlatformError::new(
+                PlatformErrorCode::AccessDenied,
+                "privileged CPU driver access denied",
+            )),
+            Reply::CpuTemperature {
+                status: CapabilityStatus::DriverMissing,
+                ..
+            } => Err(PlatformError::new(
+                PlatformErrorCode::Io,
+                "privileged CPU driver unavailable",
+            )
+            .with_failure_reason(crate::PlatformFailureReason::DependencyUnavailable)),
+            Reply::CpuTemperature {
+                status: CapabilityStatus::SensorUnavailable,
+                ..
+            } => Err(PlatformError::new(
                 PlatformErrorCode::OperationFailed,
-                "privileged CPU sensor unavailable",
+                "privileged CPU sensor temporarily unavailable",
+            )),
+            _ => Err(PlatformError::new(
+                PlatformErrorCode::InvalidData,
+                "unexpected CPU temperature reply",
             )),
         }
     }

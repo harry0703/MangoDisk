@@ -46,13 +46,20 @@ impl Reader {
             Ok(CpuTemperature {
                 celsius,
                 sensor_count,
-                sampled_at_ms: None,
+                sampled_at_ms: Some(observed_at_ms()),
                 kind: CpuTemperatureKind::CoreAverage,
                 source: CpuTemperatureSource::AppleHid,
             })
         })
     }
 }
+fn observed_at_ms() -> u64 {
+    std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .unwrap_or_default()
+        .as_millis() as u64
+}
+
 struct SmcReader {
     sensors: TemperatureSensors,
     kind: CpuTemperatureKind,
@@ -84,7 +91,7 @@ impl SmcReader {
                 values.iter().sum::<f64>() / values.len() as f64
             },
             sensor_count: values.len() as u32,
-            sampled_at_ms: None,
+            sampled_at_ms: Some(observed_at_ms()),
             kind: self.kind,
             source: CpuTemperatureSource::AppleSmc,
         })

@@ -209,6 +209,44 @@ fn battery_fields_expire_independently_and_failures_cannot_become_zero_watts() {
 }
 
 #[test]
+fn sampling_repro_transient_temperature_failure_retains_diagnostic_value() {
+    use mangodisk_platform::system_resources::cpu::temperature::{
+        CpuTemperatureKind, CpuTemperatureSource,
+    };
+    let mut cache = ResourceCache::default();
+    let details = |temperature| CpuDetails {
+        identity: CpuIdentity::default(),
+        frequency: None,
+        temperature,
+    };
+    cache.cpu_details(
+        details(Some(Ok(CpuTemperature {
+            celsius: 48.0,
+            sensor_count: 1,
+            sampled_at_ms: Some(1000),
+            kind: CpuTemperatureKind::CoreAverage,
+            source: CpuTemperatureSource::AppleSmc,
+        }))),
+        1000,
+    );
+    cache.cpu_details(
+        details(Some(Err(mangodisk_platform::PlatformError::new(
+            mangodisk_platform::PlatformErrorCode::OperationFailed,
+            "temporary transport failure",
+        )))),
+        5000,
+    );
+    let reading = cache.snapshot(5000);
+    assert_eq!(reading.cpu_temperature.status, MetricStatus::Failed);
+    assert_eq!(
+        reading.cpu_temperature.sampled_at_ms,
+        Some(1000),
+        "a temporary failure must retain the last real observation and its age"
+    );
+    assert_eq!(reading.cpu_temperature.value.unwrap().celsius, 48.0);
+}
+
+#[test]
 fn cached_native_temperature_preserves_history_and_original_freshness() {
     use mangodisk_platform::system_resources::cpu::temperature::{
         CpuTemperatureKind, CpuTemperatureSource,
@@ -308,8 +346,8 @@ fn temperature_freshness_failure_and_sensor_identity_are_independent_of_cpu_load
     );
     let failed = cache.snapshot(12000);
     assert_eq!(failed.cpu_temperature.status, MetricStatus::Failed);
-    assert!(failed.cpu_temperature.value.is_none());
-    assert!(failed.cpu_temperature_history.is_empty());
+    assert_eq!(failed.cpu_temperature.value.unwrap().celsius, 48.5);
+    assert_eq!(failed.cpu_temperature_history.len(), 1);
     cache.cpu_details(details(Some(Ok(value()))), 13000);
     let mut changed = value();
     changed.sensor_count = 8;
@@ -335,6 +373,56 @@ fn temperature_freshness_failure_and_sensor_identity_are_independent_of_cpu_load
     );
     cache.reset(MetricId::Cpu);
     assert!(cache.snapshot(20000).cpu_temperature.value.is_none());
+}
+
+#[test]
+fn temperature_recovery_keeps_real_gaps_and_bounded_diagnostic_retention() {
+    use mangodisk_platform::system_resources::cpu::temperature::{
+        CpuTemperatureKind, CpuTemperatureSource,
+    };
+    let details = |celsius| CpuDetails {
+        identity: CpuIdentity::default(),
+        frequency: None,
+        temperature: Some(Ok(CpuTemperature {
+            celsius,
+            sensor_count: 1,
+            sampled_at_ms: None,
+            kind: CpuTemperatureKind::CoreAverage,
+            source: CpuTemperatureSource::AppleSmc,
+        })),
+    };
+    let mut cache = ResourceCache::default();
+    cache.cpu_details(details(40.0), 1000);
+    cache.cpu_details(
+        CpuDetails {
+            identity: CpuIdentity::default(),
+            frequency: None,
+            temperature: Some(Err(mangodisk_platform::PlatformError::new(
+                mangodisk_platform::PlatformErrorCode::Io,
+                "temporary IO failure",
+            ))),
+        },
+        5000,
+    );
+    cache.cpu_details(details(42.0), 9000);
+    let reading = cache.snapshot(9000);
+    assert_eq!(reading.cpu_temperature_history.len(), 2);
+    assert!(reading.cpu_temperature_history[1].gap_before);
+    cache.cpu_details(
+        CpuDetails {
+            identity: CpuIdentity::default(),
+            frequency: None,
+            temperature: Some(Err(mangodisk_platform::PlatformError::new(
+                mangodisk_platform::PlatformErrorCode::Io,
+                "persistent IO failure",
+            ))),
+        },
+        13000,
+    );
+    assert!(cache.snapshot(39000).cpu_temperature.value.is_some());
+    assert!(cache.expire(39001), "clearing an aged diagnostic value must trigger publication even if its status is unchanged");
+    assert!(cache.snapshot(39001).cpu_temperature.value.is_none());
+    assert_eq!(cache.snapshot(39001).cpu_temperature_history.len(), 2);
 }
 
 #[test]

@@ -3,6 +3,7 @@ import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 import MdTooltip from '@/components/custom/md-tooltip.vue';
 import MdIcon from '@/components/icons/md-icon.vue';
+import MdMetricFreshness from './md-metric-freshness.vue';
 import { ICON_NAMES } from '@/lib/models/presentation/ui';
 import { observedCpuTemperature } from '@/lib/utils/system-resources/cpu-temperature';
 import { observedGpuTemperature } from '@/lib/utils/system-resources/gpu-temperature';
@@ -89,6 +90,7 @@ const hint = computed(() =>
         </div>
         <strong>{{ value ? Math.round(value.celsius) : '—' }}<small v-if="value">°C</small></strong>
       </div>
+      <MdMetricFreshness v-if="value && showStatus" :reading="reading" :now="observedAtMs" :active="active" />
       <span v-if="!value && showStatus" class="temperature-status" role="status">{{ statusText }}</span>
     </template>
   </div>

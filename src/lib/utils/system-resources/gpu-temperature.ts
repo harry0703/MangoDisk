@@ -1,6 +1,7 @@
 import { cachedMetricValue, hasFreshValue } from './metric-reading';
 import {
   GPU_TEMPERATURE_FRESHNESS_MS,
+  TEMPERATURE_DIAGNOSTIC_RETENTION_MS,
   type GpuTemperature,
   type MetricReading,
 } from '@/lib/models/system-resources/system-resources';
@@ -12,7 +13,7 @@ export function currentGpuTemperature(reading: MetricReading<GpuTemperature>, no
 
 /** Last valid identified observation for cached-first panel presentation. */
 export function observedGpuTemperature(reading: MetricReading<GpuTemperature>, now: number): GpuTemperature | null {
-  const value = cachedMetricValue(reading, now);
+  const value = cachedMetricValue(reading, now, TEMPERATURE_DIAGNOSTIC_RETENTION_MS);
   return value !== null &&
     Number.isFinite(value.celsius) &&
     value.celsius > 0 &&

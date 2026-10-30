@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { currentCpuTemperature } from '@/lib/utils/system-resources/cpu-temperature';
+import { currentCpuTemperature, observedCpuTemperature } from '@/lib/utils/system-resources/cpu-temperature';
 import type { CpuTemperature, MetricReading } from '@/lib/models/system-resources/system-resources';
 const reading = (): MetricReading<CpuTemperature> => ({
   status: 'ready',
@@ -30,4 +30,11 @@ describe('current CPU temperature', () => {
     expect(currentCpuTemperature({ ...reading(), sampledAtMs: null }, 1000)).toBeNull();
     expect(currentCpuTemperature(reading(), NaN)).toBeNull();
   });
+});
+
+it('bounds retained temperature diagnostics without extending the native sample age', () => {
+  const sample = { ...reading(), status: 'failed' as const };
+  expect(observedCpuTemperature(sample, 31_000)).not.toBeNull();
+  expect(observedCpuTemperature(sample, 31_001)).toBeNull();
+  expect(observedCpuTemperature(sample, 999)).toBeNull();
 });

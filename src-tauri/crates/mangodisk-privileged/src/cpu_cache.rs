@@ -8,6 +8,7 @@ use std::time::{Duration, Instant};
 pub(crate) struct CpuCache {
     result: Option<(CapabilityStatus, Option<TemperatureReading>)>,
     due: Option<Instant>,
+    failures: u8,
     pub(crate) idle: Option<Instant>,
 }
 impl CpuCache {
@@ -25,10 +26,21 @@ impl CpuCache {
                 Ok(reading) => (CapabilityStatus::Ready, Some(reading)),
                 Err(status) => (status, None),
             };
-            let delay = if state.0 == CapabilityStatus::Ready {
-                SAMPLE_INTERVAL_MS
-            } else {
-                30_000
+            let delay = match state.0 {
+                CapabilityStatus::Ready => {
+                    self.failures = 0;
+                    SAMPLE_INTERVAL_MS
+                }
+                CapabilityStatus::SensorUnavailable => {
+                    self.failures = self.failures.saturating_add(1);
+                    SAMPLE_INTERVAL_MS
+                        .saturating_mul(1u64 << self.failures.saturating_sub(1).min(3))
+                        .min(30_000)
+                }
+                _ => {
+                    self.failures = 0;
+                    30_000
+                }
             };
             self.due = Some(now + Duration::from_millis(delay));
             self.result = Some(state);
@@ -87,10 +99,10 @@ mod tests {
                 status: CapabilityStatus::SensorUnavailable
             }
         ));
-        cache.read(start + Duration::from_secs(33), || {
+        cache.read(start + Duration::from_secs(7), || {
             panic!("failed sensors must back off")
         });
-        cache.read(start + Duration::from_secs(34), || Ok(sample()));
+        cache.read(start + Duration::from_secs(8), || Ok(sample()));
     }
     #[test]
     fn idle_release_clears_the_cache_and_reopening_reads_fresh_hardware() {
@@ -114,5 +126,33 @@ mod tests {
                 status: CapabilityStatus::DriverMissing
             }
         ));
+    }
+    #[test]
+    fn cached_failures_do_not_accelerate_or_extend_native_recovery() {
+        let mut cache = CpuCache::default();
+        let mut at = Instant::now();
+        for delay in [4000, 8000, 16000, 30000, 30000] {
+            cache.read(at, || Err(CapabilityStatus::SensorUnavailable));
+            assert_eq!(cache.due, Some(at + Duration::from_millis(delay)));
+            cache.read(at + Duration::from_millis(delay - 1), || {
+                panic!("a cached failure must not retry hardware")
+            });
+            at += Duration::from_millis(delay);
+        }
+        cache.read(at, || Ok(sample()));
+        assert_eq!(cache.failures, 0);
+        assert_eq!(
+            cache.due,
+            Some(at + Duration::from_millis(SAMPLE_INTERVAL_MS))
+        );
+        for state in [
+            CapabilityStatus::DriverMissing,
+            CapabilityStatus::DriverAccessDenied,
+            CapabilityStatus::UnsupportedHardware,
+        ] {
+            cache.release();
+            cache.read(at, || Err(state));
+            assert_eq!(cache.due, Some(at + Duration::from_secs(30)));
+        }
     }
 }

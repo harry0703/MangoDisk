@@ -96,7 +96,27 @@ impl<T> MetricReading<T> {
             self.status = MetricStatus::Stale;
         }
     }
+    pub(crate) fn expire_retained(
+        &mut self,
+        now_ms: u64,
+        lifetime_ms: u64,
+        retention_ms: u64,
+    ) -> bool {
+        let status = self.status;
+        self.expire(now_ms, lifetime_ms);
+        let expired = self
+            .sampled_at_ms
+            .is_some_and(|at| now_ms < at || now_ms - at > retention_ms);
+        if expired {
+            self.value = None;
+            self.sampled_at_ms = None;
+        }
+        expired || status != self.status
+    }
 }
+
+/// Volatile temperature diagnostics remain visible briefly, with their original age.
+pub(crate) const TEMPERATURE_RETENTION_MS: u64 = 30_000;
 
 #[derive(Debug, Clone, Copy, Serialize)]
 #[serde(rename_all = "camelCase")]

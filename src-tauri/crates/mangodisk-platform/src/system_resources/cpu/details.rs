@@ -21,6 +21,12 @@ pub struct CpuIdentity {
     pub nominal_frequency_mhz: Option<f64>,
     pub frequency_classes: Vec<CpuFrequencyClass>,
 }
+/// Processor identity is immutable for the lifetime of this desktop process.
+pub fn cpu_identity() -> CpuIdentity {
+    static IDENTITY: std::sync::OnceLock<CpuIdentity> = std::sync::OnceLock::new();
+    IDENTITY.get_or_init(identity).clone()
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub enum CpuFrequencyClass {
@@ -85,6 +91,9 @@ pub struct CpuDetailsReader {
     identity: Option<CpuIdentity>,
     temperature: Option<CpuTemperatureReader>,
     temperature_due: Option<Instant>,
+    temperature_failures: u8,
+    temperature_failure_code: Option<crate::PlatformErrorCode>,
+    temperature_identified: bool,
     temperature_diagnostics: temperature_diagnostics::Diagnostics,
     #[cfg(windows)]
     frequency: Option<windows::FrequencyReader>,
@@ -93,7 +102,7 @@ pub struct CpuDetailsReader {
 }
 impl CpuDetailsReader {
     pub fn read(&mut self, detailed: bool, temperature_requested: bool) -> CpuDetails {
-        let identity = self.identity.get_or_insert_with(identity).clone();
+        let identity = self.identity.get_or_insert_with(cpu_identity).clone();
         let temperature = self.read_temperature(temperature_requested, identity.model.as_deref());
         #[cfg(any(windows, all(target_os = "macos", target_arch = "aarch64")))]
         let frequency = if detailed {
@@ -121,6 +130,9 @@ impl CpuDetailsReader {
         if !requested {
             self.temperature = None;
             self.temperature_due = None;
+            self.temperature_failures = 0;
+            self.temperature_failure_code = None;
+            self.temperature_identified = false;
             self.temperature_diagnostics = Default::default();
             return None;
         }
@@ -139,17 +151,66 @@ impl CpuDetailsReader {
                 .expect("temperature reader initialized")
                 .read()
         })();
-        if let Ok(value) = &result {
-            self.temperature_diagnostics.observe(value, now);
-        }
-        self.temperature_due = temperature_deadline(now, result.is_ok());
-        if let Err(error) = &result {
-            self.temperature = None;
-            self.temperature_diagnostics
-                .observe_error(model, stage, error);
-        }
-        Some(result)
+        Some(self.observe_temperature(result, model, stage, now))
     }
+
+    fn observe_temperature(
+        &mut self,
+        result: PlatformResult<CpuTemperature>,
+        model: Option<&str>,
+        stage: &'static str,
+        now: Instant,
+    ) -> PlatformResult<CpuTemperature> {
+        // A sensor previously observed on this CPU becoming absent is a recovery
+        // condition, not proof that the processor model lost its capability.
+        let result = result.map_err(|error| {
+            if self.temperature_identified && error.code() == crate::PlatformErrorCode::Unsupported
+            {
+                crate::PlatformError::new(
+                    crate::PlatformErrorCode::OperationFailed,
+                    format!("identified CPU temperature temporarily unavailable: {error}"),
+                )
+            } else {
+                error
+            }
+        });
+        if let Ok(value) = &result {
+            self.temperature_identified = true;
+            self.temperature_failures = 0;
+            self.temperature_failure_code = None;
+            self.temperature_diagnostics.observe(value, now);
+        } else if let Err(error) = &result {
+            if self.temperature_failure_code != Some(error.code()) {
+                self.temperature_failures = 0;
+            }
+            self.temperature_failure_code = Some(error.code());
+            self.temperature_failures = self.temperature_failures.saturating_add(1);
+        }
+        self.temperature_due = temperature_deadline(
+            now,
+            result.as_ref().map(|_| ()).map_err(|e| e.code()),
+            self.temperature_failures,
+        );
+        if let Err(error) = &result {
+            // Invalid numeric samples do not invalidate a healthy native handle.
+            if error.code() != crate::PlatformErrorCode::InvalidData {
+                self.temperature = None;
+            }
+            let retry_after_ms = self.temperature_due.map_or(0, |due| {
+                due.saturating_duration_since(now).as_millis() as u64
+            });
+            self.temperature_diagnostics
+                .observe_error(model, stage, error, retry_after_ms);
+        }
+        result
+    }
+    pub fn resume_temperature(&mut self) {
+        self.temperature = None;
+        self.temperature_due = None;
+        self.temperature_failures = 0;
+        self.temperature_failure_code = None;
+    }
+
     pub fn reset(&mut self) {
         // Detail visibility resets frequency baselines, not temperature cadence.
         // Temperature resources are released by read_temperature(false) or Drop.
@@ -161,16 +222,23 @@ impl CpuDetailsReader {
         }
     }
 }
-fn temperature_deadline(now: Instant, successful: bool) -> Option<Instant> {
-    if !successful {
-        return Some(now + Duration::from_secs(30));
-    }
-    // Windows shares a service-owned hardware cadence. Delaying a cached reply
-    // again can postpone the next real sample beyond the history gap boundary.
-    if cfg!(windows) {
-        None
-    } else {
-        Some(now + Duration::from_millis(TEMPERATURE_INTERVAL_MS))
+fn temperature_deadline(
+    now: Instant,
+    result: Result<(), crate::PlatformErrorCode>,
+    failures: u8,
+) -> Option<Instant> {
+    match result {
+        // The privileged service owns sensor failure backoff across all clients.
+        // Transport and permission failures still have a local retry budget.
+        Ok(()) | Err(crate::PlatformErrorCode::OperationFailed) if cfg!(windows) => None,
+        Ok(()) => Some(now + Duration::from_millis(TEMPERATURE_INTERVAL_MS)),
+        Err(code) => Some(
+            now + Duration::from_millis(crate::system_resources::temperature_retry::delay_ms(
+                code,
+                failures,
+                TEMPERATURE_INTERVAL_MS,
+            )),
+        ),
     }
 }
 #[cfg(not(all(target_os = "macos", target_arch = "aarch64")))]
@@ -255,10 +323,20 @@ fn identity() -> CpuIdentity {
 mod tests {
     use super::*;
     #[test]
+    fn sampling_repro_transient_temperature_failure_retries_within_one_interval() {
+        let now = Instant::now();
+        let due = temperature_deadline(now, Err(crate::PlatformErrorCode::OperationFailed), 1);
+        assert!(
+            due.is_none_or(|due| due <= now + Duration::from_millis(TEMPERATURE_INTERVAL_MS)),
+            "one temporary sensor failure must not suppress the next regular sample"
+        );
+    }
+
+    #[test]
     fn service_cached_observations_do_not_add_a_second_sampling_delay() {
         let now = Instant::now();
         assert_eq!(
-            temperature_deadline(now, true),
+            temperature_deadline(now, Ok(()), 0),
             if cfg!(windows) {
                 None
             } else {
@@ -266,7 +344,7 @@ mod tests {
             }
         );
         assert_eq!(
-            temperature_deadline(now, false),
+            temperature_deadline(now, Err(crate::PlatformErrorCode::Unsupported), 1),
             Some(now + Duration::from_secs(30))
         );
     }
@@ -322,5 +400,55 @@ mod temperature_tests {
         assert!(reader.temperature_due.is_none());
         reader.reset();
         assert!(reader.temperature.is_none());
+    }
+}
+
+#[cfg(all(test, target_os = "macos"))]
+mod recovery_tests {
+    use super::*;
+    use crate::PlatformError;
+    #[test]
+    #[ignore = "requires an identified native CPU temperature sensor"]
+    fn native_cpu_temperature_recovers_without_losing_its_sensor_identity() {
+        let mut reader = CpuDetailsReader::default();
+        let initial = reader.read(false, true).temperature.unwrap().unwrap();
+        assert!(reader.temperature.is_some());
+        let now = Instant::now();
+        let invalid = PlatformError::new(
+            crate::PlatformErrorCode::InvalidData,
+            "test gated sensor interval",
+        );
+        assert!(reader
+            .observe_temperature(Err(invalid), None, "read", now)
+            .is_err());
+        assert!(
+            reader.temperature.is_some(),
+            "numeric gating must retain the native handle"
+        );
+        assert_eq!(
+            reader.temperature_due,
+            Some(now + Duration::from_millis(TEMPERATURE_INTERVAL_MS))
+        );
+        reader.temperature_due = Some(now - Duration::from_secs(1));
+        let recovered = reader.read(false, true).temperature.unwrap().unwrap();
+        assert_eq!(initial.source, recovered.source);
+        let absent = PlatformError::new(
+            crate::PlatformErrorCode::Unsupported,
+            "test identified sensor temporarily absent",
+        );
+        let error = reader
+            .observe_temperature(Err(absent), None, "read", now)
+            .unwrap_err();
+        assert_eq!(error.code(), crate::PlatformErrorCode::OperationFailed);
+        assert!(reader.temperature.is_none());
+        assert_eq!(
+            reader.temperature_due,
+            Some(now + Duration::from_millis(TEMPERATURE_INTERVAL_MS))
+        );
+        reader.resume_temperature();
+        let reopened = reader.read(false, true).temperature.unwrap().unwrap();
+        assert!(reader.temperature_identified);
+        assert_eq!(initial.source, reopened.source);
+        println!("native_cpu_temperature_recovery initial_celsius={} recovered_celsius={} reopened_celsius={} retry_ms={TEMPERATURE_INTERVAL_MS}", initial.celsius, recovered.celsius, reopened.celsius);
     }
 }

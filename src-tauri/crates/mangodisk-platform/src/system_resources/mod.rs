@@ -25,6 +25,7 @@ mod process_snapshot_macos;
 #[cfg(windows)]
 mod process_snapshot_windows;
 pub mod release;
+mod temperature_retry;
 
 #[cfg(windows)]
 mod process_image_windows;
