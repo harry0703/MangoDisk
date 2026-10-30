@@ -32,7 +32,9 @@ in-flight temperature or battery query.
 A task acquires its reader lazily on the owning thread. Stopping demand releases
 it after the current native query exits. A timeout never creates another reader
 behind an uncancellable call. Selected disk health waits for the capacity source
-identity; fixed-device temperature can proceed independently.
+identity; fixed-device temperature can proceed independently. Physical device
+changes invalidate source-bound health even when the logical volume ID is reused.
+
 ## Bounded execution and recovery
 
 `sampling_dispatch` uses one pending slot per task and nonblocking sends. A task
@@ -77,6 +79,27 @@ summaries. Resource acquisition/release, worker exit/restart and temperature
 recovery diagnostics log transitions rather than every poll. Native diagnostic
 codes and useful source names are preserved; process payloads and network
 addresses are not diagnostic fields.
+
+## Network source selection
+
+A connected manual interface takes priority. When it disconnects or disappears,
+Core temporarily uses the automatic physical/default-route selection policy;
+the saved preference remains unchanged. A stable return restores the manual
+interface. Background source changes require matching successful observations
+at least one second apart, with no gap over five seconds. Failed enumeration,
+pausing or resuming cancels pending confirmation. Initial selection and explicit
+preference changes take effect immediately. Zero traffic and public-address
+lookup failures do not indicate a disconnected interface. When the previous
+source is unavailable, a still-connected pending physical fallback finishes
+confirmation even if automatic route rankings change. This prevents route churn
+from leaving the panel disconnected indefinitely; manual recovery still wins.
+
+Panels and live indicators use the actual sampled interface. The selector keeps
+the saved preference and its existing disconnected state without introducing
+fallback notices. Source changes rebuild rate baselines and clear the current
+trend; same-source interruptions create a history gap. Persistent traffic totals
+remain keyed by interface and exclude baseline, disabled and invalid intervals.
+Selection diagnostics record policy/fallback transitions without network addresses.
 
 ## Adjacent workflows
 

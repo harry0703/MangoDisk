@@ -145,6 +145,8 @@ pub struct ResourceCache {
     readings: ResourceReadings,
     cpu_delta: CpuDelta,
     network_delta: NetworkDelta,
+    network_selection: network::NetworkSelection,
+    network_interrupted: bool,
     disk_io_delta: DiskIoDelta,
     system_power_history: Trend,
     system_power_interrupted: bool,
@@ -371,19 +373,31 @@ impl ResourceCache {
         timestamp_ms: u64,
     ) -> NetworkSelectionReason {
         self.readings.interfaces = network::catalogue(&interfaces, manual);
-        let (selected, reason) =
-            network::select(&interfaces, manual, self.selected_interface.as_deref());
-        let Some(selected) = selected.filter(|sample| sample.interface.connected) else {
-            self.fail(MetricId::Network, MetricStatus::Disconnected);
+        let (selected, reason) = self.network_selection.select(
+            &interfaces,
+            manual,
+            self.selected_interface.as_deref(),
+            monotonic_ms,
+        );
+        let Some(selected) = selected else {
+            self.readings.network.status = MetricStatus::Disconnected;
+            self.network_delta.reset();
+            self.network_interrupted = true;
             return reason;
         };
         if self.selected_interface.as_deref() != Some(&selected.interface.id) {
             self.network_history.clear();
+            self.network_delta.reset();
+            self.network_interrupted = false;
             self.readings.network = MetricReading::default();
         }
         self.selected_interface = Some(selected.interface.id.clone());
         let Some(counters) = selected.counters else {
-            self.fail(MetricId::Network, MetricStatus::Failed);
+            // Enumeration succeeded: one adapter's unreadable counters must
+            // not cancel confirmation of a healthy replacement interface.
+            self.readings.network.status = MetricStatus::Failed;
+            self.network_delta.reset();
+            self.network_interrupted = true;
             return reason;
         };
         if let Some(value) = self.network_delta.sample(
@@ -397,7 +411,7 @@ impl ResourceCache {
                 sampled_at_ms: timestamp_ms,
                 primary: value.received_bytes_per_second,
                 secondary: Some(value.transmitted_bytes_per_second),
-                gap_before: false,
+                gap_before: std::mem::take(&mut self.network_interrupted),
             });
             self.readings.network = MetricReading::ready(value, timestamp_ms);
         } else {
@@ -459,6 +473,8 @@ impl ResourceCache {
             MetricId::Network => {
                 self.readings.network.status = status;
                 self.network_delta.reset();
+                self.network_selection.interrupt();
+                self.network_interrupted = true;
             }
             MetricId::Gpu => {
                 self.readings.gpu.status = status;
@@ -491,6 +507,8 @@ impl ResourceCache {
             MetricId::Cpu => self.cpu_delta.reset(),
             MetricId::Network => {
                 self.network_delta.reset();
+                self.network_selection.interrupt();
+                self.network_interrupted = true;
             }
             MetricId::Memory => self.readings.memory_processes = MetricReading::default(),
             MetricId::Gpu | MetricId::Disk => {}
@@ -516,6 +534,8 @@ impl ResourceCache {
             }
             MetricId::Network => {
                 self.network_delta.reset();
+                self.network_selection.interrupt();
+                self.network_interrupted = false;
                 self.network_history.clear();
                 self.readings.network = MetricReading::default();
             }
@@ -539,6 +559,8 @@ impl ResourceCache {
     pub fn resume_sampling(&mut self) {
         self.cpu_delta.reset();
         self.network_delta.reset();
+        self.network_selection.interrupt();
+        self.network_interrupted = true;
         self.disk_io_delta.reset();
         self.cpu_temperature_interrupted = true;
         self.system_power_interrupted = true;

@@ -1104,6 +1104,39 @@ fn native_cpu_baselines_do_not_refresh_old_values() {
 }
 
 #[test]
+fn unavailable_manual_network_uses_live_fallback_without_changing_preference() {
+    use super::*;
+    use mangodisk_platform::system_resources::network::{InterfaceKind, NetworkCounters};
+    let sample = |received| {
+        vec![InterfaceSample {
+            interface: NetworkInterface {
+                details: None,
+                id: "wifi".into(),
+                name: "Wi-Fi".into(),
+                kind: InterfaceKind::Wifi,
+                connected: true,
+                physical: true,
+                default_route_metric: Some(1),
+            },
+            counters: Some(NetworkCounters {
+                received,
+                transmitted: 0,
+                ..Default::default()
+            }),
+        }]
+    };
+    let mut cache = ResourceCache::default();
+    cache.network(sample(100), Some("removed-lan"), 0, 0);
+    cache.network(sample(1124), Some("removed-lan"), 1000, 1000);
+    let snapshot = cache.snapshot(1000);
+    assert_eq!(snapshot.network.status, MetricStatus::Ready);
+    let value = snapshot.network.value.unwrap();
+    assert_eq!(value.interface.id, "wifi");
+    assert_eq!(value.received_bytes_per_second, 1024.0);
+    assert_eq!(value.selection_reason, NetworkSelectionReason::DefaultRoute);
+}
+
+#[test]
 fn network_suspend_preserves_history_but_switching_interfaces_clears_it() {
     use mangodisk_platform::system_resources::network::{InterfaceKind, NetworkCounters};
     let sample = |id: &str, received| {
@@ -1132,10 +1165,15 @@ fn network_suspend_preserves_history_but_switching_interfaces_clears_it() {
     assert_eq!(cache.snapshot(2000).network_history.len(), 1);
     assert_eq!(cache.snapshot(2000).network.sampled_at_ms, Some(1000));
     cache.network(sample("two", 5000), None, 3000, 3000);
-    assert!(cache.snapshot(3000).network_history.is_empty());
-    assert_eq!(cache.snapshot(3000).network.status, MetricStatus::Loading);
+    assert_eq!(
+        cache.snapshot(3000).network.status,
+        MetricStatus::Disconnected
+    );
     cache.network(sample("two", 6000), None, 4000, 4000);
-    assert_eq!(cache.snapshot(4000).network_history.len(), 1);
+    assert!(cache.snapshot(4000).network_history.is_empty());
+    assert_eq!(cache.snapshot(4000).network.status, MetricStatus::Loading);
+    cache.network(sample("two", 6100), None, 5000, 5000);
+    assert_eq!(cache.snapshot(5000).network_history.len(), 1);
 }
 
 #[test]
@@ -1253,6 +1291,158 @@ fn one_metric_failure_preserves_other_values_and_expires_them_independently() {
     assert_eq!(resumed.cpu.status, MetricStatus::Loading);
     assert!(resumed.cpu_history.is_empty());
     assert_eq!(resumed.network.status, MetricStatus::Failed);
+}
+
+#[test]
+fn network_fallback_and_restore_keep_actual_identity_totals_and_history_separate() {
+    use super::*;
+    use mangodisk_platform::system_resources::network::{InterfaceKind, NetworkCounters};
+    let directory = tempfile::tempdir().unwrap();
+    let traffic = Arc::new(
+        super::super::network_traffic::NetworkTraffic::open(directory.path().join("traffic.json"))
+            .unwrap(),
+    );
+    let mut cache = ResourceCache::default();
+    cache.set_network_traffic(traffic.clone());
+    let rows = |lan_connected, wifi_connected, time: u64| {
+        [
+            ("lan", lan_connected, 1, 1000, 2),
+            ("wifi", wifi_connected, 2, 100_000, 5),
+        ]
+        .into_iter()
+        .map(
+            |(id, connected, metric, base, multiplier)| InterfaceSample {
+                interface: NetworkInterface {
+                    details: None,
+                    id: id.into(),
+                    name: id.into(),
+                    kind: InterfaceKind::Ethernet,
+                    physical: true,
+                    connected,
+                    default_route_metric: Some(metric),
+                },
+                counters: Some(NetworkCounters {
+                    received: base + time * multiplier,
+                    transmitted: 0,
+                    ..Default::default()
+                }),
+            },
+        )
+        .collect()
+    };
+    cache.network(rows(true, true, 0), Some("lan"), 0, 1);
+    cache.network(rows(true, true, 1000), Some("lan"), 1000, 1000);
+    assert_eq!(
+        cache.snapshot(1000).network.value.unwrap().interface.id,
+        "lan"
+    );
+    cache.network(rows(false, true, 2000), Some("lan"), 2000, 2000);
+    assert_eq!(
+        cache.snapshot(2000).network.status,
+        MetricStatus::Disconnected
+    );
+    cache.network(rows(false, true, 3000), Some("lan"), 3000, 3000);
+    assert_eq!(cache.snapshot(3000).network.status, MetricStatus::Loading);
+    assert!(cache.snapshot(3000).network.value.is_none());
+    assert!(cache.snapshot(3000).network_history.is_empty());
+    cache.network(rows(false, true, 4000), Some("lan"), 4000, 4000);
+    let snapshot = cache.snapshot(4000);
+    let wifi = snapshot.network.value.unwrap();
+    assert_eq!(wifi.interface.id, "wifi");
+    assert_eq!(wifi.received_bytes_per_second, 5000.0);
+    assert_eq!(wifi.received_bytes_since_start, 5000);
+    assert_eq!(wifi.cumulative.unwrap().received_bytes, "5000");
+    assert_eq!(snapshot.network_history.len(), 1);
+    assert!(
+        !snapshot
+            .interfaces
+            .iter()
+            .find(|item| item.id == "lan")
+            .unwrap()
+            .connected
+    );
+    cache.network(rows(true, true, 5000), Some("lan"), 5000, 5000);
+    assert_eq!(
+        cache.snapshot(5000).network.value.unwrap().interface.id,
+        "wifi"
+    );
+    cache.network(rows(true, true, 6000), Some("lan"), 6000, 6000);
+    assert!(cache.snapshot(6000).network_history.is_empty());
+    assert!(cache.snapshot(6000).network.value.is_none());
+    cache.network(rows(true, true, 7000), Some("lan"), 7000, 7000);
+    let restored = cache.snapshot(7000).network.value.unwrap();
+    assert_eq!(restored.interface.id, "lan");
+    assert_eq!(restored.selection_reason, NetworkSelectionReason::Manual);
+    assert_eq!(restored.received_bytes_per_second, 2000.0);
+    assert_eq!(restored.received_bytes_since_start, 2000);
+    assert_eq!(restored.cumulative.unwrap().received_bytes, "4000");
+    assert_eq!(traffic.total("wifi").unwrap().received_bytes, "10000");
+    cache.network(rows(false, false, 8000), Some("lan"), 8000, 8000);
+    assert_eq!(
+        cache.snapshot(8000).network.status,
+        MetricStatus::Disconnected
+    );
+    cache.network(rows(true, true, 9000), Some("lan"), 9000, 9000);
+    cache.network(rows(true, true, 10000), Some("lan"), 10000, 10000);
+    let snapshot = cache.snapshot(10000);
+    assert!(snapshot.network_history.last().unwrap().gap_before);
+    assert_eq!(
+        snapshot
+            .network
+            .value
+            .unwrap()
+            .cumulative
+            .unwrap()
+            .received_bytes,
+        "6000"
+    );
+    // An idle, connected manual link must not hand control to the busier fallback.
+    cache.network(rows(true, true, 10000), Some("lan"), 11000, 11000);
+    let idle = cache.snapshot(11000).network.value.unwrap();
+    assert_eq!(idle.interface.id, "lan");
+    assert_eq!(idle.received_bytes_per_second, 0.0);
+}
+
+#[test]
+fn manual_network_recovery_is_not_blocked_by_fallback_counter_failure() {
+    use super::*;
+    use mangodisk_platform::system_resources::network::{InterfaceKind, NetworkCounters};
+    let rows = |restored, time| {
+        ["lan", "wifi"]
+            .into_iter()
+            .map(|id| InterfaceSample {
+                interface: NetworkInterface {
+                    details: None,
+                    id: id.into(),
+                    name: id.into(),
+                    kind: InterfaceKind::Ethernet,
+                    physical: true,
+                    connected: id == "wifi" || restored,
+                    default_route_metric: Some(1),
+                },
+                counters: (id == "lan" || !restored).then_some(NetworkCounters {
+                    received: time,
+                    transmitted: 0,
+                    ..Default::default()
+                }),
+            })
+            .collect()
+    };
+    let mut cache = ResourceCache::default();
+    cache.network(rows(false, 0), Some("lan"), 0, 1);
+    cache.network(rows(false, 1000), Some("lan"), 1000, 1000);
+    assert_eq!(
+        cache.snapshot(1000).network.value.unwrap().interface.id,
+        "wifi"
+    );
+    cache.network(rows(true, 2000), Some("lan"), 2000, 2000);
+    assert_eq!(cache.snapshot(2000).network.status, MetricStatus::Failed);
+    cache.network(rows(true, 3000), Some("lan"), 3000, 3000);
+    assert_eq!(cache.snapshot(3000).network.status, MetricStatus::Loading);
+    cache.network(rows(true, 4000), Some("lan"), 4000, 4000);
+    let snapshot = cache.snapshot(4000);
+    assert_eq!(snapshot.network.status, MetricStatus::Ready);
+    assert_eq!(snapshot.network.value.unwrap().interface.id, "lan");
 }
 
 #[test]

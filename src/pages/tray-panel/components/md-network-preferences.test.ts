@@ -144,6 +144,52 @@ describe('network selector preference synchronization', () => {
     expect(wrapper.get('[role=combobox]').attributes('aria-label')).not.toContain('Wired adapter');
   });
 
+  it('silently renders the actual fallback while preserving the saved preference through recovery', async () => {
+    vi.mocked(ResidentService.preferences).mockResolvedValueOnce({
+      ...preferencesFixture(),
+      networkInterface: 'removed-adapter',
+    });
+    const { wrapper, settings } = render();
+    await flushPromises();
+    expect(wrapper.getComponent(Select).props('modelValue')).toBe('removed-adapter');
+    expect(wrapper.get('.network-identity').text()).toContain('Wired adapter');
+    expect(wrapper.get('.download .rate-number').text()).toContain('1');
+    expect(wrapper.find('[role=alert]').exists()).toBe(false);
+
+    const restored = reading();
+    restored.network.value!.interface = {
+      ...restored.interfaces[0]!,
+      id: 'removed-adapter',
+      name: 'Restored adapter',
+    };
+    restored.interfaces.push(restored.network.value!.interface);
+    restored.network.value!.selectionReason = 'manual';
+    await wrapper.setProps({ reading: restored });
+    expect(wrapper.get('.network-identity').text()).toContain('Restored adapter');
+    expect(wrapper.get('[role=combobox]').attributes('aria-label')).toContain('Restored adapter');
+    expect(settings.draft?.networkInterface).toBe('removed-adapter');
+    expect(ResidentService.savePreferences).not.toHaveBeenCalled();
+  });
+
+  it('only persists automatic mode when the user explicitly selects it', async () => {
+    vi.mocked(ResidentService.preferences).mockResolvedValueOnce({
+      ...preferencesFixture(),
+      networkInterface: 'removed-adapter',
+    });
+    vi.mocked(ResidentService.savePreferences).mockResolvedValueOnce({
+      ...preferencesFixture(),
+      revision: 1,
+      networkInterface: null,
+    });
+    const { wrapper, settings } = render();
+    await flushPromises();
+    expect(ResidentService.savePreferences).not.toHaveBeenCalled();
+    wrapper.getComponent(Select).vm.$emit('update:modelValue', 'automatic');
+    await flushPromises();
+    expect(ResidentService.savePreferences).toHaveBeenCalledOnce();
+    expect(settings.preferences?.networkInterface).toBeNull();
+  });
+
   it('allows retrying a failed preference read without leaving the network page', async () => {
     vi.mocked(ResidentService.preferences).mockRejectedValueOnce(new Error('injected read failure'));
     const { wrapper } = render();

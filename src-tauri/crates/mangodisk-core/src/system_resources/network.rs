@@ -59,19 +59,19 @@ pub struct NetworkRate {
     pub selection_reason: NetworkSelectionReason,
 }
 
-/// A manual identity is sticky across disconnects. Automatic selection prefers
-/// a physical default route, then retains a connected physical fallback rather
-/// than chasing whichever adapter happens to transfer most bytes this second.
-pub fn select<'a>(
+/// Prefer the saved link while connected, otherwise use the automatic policy.
+/// Throughput and public-address discovery never determine link availability.
+fn select<'a>(
     interfaces: &'a [InterfaceSample],
     manual: Option<&str>,
     previous: Option<&str>,
 ) -> (Option<&'a InterfaceSample>, NetworkSelectionReason) {
-    if let Some(id) = manual {
-        return (
-            interfaces.iter().find(|sample| sample.interface.id == id),
-            NetworkSelectionReason::Manual,
-        );
+    if let Some(selected) = manual.and_then(|id| {
+        interfaces
+            .iter()
+            .find(|sample| sample.interface.id == id && sample.interface.connected)
+    }) {
+        return (Some(selected), NetworkSelectionReason::Manual);
     }
     let candidates = || {
         interfaces
@@ -93,6 +93,125 @@ pub fn select<'a>(
         NetworkSelectionReason::Disconnected
     };
     (chosen, reason)
+}
+
+/// Debounce background source changes without modifying the persisted preference.
+/// Initial selection and explicit preference changes do not wait for confirmation.
+#[derive(Default)]
+pub(super) struct NetworkSelection {
+    manual: Option<String>,
+    pending: Option<PendingSelection>,
+}
+
+struct PendingSelection {
+    id: String,
+    since_ms: u64,
+    last_ms: u64,
+}
+
+impl NetworkSelection {
+    pub(super) fn interrupt(&mut self) {
+        self.pending = None;
+    }
+
+    pub(super) fn select<'a>(
+        &mut self,
+        interfaces: &'a [InterfaceSample],
+        manual: Option<&str>,
+        previous: Option<&str>,
+        monotonic_ms: u64,
+    ) -> (Option<&'a InterfaceSample>, NetworkSelectionReason) {
+        let changed = self.manual.as_deref() != manual;
+        if changed {
+            self.manual = manual.map(str::to_owned);
+        }
+        let (candidate, reason) = select(interfaces, manual, previous);
+        let Some(candidate) = candidate else {
+            self.interrupt();
+            return (None, reason);
+        };
+        if changed || previous.is_none() || previous == Some(candidate.interface.id.as_str()) {
+            self.interrupt();
+            return (Some(candidate), reason);
+        }
+        let current = previous.and_then(|id| {
+            interfaces
+                .iter()
+                .find(|sample| sample.interface.id == id && sample.interface.connected)
+        });
+        // A disconnected source must not wait indefinitely for route rankings to
+        // settle. Finish confirming a still-connected fallback before following
+        // subsequent automatic route changes. Manual recovery keeps priority.
+        let pending_fallback = self.pending.as_ref().filter(|pending| {
+            current.is_none()
+                && reason != NetworkSelectionReason::Manual
+                && monotonic_ms
+                    .checked_sub(pending.last_ms)
+                    .is_some_and(|gap| gap <= 5_000)
+        });
+        let candidate = pending_fallback
+            .and_then(|pending| {
+                interfaces.iter().find(|sample| {
+                    sample.interface.id == pending.id
+                        && sample.interface.connected
+                        && sample.interface.physical
+                })
+            })
+            .unwrap_or(candidate);
+        let reason = if reason != NetworkSelectionReason::Manual {
+            automatic_reason(candidate)
+        } else {
+            reason
+        };
+        // Two successful enumerations at least one second apart confirm a new
+        // source. A pause, clock reversal or unavailable candidate restarts the check.
+        let confirmed = self.pending.as_ref().is_some_and(|pending| {
+            pending.id == candidate.interface.id
+                && monotonic_ms
+                    .checked_sub(pending.last_ms)
+                    .is_some_and(|gap| gap <= 5_000)
+                && monotonic_ms.saturating_sub(pending.since_ms) >= 1_000
+        });
+        if confirmed {
+            self.interrupt();
+            return (Some(candidate), reason);
+        }
+        match self.pending.as_mut() {
+            Some(pending)
+                if pending.id == candidate.interface.id
+                    && monotonic_ms
+                        .checked_sub(pending.last_ms)
+                        .is_some_and(|gap| gap <= 5_000) =>
+            {
+                pending.last_ms = monotonic_ms;
+            }
+            _ => {
+                self.pending = Some(PendingSelection {
+                    id: candidate.interface.id.clone(),
+                    since_ms: monotonic_ms,
+                    last_ms: monotonic_ms,
+                })
+            }
+        }
+        // A connected old link remains truthful during confirmation. Never
+        // present a disconnected link's cached counters as a live observation.
+        let reason = match current {
+            Some(current) if manual == Some(current.interface.id.as_str()) => {
+                NetworkSelectionReason::Manual
+            }
+            Some(current) => automatic_reason(current),
+            None => NetworkSelectionReason::Disconnected,
+        };
+        (current, reason)
+    }
+}
+
+fn automatic_reason(sample: &InterfaceSample) -> NetworkSelectionReason {
+    if sample.interface.default_route_metric.is_some() {
+        NetworkSelectionReason::DefaultRoute
+    } else {
+        NetworkSelectionReason::PhysicalFallback
+    }
 }
 
 #[derive(Default)]
@@ -165,324 +284,5 @@ impl NetworkDelta {
 }
 
 #[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn persistent_totals_only_include_valid_selected_intervals_and_survive_a_restart() {
-        let directory = tempfile::tempdir().unwrap();
-        let path = directory.path().join("traffic.json");
-        let traffic = Arc::new(NetworkTraffic::open(path.clone()).unwrap());
-        let lan = interface("lan", true, Some(1)).interface;
-        let wifi = interface("wifi", true, Some(2)).interface;
-        let counters = |received| NetworkCounters {
-            received,
-            transmitted: received * 2,
-            ..Default::default()
-        };
-        let mut delta = NetworkDelta::default();
-        delta.set_traffic(traffic.clone());
-        let reason = NetworkSelectionReason::Manual;
-        assert!(delta
-            .sample(&lan, counters(100), 1000, reason, 1000)
-            .is_none());
-        let value = delta
-            .sample(&lan, counters(200), 2000, reason, 2000)
-            .unwrap();
-        assert_eq!(value.cumulative.unwrap().received_bytes, "100");
-        assert!(delta
-            .sample(&lan, counters(10000), 20000, reason, 20000)
-            .is_none());
-        assert!(delta
-            .sample(&lan, counters(10), 21000, reason, 21000)
-            .is_none());
-        delta.reset();
-        assert!(delta
-            .sample(&lan, counters(500), 22000, reason, 22000)
-            .is_none());
-        delta
-            .sample(&lan, counters(600), 23000, reason, 23000)
-            .unwrap();
-        assert!(delta
-            .sample(&wifi, counters(1000), 24000, reason, 24000)
-            .is_none());
-        delta
-            .sample(&wifi, counters(1100), 25000, reason, 25000)
-            .unwrap();
-        assert_eq!(traffic.total("lan").unwrap().received_bytes, "200");
-        assert_eq!(traffic.total("wifi").unwrap().received_bytes, "100");
-        traffic.flush(true).unwrap();
-        drop(delta);
-        drop(traffic);
-        let traffic = Arc::new(NetworkTraffic::open(path).unwrap());
-        let mut delta = NetworkDelta::default();
-        delta.set_traffic(traffic.clone());
-        assert!(delta
-            .sample(&lan, counters(50000), 1000, reason, 30000)
-            .is_none());
-        let value = delta
-            .sample(&lan, counters(50001), 2000, reason, 31000)
-            .unwrap();
-        assert_eq!(value.received_bytes_since_start, 1);
-        assert_eq!(value.cumulative.unwrap().received_bytes, "201");
-        traffic.reset("lan", 1000, 31500).unwrap();
-        let value = delta
-            .sample(&lan, counters(50002), 3000, reason, 32000)
-            .unwrap();
-        assert_eq!(value.received_bytes_since_start, 2);
-        assert_eq!(value.cumulative.unwrap().received_bytes, "0");
-        let value = delta
-            .sample(&lan, counters(50003), 4000, reason, 33000)
-            .unwrap();
-        assert_eq!(value.cumulative.unwrap().received_bytes, "1");
-    }
-
-    #[test]
-    fn session_totals_exclude_pauses_rollbacks_and_changes_without_losing_link_metadata() {
-        let lan = interface("lan", true, Some(1)).interface;
-        let wifi = interface("wifi", true, Some(2)).interface;
-        let mut delta = NetworkDelta::default();
-        let counters = |received, transmitted| NetworkCounters {
-            received,
-            transmitted,
-            receive_link_bps: Some(1_000_000_000),
-            transmit_link_bps: None,
-        };
-        let mut sample = |interface: &NetworkInterface, rx, tx, time| {
-            delta.sample(
-                interface,
-                counters(rx, tx),
-                time,
-                NetworkSelectionReason::Manual,
-                1000,
-            )
-        };
-        assert!(sample(&lan, 1000, 2000, 0).is_none());
-        let first = sample(&lan, 1100, 2300, 1000).unwrap();
-        assert_eq!(
-            (
-                first.received_bytes_since_start,
-                first.transmitted_bytes_since_start
-            ),
-            (100, 300)
-        );
-        assert_eq!(first.receive_link_bps, Some(1_000_000_000));
-        assert_eq!(first.transmit_link_bps, None);
-        assert!(sample(&lan, 2000, 3000, 10_000).is_none());
-        let resumed = sample(&lan, 2010, 3020, 11_000).unwrap();
-        assert_eq!(
-            (
-                resumed.received_bytes_since_start,
-                resumed.transmitted_bytes_since_start
-            ),
-            (110, 320)
-        );
-        assert!(sample(&lan, 0, 0, 12_000).is_none());
-        assert_eq!(
-            sample(&lan, 10, 10, 13_000)
-                .unwrap()
-                .received_bytes_since_start,
-            120
-        );
-        assert!(sample(&wifi, 8000, 8000, 14_000).is_none());
-        assert_eq!(
-            sample(&wifi, 8010, 8010, 15_000)
-                .unwrap()
-                .received_bytes_since_start,
-            10
-        );
-        delta.reset();
-        assert!(delta
-            .sample(
-                &wifi,
-                counters(9000, 9000),
-                16_000,
-                NetworkSelectionReason::Manual,
-                1000
-            )
-            .is_none());
-        assert_eq!(
-            delta
-                .sample(
-                    &wifi,
-                    counters(9010, 9010),
-                    17_000,
-                    NetworkSelectionReason::Manual,
-                    1000
-                )
-                .unwrap()
-                .received_bytes_since_start,
-            20
-        );
-    }
-    use mangodisk_platform::system_resources::network::InterfaceKind;
-
-    fn interface(id: &str, physical: bool, metric: Option<u32>) -> InterfaceSample {
-        InterfaceSample {
-            interface: NetworkInterface {
-                details: None,
-                id: id.into(),
-                name: id.into(),
-                kind: InterfaceKind::Ethernet,
-                physical,
-                connected: true,
-                default_route_metric: metric,
-            },
-            counters: None,
-        }
-    }
-
-    #[test]
-    fn selector_hides_internal_and_inactive_links_but_keeps_saved_identity() {
-        let mut idle = interface("inactive", true, None);
-        idle.interface.connected = false;
-        let mut other = interface("internal", true, None);
-        other.interface.kind = InterfaceKind::Other;
-        let rows = [
-            interface("vpn", false, Some(0)),
-            interface("lan", true, Some(10)),
-            interface("wifi", true, Some(20)),
-            idle,
-            other,
-        ];
-        assert_eq!(
-            catalogue(&rows, None)
-                .iter()
-                .map(|row| row.id.as_str())
-                .collect::<Vec<_>>(),
-            ["lan", "wifi"]
-        );
-        assert_eq!(
-            catalogue(&rows, Some("inactive")).last().unwrap().id,
-            "inactive"
-        );
-        assert_eq!(catalogue(&rows, Some("vpn")).first().unwrap().id, "vpn");
-        assert_eq!(catalogue(&rows, Some("missing")).len(), 2);
-        assert_eq!(
-            select(&rows, Some("vpn"), None).0.unwrap().interface.id,
-            "vpn"
-        );
-    }
-
-    #[test]
-    fn automatic_selection_avoids_virtual_double_counting_and_is_stable() {
-        let rows = [
-            interface("vpn", false, Some(0)),
-            interface("lan", true, Some(10)),
-            interface("wifi", true, Some(20)),
-        ];
-        assert_eq!(select(&rows, None, None).0.unwrap().interface.id, "lan");
-        assert_eq!(
-            select(&rows, Some("vpn"), None).0.unwrap().interface.id,
-            "vpn"
-        );
-        assert!(select(&rows, Some("missing"), None).0.is_none());
-        let fallback = [interface("a", true, None), interface("b", true, None)];
-        assert_eq!(
-            select(&fallback, None, Some("b")).0.unwrap().interface.id,
-            "b"
-        );
-        assert_eq!(
-            select(&fallback, None, None).1,
-            NetworkSelectionReason::PhysicalFallback
-        );
-    }
-
-    #[test]
-    fn wired_default_route_survives_wifi_disconnect_and_reconnection() {
-        let lan = interface("en7", true, Some(0));
-        let mut wifi = interface("en0", true, Some(1));
-        wifi.interface.kind = InterfaceKind::Wifi;
-        let mut rows = [wifi, lan];
-        for connected in [true, false, true] {
-            rows[0].interface.connected = connected;
-            let (selected, reason) = select(&rows, None, Some("en0"));
-            assert_eq!(selected.unwrap().interface.id, "en7");
-            assert_eq!(reason, NetworkSelectionReason::DefaultRoute);
-            let catalogue = catalogue(&rows, None);
-            assert_eq!(catalogue[0].id, "en7");
-            assert_eq!(catalogue.len(), if connected { 2 } else { 1 });
-        }
-    }
-
-    #[test]
-    fn rates_use_actual_elapsed_time_in_both_directions() {
-        let interface = interface("lan", true, None).interface;
-        let mut delta = NetworkDelta::default();
-        let reason = NetworkSelectionReason::Manual;
-        assert!(delta
-            .sample(
-                &interface,
-                NetworkCounters {
-                    received: 100,
-                    transmitted: 200,
-                    ..Default::default()
-                },
-                0,
-                reason,
-                1000
-            )
-            .is_none());
-        let value = delta
-            .sample(
-                &interface,
-                NetworkCounters {
-                    received: 3100,
-                    transmitted: 6200,
-                    ..Default::default()
-                },
-                1500,
-                reason,
-                1000,
-            )
-            .unwrap();
-        assert_eq!(value.received_bytes_per_second, 2000.0);
-        assert_eq!(value.transmitted_bytes_per_second, 4000.0);
-        let idle = delta
-            .sample(
-                &interface,
-                NetworkCounters {
-                    received: 3100,
-                    transmitted: 6200,
-                    ..Default::default()
-                },
-                2500,
-                reason,
-                1000,
-            )
-            .unwrap();
-        assert_eq!(idle.received_bytes_per_second, 0.0);
-    }
-
-    #[test]
-    fn resets_interface_changes_and_sleep_do_not_make_peaks() {
-        let one = interface("one", true, None).interface;
-        let two = interface("two", true, None).interface;
-        let mut delta = NetworkDelta::default();
-        let reason = NetworkSelectionReason::Manual;
-        let counters = NetworkCounters {
-            received: 100,
-            transmitted: 100,
-            ..Default::default()
-        };
-        assert!(delta.sample(&one, counters, 0, reason, 1000).is_none());
-        assert!(delta.sample(&two, counters, 1000, reason, 1000).is_none());
-        assert!(delta
-            .sample(
-                &two,
-                NetworkCounters {
-                    received: 1,
-                    transmitted: 1,
-                    ..Default::default()
-                },
-                2000,
-                reason,
-                1000
-            )
-            .is_none());
-        assert!(delta.sample(&two, counters, 60000, reason, 1000).is_none());
-        assert!(delta.sample(&two, counters, 61000, reason, 1000).is_some());
-        delta.reset();
-        assert!(delta.sample(&two, counters, 62000, reason, 1000).is_none());
-    }
-}
+#[path = "network_tests.rs"]
+mod tests;
