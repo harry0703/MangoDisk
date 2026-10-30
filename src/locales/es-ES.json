@@ -3052,6 +3052,11 @@
         "description": "Caché de respuesta del trabajador de servicio almacenado en particiones del renderizador de Notion",
         "impact": "Se mantienen registros de páginas y datos de cuentas. Es posible que sea necesario descargar los recursos en línea nuevamente antes de utilizarlos sin conexión. Cierra Notion antes de limpiar"
       },
+      "app.netease-music-playback-cache": {
+        "name": "Caché de reproducción de NetEase Music",
+        "description": "Audio temporal guardado durante la reproducción en línea",
+        "impact": "Se conservan las descargas, listas y datos de la cuenta. Es posible que debas volver a cargar el audio. Cierra NetEase Music antes de limpiar."
+      },
       "app.netease-cloud-music-cache": {
         "name": "Caché de NetEase Cloud Music",
         "description": "Caché de registro de diagnóstico, GPU, script y web regenerable generado por NetEase Cloud Music",

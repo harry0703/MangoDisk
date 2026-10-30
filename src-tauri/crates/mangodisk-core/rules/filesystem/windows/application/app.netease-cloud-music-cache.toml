@@ -1,6 +1,6 @@
 # NetEase Cloud Music keeps the local library, downloaded media, account data,
 # and Chromium persistence beside one fixed renderer profile. The top-level
-# Cache directory is deliberately excluded because it may contain audio data.
+# Cache directory is owned separately by the opt-in playback cache rule.
 id = "app.netease-cloud-music-cache"
 schema_version = 3
 rule_version = 1

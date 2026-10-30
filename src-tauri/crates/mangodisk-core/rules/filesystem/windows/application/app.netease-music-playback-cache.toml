@@ -1,0 +1,31 @@
+id = "app.netease-music-playback-cache"
+schema_version = 3
+rule_version = 1
+platform = "windows"
+category = "application"
+risk = "recoverable"
+default_selected = false
+recommended_selected = false
+required_stopped_processes = ["cloudmusic.exe"]
+
+[[applicability]]
+kind = "anyRootExists"
+
+[[roots]]
+template = "${local_app_data}/NetEase/CloudMusic/Cache/Cache"
+verified_rebuildable = true
+
+[matcher]
+kind = "extensionIn"
+values = ["uc", "idx", "info"]
+
+[execution]
+kind = "deleteMatchingContents"
+requires_app_close = true
+
+[verification]
+lifecycle = "verified"
+evidence = "NetEase Cloud Music 3.1.42 Clear Cache removed observed uc, idx and info files from the playback cache; new uc files appeared afterwards. Unknown types, library, account data and downloads are excluded"
+verified_at = "2026-10-30"
+verified_platform = "windows"
+references = ["https://music.163.com/#/download"]

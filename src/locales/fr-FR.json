@@ -3052,6 +3052,11 @@
         "description": "Cache de réponses Service Worker stocké dans les partitions du moteur de rendu Notion",
         "impact": "Les enregistrements de page et les données de compte sont conservés. Les ressources devront peut-être être téléchargées à nouveau en ligne avant une utilisation hors ligne. Fermez Notion avant le nettoyage"
       },
+      "app.netease-music-playback-cache": {
+        "name": "Cache de lecture NetEase Music",
+        "description": "Données audio temporaires de la lecture en ligne",
+        "impact": "Les téléchargements, playlists et données de compte sont conservés. La lecture peut nécessiter un nouveau chargement. Fermez NetEase Music avant le nettoyage."
+      },
       "app.netease-cloud-music-cache": {
         "name": "Cache NetEase Cloud Music",
         "description": "Cache régénérable Web, script, GPU et journal de diagnostic généré par NetEase Cloud Music",

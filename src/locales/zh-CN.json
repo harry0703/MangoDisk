@@ -3052,6 +3052,11 @@
         "description": "Notion 渲染分区中的 Service Worker 响应缓存",
         "impact": "保留页面记录和账号数据；离线使用前，可能需要联网重新下载资源。请在关闭 Notion 后清理。"
       },
+      "app.netease-music-playback-cache": {
+        "name": "网易云音乐播放缓存",
+        "description": "在线播放音乐时产生的临时音频缓存",
+        "impact": "不删除已下载歌曲、歌单或账号；清理后播放可能需要重新加载。请先关闭网易云音乐。"
+      },
       "app.netease-cloud-music-cache": {
         "name": "网易云音乐缓存",
         "description": "网易云音乐生成的可重建网页、脚本、GPU 与诊断日志缓存",

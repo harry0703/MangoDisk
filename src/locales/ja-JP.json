@@ -3052,6 +3052,11 @@
         "description": "Notionのレンダラーパーティションに保存されたService Worker応答キャッシュ。",
         "impact": "ページの記録とアカウント情報は保持されます。オフラインで使う前に、オンラインでリソースを再ダウンロードする必要がある場合があります。クリーンアップ前にNotionを終了してください。"
       },
+      "app.netease-music-playback-cache": {
+        "name": "NetEase Music の再生キャッシュ",
+        "description": "オンライン再生時に保存された一時音声データ",
+        "impact": "ダウンロード済みの曲、プレイリスト、アカウントは保持されます。再生時に再読み込みが必要になる場合があります。先に NetEase Music を終了してください。"
+      },
       "app.netease-cloud-music-cache": {
         "name": "NetEase Cloud Music キャッシュ",
         "description": "NetEase Cloud Music が生成する再作成可能な Web、スクリプト、GPU、診断ログのキャッシュ。",

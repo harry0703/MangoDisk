@@ -3052,6 +3052,11 @@
         "description": "Service Worker-Antwortcache, gespeichert in Notion-Renderer-Partitionen",
         "impact": "Seitendatensätze und Kontodaten bleiben erhalten. Möglicherweise müssen Ressourcen vor der Offline-Nutzung erneut online heruntergeladen werden. Schließen Sie Notion vor der Bereinigung"
       },
+      "app.netease-music-playback-cache": {
+        "name": "NetEase Music Wiedergabecache",
+        "description": "Zwischengespeicherte Audiodaten der Onlinewiedergabe",
+        "impact": "Downloads, Wiedergabelisten und Kontodaten bleiben erhalten. Die Wiedergabe muss Daten eventuell erneut laden. NetEase Music zuerst schließen."
+      },
       "app.netease-cloud-music-cache": {
         "name": "NetEase Cloud Music-Cache",
         "description": "Wiederherstellbarer Web-, Skript-, GPU- und Diagnoseprotokoll-Cache, generiert von NetEase Cloud Music",

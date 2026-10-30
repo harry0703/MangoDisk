@@ -3052,6 +3052,11 @@
         "description": "Notion 渲染分區中的 Service Worker 回應快取",
         "impact": "保留頁面記錄和帳號資料；離線使用前，可能需要連網重新下載資源。請在關閉 Notion 後清理。"
       },
+      "app.netease-music-playback-cache": {
+        "name": "網易雲音樂播放快取",
+        "description": "線上播放音樂時產生的暫存音訊",
+        "impact": "不會刪除已下載歌曲、歌單或帳號；清理後播放可能需要重新載入。請先關閉網易雲音樂。"
+      },
       "app.netease-cloud-music-cache": {
         "name": "網易雲音樂快取",
         "description": "網易雲音樂產生的可重建網頁、腳本、GPU 與診斷記錄檔快取",

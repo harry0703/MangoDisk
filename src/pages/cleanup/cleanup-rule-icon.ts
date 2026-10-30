@@ -78,6 +78,7 @@ const CLEANUP_RULE_ICONS: Readonly<Record<string, IconName>> = {
   'app.signal-cache': ICON_NAMES.brandSignal,
   'app.postman-cache': ICON_NAMES.brandPostman,
   'app.netease-cloud-music-cache': ICON_NAMES.brandNeteaseMusic,
+  'app.netease-music-playback-cache': ICON_NAMES.brandNeteaseMusic,
   'app.telegram-temporary-cache': ICON_NAMES.brandTelegram,
   'app.vlc-cache': ICON_NAMES.brandVlc,
   'app.ea-rendering-cache': ICON_NAMES.brandEa,

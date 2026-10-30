@@ -15,6 +15,78 @@ use crate::{
 const CACHE: &[u8] = b"rebuildable fixture";
 const STATE: &[u8] = b"persistent fixture must remain unchanged";
 
+#[cfg(target_os = "macos")]
+#[test]
+fn netease_playback_cache_preserves_downloads_and_account_data() {
+    let _lock = crate::shared::operation::test_operation_lock();
+    let sandbox = tempfile::Builder::new()
+        .prefix("mangodisk-netease-")
+        .tempdir()
+        .unwrap();
+    let data = sandbox
+        .path()
+        .join("home/Library/Application Support/com.netease.163music");
+    let cache = data.join("Caches/online_play_cache/stream.bin");
+    let state = [
+        data.join("Caches/orpheus_cache/state.bin"),
+        data.join("Documents/storage/account.bin"),
+        sandbox.path().join("home/Music/NetEase/download.mp3"),
+    ];
+    write_fixture(&cache, CACHE);
+    for path in &state {
+        write_fixture(path, STATE);
+    }
+    let plan = isolated_plan("app.netease-music-playback-cache", sandbox.path());
+    execute_fixture(&plan, 0, true);
+    assert_eq!(fs::read(&cache).unwrap(), CACHE);
+    execute_fixture(&plan, 0, false);
+    assert!(!cache.exists());
+    for path in &state {
+        assert_eq!(fs::read(path).unwrap(), STATE);
+    }
+}
+
+#[cfg(windows)]
+#[test]
+fn netease_playback_cache_preserves_unknown_files_and_persistent_data() {
+    let _lock = crate::shared::operation::test_operation_lock();
+    let sandbox = tempfile::Builder::new()
+        .prefix("mangodisk-netease-")
+        .tempdir()
+        .unwrap();
+    let data = sandbox.path().join("home/AppData/Local/NetEase/CloudMusic");
+    let cache = [
+        data.join("Cache/Cache/stream.uc"),
+        data.join("Cache/Cache/stream.idx"),
+        data.join("Cache/Cache/stream.info"),
+    ];
+    let state = [
+        data.join("Cache/Cache/unknown.dat"),
+        data.join("Cache/other.uc"),
+        data.join("Library/library.dat"),
+        data.join("localdata"),
+        sandbox.path().join("home/Music/NetEase/download.mp3"),
+    ];
+    for path in &cache {
+        write_fixture(path, CACHE);
+    }
+    for path in &state {
+        write_fixture(path, STATE);
+    }
+    let plan = isolated_plan("app.netease-music-playback-cache", sandbox.path());
+    execute_fixture(&plan, 0, true);
+    for path in &cache {
+        assert_eq!(fs::read(path).unwrap(), CACHE);
+    }
+    execute_fixture(&plan, 0, false);
+    for path in &cache {
+        assert!(!path.exists());
+    }
+    for path in &state {
+        assert_eq!(fs::read(path).unwrap(), STATE);
+    }
+}
+
 #[cfg(any(windows, target_os = "macos"))]
 #[test]
 fn vesktop_cache_cleanup_preserves_authentication_settings_and_themes() {

@@ -3052,6 +3052,11 @@
         "description": "Notion 렌더러 파티션에 저장된 Service Worker 응답 캐시입니다.",
         "impact": "페이지 기록과 계정 데이터는 유지됩니다. 오프라인으로 사용하기 전에 인터넷에 연결해 리소스를 다시 다운로드해야 할 수 있습니다. 정리 전에 Notion을 닫으세요."
       },
+      "app.netease-music-playback-cache": {
+        "name": "NetEase Music 재생 캐시",
+        "description": "온라인 재생 중 저장된 임시 오디오",
+        "impact": "다운로드한 곡, 재생목록과 계정 데이터는 유지됩니다. 재생 시 다시 불러와야 할 수 있습니다. 먼저 NetEase Music을 종료하세요."
+      },
       "app.netease-cloud-music-cache": {
         "name": "NetEase Cloud Music 캐시",
         "description": "NetEase Cloud Music에서 생성된 웹, 스크립트, GPU 및 진단 로그 캐시로, 다시 생성할 수 있습니다.",

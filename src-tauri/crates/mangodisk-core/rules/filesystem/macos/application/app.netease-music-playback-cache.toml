@@ -1,0 +1,30 @@
+id = "app.netease-music-playback-cache"
+schema_version = 3
+rule_version = 1
+platform = "macos"
+category = "application"
+risk = "recoverable"
+default_selected = false
+recommended_selected = false
+required_stopped_processes = ["NeteaseMusic", "NeteaseMusic Helper", "NeteaseMusic Helper (Renderer)", "NeteaseMusic Helper (GPU)", "NeteaseMusic Helper (Plugin)"]
+
+[[applicability]]
+kind = "anyRootExists"
+
+[[roots]]
+template = "${application_support}/com.netease.163music/Caches/online_play_cache"
+verified_rebuildable = true
+
+[matcher]
+kind = "all"
+
+[execution]
+kind = "deleteMatchingContents"
+requires_app_close = true
+
+[verification]
+lifecycle = "verified"
+evidence = "NetEase Cloud Music 3.1.14 generated this directory during playback and emptied it through its own Clear Cache command. Downloads, library, account and settings are outside this fixed playback cache root; tracks may need to be streamed again"
+verified_at = "2026-10-30"
+verified_platform = "macos"
+references = ["https://music.163.com/#/download"]

@@ -3052,6 +3052,11 @@
         "description": "Notion görüntüleyici bölümlerinde saklanan Service Worker yanıt önbelleği",
         "impact": "Sayfa kayıtları ve hesap verileri korunur. Çevrimdışı kullanmadan önce kaynakların internetten yeniden indirilmesi gerekebilir. Temizlemeden önce Notion'ı kapatın"
       },
+      "app.netease-music-playback-cache": {
+        "name": "NetEase Music oynatma önbelleği",
+        "description": "Çevrim içi oynatma sırasında kaydedilen geçici ses verileri",
+        "impact": "İndirilen şarkılar, çalma listeleri ve hesap verileri korunur. Oynatma için sesin yeniden yüklenmesi gerekebilir. Önce NetEase Music uygulamasını kapatın."
+      },
       "app.netease-cloud-music-cache": {
         "name": "NetEase Cloud Music önbelleği",
         "description": "NetEase Cloud Music'in oluşturduğu, yeniden üretilebilen web, betik, GPU ve tanılama günlüğü önbelleği",
