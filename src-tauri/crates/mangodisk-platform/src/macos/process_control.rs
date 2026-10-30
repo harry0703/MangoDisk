@@ -23,6 +23,7 @@ const PROCESS_COMMAND_TIMEOUT: Duration = Duration::from_secs(5);
 const PROCESS_COMMAND_OUTPUT_LIMIT: usize = 4 * 1024 * 1024;
 const GRACEFUL_CLOSE_TIMEOUT: Duration = Duration::from_secs(5);
 const FORCE_CLOSE_TIMEOUT: Duration = Duration::from_secs(2);
+const CLOSE_QUIESCENCE_INTERVAL: Duration = Duration::from_millis(500);
 const CLOSE_POLL_INTERVAL: Duration = Duration::from_millis(100);
 
 #[derive(Debug, Clone)]
@@ -67,7 +68,7 @@ pub(super) fn close_many(
         Ok(snapshot) => snapshot,
         Err(error) => return snapshot_error_results(&validation_errors, error),
     };
-    let matched = targets
+    let mut matched = targets
         .iter()
         .zip(&validation_errors)
         .map(|(target, error)| {
@@ -91,19 +92,59 @@ pub(super) fn close_many(
         ApplicationProcessCloseMode::Force => FORCE_CLOSE_TIMEOUT,
     };
     let deadline = Instant::now() + timeout;
+    let mut empty_since = None;
+    let observed_any = matched.iter().any(|processes| !processes.is_empty());
     let final_snapshot = loop {
         let snapshot = match process_snapshot() {
             Ok(snapshot) => snapshot,
             Err(error) => return snapshot_error_results(&validation_errors, error),
         };
-        let has_remaining = targets
+        let remaining = targets
             .iter()
             .zip(&validation_errors)
-            .any(|(target, error)| {
-                error.is_none() && !matching_processes_in_snapshot(target, &snapshot).is_empty()
-            });
-        if !has_remaining || Instant::now() >= deadline {
-            break snapshot;
+            .map(|(target, error)| {
+                if error.is_none() {
+                    matching_processes_in_snapshot(target, &snapshot)
+                } else {
+                    Vec::new()
+                }
+            })
+            .collect::<Vec<_>>();
+        let has_remaining = remaining.iter().any(|processes| !processes.is_empty());
+        let now = Instant::now();
+        if !has_remaining {
+            // An explicit force action must observe a brief quiet interval so a
+            // delayed helper restart cannot escape through the first empty snapshot.
+            let since = empty_since.get_or_insert(now);
+            if mode != ApplicationProcessCloseMode::Force
+                || !observed_any
+                || now.duration_since(*since) >= CLOSE_QUIESCENCE_INTERVAL
+                || now >= deadline
+            {
+                break snapshot;
+            }
+        } else {
+            empty_since = None;
+            if now >= deadline {
+                break snapshot;
+            }
+            if mode == ApplicationProcessCloseMode::Force {
+                // Reuse the same path/owner checks for new instances. A PID is
+                // attempted once, and a shared deadline bounds a restarting app.
+                for (observed, processes) in matched.iter_mut().zip(&remaining) {
+                    for process in processes {
+                        if !observed
+                            .iter()
+                            .any(|candidate| candidate.pid == process.pid)
+                        {
+                            observed.push(process.clone());
+                        }
+                        requests
+                            .entry(process.pid)
+                            .or_insert_with(|| request_close(process, mode));
+                    }
+                }
+            }
         }
         thread::sleep(CLOSE_POLL_INTERVAL);
     };
@@ -182,10 +223,26 @@ fn request_close(process: &ProcessInstance, mode: ApplicationProcessCloseMode) -
 }
 
 fn can_signal_process(process: &ProcessInstance) -> bool {
-    process.pid > 0
+    process_owned_by_current_user(process.pid)
+        && process.pid > 0
         && process.pid != std::process::id() as i32
         && current_executable_path(process.pid)
             .is_some_and(|path| normalize_path(&path) == normalize_path(&process.executable_path))
+}
+
+fn process_owned_by_current_user(pid: i32) -> bool {
+    let mut info = std::mem::MaybeUninit::<libc::proc_bsdinfo>::zeroed();
+    let size = std::mem::size_of::<libc::proc_bsdinfo>() as i32;
+    let read = unsafe {
+        libc::proc_pidinfo(
+            pid,
+            libc::PROC_PIDTBSDINFO,
+            0,
+            info.as_mut_ptr().cast(),
+            size,
+        )
+    };
+    read == size && unsafe { info.assume_init().pbi_uid == libc::geteuid() }
 }
 
 #[cfg(test)]
@@ -369,6 +426,13 @@ mod tests {
     static PROCESS_CLOSE_TEST_LOCK: Mutex<()> = Mutex::new(());
 
     #[test]
+    fn ownership_checks_accept_current_user_and_fail_closed_for_missing_processes() {
+        assert!(process_owned_by_current_user(std::process::id() as i32));
+        assert!(!process_owned_by_current_user(i32::MAX));
+        assert!(!process_owned_by_current_user(-1));
+    }
+
+    #[test]
     fn refuses_self_and_stale_executable_identity() {
         let mut process = ProcessInstance {
             pid: std::process::id() as i32,
@@ -471,6 +535,60 @@ mod tests {
     #[ignore = "launches and force-terminates a real child process"]
     fn force_closes_spawned_command_by_exact_path() {
         run_spawned_command_close(ApplicationProcessCloseMode::Force, "force");
+    }
+
+    #[test]
+    #[ignore = "launches and force-terminates real replacement processes"]
+    fn force_closes_a_delayed_replacement_before_reporting_success() {
+        let _guard = PROCESS_CLOSE_TEST_LOCK.lock().unwrap();
+        let executable = PathBuf::from("/bin/sleep");
+        let target = ApplicationProcessTarget {
+            executable_names: Vec::new(),
+            executable_paths: vec![executable.clone()],
+        };
+        assert!(
+            matching_processes(&target).unwrap().is_empty(),
+            "this ignored test requires an isolated machine without another sleep process"
+        );
+        let child = Command::new(&executable).arg("30").spawn().unwrap();
+        let first_pid = child.id() as i32;
+        let replacement_executable = executable.clone();
+        let (sender, receiver) = std::sync::mpsc::channel();
+        let reaper = thread::spawn(move || {
+            let _ = child.wait_with_output();
+            thread::sleep(Duration::from_millis(350));
+            let replacement = Command::new(&replacement_executable)
+                .arg("30")
+                .spawn()
+                .unwrap();
+            sender.send(replacement.id() as i32).unwrap();
+            replacement.wait_with_output().unwrap()
+        });
+        let result = close(
+            &ApplicationProcessTarget {
+                executable_names: Vec::new(),
+                executable_paths: vec![executable],
+            },
+            ApplicationProcessCloseMode::Force,
+        );
+        // Bound cleanup even when the implementation regresses and returns early.
+        unsafe {
+            libc::kill(first_pid, libc::SIGKILL);
+        }
+        let replacement_pid = receiver.recv_timeout(Duration::from_secs(3)).unwrap();
+        let replacement_was_running = unsafe { libc::kill(replacement_pid, 0) == 0 };
+        unsafe {
+            libc::kill(replacement_pid, libc::SIGKILL);
+        }
+        let _ = reaper.join();
+        let result = result.unwrap();
+        assert!(
+            !replacement_was_running,
+            "the delayed replacement must end before success"
+        );
+        assert_eq!(result.matched_process_count, 2);
+        assert_eq!(result.requested_process_count, 2);
+        assert!(result.remaining_processes.is_empty());
     }
 
     fn run_spawned_command_close(mode: ApplicationProcessCloseMode, suffix: &str) {

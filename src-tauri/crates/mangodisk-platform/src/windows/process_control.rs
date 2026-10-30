@@ -18,9 +18,9 @@ use windows_sys::Win32::{
             TH32CS_SNAPPROCESS,
         },
         Threading::{
-            GetCurrentProcess, GetCurrentProcessId, OpenProcess, OpenProcessToken,
-            QueryFullProcessImageNameW, TerminateProcess, PROCESS_QUERY_LIMITED_INFORMATION,
-            PROCESS_TERMINATE,
+            GetCurrentProcess, GetCurrentProcessId, IsProcessCritical, OpenProcess,
+            OpenProcessToken, QueryFullProcessImageNameW, TerminateProcess,
+            PROCESS_QUERY_LIMITED_INFORMATION, PROCESS_TERMINATE,
         },
     },
     UI::WindowsAndMessaging::{EnumWindows, GetWindowThreadProcessId, PostMessageW, WM_CLOSE},
@@ -408,6 +408,19 @@ fn request_process_close(
                 ApplicationProcessCloseMode::Graceful => request_graceful_close(process),
                 ApplicationProcessCloseMode::Force => request_force_close(process),
             };
+            if mode == ApplicationProcessCloseMode::Force {
+                log::info!(
+                    "windows_process_force_close pid={} path={} outcome={outcome:?}",
+                    process.pid,
+                    crate::diagnostics::text(
+                        &process
+                            .executable_path
+                            .as_deref()
+                            .unwrap_or_else(|| Path::new(""))
+                            .display()
+                    )
+                );
+            }
             requests.insert(process.pid, outcome);
             continue;
         };
@@ -557,6 +570,19 @@ fn request_force_close(process: &ProcessInstance) -> ProcessCloseRequestOutcome 
             };
         }
     };
+    let mut critical = 0;
+    if unsafe { IsProcessCritical(handle.0, &mut critical) } == 0 {
+        return ProcessCloseRequestOutcome::NotRequested {
+            stage: "query_process_critical",
+            os_error_code: Some(unsafe { GetLastError() }),
+        };
+    }
+    if critical != 0 {
+        return ProcessCloseRequestOutcome::NotRequested {
+            stage: "critical_process",
+            os_error_code: None,
+        };
+    }
     if unsafe { TerminateProcess(handle.0, 1) } != 0 {
         ProcessCloseRequestOutcome::Requested
     } else {
