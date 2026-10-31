@@ -1,10 +1,11 @@
 <script setup lang="ts">
 import { FormatService } from '@/lib/services/presentation/format-service';
+import { FolderSelectionService } from '@/lib/services/storage/folder-selection-service';
 import { useI18n } from 'vue-i18n';
 import MdAiWorkspace from '@/layouts/components/md-ai-workspace.vue';
 import { useAiStore } from '@/stores/ai-store';
 import { largeFileAiContext } from './large-file-ai-context';
-import { computed, nextTick, onMounted, ref, watch } from 'vue';
+import { computed, nextTick, onBeforeUnmount, onDeactivated, onMounted, ref, watch } from 'vue';
 
 import MdDelayedOperationWorkspace from '@/components/custom/md-delayed-operation-workspace.vue';
 import MdStorageScopeSelect from '@/components/custom/md-storage-scope-select.vue';
@@ -57,6 +58,20 @@ const props = defineProps<{
   cancelling: boolean;
   deleting: boolean;
 }>();
+
+let scopeRequest = 0;
+const resolvingScope = ref(false);
+function discardScopeResolution() {
+  scopeRequest += 1;
+  resolvingScope.value = false;
+}
+onBeforeUnmount(discardScopeResolution);
+onDeactivated(discardScopeResolution);
+function cancelScan() {
+  if (resolvingScope.value) discardScopeResolution();
+  else emit('cancel');
+}
+const scanBusy = computed(() => props.busy || resolvingScope.value);
 
 const emit = defineEmits<{
   find: [paths: string[], scanMode: LargeFileScanMode];
@@ -212,10 +227,23 @@ watch(
   () => aiStore.dismissModule('largeFiles')
 );
 
-function start(scanMode: LargeFileScanMode = requestedScanMode.value) {
-  if (props.busy || props.deleting || !selectedScopePaths.value.length) return;
-  requestedScanMode.value = scanMode;
-  emit('find', [...selectedScopePaths.value], scanMode);
+async function start(scanMode: LargeFileScanMode = requestedScanMode.value) {
+  if (scanBusy.value || props.deleting || !selectedScopePaths.value.length) return;
+  const requested = [...selectedScopePaths.value];
+  const request = ++scopeRequest;
+  resolvingScope.value = true;
+  try {
+    const roots = await FolderSelectionService.filterExistingDirectories(requested, () => request !== scopeRequest);
+    if (request !== scopeRequest || !PathUtils.sameSelectedPaths(requested, selectedScopePaths.value)) return;
+    selectScope(roots);
+    requestedScanMode.value = scanMode;
+    emit('find', roots, scanMode);
+  } catch (error) {
+    if (request === scopeRequest) emit('error', error);
+  } finally {
+    await nextTick();
+    if (request === scopeRequest) resolvingScope.value = false;
+  }
 }
 
 function updateMinimum(value: unknown) {
@@ -267,7 +295,11 @@ function confirmDelete() {
       <div class="header-actions">
         <label v-if="!result" class="size-filter header-size-filter">
           <span>{{ t('largeFiles.minimumSize') }}</span>
-          <Select :model-value="String(minimumBytes)" :disabled="busy || deleting" @update:model-value="updateMinimum">
+          <Select
+            :model-value="String(minimumBytes)"
+            :disabled="scanBusy || deleting"
+            @update:model-value="updateMinimum"
+          >
             <SelectTrigger class="w-28" size="sm" :aria-label="t('largeFiles.minimumSize')">
               <SelectValue>≥ {{ minimumLabel }}</SelectValue>
             </SelectTrigger>
@@ -284,7 +316,7 @@ function confirmDelete() {
           :disks="disks"
           :recent-folders="storageScopeStore.recentFolders"
           :standard-folders="storageScopeStore.standardFolders"
-          :disabled="busy || deleting"
+          :disabled="scanBusy || deleting"
           @error="emit('error', $event)"
           @remove-folder="removeScopeFolder"
           @update:model-value="selectScope"
@@ -292,7 +324,7 @@ function confirmDelete() {
         <MdLargeFileScanButton
           v-if="result"
           action="rescan"
-          :busy="busy || deleting || !selectedScopePaths.length"
+          :busy="scanBusy || deleting || !selectedScopePaths.length"
           :emphasized="!resultMatchesConfiguration"
           :mode="
             resultMatchesScope
@@ -307,7 +339,7 @@ function confirmDelete() {
       </div>
     </template>
 
-    <template v-if="!busy && result" #footer>
+    <template v-if="!scanBusy && result" #footer>
       <MdSelectionActionBar
         :selected-label="t('largeFiles.selected')"
         :selected-value="
@@ -349,7 +381,7 @@ function confirmDelete() {
                 <span>{{ t('largeFiles.minimumSize') }}</span>
                 <Select
                   :model-value="String(minimumBytes)"
-                  :disabled="busy || deleting"
+                  :disabled="scanBusy || deleting"
                   @update:model-value="updateMinimum"
                 >
                   <SelectTrigger class="w-28" size="sm" :aria-label="t('largeFiles.minimumSize')">
@@ -369,7 +401,7 @@ function confirmDelete() {
 
       <template v-if="result" #header>
         <MdResultFilterToolbar>
-          <MdFileCategoryFilter v-model="activeCategory" :options="categoryOptions" :disabled="busy" />
+          <MdFileCategoryFilter v-model="activeCategory" :options="categoryOptions" :disabled="scanBusy" />
         </MdResultFilterToolbar>
       </template>
 
@@ -377,14 +409,14 @@ function confirmDelete() {
         {{ t('common.limitedResults') }}
       </template>
 
-      <div class="result-content" :inert="busy || undefined" :aria-busy="busy">
+      <div class="result-content" :inert="scanBusy || undefined" :aria-busy="scanBusy">
         <template v-if="result">
           <MdLargeFileList
             v-show="filteredEntries.length > 0"
             v-model:selected-paths="selectedPaths"
             :entries="filteredEntries"
-            :open-disabled="busy || deleting"
-            :delete-disabled="busy || deleting || !resultMatchesConfiguration"
+            :open-disabled="scanBusy || deleting"
+            :delete-disabled="scanBusy || deleting || !resultMatchesConfiguration"
             @open-entry="emit('openEntry', result.scanId, $event.path)"
             @reveal="emit('reveal', $event)"
             @delete="requestDelete([$event])"
@@ -406,7 +438,7 @@ function confirmDelete() {
         >
           <div class="empty-primary-actions">
             <MdLargeFileScanButton
-              :busy="busy || deleting || !selectedScopePaths.length"
+              :busy="scanBusy || deleting || !selectedScopePaths.length"
               :mode="requestedScanMode"
               :selectable-modes="selectableScanModes"
               @scan="start"
@@ -415,7 +447,7 @@ function confirmDelete() {
         </MdEmptyState>
       </div>
 
-      <MdDelayedOperationWorkspace :active="busy" mode="overlay" role="status" aria-live="polite">
+      <MdDelayedOperationWorkspace :active="scanBusy" mode="overlay" role="status" aria-live="polite">
         <MdOperationProgress
           :icon-name="ICON_NAMES.largeFiles"
           :title="cancelling ? t('loading.cancelling') : t('largeFiles.scanning')"
@@ -426,7 +458,7 @@ function confirmDelete() {
           :show-step-progress="false"
           :cancelable="true"
           :cancel-disabled="cancelling"
-          @cancel="emit('cancel')"
+          @cancel="cancelScan"
         />
       </MdDelayedOperationWorkspace>
     </MdResultWorkspace>

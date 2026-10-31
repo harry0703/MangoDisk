@@ -1,10 +1,11 @@
 <script setup lang="ts">
 import { FormatService } from '@/lib/services/presentation/format-service';
+import { FolderSelectionService } from '@/lib/services/storage/folder-selection-service';
 import { useI18n } from 'vue-i18n';
 import MdAiWorkspace from '@/layouts/components/md-ai-workspace.vue';
 import { useAiStore } from '@/stores/ai-store';
 import { duplicateFileAiContext } from './duplicate-file-ai-context';
-import { computed, nextTick, onMounted, ref, watch } from 'vue';
+import { computed, nextTick, onBeforeUnmount, onDeactivated, onMounted, ref, watch } from 'vue';
 
 import MdDelayedOperationWorkspace from '@/components/custom/md-delayed-operation-workspace.vue';
 import MdStorageScopeSelect from '@/components/custom/md-storage-scope-select.vue';
@@ -70,6 +71,20 @@ const props = defineProps<{
   minimumBytes: number;
   keeperRule: DuplicateKeeperRuleId;
 }>();
+
+let scopeRequest = 0;
+const resolvingScope = ref(false);
+function discardScopeResolution() {
+  scopeRequest += 1;
+  resolvingScope.value = false;
+}
+onBeforeUnmount(discardScopeResolution);
+onDeactivated(discardScopeResolution);
+function cancelScan() {
+  if (resolvingScope.value) discardScopeResolution();
+  else emit('cancel');
+}
+const scanBusy = computed(() => props.busy || resolvingScope.value);
 
 const emit = defineEmits<{
   error: [error: unknown];
@@ -277,19 +292,51 @@ watch(
   () => aiStore.dismissModule('duplicateFiles')
 );
 
-function start() {
-  if (props.busy || props.deleting || !canStart.value) return;
-  clearPendingResultActions();
-  const protectedKeys = new Set(selectedProtectedPaths.value.map(PathUtils.comparisonKey));
-  emit(
-    'find',
-    selectedScopePaths.value.map(path => ({
-      path,
-      mode: protectedKeys.has(PathUtils.comparisonKey(path))
-        ? DUPLICATE_SCAN_LOCATION_MODES.protected
-        : DUPLICATE_SCAN_LOCATION_MODES.cleanable,
-    }))
-  );
+async function start() {
+  if (scanBusy.value || props.deleting || !canStart.value) return;
+  const requested = [...selectedScopePaths.value];
+  const protectedPaths = [...selectedProtectedPaths.value];
+  const protectedKeys = new Set(protectedPaths.map(PathUtils.comparisonKey));
+  const request = ++scopeRequest;
+  resolvingScope.value = true;
+  try {
+    const directories = await FolderSelectionService.resolveSelectedDirectories(
+      requested,
+      () => request !== scopeRequest
+    );
+    if (
+      request !== scopeRequest ||
+      !PathUtils.sameSelectedPaths(requested, selectedScopePaths.value) ||
+      !PathUtils.sameSelectedPaths(protectedPaths, selectedProtectedPaths.value)
+    )
+      return;
+    const protectedTargets = PathUtils.uniquePaths(
+      directories
+        .filter(entry => protectedKeys.has(PathUtils.comparisonKey(entry.requestedPath)))
+        .map(entry => entry.path)
+    );
+    selectedScopePaths.value = PathUtils.uniquePaths(directories.map(entry => entry.path));
+    selectedProtectedPaths.value = protectedTargets;
+    // Persist aliases and their protection together so an interrupted save cannot
+    // restore a cleanable target that the user explicitly marked as protected.
+    storageScopeStore.selectPaths(scopeId, selectedScopePaths.value, props.disks, protectedTargets);
+    clearPendingResultActions();
+    const protectedTargetKeys = new Set(protectedTargets.map(PathUtils.comparisonKey));
+    emit(
+      'find',
+      selectedScopePaths.value.map(path => ({
+        path,
+        mode: protectedTargetKeys.has(PathUtils.comparisonKey(path))
+          ? DUPLICATE_SCAN_LOCATION_MODES.protected
+          : DUPLICATE_SCAN_LOCATION_MODES.cleanable,
+      }))
+    );
+  } catch (error) {
+    if (request === scopeRequest) emit('error', error);
+  } finally {
+    await nextTick();
+    if (request === scopeRequest) resolvingScope.value = false;
+  }
 }
 
 function selectScope(value: unknown) {
@@ -370,7 +417,11 @@ function confirmDelete() {
       <div class="header-actions">
         <label class="size-filter header-size-filter">
           <span>{{ t('duplicateFiles.minimumSize') }}</span>
-          <Select :model-value="String(minimumBytes)" :disabled="busy || deleting" @update:model-value="updateMinimum">
+          <Select
+            :model-value="String(minimumBytes)"
+            :disabled="scanBusy || deleting"
+            @update:model-value="updateMinimum"
+          >
             <SelectTrigger class="w-28" size="sm" :aria-label="t('duplicateFiles.minimumSize')">
               <SelectValue>≥ {{ minimumLabel }}</SelectValue>
             </SelectTrigger>
@@ -389,7 +440,7 @@ function confirmDelete() {
           :disks="disks"
           :recent-folders="storageScopeStore.recentFolders"
           :standard-folders="storageScopeStore.standardFolders"
-          :disabled="busy || deleting"
+          :disabled="scanBusy || deleting"
           @error="emit('error', $event)"
           @remove-folder="removeScopeFolder"
           @update:protected-paths="updateProtectedPaths"
@@ -400,12 +451,12 @@ function confirmDelete() {
           class="scan-button"
           :variant="resultMatchesScope ? 'outline' : 'default'"
           type="button"
-          :disabled="busy || deleting || !canStart"
+          :disabled="scanBusy || deleting || !canStart"
           @click="start"
         >
           <MdIcon
-            :class="{ 'icon-spin': busy }"
-            :name="busy || resultMatchesScope ? ICON_NAMES.refresh : ICON_NAMES.duplicateFiles"
+            :class="{ 'icon-spin': scanBusy }"
+            :name="scanBusy || resultMatchesScope ? ICON_NAMES.refresh : ICON_NAMES.duplicateFiles"
             :size="17"
           />
           {{ t(resultMatchesScope ? 'duplicateFiles.rescan' : 'duplicateFiles.start') }}
@@ -413,7 +464,7 @@ function confirmDelete() {
       </div>
     </template>
 
-    <template v-if="!busy && result && resultComplete" #footer>
+    <template v-if="!scanBusy && result && resultComplete" #footer>
       <MdSelectionActionBar
         :selected-label="t('duplicateFiles.selected')"
         :selected-value="
@@ -457,7 +508,7 @@ function confirmDelete() {
                 :selected-count="selectedEntries.length"
                 :busy="smartSelecting"
                 :disabled="
-                  !resultMatchesScope || !groups.length || busy || deleting || smartSelecting || !resultComplete
+                  !resultMatchesScope || !groups.length || scanBusy || deleting || smartSelecting || !resultComplete
                 "
                 @toggle="toggleSmartSelection"
                 @select-rule="selectKeeperRule"
@@ -473,12 +524,12 @@ function confirmDelete() {
             v-model="activeCategory"
             class="min-w-0 flex-1"
             :options="categoryOptions"
-            :disabled="busy"
+            :disabled="scanBusy"
           />
         </MdResultFilterToolbar>
       </template>
 
-      <div class="result-content" :inert="busy || undefined" :aria-busy="busy">
+      <div class="result-content" :inert="scanBusy || undefined" :aria-busy="scanBusy">
         <template v-if="result">
           <MdDuplicateFileGroups
             v-show="filteredGroups.length > 0"
@@ -487,9 +538,9 @@ function confirmDelete() {
             :category="activeCategory"
             :groups="filteredGroups"
             :keeper-rule="keeperRule"
-            :selection-disabled="busy || deleting || !resultMatchesScope"
-            :open-disabled="busy || deleting || !resultComplete"
-            :delete-disabled="busy || deleting || !resultComplete || !resultMatchesScope"
+            :selection-disabled="scanBusy || deleting || !resultMatchesScope"
+            :open-disabled="scanBusy || deleting || !resultComplete"
+            :delete-disabled="scanBusy || deleting || !resultComplete || !resultMatchesScope"
             :has-more="hasMore"
             :loading-more="loadingMore"
             :remaining-group-count="Math.max(0, (result?.returnedGroupCount ?? 0) - groups.length)"
@@ -511,7 +562,7 @@ function confirmDelete() {
               size="sm"
               type="button"
               variant="ghost"
-              :disabled="busy || loadingMore"
+              :disabled="scanBusy || loadingMore"
               @click="emit('loadMore', activeCategory)"
             >
               {{ loadingMore ? t('loading.processing') : t('common.loadMore') }}
@@ -525,7 +576,7 @@ function confirmDelete() {
           :description="t('duplicateFiles.emptyDescription', { size: minimumLabel })"
         >
           <div class="empty-primary-actions">
-            <Button v-if="canStart" size="lg" type="button" :disabled="busy || deleting" @click="start">
+            <Button v-if="canStart" size="lg" type="button" :disabled="scanBusy || deleting" @click="start">
               <MdIcon :name="ICON_NAMES.duplicateFiles" :size="17" />
               {{ t('duplicateFiles.start') }}
             </Button>
@@ -533,7 +584,7 @@ function confirmDelete() {
         </MdEmptyState>
       </div>
 
-      <MdDelayedOperationWorkspace :active="busy" mode="overlay" role="status" aria-live="polite">
+      <MdDelayedOperationWorkspace :active="scanBusy" mode="overlay" role="status" aria-live="polite">
         <MdOperationProgress
           :icon-name="ICON_NAMES.duplicateFiles"
           :title="progressTitle"
@@ -544,7 +595,7 @@ function confirmDelete() {
           :bytes-label="progressBytesLabel"
           :cancelable="true"
           :cancel-disabled="cancelling"
-          @cancel="emit('cancel')"
+          @cancel="cancelScan"
         />
       </MdDelayedOperationWorkspace>
     </MdResultWorkspace>

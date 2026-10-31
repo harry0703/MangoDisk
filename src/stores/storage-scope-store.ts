@@ -1,6 +1,5 @@
 import { defineStore } from 'pinia';
 
-import { MAX_DIRECTORY_ENTRIES_PER_REQUEST } from '@/lib/models/storage/folder-selection';
 import type { VolumeInfo } from '@/lib/models/storage/volume';
 import { LOG_DOMAINS, LOG_EVENTS } from '@/lib/models/diagnostics/telemetry';
 import {
@@ -8,7 +7,6 @@ import {
   type StorageScopeId,
   type StorageScopePreferences,
 } from '@/lib/models/storage/storage-scope';
-import { FolderSelectionService } from '@/lib/services/storage/folder-selection-service';
 import { LoggerService } from '@/lib/services/diagnostics/logger-service';
 import { PreferenceStorageService } from '@/lib/services/settings/preference-storage-service';
 import { StandardScanFolderService } from '@/lib/services/storage/standard-scan-folder-service';
@@ -45,7 +43,7 @@ export const useStorageScopeStore = defineStore('storage-scope', {
     standardFolders: [],
   }),
   actions: {
-    async initialize(disks: readonly VolumeInfo[]) {
+    async initialize() {
       if (this.initialized) return;
 
       const pendingInitialization = initializationByStore.get(this);
@@ -57,7 +55,7 @@ export const useStorageScopeStore = defineStore('storage-scope', {
       // System folders and saved selections are independent inputs. Resolve
       // them together so guarded navigation never mounts a selector with an
       // empty list that is replaced immediately after the first paint.
-      const initialization = Promise.all([this.restorePreferences(disks), this.loadStandardFolders()])
+      const initialization = Promise.all([this.restorePreferences(), this.loadStandardFolders()])
         .then(() => {
           this.initialized = true;
         })
@@ -71,14 +69,14 @@ export const useStorageScopeStore = defineStore('storage-scope', {
     },
     async loadStandardFolders() {
       try {
-        this.standardFolders = await StandardScanFolderService.listAvailable();
+        this.standardFolders = await StandardScanFolderService.list();
       } catch (error) {
         // Standard folders are convenience shortcuts. Disk selection and the
         // native folder dialog remain available when platform discovery fails.
         LoggerService.info(LOG_DOMAINS.storageScope, LOG_EVENTS.standardScanFoldersLoadFailed, { error });
       }
     },
-    async restorePreferences(disks: readonly VolumeInfo[]) {
+    async restorePreferences() {
       let saved: unknown | null;
       try {
         saved = await PreferenceStorageService.loadStorageScopePreferences();
@@ -101,76 +99,8 @@ export const useStorageScopeStore = defineStore('storage-scope', {
         return;
       }
 
-      const diskKeys = new Set(disks.map(disk => PathUtils.comparisonKey(disk.mountPoint)));
-      // Selected folders can outlive the bounded history. Validate the complete union in
-      // IPC-sized batches so adding a ninth folder never silently drops an active scope.
-      const validationPaths = [
-        ...new Set([
-          ...this.recentFolders,
-          ...Object.values(this.selectedPaths).flat(),
-          ...this.duplicateFileProtectedPaths,
-        ]),
-      ].filter(path => !diskKeys.has(PathUtils.comparisonKey(path)));
-      if (!validationPaths.length) return;
-      try {
-        const previousPreferences = JSON.stringify({
-          selectedPaths: this.selectedPaths,
-          recentFolders: this.recentFolders,
-          duplicateFileProtectedPaths: this.duplicateFileProtectedPaths,
-        });
-        const resolved = [];
-        for (let offset = 0; offset < validationPaths.length; offset += MAX_DIRECTORY_ENTRIES_PER_REQUEST) {
-          resolved.push(
-            ...(await FolderSelectionService.resolveDirectories(
-              validationPaths.slice(offset, offset + MAX_DIRECTORY_ENTRIES_PER_REQUEST)
-            ))
-          );
-        }
-        const targets = new Map(resolved.map(entry => [PathUtils.comparisonKey(entry.requestedPath), entry.path]));
-        const seen = new Set<string>();
-        const recentKeys = new Set(this.recentFolders.map(PathUtils.comparisonKey));
-        this.recentFolders = resolved
-          .filter(entry => recentKeys.has(PathUtils.comparisonKey(entry.requestedPath)))
-          .flatMap(({ path }) => {
-            const key = PathUtils.comparisonKey(path);
-            if (seen.has(key)) return [];
-            seen.add(key);
-            return [path];
-          });
-        for (const [scopeId, selection] of Object.entries(this.selectedPaths)) {
-          const paths = Array.isArray(selection) ? selection : [selection];
-          const valid = paths.flatMap(path => {
-            const key = PathUtils.comparisonKey(path);
-            const target = diskKeys.has(key) ? path : targets.get(key);
-            return target ? [target] : [];
-          });
-          if (Array.isArray(selection)) {
-            // Keep an explicit empty selection: it must not expand to a whole disk on restart.
-            this.selectedPaths[scopeId as StorageScopeId] = [...new Set(valid)];
-          } else if (valid[0]) {
-            this.selectedPaths[scopeId as StorageScopeId] = valid[0];
-          } else {
-            delete this.selectedPaths[scopeId as StorageScopeId];
-          }
-        }
-        this.duplicateFileProtectedPaths = selectedDuplicateFileProtection(
-          this.duplicateFileProtectedPaths.flatMap(path => {
-            const key = PathUtils.comparisonKey(path);
-            const target = diskKeys.has(key) ? path : targets.get(key);
-            return target ? [target] : [];
-          }),
-          this.selectedPaths
-        );
-        const currentPreferences = JSON.stringify({
-          selectedPaths: this.selectedPaths,
-          recentFolders: this.recentFolders,
-          duplicateFileProtectedPaths: this.duplicateFileProtectedPaths,
-        });
-        if (currentPreferences !== previousPreferences) this.persist();
-      } catch (error) {
-        // Retain the saved history when validation is temporarily unavailable.
-        LoggerService.warn(LOG_DOMAINS.storageScope, LOG_EVENTS.storageScopeValidationFailed, { error });
-      }
+      // Saved choices describe user intent. Checking their targets here can prompt
+      // for privacy access and must never erase temporarily unavailable selections.
     },
     selectedPath(scopeId: StorageScopeId): string {
       const selection = this.selectedPaths[scopeId];
@@ -196,7 +126,8 @@ export const useStorageScopeStore = defineStore('storage-scope', {
     selectPaths(
       scopeId: typeof STORAGE_SCOPE_IDS.largeFiles | typeof STORAGE_SCOPE_IDS.duplicateFiles,
       paths: string[],
-      disks: readonly VolumeInfo[]
+      disks: readonly VolumeInfo[],
+      protectedPaths?: string[]
     ) {
       const keys = new Set<string>();
       const selected = paths.map(PathUtils.display).filter(path => {
@@ -210,7 +141,7 @@ export const useStorageScopeStore = defineStore('storage-scope', {
       this.selectedPaths[scopeId] = selected;
       if (scopeId === STORAGE_SCOPE_IDS.duplicateFiles) {
         this.duplicateFileProtectedPaths = selectedDuplicateFileProtection(
-          this.duplicateFileProtectedPaths ?? [],
+          protectedPaths ?? this.duplicateFileProtectedPaths ?? [],
           this.selectedPaths
         );
       }

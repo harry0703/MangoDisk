@@ -42,7 +42,7 @@ describe('storage scope store', () => {
     setActivePinia(createPinia());
     values.clear();
     vi.restoreAllMocks();
-    vi.spyOn(StandardScanFolderService, 'listAvailable').mockResolvedValue([
+    vi.spyOn(StandardScanFolderService, 'list').mockResolvedValue([
       { id: STANDARD_SCAN_FOLDER_IDS.downloads, path: '/Users/example/Downloads' },
     ]);
   });
@@ -61,9 +61,9 @@ describe('storage scope store', () => {
       .mockImplementation(async values => values.map(path => ({ requestedPath: path, path })));
     setActivePinia(createPinia());
     const restored = useStorageScopeStore();
-    await restored.initialize(disks);
+    await restored.initialize();
     expect(restored.selectedPaths['duplicate-files']).toEqual(paths);
-    expect(resolve.mock.calls.every(([batch]) => batch.length <= 64)).toBe(true);
+    expect(resolve).not.toHaveBeenCalled();
     expect(restored.recentFolders).toHaveLength(8);
     restored.removeFolder(paths[0]!);
     expect(restored.selectedPaths['duplicate-files']).toEqual(paths.slice(1));
@@ -144,16 +144,16 @@ describe('storage scope store', () => {
 
   it('shares one in-flight initialization and publishes only the completed snapshot', async () => {
     const store = useStorageScopeStore();
-    let resolveStandardFolders!: (folders: Awaited<ReturnType<typeof StandardScanFolderService.listAvailable>>) => void;
-    vi.mocked(StandardScanFolderService.listAvailable).mockImplementationOnce(
+    let resolveStandardFolders!: (folders: Awaited<ReturnType<typeof StandardScanFolderService.list>>) => void;
+    vi.mocked(StandardScanFolderService.list).mockImplementationOnce(
       () =>
         new Promise(resolve => {
           resolveStandardFolders = resolve;
         })
     );
 
-    const firstInitialization = store.initialize(disks);
-    const secondInitialization = store.initialize(disks);
+    const firstInitialization = store.initialize();
+    const secondInitialization = store.initialize();
     let secondInitializationCompleted = false;
     void secondInitialization.then(() => {
       secondInitializationCompleted = true;
@@ -162,29 +162,29 @@ describe('storage scope store', () => {
     await Promise.resolve();
     expect(store.initialized).toBe(false);
     expect(secondInitializationCompleted).toBe(false);
-    expect(StandardScanFolderService.listAvailable).toHaveBeenCalledTimes(1);
+    expect(StandardScanFolderService.list).toHaveBeenCalledTimes(1);
 
     resolveStandardFolders([{ id: STANDARD_SCAN_FOLDER_IDS.downloads, path: '/Users/example/Downloads' }]);
     await Promise.all([firstInitialization, secondInitialization]);
-    await store.initialize(disks);
+    await store.initialize();
 
     expect(store.initialized).toBe(true);
     expect(store.standardFolders).toEqual([
       { id: STANDARD_SCAN_FOLDER_IDS.downloads, path: '/Users/example/Downloads' },
     ]);
-    expect(StandardScanFolderService.listAvailable).toHaveBeenCalledTimes(1);
+    expect(StandardScanFolderService.list).toHaveBeenCalledTimes(1);
   });
 
   it('allows initialization to retry after an unexpected failure', async () => {
     const store = useStorageScopeStore();
     vi.spyOn(store, 'loadStandardFolders').mockRejectedValueOnce(new Error('unexpected initialization failure'));
 
-    await expect(store.initialize(disks)).rejects.toThrow('unexpected initialization failure');
+    await expect(store.initialize()).rejects.toThrow('unexpected initialization failure');
     expect(store.initialized).toBe(false);
 
-    await expect(store.initialize(disks)).resolves.toBeUndefined();
+    await expect(store.initialize()).resolves.toBeUndefined();
     expect(store.initialized).toBe(true);
-    expect(StandardScanFolderService.listAvailable).toHaveBeenCalledTimes(1);
+    expect(StandardScanFolderService.list).toHaveBeenCalledTimes(1);
   });
 
   it('removes a folder from history and every page selection', () => {
@@ -199,7 +199,7 @@ describe('storage scope store', () => {
     expect(store.recentFolders).toEqual([]);
   });
 
-  it('migrates saved aliases even when every folder still exists', async () => {
+  it('keeps saved aliases unchanged until an explicit scan', async () => {
     const alias = 'C:\\Mac\\Home\\Documents';
     const target = '\\\\psf\\Home\\Documents';
     await PreferenceStorageService.saveStorageScopePreferences({
@@ -211,9 +211,10 @@ describe('storage scope store', () => {
       { requestedPath: target, path: target },
     ]);
     const store = useStorageScopeStore();
-    await store.initialize(disks);
-    expect(store.recentFolders).toEqual([target]);
-    expect(store.selectedPaths).toEqual({ analysis: target, 'large-files': [target] });
+    await store.initialize();
+    expect(store.recentFolders).toEqual([alias, target]);
+    expect(store.selectedPaths).toEqual({ analysis: alias, 'large-files': [target] });
+    expect(FolderSelectionService.resolveDirectories).not.toHaveBeenCalled();
   });
 
   it('does not rewrite unchanged folder preferences during restoration', async () => {
@@ -225,12 +226,12 @@ describe('storage scope store', () => {
     vi.spyOn(FolderSelectionService, 'resolveDirectories').mockResolvedValue([{ requestedPath: path, path }]);
     const saveSpy = vi.spyOn(PreferenceStorageService, 'saveStorageScopePreferences');
 
-    await useStorageScopeStore().initialize(disks);
+    await useStorageScopeStore().initialize();
 
     expect(saveSpy).not.toHaveBeenCalled();
   });
 
-  it('drops missing folders while restoring saved preferences', async () => {
+  it('retains unavailable folders and never probes them during restoration', async () => {
     await PreferenceStorageService.saveStorageScopePreferences({
       selectedPaths: {
         analysis: '/Users/example/Missing',
@@ -243,18 +244,13 @@ describe('storage scope store', () => {
     ]);
 
     const store = useStorageScopeStore();
-    await store.initialize(disks);
+    await store.initialize();
 
     expect(store.selectedPaths).toEqual({
+      analysis: '/Users/example/Missing',
       'large-files': ['/Users/example/Downloads'],
     });
-    expect(store.recentFolders).toEqual(['/Users/example/Downloads']);
-    await vi.waitFor(() => {
-      expect(values.get('storageScopePreferences')).toMatchObject({
-        selectedPaths: {
-          'large-files': ['/Users/example/Downloads'],
-        },
-      });
-    });
+    expect(store.recentFolders).toEqual(['/Users/example/Missing', '/Users/example/Downloads']);
+    expect(FolderSelectionService.resolveDirectories).not.toHaveBeenCalled();
   });
 });

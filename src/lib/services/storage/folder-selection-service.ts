@@ -35,16 +35,32 @@ export class FolderSelectionService {
     return result.directories;
   }
 
-  /** Resolves explicit selections and reports failures instead of silently ignoring them. */
-  static async filterExistingDirectories(paths: string[]): Promise<string[]> {
-    const resolved = await this.resolveDirectories(paths);
-    if (resolved.length < paths.length) {
-      throw {
-        code: 'invalidInput',
-        details: { operation: 'filter_directory_paths', reason: 'folderUnavailable' },
-        retryable: true,
-      } satisfies CommandError;
+  /** Validates only an explicit selection or scan request, preserving alias mappings. */
+  static async resolveSelectedDirectories(
+    paths: string[],
+    isCancelled: () => boolean = () => false
+  ): Promise<ResolvedDirectory[]> {
+    const resolved: ResolvedDirectory[] = [];
+    for (let offset = 0; offset < paths.length; offset += MAX_DIRECTORY_ENTRIES_PER_REQUEST) {
+      if (isCancelled()) return [];
+      const batch = paths.slice(offset, offset + MAX_DIRECTORY_ENTRIES_PER_REQUEST);
+      const entries = await this.resolveDirectories(batch);
+      if (isCancelled()) return [];
+      if (entries.length < batch.length) {
+        throw {
+          code: 'invalidInput',
+          details: { operation: 'filter_directory_paths', reason: 'folderUnavailable' },
+          retryable: true,
+        } satisfies CommandError;
+      }
+      resolved.push(...entries);
     }
+    return resolved;
+  }
+
+  /** Resolves explicit selections and reports failures instead of silently ignoring them. */
+  static async filterExistingDirectories(paths: string[], isCancelled?: () => boolean): Promise<string[]> {
+    const resolved = await this.resolveSelectedDirectories(paths, isCancelled);
     const seen = new Set<string>();
     return resolved.flatMap(({ path }) => {
       const key = PathUtils.comparisonKey(path);

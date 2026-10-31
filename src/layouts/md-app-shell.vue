@@ -298,7 +298,7 @@ let stopUpdateNotice: (() => void) | undefined;
 let stopDiskWatch: (() => void) | undefined;
 
 function initializeDisks(): Promise<void> {
-  diskInitialization ??= store.initialize().then(() => storageScopeStore.initialize(store.disks));
+  diskInitialization ??= store.initialize().then(() => storageScopeStore.initialize());
   return diskInitialization;
 }
 

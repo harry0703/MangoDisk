@@ -4,6 +4,7 @@ import { flushPromises, shallowMount } from '@vue/test-utils';
 import { createPinia, setActivePinia } from 'pinia';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { FolderSelectionService } from '@/lib/services/storage/folder-selection-service';
 import { i18n } from '@/i18n';
 import {
   DUPLICATE_ENTRY_DELETE_POLICIES,
@@ -11,11 +12,14 @@ import {
   DUPLICATE_KEEPER_RULE_IDS,
   type DuplicateFilesResult,
 } from '@/lib/models/storage/duplicate-file';
-import { STORAGE_SCOPE_IDS } from '@/lib/models/storage/storage-scope';
+import { STORAGE_SCOPE_IDS, type StorageScopePreferences } from '@/lib/models/storage/storage-scope';
 import { PreferenceStorageService } from '@/lib/services/settings/preference-storage-service';
 import { useStorageScopeStore } from '@/stores/storage-scope-store';
 import { useDuplicateFilesStore } from '@/stores/duplicate-files-store';
 import { useAiStore } from '@/stores/ai-store';
+import { Button } from '@/components/ui/button';
+import MdOperationProgress from '@/components/custom/md-operation-progress.vue';
+import { useStorageScanPreferencesStore } from '@/stores/storage-scan-preferences-store';
 
 import MdStorageScopeSelect from '@/components/custom/md-storage-scope-select.vue';
 import MdScanExclusionLink from '@/components/custom/md-scan-exclusion-link.vue';
@@ -99,6 +103,9 @@ beforeEach(() => {
     selectedPaths: { [STORAGE_SCOPE_IDS.duplicateFiles]: ['/scan'] },
     duplicateFileProtectedPaths: [],
   });
+  vi.spyOn(FolderSelectionService, 'resolveSelectedDirectories').mockImplementation(async paths =>
+    paths.map(path => ({ requestedPath: path, path }))
+  );
   vi.spyOn(PreferenceStorageService, 'saveStorageScopePreferences').mockResolvedValue();
 });
 
@@ -107,6 +114,80 @@ afterEach(() => {
 });
 
 describe('duplicate files page', () => {
+  it('resolves aliases only on scan and retains protection when targets converge', async () => {
+    useStorageScanPreferencesStore().initialized = true;
+    const scope = useStorageScopeStore();
+    const alias = 'C:\\Mac\\Home\\Documents';
+    const target = '\\\\psf\\Home\\Documents';
+    const savedPreferences: StorageScopePreferences[] = [];
+    vi.mocked(PreferenceStorageService.saveStorageScopePreferences).mockImplementation(async preferences => {
+      savedPreferences.push(JSON.parse(JSON.stringify(preferences)) as StorageScopePreferences);
+    });
+    scope.$patch({ selectedPaths: { 'duplicate-files': [alias, target] }, duplicateFileProtectedPaths: [alias] });
+    const resolve = vi.mocked(FolderSelectionService.resolveSelectedDirectories);
+    resolve.mockResolvedValueOnce([
+      { requestedPath: alias, path: target },
+      { requestedPath: target, path: target },
+    ]);
+    const wrapper = mountPage();
+    try {
+      await flushPromises();
+      expect(resolve).not.toHaveBeenCalled();
+      await wrapper.getComponent(Button).trigger('click');
+      await flushPromises();
+      expect(wrapper.emitted('find')).toEqual([[[{ path: target, mode: 'protected' }]]]);
+      expect(scope.selectedPaths['duplicate-files']).toEqual([target]);
+      expect(scope.duplicateFileProtectedPaths).toEqual([target]);
+      expect(savedPreferences.length).toBeGreaterThan(0);
+      for (const saved of savedPreferences) {
+        expect(saved.selectedPaths['duplicate-files']).toEqual([target]);
+        expect(saved.duplicateFileProtectedPaths).toEqual([target]);
+      }
+    } finally {
+      wrapper.unmount();
+    }
+  });
+
+  it('keeps saved selection and protection when explicit access is rejected', async () => {
+    useStorageScanPreferencesStore().initialized = true;
+    const scope = useStorageScopeStore();
+    scope.duplicateFileProtectedPaths = ['/scan'];
+    const wrapper = mountPage();
+    const error = { code: 'invalidInput', details: { reason: 'folderUnavailable' } };
+    vi.mocked(FolderSelectionService.resolveSelectedDirectories).mockRejectedValueOnce(error);
+    try {
+      await wrapper.getComponent(Button).trigger('click');
+      await flushPromises();
+      expect(wrapper.emitted('find')).toBeUndefined();
+      expect(wrapper.emitted('error')).toEqual([[error]]);
+      expect(scope.selectedPaths['duplicate-files']).toEqual(['/scan']);
+      expect(scope.duplicateFileProtectedPaths).toEqual(['/scan']);
+    } finally {
+      wrapper.unmount();
+    }
+  });
+
+  it('does not start scanning after cancelling pending directory validation', async () => {
+    useStorageScanPreferencesStore().initialized = true;
+    let finish!: (value: Array<{ requestedPath: string; path: string }>) => void;
+    vi.mocked(FolderSelectionService.resolveSelectedDirectories).mockImplementationOnce(
+      () =>
+        new Promise(resolve => {
+          finish = resolve;
+        })
+    );
+    const wrapper = mountPage();
+    try {
+      await wrapper.getComponent(Button).trigger('click');
+      wrapper.getComponent(MdOperationProgress).vm.$emit('cancel');
+      finish([{ requestedPath: '/scan', path: '/scan' }]);
+      await flushPromises();
+      expect(wrapper.emitted('find')).toBeUndefined();
+    } finally {
+      wrapper.unmount();
+    }
+  });
+
   it('explains the clicked copy without changing selections and invalidates it on a rescan', async () => {
     const ai = useAiStore();
     const show = vi.spyOn(ai, 'show').mockResolvedValue();

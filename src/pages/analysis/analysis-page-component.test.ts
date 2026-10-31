@@ -18,12 +18,14 @@ import MdAnalysisVisualPane from './components/md-analysis-visual-pane.vue';
 import MdAnalysisScanButton from './components/md-analysis-scan-button.vue';
 import MdDestructiveActionDialog from '@/components/custom/md-destructive-action-dialog.vue';
 import { ByteSizeService } from '@/lib/services/settings/byte-size-service';
+import { FolderSelectionService } from '@/lib/services/storage/folder-selection-service';
 import { i18n } from '@/i18n';
 import { Select } from '@/components/ui/select';
 import type { AnalysisDeleteResult, AnalysisResult } from '@/lib/models/storage/analysis';
 
 import AnalysisPage from './index.vue';
 import { useAppStore } from '@/stores/app-store';
+import { useStorageScopeStore } from '@/stores/storage-scope-store';
 import { PreferenceStorageService } from '@/lib/services/settings/preference-storage-service';
 
 vi.mock('@tauri-apps/plugin-os', () => ({ platform: () => 'macos' }));
@@ -42,10 +44,82 @@ beforeEach(() => {
   setActivePinia(createPinia());
   vi.restoreAllMocks();
   useAnalysisStore().viewPreferencesInitialized = true;
+  vi.spyOn(FolderSelectionService, 'filterExistingDirectories').mockImplementation(async paths => paths);
   vi.spyOn(PreferenceStorageService, 'saveAnalysisViewPreferences').mockResolvedValue();
 });
 
 describe('analysis page', () => {
+  it('shows cancellable progress while validating a rescan with existing results', async () => {
+    let completeResolution!: (paths: string[]) => void;
+    vi.mocked(FolderSelectionService.filterExistingDirectories).mockImplementationOnce(
+      () => new Promise(resolve => (completeResolution = resolve))
+    );
+    const wrapper = shallowMount(AnalysisPage, {
+      props: {
+        result,
+        excludedFolders: [],
+        homePath: '/fixture',
+        disk: null,
+        disks: [],
+        progress: null,
+        busy: false,
+        cancelling: false,
+        deleting: false,
+      },
+      global: {
+        plugins: [i18n],
+        renderStubDefaultSlot: true,
+        stubs: { MdPageShell: { template: '<div><slot name="actions"/><slot/></div>' } },
+      },
+    });
+    try {
+      wrapper.getComponent(MdAnalysisScanButton).vm.$emit('scan', 'standard');
+      await flushPromises();
+      expect(wrapper.getComponent(MdDelayedOperationWorkspace).props('active')).toBe(true);
+      expect(wrapper.getComponent(MdAnalysisScanButton).props('scanning')).toBe(true);
+      wrapper.getComponent(MdOperationProgress).vm.$emit('cancel');
+      await flushPromises();
+      expect(wrapper.getComponent(MdDelayedOperationWorkspace).props('active')).toBe(false);
+      completeResolution(['/fixture']);
+      await flushPromises();
+      expect(wrapper.emitted('analyze')).toBeUndefined();
+      expect(wrapper.emitted('cancel')).toBeUndefined();
+    } finally {
+      wrapper.unmount();
+    }
+  });
+
+  it('resolves a saved scope only when explicitly starting analysis', async () => {
+    const scope = useStorageScopeStore();
+    scope.selectedPaths.analysis = 'C:\\Mac\\Home\\Documents';
+    const resolve = vi.mocked(FolderSelectionService.filterExistingDirectories);
+    resolve.mockResolvedValueOnce(['\\\\psf\\Home\\Documents']);
+    const wrapper = shallowMount(AnalysisPage, {
+      props: {
+        result,
+        excludedFolders: [],
+        homePath: '/fixture',
+        disk: null,
+        disks: [],
+        progress: null,
+        busy: false,
+        cancelling: false,
+        deleting: false,
+      },
+      global: { plugins: [i18n], stubs: { MdPageShell: { template: '<div><slot name="actions"/><slot/></div>' } } },
+    });
+    try {
+      await flushPromises();
+      expect(resolve).not.toHaveBeenCalled();
+      wrapper.getComponent(MdAnalysisScanButton).vm.$emit('scan', 'standard');
+      await flushPromises();
+      expect(wrapper.emitted('analyze')?.at(-1)?.[0]).toBe('\\\\psf\\Home\\Documents');
+      expect(scope.selectedPath('analysis')).toBe('\\\\psf\\Home\\Documents');
+    } finally {
+      wrapper.unmount();
+    }
+  });
+
   it('rejects a protected entry even when a child emits a delete event', async () => {
     const entry = {
       name: 'hiberfil.sys',

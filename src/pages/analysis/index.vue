@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { ScanNameExclusion } from '@/lib/models/storage/storage-scan';
+import { FolderSelectionService } from '@/lib/services/storage/folder-selection-service';
 import { useI18n } from 'vue-i18n';
 import { computed, nextTick, onActivated, onBeforeUnmount, onDeactivated, onMounted, ref, watch } from 'vue';
 
@@ -61,6 +62,21 @@ const props = defineProps<{
   administratorRestartBusy?: boolean;
   administratorRestartDisabled?: boolean;
 }>();
+
+let scopeRequest = 0;
+const resolvingScope = ref(false);
+function discardScopeResolution() {
+  if (resolvingScope.value) primaryAnalysisPending.value = false;
+  scopeRequest += 1;
+  resolvingScope.value = false;
+}
+onBeforeUnmount(discardScopeResolution);
+onDeactivated(discardScopeResolution);
+function cancelScan() {
+  if (resolvingScope.value) discardScopeResolution();
+  else emit('cancel');
+}
+const scanBusy = computed(() => props.busy || resolvingScope.value);
 
 const emit = defineEmits<{
   analyze: [path?: string, refresh?: boolean, setHome?: boolean, scanMode?: AnalysisScanMode];
@@ -248,14 +264,14 @@ const canGoForward = computed(
 // Folder navigation and an explicit rescan share the same backend operation.
 // Track the initiating interaction so ordinary browsing does not replace the
 // page-level action label and make the right-aligned header change width.
-const showPrimaryAnalysisProgress = computed(() => props.busy && primaryAnalysisPending.value);
+const showPrimaryAnalysisProgress = computed(() => scanBusy.value && primaryAnalysisPending.value);
 const folderNavigationPending = computed(() => props.busy && !primaryAnalysisPending.value);
 // Starting the native request does not imply a scan: Core can still reuse its
 // index for an unvisited child. Only real scan progress replaces stale browser
 // data; cache navigation keeps the mounted list and its sorting state. Cache
 // projection and transport can exceed the UI delay without scanning anything.
 const showFullAnalysisProgress = computed(
-  () => props.busy && !props.recovering && (primaryAnalysisPending.value || props.progress !== null)
+  () => scanBusy.value && !props.recovering && (primaryAnalysisPending.value || props.progress !== null)
 );
 
 watch(
@@ -330,17 +346,33 @@ function removeScopeFolder(path: string) {
   pendingHistoryNavigation.value = null;
 }
 
-function startPrimaryAnalysis(scanMode: AnalysisScanMode = analysisStore.scanMode) {
+async function startPrimaryAnalysis(scanMode: AnalysisScanMode = analysisStore.scanMode) {
+  if (scanBusy.value || props.deleting || !selectedScopePath.value) return;
+  const requested = selectedScopePath.value;
   primaryAnalysisPending.value = true;
-  if (props.busy || props.deleting || !selectedScopePath.value) return;
-  pendingHistoryNavigation.value = null;
-  emit('analyze', selectedScopePath.value, scopeIsAnalysisRoot.value, !scopeIsAnalysisRoot.value, scanMode);
-  // Cache hits and rejected operations may finish without toggling `busy`.
-  // Clear the local interaction state after Vue has applied any synchronous
-  // Store updates so it cannot leak into a later folder navigation.
-  void nextTick(() => {
-    if (!props.busy) primaryAnalysisPending.value = false;
-  });
+  const request = ++scopeRequest;
+  resolvingScope.value = true;
+  try {
+    const [target] = await FolderSelectionService.filterExistingDirectories(
+      [requested],
+      () => request !== scopeRequest
+    );
+    if (
+      request !== scopeRequest ||
+      !target ||
+      PathUtils.comparisonKey(requested) !== PathUtils.comparisonKey(selectedScopePath.value)
+    )
+      return;
+    selectScope(target);
+    pendingHistoryNavigation.value = null;
+    emit('analyze', target, scopeIsAnalysisRoot.value, !scopeIsAnalysisRoot.value, scanMode);
+  } catch (error) {
+    if (request === scopeRequest) emit('error', error);
+  } finally {
+    await nextTick();
+    if (request === scopeRequest) resolvingScope.value = false;
+    if (request === scopeRequest && !props.busy) primaryAnalysisPending.value = false;
+  }
 }
 
 function activateEntry(entry: DirectoryEntryInfo) {
@@ -407,7 +439,7 @@ function navigateHistory(index: number) {
           :disks="disks"
           :recent-folders="storageScopeStore.recentFolders"
           :standard-folders="storageScopeStore.standardFolders"
-          :disabled="busy || deleting"
+          :disabled="scanBusy || deleting"
           @error="emit('error', $event)"
           @remove-folder="removeScopeFolder"
           @update:model-value="selectScope"
@@ -417,7 +449,7 @@ function navigateHistory(index: number) {
           :mode="analysisStore.scanMode"
           :rescan="scopeIsAnalysisRoot"
           :scanning="showPrimaryAnalysisProgress"
-          :disabled="busy || deleting || !selectedScopePath"
+          :disabled="scanBusy || deleting || !selectedScopePath"
           @scan="startPrimaryAnalysis"
         />
       </div>
@@ -427,7 +459,7 @@ function navigateHistory(index: number) {
       <MdAnalysisBrowserToolbar
         v-if="result && !showFullAnalysisProgress"
         :breadcrumbs="breadcrumbs"
-        :busy="busy || deleting"
+        :busy="scanBusy || deleting"
         :preserve-busy-appearance="folderNavigationPending"
         :can-go-back="canGoBack"
         :can-go-forward="canGoForward"
@@ -450,7 +482,7 @@ function navigateHistory(index: number) {
         :key="showFullAnalysisProgress ? 'full' : 'navigation'"
         class="analysis-overlay"
         :class="{ 'analysis-overlay--full': !result || showFullAnalysisProgress }"
-        :active="busy && !recovering && (!result || showFullAnalysisProgress)"
+        :active="scanBusy && !recovering && (!result || showFullAnalysisProgress)"
         :delay="showFullAnalysisProgress ? 0 : undefined"
         mode="overlay"
         role="status"
@@ -465,7 +497,7 @@ function navigateHistory(index: number) {
           :hint="scanHint"
           :cancelable="true"
           :cancel-disabled="cancelling"
-          @cancel="emit('cancel')"
+          @cancel="cancelScan"
         />
       </MdDelayedOperationWorkspace>
 
@@ -478,7 +510,7 @@ function navigateHistory(index: number) {
         <div class="empty-primary-actions">
           <MdAnalysisScanButton
             :mode="analysisStore.scanMode"
-            :disabled="busy || deleting || !selectedScopePath"
+            :disabled="scanBusy || deleting || !selectedScopePath"
             large
             @scan="startPrimaryAnalysis"
           />
@@ -489,8 +521,8 @@ function navigateHistory(index: number) {
         v-else-if="!showFullAnalysisProgress"
         class="browser-content"
         :class="{ 'browser-content--list-collapsed': listCollapsed }"
-        :inert="(busy && !recovering) || undefined"
-        :aria-busy="busy"
+        :inert="(scanBusy && !recovering) || undefined"
+        :aria-busy="scanBusy"
       >
         <MdAnalysisFolderPane
           v-show="!listCollapsed"
@@ -503,8 +535,8 @@ function navigateHistory(index: number) {
           :folder-count="folderCount"
           :file-count="fileCount"
           :truncated="result.truncated"
-          :open-disabled="busy || deleting || recoveryRequired"
-          :delete-disabled="busy || deleting || recoveryRequired || !resultMatchesExclusions"
+          :open-disabled="scanBusy || deleting || recoveryRequired"
+          :delete-disabled="scanBusy || deleting || recoveryRequired || !resultMatchesExclusions"
           :deleting-path="deletingPath"
           :hovered-entry-path="hoveredEntryPath"
           @update:selected-paths="updateSelection"
@@ -524,8 +556,8 @@ function navigateHistory(index: number) {
           :entries="entries"
           :folder-count="folderCount"
           :view-mode="viewMode"
-          :open-disabled="busy || deleting || recoveryRequired"
-          :delete-disabled="busy || deleting || recoveryRequired || !resultMatchesExclusions"
+          :open-disabled="scanBusy || deleting || recoveryRequired"
+          :delete-disabled="scanBusy || deleting || recoveryRequired || !resultMatchesExclusions"
           :deleting-path="deletingPath"
           :hovered-entry-path="hoveredEntryPath"
           @hover-entry="hoverEntry"
@@ -541,7 +573,7 @@ function navigateHistory(index: number) {
           <template #coverage>
             <MdAnalysisCoverage
               :result="result"
-              :disabled="busy || deleting || recoveryRequired || administratorRestartDisabled"
+              :disabled="scanBusy || deleting || recoveryRequired || administratorRestartDisabled"
               :restarting="administratorRestartBusy"
               @restart-as-administrator="emit('restartAsAdministrator', $event)"
             />

@@ -359,7 +359,7 @@ watch(() => props.modelValue, closeTooltips);
                   :path="folder.path"
                   :name="t(`folderPicker.standardFolders.${folder.id}`)"
                   directory
-                  directory-mode="path"
+                  directory-mode="generic"
                   compact
                 />
                 <span class="min-w-0 flex-1 truncate">

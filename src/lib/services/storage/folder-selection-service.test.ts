@@ -42,6 +42,27 @@ describe('directory entry resolution', () => {
     expect(invokeMock).not.toHaveBeenCalled();
   });
 
+  it('validates a large explicit scope in bounded batches', async () => {
+    const paths = Array.from({ length: 70 }, (_, index) => `/folder-${index}`);
+    invokeMock.mockImplementation(async (_command: string, args: { paths: string[] }) => ({
+      schemaVersion: 1,
+      directories: args.paths.map(path => ({ requestedPath: path, path })),
+    }));
+    expect(await FolderSelectionService.filterExistingDirectories(paths)).toEqual(paths);
+    expect(invokeMock.mock.calls.map(([, args]) => args.paths.length)).toEqual([64, 6]);
+  });
+
+  it('does not access later batches after a scan request is cancelled', async () => {
+    let cancelled = false;
+    invokeMock.mockImplementationOnce(async (_command: string, args: { paths: string[] }) => {
+      cancelled = true;
+      return { schemaVersion: 1, directories: args.paths.map(path => ({ requestedPath: path, path })) };
+    });
+    const paths = Array.from({ length: 70 }, (_, index) => `/folder-${index}`);
+    expect(await FolderSelectionService.filterExistingDirectories(paths, () => cancelled)).toEqual([]);
+    expect(invokeMock).toHaveBeenCalledTimes(1);
+  });
+
   it('rejects incompatible protocol versions', async () => {
     invokeMock.mockResolvedValue({ schemaVersion: 2, directories: [] });
     await expect(FolderSelectionService.resolveDirectories(['C:\\Folder'])).rejects.toThrow(

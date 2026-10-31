@@ -28,6 +28,7 @@ import { StandardScanFolderService } from '@/lib/services/storage/standard-scan-
 
 describe('StandardScanFolderService', () => {
   beforeEach(() => {
+    vi.clearAllMocks();
     pathMocks.downloadDir.mockResolvedValue('/Users/test/Downloads');
     pathMocks.documentDir.mockResolvedValue('/Users/test/Documents');
     pathMocks.pictureDir.mockResolvedValue('/Users/test/Pictures');
@@ -39,7 +40,7 @@ describe('StandardScanFolderService', () => {
   });
 
   it('returns standard folders in a stable product order', async () => {
-    const folders = await StandardScanFolderService.listAvailable();
+    const folders = await StandardScanFolderService.list();
 
     expect(folders.map(folder => folder.id)).toEqual([
       STANDARD_SCAN_FOLDER_IDS.downloads,
@@ -50,13 +51,11 @@ describe('StandardScanFolderService', () => {
     ]);
   });
 
-  it('omits unresolved or missing operating-system folders', async () => {
+  it('omits unresolved or empty operating-system paths without filesystem access', async () => {
     pathMocks.pictureDir.mockRejectedValue(new Error('picture directory unavailable'));
-    pathMocks.resolveDirectories.mockImplementation(async (paths: string[]) =>
-      paths.filter(path => !path.endsWith('/Movies')).map(path => ({ requestedPath: path, path }))
-    );
+    pathMocks.videoDir.mockResolvedValue('');
 
-    const folders = await StandardScanFolderService.listAvailable();
+    const folders = await StandardScanFolderService.list();
 
     expect(folders.map(folder => folder.id)).toEqual([
       STANDARD_SCAN_FOLDER_IDS.downloads,
@@ -65,29 +64,24 @@ describe('StandardScanFolderService', () => {
     ]);
   });
 
-  it('preserves labels when Windows folders resolve to shared targets', async () => {
+  it('keeps redirected Windows shortcut labels without inspecting their targets', async () => {
     pathMocks.documentDir.mockResolvedValue('C:\\Mac\\Home\\Documents');
-    pathMocks.pictureDir.mockResolvedValue('C:\\Mac\\Home\\Pictures');
-    pathMocks.resolveDirectories.mockImplementation(async (paths: string[]) =>
-      paths.map(path => ({
-        requestedPath: path,
-        path: path.replace('C:\\Mac\\Home', '\\\\psf\\Home'),
-      }))
-    );
-    const folders = await StandardScanFolderService.listAvailable();
-    expect(folders).toContainEqual({ id: 'documents', path: '\\\\psf\\Home\\Documents' });
-    expect(folders).toContainEqual({ id: 'pictures', path: '\\\\psf\\Home\\Pictures' });
+    const folders = await StandardScanFolderService.list();
+    expect(folders).toContainEqual({ id: 'documents', path: 'C:\\Mac\\Home\\Documents' });
+    expect(pathMocks.resolveDirectories).not.toHaveBeenCalled();
   });
 
-  it('does not render duplicate select values when Known Folders share a target', async () => {
-    pathMocks.resolveDirectories.mockImplementation(async (paths: string[]) =>
-      paths.map(path => ({
-        requestedPath: path,
-        path: '\\\\server\\share\\folder',
-      }))
-    );
-    expect(await StandardScanFolderService.listAvailable()).toEqual([
-      { id: 'downloads', path: '\\\\server\\share\\folder' },
-    ]);
+  it('does not render duplicate shortcuts when operating-system paths are identical', async () => {
+    for (const resolve of [
+      pathMocks.downloadDir,
+      pathMocks.documentDir,
+      pathMocks.pictureDir,
+      pathMocks.videoDir,
+      pathMocks.audioDir,
+    ]) {
+      resolve.mockResolvedValue('\\\\server\\share\\folder');
+    }
+    expect(await StandardScanFolderService.list()).toEqual([{ id: 'downloads', path: '\\\\server\\share\\folder' }]);
+    expect(pathMocks.resolveDirectories).not.toHaveBeenCalled();
   });
 });
