@@ -42,6 +42,68 @@ function render(record: PresentedOperationRecord) {
 }
 
 describe('history detail dialog', () => {
+  it.each(['startupManagement', 'systemOptimization'] as const)(
+    'keeps failed %s items visibly incomplete',
+    category => {
+      const record: PresentedOperationRecord =
+        category === 'startupManagement'
+          ? {
+              ...base,
+              category,
+              failedItemCount: 1,
+              details: {
+                type: category,
+                payload: {
+                  planId: null,
+                  items: [
+                    {
+                      itemId: 'fixture',
+                      displayName: 'Example startup',
+                      previousState: 'enabled',
+                      desiredState: 'disabled',
+                      status: 'failed',
+                      failureReason: 'permissionDenied',
+                    },
+                  ],
+                },
+              },
+            }
+          : {
+              ...base,
+              category,
+              failedItemCount: 1,
+              details: {
+                type: category,
+                payload: {
+                  planId: 'fixture',
+                  restoration: false,
+                  items: [
+                    {
+                      settingId: 'windows.content.disable-suggestions',
+                      status: 'failed',
+                      failureReason: 'permissionDenied',
+                      desiredOptimized: true,
+                    },
+                  ],
+                },
+              },
+            };
+      const wrapper = render(record);
+      try {
+        expect(wrapper.get('.action-status').classes()).toContain('warning');
+        expect(wrapper.get('.detail-action').text()).toContain(
+          i18n.global.t(
+            category === 'startupManagement'
+              ? 'history.startupFailureReasons.permissionDenied'
+              : 'history.systemOptimizationFailureReasons.permissionDenied'
+          )
+        );
+      } finally {
+        wrapper.unmount();
+      }
+    }
+  );
+
   it('describes cleared privacy data consistently with the Spanish cleanup result', () => {
     const previousLocale = i18n.global.locale.value;
     i18n.global.locale.value = 'es-ES';
@@ -125,20 +187,67 @@ describe('history detail dialog', () => {
   });
 
   it.each(['largeFileCleanup', 'duplicateFileCleanup'] as const)(
-    'retains bounded %s evidence and failure status',
+    'shows only deleted files from mixed %s records',
     category => {
-      const payload = { items: [{ path: '/fixture/report.txt', status: 'failed' as const }], omittedItemCount: 3 };
-      const record: PresentedOperationRecord =
-        category === 'largeFileCleanup'
-          ? { ...base, category, details: { type: 'largeFileCleanup', payload } }
-          : { ...base, category, details: { type: 'duplicateFileCleanup', payload } };
+      const payload = {
+        items: [
+          { path: '/fixture/report.txt', status: 'failed' as const },
+          { path: '/fixture/deleted.txt', status: 'deleted' as const },
+        ],
+        omittedItemCount: 998,
+      };
+      const record: PresentedOperationRecord = {
+        ...base,
+        selectedItemCount: 1000,
+        failedItemCount: 999,
+        category,
+        details: { type: category, payload },
+      } as PresentedOperationRecord;
       const wrapper = render(record);
-      expect(wrapper.text()).toContain('report.txt');
-      expect(wrapper.text()).toContain(i18n.global.t('history.deleteFailed'));
-      expect(wrapper.find('.detail-omitted').text()).toContain('3');
+      expect(wrapper.text()).not.toContain('report.txt');
+      expect(wrapper.text()).toContain('deleted.txt');
+      expect(wrapper.text()).toContain(i18n.global.t('history.deleted'));
+      expect(wrapper.find('details').exists()).toBe(false);
+      expect(wrapper.find('.detail-omitted').exists()).toBe(false);
+      expect(wrapper.get('[data-height]').attributes('data-height')).toBe('auto');
       wrapper.unmount();
     }
   );
+
+  it('shows an empty deleted-file list without expanding failures', () => {
+    const wrapper = render({
+      ...base,
+      category: 'duplicateFileCleanup',
+      selectedItemCount: 1000,
+      affectedItemCount: 0,
+      failedItemCount: 1000,
+      details: { type: 'duplicateFileCleanup', payload: { items: [], omittedItemCount: 1000 } },
+    });
+    expect(wrapper.text()).toContain(i18n.global.t('history.noFilesDeleted'));
+    expect(wrapper.find('.detail-action').exists()).toBe(false);
+    expect(wrapper.find('details').exists()).toBe(false);
+    expect(wrapper.get('[data-height]').attributes('data-height')).toBe('auto');
+    wrapper.unmount();
+  });
+
+  it('counts only omitted deleted files in bounded history', () => {
+    const wrapper = render({
+      ...base,
+      category: 'largeFileCleanup',
+      selectedItemCount: 1000,
+      affectedItemCount: 201,
+      failedItemCount: 799,
+      details: {
+        type: 'largeFileCleanup',
+        payload: {
+          items: Array.from({ length: 200 }, (_, index) => ({ path: `/fixture/${index}`, status: 'deleted' })),
+          omittedItemCount: 800,
+        },
+      },
+    });
+    expect(wrapper.get('.detail-omitted').text()).toBe(i18n.global.t('history.moreItemsOmitted', { count: '1' }, 1));
+    wrapper.unmount();
+  });
 
   it('keeps startup item counts and configured-state transitions', () => {
     const wrapper = render({

@@ -2026,3 +2026,88 @@ fn dedicated_collision_dataset_compares_sample_rejection_power() {
     benchmark_worker_counts("duplicate-mix", &root);
     fs::remove_dir_all(root).expect("the duplicate-mix fixture should be removed");
 }
+
+/// The caller provisions disposable fixtures and OS permissions before invoking this test.
+#[test]
+#[ignore = "requires MANGODISK_DELETE_PROBE_ROOT with denied and writable duplicate fixtures"]
+fn native_duplicate_deletion_failure_evidence() {
+    use crate::filesystem::{
+        PermanentDeleteFailureReason as Reason, PermanentDeleteFailureStage as Stage,
+    };
+    let _lock = crate::shared::operation::test_operation_lock();
+    let root = PathBuf::from(
+        std::env::var_os("MANGODISK_DELETE_PROBE_ROOT").expect("explicit disposable fixture root"),
+    );
+    let scan = DuplicateFileService::find_paged_with_locations(
+        vec![DuplicateScanLocation {
+            path: display_path(&root),
+            mode: DuplicateScanLocationMode::Cleanable,
+        }],
+        1,
+        |_| {},
+        |_| {},
+    )
+    .expect("scan actual fixtures");
+    let mut candidates = Vec::new();
+    for expected in [
+        root.join("denied").join("denied.bin"),
+        root.join("writable.bin"),
+    ] {
+        let item = scan
+            .groups
+            .iter()
+            .flat_map(|group| &group.entries)
+            .find(|item| Path::new(&item.path) == expected)
+            .expect("fixture must be a visible duplicate");
+        candidates.push(PermanentDeleteCandidate {
+            path: item.path.clone(),
+            expected_bytes: item.bytes,
+            expected_modified_at_ms: item.modified_at_ms,
+        });
+    }
+    let result = DuplicateFileService::delete_files_permanently(scan.scan_id, candidates)
+        .expect("batch returns individual failures");
+    println!(
+        "native_deletion_result={}",
+        serde_json::to_string(&result).unwrap()
+    );
+    assert_eq!(result.removed_paths.len(), 1);
+    assert_eq!(result.failed.len(), 1);
+    let failure = &result.failed[0].details;
+    assert_eq!(failure.reason, Reason::AccessDenied);
+    assert_eq!(failure.stage, Stage::CreateStaging);
+    assert!(!failure.partial);
+    #[cfg(windows)]
+    assert_eq!(failure.native_code, Some(5));
+    assert!(root.join("denied/denied.bin").exists());
+    assert!(root.join("keeper.bin").exists());
+    assert!(!root.join("writable.bin").exists());
+    let record = crate::history::HistoryService::list()
+        .unwrap()
+        .into_iter()
+        .find(|record| match &record.details {
+            crate::history::OperationDetails::DuplicateFileCleanup(details) => details
+                .items
+                .iter()
+                .any(|item| item.path == result.removed_paths[0]),
+            _ => false,
+        })
+        .expect("deleted file persisted in operation history");
+    assert_eq!(record.failed_item_count, 1);
+    assert_eq!(record.affected_item_count, 1);
+    let crate::history::OperationDetails::DuplicateFileCleanup(details) = record.details else {
+        panic!("duplicate history")
+    };
+    assert_eq!(details.items.len(), 1);
+    assert_eq!(details.items[0].path, result.removed_paths[0]);
+    assert_eq!(
+        details.items[0].status,
+        crate::history::FileCleanupHistoryItemStatus::Deleted
+    );
+    assert_eq!(details.omitted_item_count, 1);
+    println!(
+        "native_deletion_history={}",
+        serde_json::to_string(&details).unwrap()
+    );
+    clear_result_session().unwrap();
+}

@@ -2449,7 +2449,6 @@
     "failedItems": "Übersprungen oder fehlgeschlagen",
     "failedApplications": "Apps unvollständig",
     "deleted": "Endgültig gelöscht",
-    "deleteFailed": "Konnte nicht gelöscht werden",
     "moreItemsOmitted": "{count} weiteres Element nicht aufgeklappt | {count} weitere Elemente nicht aufgeklappt",
     "duration": "Dauer",
     "recordSummary": "{items} Bereinigungselement · {files} verarbeitet | {items} Bereinigungselemente · {files} verarbeitet",
@@ -2523,7 +2522,8 @@
       "nativeInstallerFailedAfterRemoval": "Der Installationsdatensatz wurde entfernt, aber das Deinstallationsprogramm hat einen Fehler gemeldet",
       "verificationFailed": "MangoDisk konnte das Ergebnis nicht bestätigen",
       "removalUnconfirmed": "Das Deinstallationsprogramm ist abgeschlossen, die Entfernung konnte jedoch nicht bestätigt werden. Aktualisieren Sie zur Überprüfung die App-Liste"
-    }
+    },
+    "noFilesDeleted": "Es wurden keine Dateien gelöscht"
   },
   "settings": {
     "title": "Einstellungen",

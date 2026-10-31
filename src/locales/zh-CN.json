@@ -2449,7 +2449,6 @@
     "failedItems": "跳过或失败",
     "failedApplications": "未完成应用",
     "deleted": "已彻底删除",
-    "deleteFailed": "未能删除",
     "moreItemsOmitted": "另有 {count} 个项目未在详情中展开",
     "duration": "执行用时",
     "recordSummary": "{items} 个清理项 · 已处理 {files} 项",
@@ -2523,7 +2522,8 @@
       "nativeInstallerFailedAfterRemoval": "安装记录已移除，但卸载程序报告了错误",
       "verificationFailed": "MangoDisk 无法确认卸载结果",
       "removalUnconfirmed": "卸载程序已结束，但尚未确认卸载完成。请刷新应用列表核对"
-    }
+    },
+    "noFilesDeleted": "没有已删除的文件"
   },
   "settings": {
     "title": "设置",

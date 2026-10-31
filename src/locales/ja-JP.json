@@ -2449,7 +2449,6 @@
     "failedItems": "スキップまたは失敗",
     "failedApplications": "完了しなかったアプリ",
     "deleted": "完全に削除済み",
-    "deleteFailed": "削除できませんでした",
     "moreItemsOmitted": "ほか {count} 項目は省略されています | ほか {count} 項目は省略されています",
     "duration": "所要時間",
     "recordSummary": "{items} クリーンアップ項目 · {files} 処理済み | {items} クリーンアップ項目 · {files} 処理済み",
@@ -2523,7 +2522,8 @@
       "nativeInstallerFailedAfterRemoval": "インストール情報は削除されましたが、アンインストーラーがエラーを報告しました",
       "verificationFailed": "MangoDisk が結果を確認できませんでした",
       "removalUnconfirmed": "アンインストーラーは終了しましたが、削除を確認できませんでした。アプリ一覧を更新して確認してください"
-    }
+    },
+    "noFilesDeleted": "削除されたファイルはありません"
   },
   "settings": {
     "title": "設定",

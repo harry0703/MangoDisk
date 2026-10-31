@@ -461,27 +461,15 @@ pub(crate) fn file_cleanup_record(
     result: &crate::PermanentDeleteBatchResult,
 ) -> OperationRecord {
     let selected_item_count = selected_paths.len() as u64;
-    let failed_paths = result
-        .failed
+    let items = result
+        .removed_paths
         .iter()
-        .map(|failure| failure.path.as_str())
-        .collect::<HashSet<_>>();
-    let mut items = selected_paths
-        .into_iter()
+        .take(FILE_CLEANUP_HISTORY_ITEM_LIMIT)
         .map(|path| FileCleanupHistoryItem {
-            status: if failed_paths.contains(path.as_str()) {
-                FileCleanupHistoryItemStatus::Failed
-            } else {
-                FileCleanupHistoryItemStatus::Deleted
-            },
-            path,
+            path: path.clone(),
+            status: FileCleanupHistoryItemStatus::Deleted,
         })
         .collect::<Vec<_>>();
-    // Failed entries are the most useful audit evidence when a large batch is
-    // truncated. Stable sorting preserves the original selection order inside
-    // both the failed and successful sections.
-    items.sort_by_key(|item| item.status != FileCleanupHistoryItemStatus::Failed);
-    items.truncate(FILE_CLEANUP_HISTORY_ITEM_LIMIT);
     let details = FileCleanupOperationDetails {
         omitted_item_count: selected_item_count.saturating_sub(items.len() as u64),
         items,
@@ -797,17 +785,60 @@ mod tests {
         let OperationDetails::LargeFileCleanup(details) = &record.details else {
             panic!("large-file cleanup must keep file history details");
         };
-        assert_eq!(details.items.len(), 2);
+        assert_eq!(details.items.len(), 1);
+        assert_eq!(details.items[0].path, "/fixture/removed.bin");
         assert_eq!(
             details.items[0].status,
-            FileCleanupHistoryItemStatus::Failed
+            FileCleanupHistoryItemStatus::Deleted
         );
-        assert_eq!(details.omitted_item_count, 0);
+        assert_eq!(details.omitted_item_count, 1);
         assert!(validate_operation_record(&record).is_ok());
     }
 
     #[test]
-    fn file_cleanup_history_bounds_details_and_prioritizes_failures() {
+    fn file_cleanup_history_keeps_large_failures_as_totals_only() {
+        let failed = (0..1000)
+            .map(|index| crate::PermanentDeleteFailure {
+                path: format!("/fixture/denied-{index}"),
+                details: crate::filesystem::PermanentDeleteFailureDetails {
+                    message: "native error".repeat(100),
+                    ..Default::default()
+                },
+            })
+            .collect::<Vec<_>>();
+        let result = crate::PermanentDeleteBatchResult {
+            removed_paths: vec![],
+            failed,
+            released_bytes: 0,
+        };
+        let record = file_cleanup_record(
+            "failure-1".into(),
+            FileCleanupHistoryCategory::DuplicateFiles,
+            1,
+            2,
+            result
+                .failed
+                .iter()
+                .map(|failure| failure.path.clone())
+                .collect(),
+            4,
+            &result,
+        );
+        validate_operation_record(&record).unwrap();
+        let serialized = serde_json::to_string(&record).unwrap();
+        assert!(serialized.len() < 1000);
+        assert!(!serialized.contains("denied-"));
+        assert!(!serialized.contains("native error"));
+        assert_eq!(record.failed_item_count, 1000);
+        let OperationDetails::DuplicateFileCleanup(details) = record.details else {
+            panic!("duplicate details")
+        };
+        assert!(details.items.is_empty());
+        assert_eq!(details.omitted_item_count, 1000);
+    }
+
+    #[test]
+    fn file_cleanup_history_bounds_successful_details() {
         let selected_paths = (0..FILE_CLEANUP_HISTORY_ITEM_LIMIT + 5)
             .map(|index| format!("/fixture/{index}.bin"))
             .collect::<Vec<_>>();
@@ -842,11 +873,11 @@ mod tests {
         };
         assert_eq!(details.items.len(), FILE_CLEANUP_HISTORY_ITEM_LIMIT);
         assert_eq!(details.omitted_item_count, 5);
-        assert_eq!(details.items[0].path, failed_path);
-        assert_eq!(
-            details.items[0].status,
-            FileCleanupHistoryItemStatus::Failed
-        );
+        assert!(details
+            .items
+            .iter()
+            .all(|item| item.status == FileCleanupHistoryItemStatus::Deleted));
+        assert!(!details.items.iter().any(|item| item.path == failed_path));
         assert!(validate_operation_record(&record).is_ok());
 
         let mut oversized = record.clone();

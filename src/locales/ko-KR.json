@@ -2449,7 +2449,6 @@
     "failedItems": "건너뜀 또는 실패",
     "failedApplications": "미완료 앱",
     "deleted": "영구 삭제됨",
-    "deleteFailed": "삭제할 수 없음",
     "moreItemsOmitted": "펼치지 않은 항목 {count}개 더 있음",
     "duration": "소요 시간",
     "recordSummary": "정리 항목 {items}개 · {files}개 처리됨",
@@ -2523,7 +2522,8 @@
       "nativeInstallerFailedAfterRemoval": "설치 기록은 제거되었지만 제거 프로그램이 오류를 보고했습니다",
       "verificationFailed": "MangoDisk가 결과를 확인할 수 없습니다",
       "removalUnconfirmed": "제거 프로그램이 종료되었지만 제거 완료를 확인하지 못했습니다. 앱 목록을 새로 고침하여 확인해 주세요"
-    }
+    },
+    "noFilesDeleted": "삭제된 파일이 없습니다"
   },
   "settings": {
     "title": "설정",

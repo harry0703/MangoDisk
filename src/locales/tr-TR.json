@@ -2449,7 +2449,6 @@
     "failedItems": "Atlanan veya başarısız olanlar",
     "failedApplications": "Tamamlanamayan uygulamalar",
     "deleted": "Kalıcı olarak silindi",
-    "deleteFailed": "Silinemedi",
     "moreItemsOmitted": "{count} öğe daha genişletilmedi | {count} öğe daha genişletilmedi",
     "duration": "Süre",
     "recordSummary": "{items} temizlik öğesi · {files} işlendi | {items} temizlik öğesi · {files} işlendi",
@@ -2523,7 +2522,8 @@
       "nativeInstallerFailedAfterRemoval": "Kurulum kaydı kaldırıldı ancak kaldırma programı hata bildirdi",
       "verificationFailed": "MangoDisk sonucu doğrulayamadı",
       "removalUnconfirmed": "Kaldırma programı tamamlandı ancak uygulamanın kaldırıldığı doğrulanamadı. Kontrol etmek için uygulama listesini yenileyin"
-    }
+    },
+    "noFilesDeleted": "Hiçbir dosya silinmedi"
   },
   "settings": {
     "title": "Ayarlar",

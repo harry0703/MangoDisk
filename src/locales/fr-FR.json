@@ -2449,7 +2449,6 @@
     "failedItems": "Ignoré ou échoué",
     "failedApplications": "Applications incomplètes",
     "deleted": "Supprimé définitivement",
-    "deleteFailed": "Impossible de supprimer",
     "moreItemsOmitted": "{count} autre élément masqué | {count} autres éléments masqués",
     "duration": "Durée",
     "recordSummary": "{items} élément à nettoyer · {files} traités | {items} éléments à nettoyer · {files} traités",
@@ -2523,7 +2522,8 @@
       "nativeInstallerFailedAfterRemoval": "L'enregistrement d'installation a été supprimé, mais le programme de désinstallation a signalé une erreur",
       "verificationFailed": "MangoDisk n'a pas pu confirmer le résultat",
       "removalUnconfirmed": "Le programme de désinstallation est terminé, mais la suppression n'a pas pu être confirmée. Actualisez la liste des applications pour vérifier"
-    }
+    },
+    "noFilesDeleted": "Aucun fichier supprimé"
   },
   "settings": {
     "title": "Réglages",

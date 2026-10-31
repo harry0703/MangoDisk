@@ -2449,7 +2449,6 @@
     "failedItems": "Skipped or failed",
     "failedApplications": "Apps incomplete",
     "deleted": "Deleted permanently",
-    "deleteFailed": "Could not delete",
     "moreItemsOmitted": "{count} more item not expanded | {count} more items not expanded",
     "duration": "Duration",
     "recordSummary": "{items} cleanup item · {files} processed | {items} cleanup items · {files} processed",
@@ -2523,7 +2522,8 @@
       "nativeInstallerFailedAfterRemoval": "The installation record was removed, but the uninstaller reported an error",
       "verificationFailed": "MangoDisk could not confirm the result",
       "removalUnconfirmed": "The uninstaller has finished, but removal could not be confirmed. Refresh the app list to check"
-    }
+    },
+    "noFilesDeleted": "No files were deleted"
   },
   "settings": {
     "title": "Settings",

@@ -27,7 +27,17 @@ const { locale, t } = useI18n({ useScope: 'global' });
 const props = defineProps<{ selectedRecord: PresentedOperationRecord | null }>();
 const open = defineModel<boolean>('open', { required: true });
 const selectedDetails = computed(() => props.selectedRecord?.details.payload ?? null);
-const usesTallDetailDialog = computed(() => (props.selectedRecord?.selectedItemCount ?? 0) > 4);
+const deletedFiles = computed(() => {
+  const details = props.selectedRecord?.details;
+  if (details?.type !== 'largeFileCleanup' && details?.type !== 'duplicateFileCleanup') return null;
+  return details.payload.items.filter(item => item.status === 'deleted');
+});
+const omittedDeletedFileCount = computed(() =>
+  Math.max(0, (props.selectedRecord?.affectedItemCount ?? 0) - (deletedFiles.value?.length ?? 0))
+);
+const usesTallDetailDialog = computed(
+  () => (deletedFiles.value?.length ?? props.selectedRecord?.selectedItemCount ?? 0) > 4
+);
 const selectedUninstallApplications = computed(() => {
   const record = props.selectedRecord;
   return record?.details.type === 'applicationUninstall' ? record.details.payload.applications : [];
@@ -105,10 +115,6 @@ function uninstallApplicationReleasedBytes(application: ApplicationUninstallAppl
 function displayedUninstallApplicationBytes(application: ApplicationUninstallApplicationDetails): number {
   return uninstallApplicationReleasedBytes(application);
 }
-
-function fileCleanupActionMessage(status: 'deleted' | 'failed'): string {
-  return t(status === 'failed' ? 'history.deleteFailed' : 'history.deleted');
-}
 </script>
 
 <template>
@@ -119,7 +125,9 @@ function fileCleanupActionMessage(status: 'deleted' | 'failed'): string {
       size="wide"
     >
       <MdDialogHeader>
-        <DialogTitle>{{ t('history.detailTitle') }}</DialogTitle>
+        <DialogTitle>{{
+          t(selectedRecord ? `history.categories.${selectedRecord.category}` : 'history.detailTitle')
+        }}</DialogTitle>
         <DialogDescription>{{ t('history.detailDescription') }}</DialogDescription>
       </MdDialogHeader>
 
@@ -354,26 +362,29 @@ function fileCleanupActionMessage(status: 'deleted' | 'failed'): string {
             selectedRecord.details.type === 'largeFileCleanup' || selectedRecord.details.type === 'duplicateFileCleanup'
           "
         >
-          <div v-for="item in selectedRecord.details.payload.items" :key="item.path" class="detail-action">
-            <span class="action-status" :class="{ warning: item.status === 'failed' }">
-              <MdIcon :name="item.status === 'failed' ? ICON_NAMES.info : ICON_NAMES.check" :size="13" />
+          <p v-if="!deletedFiles?.length && !selectedRecord.affectedItemCount" class="detail-empty">
+            {{ t('history.noFilesDeleted') }}
+          </p>
+          <div v-for="item in deletedFiles" :key="item.path" class="detail-action">
+            <span class="action-status">
+              <MdIcon :name="ICON_NAMES.check" :size="13" />
             </span>
             <span class="detail-action-content">
               <strong><MdMiddleEllipsis :text="PathUtils.fileName(item.path)" /></strong>
               <small><MdMiddleEllipsis :text="PathUtils.display(item.path)" :tail-length="32" /></small>
             </span>
             <span class="detail-action-result">
-              <strong>{{ fileCleanupActionMessage(item.status) }}</strong>
+              <strong>{{ t('history.deleted') }}</strong>
             </span>
           </div>
-          <p v-if="selectedRecord.details.payload.omittedItemCount" class="detail-omitted">
+          <p v-if="omittedDeletedFileCount" class="detail-omitted">
             {{
               t(
                 'history.moreItemsOmitted',
                 {
-                  count: FormatService.integer(selectedRecord.details.payload.omittedItemCount),
+                  count: FormatService.integer(omittedDeletedFileCount),
                 },
-                selectedRecord.details.payload.omittedItemCount
+                omittedDeletedFileCount
               )
             }}
           </p>
@@ -489,6 +500,13 @@ function fileCleanupActionMessage(status: 'deleted' | 'failed'): string {
 .action-status.warning {
   @apply text-warning-foreground;
   background: var(--surface-warning-subtle);
+}
+.detail-empty {
+  margin: 0;
+  padding: 24px 16px;
+  @apply text-center text-muted-foreground;
+  font-size: var(--font-content-secondary);
+  line-height: 1.5;
 }
 .detail-omitted {
   margin: 8px 0 0;

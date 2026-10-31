@@ -76,6 +76,7 @@ pub struct DeepCleanupOperationDetails {
 #[serde(rename_all = "camelCase")]
 pub struct FileCleanupOperationDetails {
     pub items: Vec<FileCleanupHistoryItem>,
+    /// Unlisted selections, including failed items and deleted items beyond the detail limit.
     pub omitted_item_count: u64,
 }
 
