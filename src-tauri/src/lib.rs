@@ -290,6 +290,8 @@ pub fn run() {
             commands::cleanup::execute_cleanup,
             commands::analysis::cancel_analysis,
             commands::analysis::analyze_path,
+            commands::analysis::analysis_export_options,
+            commands::analysis::export_analysis_result,
             commands::analysis::list_analysis_remainder,
             commands::analysis::release_analysis_remainder,
             commands::large_files::cancel_large_files,

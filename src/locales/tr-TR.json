@@ -1708,6 +1708,10 @@
     "taskJoinFailed": "Arka plan görevi durdu"
   },
   "errorReasons": {
+    "analysisExportUnavailable": {
+      "title": "Analiz sonuçlarını dışa aktar",
+      "message": "Bu taramanın ayrıntılı verileri artık kullanılamıyor. Dışa aktarmak için yeniden analiz edin"
+    },
     "folderSelectionLimitExceeded": {
       "title": "Çok fazla klasör seçildi",
       "message": "Bir seferde en fazla 64 klasör seçip tekrar deneyin"
@@ -1974,6 +1978,36 @@
     }
   },
   "analysis": {
+    "export": {
+      "action": "Sonuçları dışa aktar",
+      "title": "Analiz sonuçlarını dışa aktar",
+      "description": "Dosya içerikleri olmadan klasör istatistiklerini JSON olarak dışa aktarın",
+      "loading": "Dışa aktarma bilgileri yükleniyor…",
+      "scope": "Dışa aktarma kapsamı",
+      "scanRoot": "Tüm tarama kapsamı",
+      "currentDirectory": "Geçerli klasör ve alt klasörler",
+      "detail": "Dizin ayrıntıları",
+      "summary": "Önemli dizin özeti (önerilen)",
+      "full": "Tüm dizinler",
+      "summaryHint": "Çok yer kaplayan, çok dosya içeren veya tarama sorunu olan dizinlere öncelik verir. En fazla 500 dizin; diğerleri özetlenir",
+      "minimumSize": "En küçük dizin boyutu",
+      "noMinimum": "Alt sınır yok",
+      "sizeFilterHint": "Küçük klasörler gruplanır; toplamlar değişmez",
+      "fullHint": "Eşleşen tüm dizinleri sayı sınırı olmadan dışa aktarır",
+      "fullPaths": "Tam yolları dahil et",
+      "save": "JSON dışa aktar…",
+      "rescan": "Yeniden analiz et",
+      "retry": "Yeniden dene",
+      "saveTitle": "Analiz sonuçlarını kaydet",
+      "saved": "Analiz sonuçları dışa aktarıldı",
+      "showFile": "Dosyayı göster",
+      "revealFailed": "Dışa aktarılan dosya gösterilemedi",
+      "unavailable": "Bu taramanın ayrıntılı verileri artık kullanılamıyor. Dışa aktarmak için yeniden analiz edin",
+      "loadFailed": "Dışa aktarma bilgileri yüklenemedi. Yeniden deneyin",
+      "saveFailed": "Dosya kaydedilemedi. Kaydetme konumunu yeniden seçin",
+      "saving": "Mevcut tarama sonuçlarını kaydetmek için bir konum seçin",
+      "waitForScan": "Tarama tamamlandıktan sonra dışa aktarabilirsiniz"
+    },
     "multiSelect": "Çoklu seçim",
     "deleteSelectedAction": "Sil",
     "selectedCount": "{count} öğe seçildi",

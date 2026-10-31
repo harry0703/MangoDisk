@@ -1708,6 +1708,10 @@
     "taskJoinFailed": "Tâche en arrière-plan arrêtée"
   },
   "errorReasons": {
+    "analysisExportUnavailable": {
+      "title": "Exporter les résultats de l’analyse",
+      "message": "Les données détaillées de cette analyse ne sont plus disponibles. Relancez l’analyse pour exporter"
+    },
     "folderSelectionLimitExceeded": {
       "title": "Trop de dossiers sélectionnés",
       "message": "Sélectionnez jusqu'à 64 dossiers à la fois, puis réessayez"
@@ -1974,6 +1978,36 @@
     }
   },
   "analysis": {
+    "export": {
+      "action": "Exporter les résultats",
+      "title": "Exporter les résultats de l’analyse",
+      "description": "Exporter les statistiques des dossiers en JSON, sans contenu des fichiers",
+      "loading": "Chargement des informations d’export…",
+      "scope": "Périmètre de l’export",
+      "scanRoot": "Tout le périmètre analysé",
+      "currentDirectory": "Dossier actuel et sous-dossiers",
+      "detail": "Détail des dossiers",
+      "summary": "Résumé des dossiers principaux (recommandé)",
+      "full": "Tous les dossiers",
+      "summaryHint": "Priorité aux dossiers volumineux, contenant beaucoup de fichiers ou des erreurs d’analyse. Jusqu’à 500 dossiers ; les autres restent regroupés",
+      "minimumSize": "Taille minimale des dossiers",
+      "noMinimum": "Sans minimum",
+      "sizeFilterHint": "Les petits dossiers sont regroupés ; les totaux restent inchangés",
+      "fullHint": "Exporte tous les dossiers correspondants, sans limite de nombre",
+      "fullPaths": "Inclure les chemins complets",
+      "save": "Exporter en JSON…",
+      "rescan": "Analyser à nouveau",
+      "retry": "Réessayer",
+      "saveTitle": "Enregistrer les résultats de l’analyse",
+      "saved": "Résultats exportés",
+      "showFile": "Afficher le fichier",
+      "revealFailed": "Impossible d’afficher le fichier exporté",
+      "unavailable": "Les données détaillées de cette analyse ne sont plus disponibles. Relancez l’analyse pour exporter",
+      "loadFailed": "Impossible de charger les informations d’export. Réessayez",
+      "saveFailed": "Impossible d’enregistrer le fichier. Choisissez à nouveau un emplacement",
+      "saving": "Choisissez un emplacement pour enregistrer les résultats de l’analyse existante",
+      "waitForScan": "L’export sera disponible à la fin de l’analyse"
+    },
     "multiSelect": "Sélection multiple",
     "deleteSelectedAction": "Supprimer",
     "selectedCount": "{count} sélectionnés",

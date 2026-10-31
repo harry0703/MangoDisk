@@ -8,6 +8,7 @@ export type CommandErrorReason =
   | 'folderUnavailable'
   | 'folderSelectionLimitExceeded'
   | 'analysisRootExcluded'
+  | 'analysisExportUnavailable'
   | 'scanExclusionsChanged'
   | 'preferencesConflict'
   | 'directoryNotEmpty'

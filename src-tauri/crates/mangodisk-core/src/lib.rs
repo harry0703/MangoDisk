@@ -90,12 +90,12 @@ pub use privacy::{
     PRIVACY_PLAN_SCHEMA_VERSION, PRIVACY_SCAN_SCHEMA_VERSION,
 };
 pub use reporting::{
-    BaselineArtifacts, BaselineComparisonArtifacts, BaselineComparisonOptions,
-    BenchmarkDatasetArtifacts, BenchmarkDatasetOptions, BenchmarkDatasetService,
-    BenchmarkSourceInfo, CleanupBaselineComparisonService, CleanupBaselineOptions,
-    CleanupBaselineService, EngineBenchmarkArtifacts, EngineBenchmarkComparisonArtifacts,
-    EngineBenchmarkComparisonOptions, EngineBenchmarkComparisonService, EngineBenchmarkOptions,
-    EngineBenchmarkService,
+    AnalysisExportReceipt, AnalysisReport, BaselineArtifacts, BaselineComparisonArtifacts,
+    BaselineComparisonOptions, BenchmarkDatasetArtifacts, BenchmarkDatasetOptions,
+    BenchmarkDatasetService, BenchmarkSourceInfo, CleanupBaselineComparisonService,
+    CleanupBaselineOptions, CleanupBaselineService, EngineBenchmarkArtifacts,
+    EngineBenchmarkComparisonArtifacts, EngineBenchmarkComparisonOptions,
+    EngineBenchmarkComparisonService, EngineBenchmarkOptions, EngineBenchmarkService,
 };
 pub use shared::{
     configure_application_paths, ApplicationPaths, ApplicationRestartGuard, CoreError,
@@ -115,7 +115,8 @@ pub use startup::{
 };
 pub use storage::analysis::{
     AnalysisCoverage, AnalysisDeleteBatchResult, AnalysisDeleteFailure, AnalysisDeleteResult,
-    AnalysisEntrySizeStatus, AnalysisRemainderPage, AnalysisRemainderRequest, AnalysisResult,
+    AnalysisEntrySizeStatus, AnalysisExportDetail, AnalysisExportOptions, AnalysisExportScope,
+    AnalysisExportScopeInfo, AnalysisRemainderPage, AnalysisRemainderRequest, AnalysisResult,
     AnalysisScanMode, AnalysisService, DirectoryEntryInfo, ANALYSIS_SCAN_POLICY_VERSION,
 };
 pub use storage::duplicates::{

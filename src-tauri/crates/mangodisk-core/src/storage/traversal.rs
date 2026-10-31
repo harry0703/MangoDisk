@@ -486,7 +486,7 @@ impl StorageTraversal {
         let result_workers = parallel_analysis::worker_count(&root);
         #[cfg(not(windows))]
         let result_workers = 1;
-        let result = crate::storage::analysis::index_projection::analysis_result_from_snapshot(
+        let mut result = crate::storage::analysis::index_projection::analysis_result_from_snapshot(
             &root,
             root_aggregate,
             &completed_sink.directories,
@@ -501,7 +501,7 @@ impl StorageTraversal {
         operation.ensure_not_cancelled()?;
         let cache_write_started = Instant::now();
         scan_log.stage("cache_publish");
-        publish_completed_index(
+        let published = publish_completed_index(
             &root,
             root_aggregate,
             completed_sink,
@@ -519,6 +519,13 @@ impl StorageTraversal {
                 excluded_roots: exclusions.roots(),
             },
         )?;
+        if published {
+            result.index_snapshot = Some(crate::storage::analysis::AnalysisIndexSnapshot {
+                root: root.clone(),
+                generation: operation.id(),
+                mutation_revision: cache_mutation_revision,
+            });
+        }
         diagnostics.cache_write_ms = cache_write_started.elapsed().as_millis() as u64;
         log::info!(
             "analysis_scan_finished operation_id={} root={} scan_mode={} size_metric={} total_bytes={} files={} entry_count={} skipped_count={} active_path_exclusions={} traversal_ms={} result_build_ms={} cache_write_ms={} elapsed_ms={}",
@@ -2009,8 +2016,8 @@ fn publish_completed_index(
     root_aggregate: DirectoryAggregate,
     completed: CompletedIndexSink,
     options: IndexPublicationOptions<'_>,
-) -> Result<(), String> {
-    let _published = cache::store_memory_only(
+) -> Result<bool, String> {
+    let published = cache::store_memory_only(
         root,
         root_aggregate,
         completed.directories,
@@ -2026,7 +2033,7 @@ fn publish_completed_index(
         .with_excluded_roots(options.excluded_roots)
         .with_excluded_names(options.excluded_names),
     )?;
-    Ok(())
+    Ok(published)
 }
 
 fn capture_filesystem_change_token(root: &Path) -> Option<FilesystemChangeToken> {

@@ -35,6 +35,7 @@ const COMMAND_ERROR_REASONS: ReadonlySet<string> = new Set<CommandErrorReason>([
   'scanResourcesReleasing',
   'quickScanUnavailable',
   'analysisRootExcluded',
+  'analysisExportUnavailable',
   'scanExclusionsChanged',
   'preferencesConflict',
   'directoryNotEmpty',

@@ -2,7 +2,17 @@
 import type { ScanNameExclusion } from '@/lib/models/storage/storage-scan';
 import { FolderSelectionService } from '@/lib/services/storage/folder-selection-service';
 import { useI18n } from 'vue-i18n';
-import { computed, nextTick, onActivated, onBeforeUnmount, onDeactivated, onMounted, ref, watch } from 'vue';
+import {
+  computed,
+  nextTick,
+  onActivated,
+  onBeforeUnmount,
+  onDeactivated,
+  onMounted,
+  ref,
+  shallowRef,
+  watch,
+} from 'vue';
 
 import MdDelayedOperationWorkspace from '@/components/custom/md-delayed-operation-workspace.vue';
 import MdStorageScopeSelect from '@/components/custom/md-storage-scope-select.vue';
@@ -10,6 +20,8 @@ import MdEmptyState from '@/components/custom/md-empty-state.vue';
 import MdOperationProgress from '@/components/custom/md-operation-progress.vue';
 import MdPageShell from '@/components/custom/md-page-shell.vue';
 import MdTooltip from '@/components/custom/md-tooltip.vue';
+import { Button } from '@/components/ui/button';
+import MdIcon from '@/components/icons/md-icon.vue';
 import MdDestructiveActionDialog from '@/components/custom/md-destructive-action-dialog.vue';
 import { ANALYSIS_SCAN_MODES, ANALYSIS_VIEW_IDS } from '@/lib/models/storage/analysis';
 import { STORAGE_SCOPE_IDS } from '@/lib/models/storage/storage-scope';
@@ -35,6 +47,7 @@ import { useAnalysisStore } from '@/stores/analysis-store';
 
 import { FormatService } from '@/lib/services/presentation/format-service';
 import MdAnalysisDeleteResultDialog from './components/md-analysis-delete-result-dialog.vue';
+import MdAnalysisExportDialog from './components/md-analysis-export-dialog.vue';
 import MdAnalysisCoverage from './components/md-analysis-coverage.vue';
 import MdAnalysisScanButton from './components/md-analysis-scan-button.vue';
 import MdAnalysisBrowserToolbar from './components/md-analysis-browser-toolbar.vue';
@@ -77,6 +90,23 @@ function cancelScan() {
   else emit('cancel');
 }
 const scanBusy = computed(() => props.busy || resolvingScope.value);
+const exportOpen = ref(false);
+const exportLoading = ref(false);
+const exportSnapshot = shallowRef<AnalysisResult | null>(null);
+function openExport() {
+  if (!props.result || exportOpen.value || scanBusy.value || props.deleting || props.recoveryRequired) return;
+  exportSnapshot.value = props.result;
+  exportOpen.value = true;
+}
+
+watch(
+  [() => props.result?.scanId, scanBusy, () => props.deleting, () => props.recoveryRequired],
+  ([scanId, busy, deleting, recoveryRequired]) => {
+    if (exportOpen.value && (busy || deleting || recoveryRequired || scanId !== exportSnapshot.value?.scanId)) {
+      exportOpen.value = false;
+    }
+  }
+);
 
 const emit = defineEmits<{
   analyze: [path?: string, refresh?: boolean, setHome?: boolean, scanMode?: AnalysisScanMode];
@@ -149,6 +179,7 @@ onMounted(() => window.addEventListener('keydown', handleBodyEscape));
 onActivated(() => window.addEventListener('keydown', handleBodyEscape));
 onBeforeUnmount(() => window.removeEventListener('keydown', handleBodyEscape));
 onDeactivated(() => {
+  exportOpen.value = false;
   hoveredEntryPath.value = null;
   window.removeEventListener('keydown', handleBodyEscape);
 });
@@ -166,7 +197,13 @@ function setSelectionMode(enabled: boolean) {
 }
 // WebKit may keep mouse actions focused on body, outside the page's bubbling path.
 function handleBodyEscape(event: KeyboardEvent) {
-  if (event.key === 'Escape' && event.target === document.body) exitSelection(event);
+  if (event.key !== 'Escape' || event.defaultPrevented) return;
+  if (exportLoading.value) {
+    event.preventDefault();
+    exportOpen.value = false;
+    return;
+  }
+  if (event.target === document.body) exitSelection(event);
 }
 function exitSelection(event: KeyboardEvent) {
   if (!selectionMode.value || event.defaultPrevented || confirmOpen.value || deleteResultOpen.value || props.deleting)
@@ -446,12 +483,41 @@ function navigateHistory(index: number) {
         />
         <MdAnalysisScanButton
           v-if="result"
+          class="analysis-scan-action"
           :mode="analysisStore.scanMode"
           :rescan="scopeIsAnalysisRoot"
           :scanning="showPrimaryAnalysisProgress"
           :disabled="scanBusy || deleting || !selectedScopePath"
           @scan="startPrimaryAnalysis"
         />
+        <MdTooltip
+          v-if="result"
+          :text="
+            exportLoading
+              ? t('analysis.export.loading')
+              : scanBusy
+                ? t('analysis.export.waitForScan')
+                : recoveryRequired
+                  ? t('analysis.export.unavailable')
+                  : t('analysis.export.action')
+          "
+        >
+          <span
+            ><Button
+              variant="outline"
+              class="analysis-export-button"
+              :aria-label="t('analysis.export.action')"
+              :disabled="scanBusy || deleting || recoveryRequired || exportLoading"
+              :aria-busy="exportLoading || undefined"
+              @click="openExport"
+              ><MdIcon
+                :name="exportLoading ? ICON_NAMES.refresh : ICON_NAMES.download"
+                :class="{ 'icon-spin': exportLoading }"
+                :size="17"
+              /><span class="analysis-export-label">{{ t('analysis.export.action') }}</span></Button
+            ></span
+          >
+        </MdTooltip>
       </div>
     </template>
 
@@ -621,6 +687,12 @@ function navigateHistory(index: number) {
       </template>
     </MdDestructiveActionDialog>
     <MdAnalysisDeleteResultDialog v-model:open="deleteResultOpen" :result="deleteBatchResult ?? null" />
+    <MdAnalysisExportDialog
+      v-model:open="exportOpen"
+      :result="exportSnapshot"
+      @loading="exportLoading = $event"
+      @rescan="emit('analyze', $event, true, true)"
+    />
   </MdPageShell>
 </template>
 
@@ -650,8 +722,41 @@ function navigateHistory(index: number) {
 
 .header-actions {
   display: flex;
+  min-width: 0;
   align-items: center;
   gap: 12px;
+}
+
+/* Keep a readable title while long translations yield space before desktop controls. */
+.analysis-shell :deep(.md-page-header) {
+  grid-template-columns: minmax(8rem, 1fr) minmax(0, auto);
+}
+.header-actions :deep(.analysis-scan-action),
+.header-actions :deep(.md-split-action__primary),
+.header-actions :deep(.labels) {
+  min-width: 0;
+  flex-shrink: 1;
+}
+.header-actions :deep(.labels > span) {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@container analysis (max-width: 1100px) {
+  .header-actions {
+    gap: 8px;
+  }
+  .header-actions :deep(.scope-select) {
+    width: 9rem;
+  }
+  .analysis-export-button {
+    width: 40px;
+    padding-inline: 8px;
+  }
+  .analysis-export-label {
+    display: none;
+  }
 }
 
 /*

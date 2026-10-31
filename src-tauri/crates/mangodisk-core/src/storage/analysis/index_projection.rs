@@ -89,6 +89,7 @@ pub(crate) fn analysis_result(root: &Path) -> Result<Option<AnalysisResult>, Str
             .saturating_sub(metadata_ms + shared_ms);
         result.directory_hierarchy =
             hierarchy_from_navigation(cache.navigation, root, cache.directories, cache.files);
+        result.index_snapshot = super::export::index_snapshot(&cache, root);
         log::info!("analysis_cache_projection_finished root={} projected_rows={} positive_children={} visible_rows={} snapshot_rows={} indexed_directories={} indexed_files={} metadata_ms={} shared_ms={} rows_ms={} hierarchy_ms={} elapsed_ms={}", crate::filesystem::metadata::diagnostic_path(root), projected_rows, result.total_entry_count, result.entries.len(), snapshot_rows, cache.directories.len(), cache.files.len(), metadata_ms, shared_ms, rows_ms, started.elapsed().as_millis().saturating_sub(metadata_ms + shared_ms + rows_ms), started.elapsed().as_millis());
         Ok(Some(result))
     })?
@@ -597,6 +598,7 @@ fn build_analysis_result_from_entries(
     rank_visible_analysis_entries(&mut entries);
 
     AnalysisResult {
+        index_snapshot: None,
         policy_version: super::ANALYSIS_SCAN_POLICY_VERSION,
         coverage: super::AnalysisCoverage::new(
             root_aggregate.omissions,

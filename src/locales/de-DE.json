@@ -1708,6 +1708,10 @@
     "taskJoinFailed": "Hintergrundaufgabe gestoppt"
   },
   "errorReasons": {
+    "analysisExportUnavailable": {
+      "title": "Analyseergebnisse exportieren",
+      "message": "Die Detaildaten dieses Scans sind nicht mehr verfügbar. Für den Export erneut analysieren"
+    },
     "folderSelectionLimitExceeded": {
       "title": "Zu viele Ordner ausgewählt",
       "message": "Wählen Sie bis zu 64 Ordner gleichzeitig aus und versuchen Sie es dann erneut"
@@ -1974,6 +1978,36 @@
     }
   },
   "analysis": {
+    "export": {
+      "action": "Ergebnisse exportieren",
+      "title": "Analyseergebnisse exportieren",
+      "description": "Ordnerstatistiken als JSON exportieren, ohne Dateiinhalte",
+      "loading": "Exportinformationen werden geladen…",
+      "scope": "Exportumfang",
+      "scanRoot": "Gesamter Scanbereich",
+      "currentDirectory": "Aktueller Ordner und Unterordner",
+      "detail": "Verzeichnisdetails",
+      "summary": "Übersicht wichtiger Verzeichnisse (empfohlen)",
+      "full": "Alle Verzeichnisse",
+      "summaryHint": "Bevorzugt Verzeichnisse mit hohem Speicherverbrauch, vielen Dateien oder Scan-Problemen. Bis zu 500 Verzeichnisse; der Rest bleibt zusammengefasst",
+      "minimumSize": "Mindestgröße der Verzeichnisse",
+      "noMinimum": "Keine Mindestgröße",
+      "sizeFilterHint": "Kleinere Ordner werden zusammengefasst; Gesamtwerte bleiben gleich",
+      "fullHint": "Exportiert alle passenden Verzeichnisse ohne Mengenbegrenzung",
+      "fullPaths": "Vollständige Pfade einschließen",
+      "save": "JSON exportieren…",
+      "rescan": "Erneut analysieren",
+      "retry": "Erneut versuchen",
+      "saveTitle": "Analyseergebnisse speichern",
+      "saved": "Analyseergebnisse exportiert",
+      "showFile": "Datei anzeigen",
+      "revealFailed": "Die exportierte Datei konnte nicht angezeigt werden",
+      "unavailable": "Die Detaildaten dieses Scans sind nicht mehr verfügbar. Für den Export erneut analysieren",
+      "loadFailed": "Exportinformationen konnten nicht geladen werden. Erneut versuchen",
+      "saveFailed": "Datei konnte nicht gespeichert werden. Speicherort erneut wählen",
+      "saving": "Einen Speicherort wählen, um die vorhandenen Scanergebnisse zu speichern",
+      "waitForScan": "Export nach Abschluss des Scans verfügbar"
+    },
     "multiSelect": "Mehrfachauswahl",
     "deleteSelectedAction": "Löschen",
     "selectedCount": "{count} ausgewählt",

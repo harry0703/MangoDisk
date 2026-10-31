@@ -33,6 +33,10 @@ export const LOG_DOMAINS = {
 } as const;
 
 export const LOG_EVENTS = {
+  analysisExportOptionsLoaded: 'analysis_export_options_loaded',
+  analysisExportRequested: 'analysis_export_requested',
+  analysisExportCancelled: 'analysis_export_cancelled',
+  analysisExportCompleted: 'analysis_export_completed',
   scanRequested: 'scan_requested',
   operationDeferred: 'operation_deferred',
   operationFailed: 'operation_failed',

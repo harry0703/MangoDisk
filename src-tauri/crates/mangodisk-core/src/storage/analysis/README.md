@@ -1,5 +1,87 @@
 # Analysis scan metrics
 
+## JSON export of existing analysis
+
+The desktop result page exports read-only directory statistics from the retained
+Core index. It never enumerates the source again. The request is bound to a native
+scan ID, index publication generation, mutation revision and byte metric; replaced
+or evicted data produces `analysisExportUnavailable` and requires an explicit new
+analysis. The export can cover the original retained scan scope or the currently
+browsed subtree. Preparing a report freezes its data before the native save dialog
+opens. Later scans do not change that prepared report.
+
+Reports use `schemaVersion: 4`. Readers must reject unsupported schema versions;
+versions 1–3 were earlier export formats. The JSON contains `root`, `scannedAtMs`,
+`byteMetric` and a flat `directories` array. Each ordinary directory contains only
+`path`, recursive `bytes` and `fileCount`. The first row is the root and contains the export totals;
+ancestor and descendant totals overlap and must not be added together.
+
+Relative paths are the default, with `/` separators and `.` for the directory root.
+The report's `root` is the folder name in relative mode or the native absolute path
+when explicitly requested. No absolute scan or exclusion prefix is included in
+relative mode. Directory names and name exclusions can still reveal personal data.
+Lossy native names are marked `pathIsLossy`; rendered paths are not deletion authority.
+
+Exceptional fields are emitted only when needed: per-directory `scannedAtMs` when
+a reused measurement differs from the report time, `sizeStatus` for partial or
+unavailable data, and nonzero `omissions`. Missing status means complete, missing
+omissions means zero. Omission counts describe encountered entries, not unknown
+descendants. Nonempty `exclusions` identify skipped paths and configured name rules.
+`subtreeOfOriginalScan: true` indicates that hard-link allocation was accounted in
+an enclosing scan; bytes charged outside the exported subtree are not included.
+
+Key directory summary is the default. It retains at most 500 directory rows, including
+all ancestors of each selected row. Expansion prioritizes the largest share of
+bytes, file count or scan omissions, with deterministic shallow/path tie-breaking.
+Both modes accept a minimum directory size in the scan's byte metric, defaulting
+to zero (no filter). The GUI resolves 10 MB, 100 MB and 1 GB presets using the
+platform's existing unit convention. Full export retains every matching directory
+without a count limit. The root, incomplete measurements, and ancestors needed
+to connect matching or incomplete directories remain eligible regardless of size.
+Summary applies its 500-row budget after size filtering; it may still collapse
+eligible or incomplete subtrees when that budget is exhausted.
+
+Rows may contain `filtered: { directoryCount, bytes, fileCount }` for subtrees
+without size matches or incomplete measurements. Summary may also contain
+`collapsed` with the same fields for eligible subtrees hidden by its row budget.
+A bucket's reason describes why that entire child subtree is absent; descendants
+inside it are not counted again in another bucket. `minDirectoryBytes` appears
+only when a positive threshold was selected.
+Each bucket combines unexported immediate-child subtrees; `directoryCount`
+counts all hidden descendants, while bytes and file counts sum each subtree once.
+Each bucket is already included in the row totals. Direct files remain derivable:
+subtract exported immediate-child totals and both buckets from the row.
+Do not add ancestor rows or omitted-subtree buckets to the export root's totals.
+The number of measured directories is the row count plus both buckets’ directory
+counts. No synthetic path is used for either bucket.
+
+Filtering and folding never change `omissions` or `sizeStatus`: these describe the scan,
+including hidden descendants, rather than export detail. Missing both buckets
+means all immediate child directories are shown. When hidden measurements have
+mixed timestamps, report-level `scannedAtRangeMs: [earliest, latest]` preserves
+that distinction; individual visible rows still carry differing timestamps.
+No summary mode, ranking scores, row limits or duplicate global totals are serialized.
+
+Scanning is not atomic and the source can change after measurement. Allocated bytes use the engine's native allocation/fallback;
+logical bytes use file lengths. No export timestamp, prose notes, application
+metadata, internal IDs, duplicate totals or parent paths are serialized. No file
+content, complete file list or per-skipped-entry error list is included.
+
+Export options copy only scan identity and accounting metadata from the session,
+not the chart hierarchy or file entries. Both options and report preparation run
+on blocking workers; opening the dialog performs no source filesystem IO. Filtering and
+selection run only after the user exports. The export dialog dims the chart without a real-time backdrop blur.
+
+Only the native picker supplies the output path. Serialization stays in Rust to
+preserve 64-bit counts and avoid sending large reports through IPC. Output is
+compact UTF-8 JSON written to a sibling temporary file, flushed and synced,
+then atomically published. A failed write preserves the prior destination. Logs
+record scan ID, scope/path mode, size threshold, filtered/collapsed counts, revision rejection reason, directory count,
+destination, write stage, native failure and elapsed time, never report contents.
+The formal CLI remains unchanged.
+
+## Scan modes
+
 `AnalysisScanMode::Standard` is the default for Core and adapters. It reports
 native allocated bytes using the existing platform stream or traversal fallback.
 On Windows, `Fast` fully traverses the same accessible scope and exclusions, but uses logical
@@ -52,6 +134,8 @@ Coverage schema version 1 reports omitted entries by permission denial, read err
 configured or platform exclusion, link/mount boundary, and unclassified reason.
 Counts describe encountered omissions, not all descendants of an unreadable
 folder. Native readers that cannot identify a reason report it as unclassified.
+The Linux native reader preserves permission, read-error and link/mount reasons.
+It logs at most 16 IO failure samples per analysis while retaining every omission in the totals.
 Directories with no measurable data and read failures expose an unavailable size;
 known empty directories retain a complete zero-byte measurement.
 

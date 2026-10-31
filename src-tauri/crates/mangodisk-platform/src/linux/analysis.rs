@@ -3,7 +3,7 @@ use std::{
     os::unix::fs::MetadataExt,
     path::{Path, PathBuf},
     sync::{
-        atomic::{AtomicBool, Ordering},
+        atomic::{AtomicBool, AtomicUsize, Ordering},
         mpsc::{self, RecvTimeoutError},
         Arc, Condvar, Mutex,
     },
@@ -14,7 +14,7 @@ use std::{
 use crate::analysis_file_candidates::AnalysisFileCandidates;
 use crate::{
     FastAnalysisFile, FastAnalysisQuery, FastAnalysisRecord, FastAnalysisScanError,
-    FastAnalysisSummary, ScanPurpose,
+    FastAnalysisSummary, ScanOmissionCounts, ScanPurpose,
 };
 
 use super::{directories, volumes, LinuxPlatform};
@@ -22,6 +22,15 @@ use super::{directories, volumes, LinuxPlatform};
 const MAX_DIRECTORY_WORKERS: usize = 4;
 const RESULT_QUEUE_FACTOR: usize = 2;
 const RESULT_POLL_INTERVAL: Duration = Duration::from_millis(40);
+const MAX_OMISSION_LOG_SAMPLES: usize = 16;
+
+enum Omission {
+    PermissionDenied,
+    ReadError,
+    Excluded,
+    LinkOrMount,
+    Other,
+}
 
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 struct DirectoryTotals {
@@ -30,7 +39,7 @@ struct DirectoryTotals {
     file_count: u64,
     direct_file_count: u64,
     skipped_count: u64,
-    excluded_count: u64,
+    omissions: ScanOmissionCounts,
 }
 
 impl DirectoryTotals {
@@ -79,30 +88,30 @@ impl DirectoryTotals {
             .skipped_count
             .checked_add(child.skipped_count)
             .ok_or_else(|| platform_error("directory_skipped_count_overflow"))?;
-        self.excluded_count = self
-            .excluded_count
-            .checked_add(child.excluded_count)
-            .ok_or_else(|| platform_error("directory_excluded_count_overflow"))?;
+        self.omissions.merge(child.omissions);
         Ok(())
     }
 
     fn exclude_entry(&mut self, purpose: ScanPurpose) -> Result<(), FastAnalysisScanError> {
         // Discovery pruning is not a failure. Analysis additionally reports intentional omissions.
         if purpose == ScanPurpose::Analysis {
-            self.skip_entry()?;
-            self.excluded_count = self
-                .excluded_count
-                .checked_add(1)
-                .ok_or_else(|| platform_error("directory_excluded_count_overflow"))?;
+            self.skip_entry(Omission::Excluded)?;
         }
         Ok(())
     }
 
-    fn skip_entry(&mut self) -> Result<(), FastAnalysisScanError> {
+    fn skip_entry(&mut self, reason: Omission) -> Result<(), FastAnalysisScanError> {
         self.skipped_count = self
             .skipped_count
             .checked_add(1)
             .ok_or_else(|| platform_error("directory_skipped_count_overflow"))?;
+        match reason {
+            Omission::PermissionDenied => self.omissions.permission_denied += 1,
+            Omission::ReadError => self.omissions.read_errors += 1,
+            Omission::Excluded => self.omissions.excluded += 1,
+            Omission::LinkOrMount => self.omissions.link_or_mount += 1,
+            Omission::Other => self.omissions.other += 1,
+        }
         Ok(())
     }
 }
@@ -127,12 +136,48 @@ struct DirectoryReadResult {
 
 #[derive(Clone)]
 struct DirectoryReadPolicy {
+    scan_root: PathBuf,
+    skip_log_budget: Arc<AtomicUsize>,
     name_exclusions: crate::NameExclusions,
     excluded_roots: Arc<[PathBuf]>,
     root_device: u64,
     purpose: ScanPurpose,
     should_prune_directory: fn(&Path) -> bool,
     large_file_minimum_bytes: u64,
+}
+
+impl DirectoryReadPolicy {
+    fn skip_io(
+        &self,
+        totals: &mut DirectoryTotals,
+        path: &Path,
+        stage: &str,
+        error: &io::Error,
+    ) -> Result<(), FastAnalysisScanError> {
+        let (reason, code) = if error.kind() == io::ErrorKind::PermissionDenied {
+            (Omission::PermissionDenied, "permissionDenied")
+        } else {
+            (Omission::ReadError, "readError")
+        };
+        totals.skip_entry(reason)?;
+        if self.purpose == ScanPurpose::Analysis
+            && self
+                .skip_log_budget
+                .try_update(Ordering::Relaxed, Ordering::Relaxed, |count| {
+                    (count < MAX_OMISSION_LOG_SAMPLES).then_some(count + 1)
+                })
+                .is_ok()
+        {
+            log::warn!(
+                "linux_native_analysis_item_omitted root={} path={} stage={stage} reason={code} native_code={:?} error={} outcome=omitted",
+                crate::diagnostics::text(&self.scan_root.display()),
+                crate::diagnostics::text(&path.display()),
+                error.raw_os_error(),
+                crate::diagnostics::text(error)
+            );
+        }
+        Ok(())
+    }
 }
 
 #[derive(Debug)]
@@ -337,6 +382,8 @@ pub(super) fn analyze_records(
     let task_queue = Arc::new(DirectoryTaskQueue::default());
     let abort = Arc::new(AtomicBool::new(false));
     let policy = DirectoryReadPolicy {
+        scan_root: query.root.to_path_buf(),
+        skip_log_budget: Arc::new(AtomicUsize::new(0)),
         name_exclusions: query.name_exclusions.clone(),
         excluded_roots: Arc::from(query.excluded_roots),
         root_device: root_metadata.dev(),
@@ -457,13 +504,12 @@ fn read_directory(
     check_aborted(abort)?;
     let entries = match fs::read_dir(&task.path) {
         Ok(entries) => entries,
-        Err(_error) if !task.is_root => {
+        Err(error) if !task.is_root => {
+            let mut totals = DirectoryTotals::default();
+            policy.skip_io(&mut totals, &task.path, "open_directory", &error)?;
             return Ok(DirectoryReadResult {
                 task,
-                direct_totals: DirectoryTotals {
-                    skipped_count: 1,
-                    ..DirectoryTotals::default()
-                },
+                direct_totals: totals,
                 child_directories: Vec::new(),
                 candidates: Vec::new(),
                 hard_links: Vec::new(),
@@ -486,8 +532,8 @@ fn read_directory(
             .ok_or_else(|| platform_error("entry_count_overflow"))?;
         let entry = match entry {
             Ok(entry) => entry,
-            Err(_) => {
-                totals.skip_entry()?;
+            Err(error) => {
+                policy.skip_io(&mut totals, &task.path, "read_directory_entry", &error)?;
                 continue;
             }
         };
@@ -496,13 +542,13 @@ fn read_directory(
         // This avoids resolving every ancestor again without following symbolic links.
         let metadata = match entry.metadata() {
             Ok(metadata) => metadata,
-            Err(_) => {
-                totals.skip_entry()?;
+            Err(error) => {
+                policy.skip_io(&mut totals, &path, "entry_metadata", &error)?;
                 continue;
             }
         };
         if metadata.file_type().is_symlink() || metadata.dev() != policy.root_device {
-            totals.skip_entry()?;
+            totals.skip_entry(Omission::LinkOrMount)?;
             continue;
         }
         if policy
@@ -522,13 +568,13 @@ fn read_directory(
                 continue;
             }
             if (policy.should_prune_directory)(&path) || should_skip(&path, policy.purpose, true) {
-                totals.skip_entry()?;
+                totals.skip_entry(Omission::Excluded)?;
                 continue;
             }
             child_directories.push(path);
         } else if metadata.is_file() {
             if should_skip(&path, policy.purpose, false) {
-                totals.skip_entry()?;
+                totals.skip_entry(Omission::Excluded)?;
                 continue;
             }
             let logical_bytes = metadata.len();
@@ -575,7 +621,7 @@ fn read_directory(
                 candidates.push(path);
             }
         } else {
-            totals.skip_entry()?;
+            totals.skip_entry(Omission::Other)?;
         }
     }
     Ok(DirectoryReadResult {
@@ -661,11 +707,7 @@ fn emit_directory(
         file_count: totals.file_count,
         direct_file_count: totals.direct_file_count,
         skipped_count: totals.skipped_count,
-        omissions: crate::ScanOmissionCounts {
-            excluded: totals.excluded_count,
-            ..Default::default()
-        }
-        .with_unclassified(totals.skipped_count),
+        omissions: totals.omissions.with_unclassified(totals.skipped_count),
     })
     .map_err(FastAnalysisScanError::Consumer)?;
     diagnostics.consumer_elapsed += started.elapsed();
@@ -789,6 +831,22 @@ mod tests {
         assert_eq!(summary.root_allocated_bytes, expected_allocated_bytes);
         assert_eq!(summary.root_file_count, 1);
         assert_eq!(summary.root_skipped_count, 2);
+        let root_omissions = records
+            .iter()
+            .find_map(|record| match record {
+                FastAnalysisRecord::Directory {
+                    path, omissions, ..
+                } if path == &root => Some(*omissions),
+                _ => None,
+            })
+            .expect("retain the root omission categories");
+        assert_eq!(
+            root_omissions,
+            ScanOmissionCounts {
+                link_or_mount: 2,
+                ..Default::default()
+            }
+        );
         assert_eq!(summary.entry_count, 4);
         assert_eq!(summary.directory_count, 2);
         assert_eq!(summary.candidate_count, 1);
@@ -804,6 +862,39 @@ mod tests {
         assert!(records.iter().any(
             |record| matches!(record, FastAnalysisRecord::LargeFileCandidate(path) if path == &file)
         ));
+    }
+
+    #[test]
+    fn native_analysis_reports_disappeared_children_as_read_errors() {
+        let (root, _cleanup) = fixture_root("disappeared-child");
+        let policy = DirectoryReadPolicy {
+            scan_root: root.clone(),
+            skip_log_budget: Arc::new(AtomicUsize::new(0)),
+            name_exclusions: crate::NameExclusions::default(),
+            excluded_roots: Arc::from([]),
+            root_device: fs::metadata(&root).unwrap().dev(),
+            purpose: ScanPurpose::Analysis,
+            should_prune_directory: |_| false,
+            large_file_minimum_bytes: 1,
+        };
+        let result = read_directory(
+            &policy,
+            DirectoryTask {
+                node_id: 1,
+                path: root.join("removed-before-read"),
+                is_root: false,
+            },
+            &AtomicBool::new(false),
+        )
+        .expect("retain an unavailable child instead of aborting the scan");
+        assert_eq!(result.direct_totals.skipped_count, 1);
+        assert_eq!(
+            result.direct_totals.omissions,
+            ScanOmissionCounts {
+                read_errors: 1,
+                ..Default::default()
+            }
+        );
     }
 
     #[test]

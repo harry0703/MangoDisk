@@ -18,6 +18,8 @@ const props = withDefaults(
     DialogContentProps & {
       class?: HTMLAttributes['class'];
       showClose?: boolean;
+      blurBackground?: boolean;
+      scaleOnOpen?: boolean;
       size?: 'compact' | 'standard' | 'large' | 'wide';
       height?: 'auto' | 'tall';
     }
@@ -25,13 +27,15 @@ const props = withDefaults(
   {
     class: undefined,
     showClose: true,
+    blurBackground: true,
+    scaleOnOpen: true,
     size: 'standard',
     height: 'auto',
   }
 );
 const emits = defineEmits<DialogContentEmits>();
 const attrs = useAttrs();
-const delegatedProps = reactiveOmit(props, 'class', 'showClose', 'size', 'height');
+const delegatedProps = reactiveOmit(props, 'class', 'showClose', 'blurBackground', 'scaleOnOpen', 'size', 'height');
 const forwarded = useForwardPropsEmits(delegatedProps, emits);
 // Keep defaults and caller overrides in one merger so Tailwind utility ordering
 // cannot override the selected dialog size or caller's layout classes.
@@ -47,7 +51,8 @@ const sizeClass = {
   <DialogPortal>
     <DialogOverlay
       data-slot="dialog-overlay"
-      class="fixed inset-0 z-50 bg-background/65 backdrop-blur-sm data-[state=closed]:animate-out data-[state=open]:animate-in data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0"
+      :class="{ 'backdrop-blur-sm': props.blurBackground, 'md-dialog-overlay--plain': !props.blurBackground }"
+      class="fixed inset-0 z-50 bg-background/65 data-[state=closed]:animate-out data-[state=open]:animate-in data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0"
     />
     <DialogContent
       data-slot="dialog-content"
@@ -55,9 +60,9 @@ const sizeClass = {
       :class="
         twMerge(
           clsx(
-            'md-dialog-content fixed top-1/2 left-1/2 z-50 grid w-full max-w-[680px] -translate-x-1/2 -translate-y-1/2 gap-0 rounded-2xl border border-border bg-card text-card-foreground shadow-2xl shadow-foreground/15 duration-200 data-[state=closed]:animate-out data-[state=open]:animate-in data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95',
+            'md-dialog-content fixed top-1/2 left-1/2 z-50 grid w-full max-w-[680px] -translate-x-1/2 -translate-y-1/2 gap-0 rounded-2xl border border-border bg-card text-card-foreground shadow-2xl shadow-foreground/15 duration-200 data-[state=closed]:animate-out data-[state=open]:animate-in data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95',
             sizeClass[props.size],
-            { 'md-dialog-content--tall': props.height === 'tall' },
+            { 'md-dialog-content--tall': props.height === 'tall', 'data-[state=open]:zoom-in-95': props.scaleOnOpen },
             props.class
           )
         )
@@ -82,6 +87,13 @@ const sizeClass = {
  * constrain the teleported node. These project-prefixed classes intentionally
  * remain global so every real dialog receives the viewport safety boundary.
  */
+/* A zero blur radius still retains a backdrop-filter surface in WebKit.
+   Plain overlays explicitly opt out of that compositing work over large charts. */
+[data-slot='dialog-overlay'].md-dialog-overlay--plain {
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+}
+
 .md-dialog-content {
   width: calc(100% - var(--layout-dialog-viewport-inset) - var(--layout-dialog-viewport-inset));
   max-height: calc(100vh - var(--layout-dialog-viewport-inset) - var(--layout-dialog-viewport-inset));

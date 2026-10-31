@@ -1708,6 +1708,10 @@
     "taskJoinFailed": "Tarea en segundo plano detenida"
   },
   "errorReasons": {
+    "analysisExportUnavailable": {
+      "title": "Exportar resultados del análisis",
+      "message": "Los datos detallados de este análisis ya no están disponibles. Analiza de nuevo para exportar"
+    },
     "folderSelectionLimitExceeded": {
       "title": "Demasiadas carpetas seleccionadas",
       "message": "Selecciona hasta 64 carpetas a la vez y vuelve a intentarlo"
@@ -1974,6 +1978,36 @@
     }
   },
   "analysis": {
+    "export": {
+      "action": "Exportar resultados",
+      "title": "Exportar resultados del análisis",
+      "description": "Exporta estadísticas de carpetas en JSON, sin contenido de archivos",
+      "loading": "Cargando información de exportación…",
+      "scope": "Alcance de la exportación",
+      "scanRoot": "Todo el alcance analizado",
+      "currentDirectory": "Carpeta actual y subcarpetas",
+      "detail": "Detalle de directorios",
+      "summary": "Resumen de directorios principales (recomendado)",
+      "full": "Todos los directorios",
+      "summaryHint": "Prioriza directorios que ocupan más espacio, tienen muchos archivos o presentan errores de análisis. Hasta 500 directorios; el resto se resume",
+      "minimumSize": "Tamaño mínimo de directorio",
+      "noMinimum": "Sin mínimo",
+      "sizeFilterHint": "Las carpetas pequeñas se agrupan; los totales no cambian",
+      "fullHint": "Exporta todos los directorios que coincidan, sin límite de cantidad",
+      "fullPaths": "Incluir rutas completas",
+      "save": "Exportar JSON…",
+      "rescan": "Analizar de nuevo",
+      "retry": "Reintentar",
+      "saveTitle": "Guardar resultados del análisis",
+      "saved": "Resultados exportados",
+      "showFile": "Mostrar archivo",
+      "revealFailed": "No se pudo mostrar el archivo exportado",
+      "unavailable": "Los datos detallados de este análisis ya no están disponibles. Analiza de nuevo para exportar",
+      "loadFailed": "No se pudo cargar la información de exportación. Inténtalo de nuevo",
+      "saveFailed": "No se pudo guardar el archivo. Elige otra vez la ubicación",
+      "saving": "Elige dónde guardar los resultados del análisis existente",
+      "waitForScan": "Podrás exportar cuando termine el análisis"
+    },
     "multiSelect": "Selección múltiple",
     "deleteSelectedAction": "Eliminar",
     "selectedCount": "{count} seleccionados",

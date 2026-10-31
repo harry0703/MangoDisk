@@ -1708,6 +1708,10 @@
     "taskJoinFailed": "バックグラウンドタスクが停止しました"
   },
   "errorReasons": {
+    "analysisExportUnavailable": {
+      "title": "分析結果をエクスポート",
+      "message": "このスキャンの詳細データは利用できなくなりました。再分析してからエクスポートしてください"
+    },
     "folderSelectionLimitExceeded": {
       "title": "選択したフォルダーが多すぎます",
       "message": "一度に選択するフォルダーを64個以下にして、もう一度お試しください"
@@ -1974,6 +1978,36 @@
     }
   },
   "analysis": {
+    "export": {
+      "action": "結果をエクスポート",
+      "title": "分析結果をエクスポート",
+      "description": "ファイルの内容を含めず、フォルダーの統計を JSON に保存します",
+      "loading": "エクスポート情報を読み込み中…",
+      "scope": "エクスポート範囲",
+      "scanRoot": "スキャン範囲全体",
+      "currentDirectory": "現在のフォルダーとサブフォルダー",
+      "detail": "ディレクトリの詳細",
+      "summary": "主要ディレクトリの要約（推奨）",
+      "full": "すべてのディレクトリ",
+      "summaryHint": "容量が大きい、ファイルが多い、またはスキャンに問題があるディレクトリを優先して最大500件まで展開し、残りは集計します",
+      "minimumSize": "ディレクトリの最小サイズ",
+      "noMinimum": "制限なし",
+      "sizeFilterHint": "小さなフォルダーはまとめて表示し、合計は変わりません",
+      "fullHint": "条件に一致するすべてのディレクトリを件数制限なしで出力します",
+      "fullPaths": "完全なパスを含める",
+      "save": "JSON をエクスポート…",
+      "rescan": "再分析",
+      "retry": "再試行",
+      "saveTitle": "分析結果を保存",
+      "saved": "分析結果をエクスポートしました",
+      "showFile": "ファイルを表示",
+      "revealFailed": "エクスポートしたファイルを表示できません",
+      "unavailable": "このスキャンの詳細データは利用できなくなりました。再分析してからエクスポートしてください",
+      "loadFailed": "エクスポート情報を読み込めません。再試行してください",
+      "saveFailed": "保存できませんでした。保存先を選び直してください",
+      "saving": "保存先を選択すると、既存のスキャン結果が保存されます",
+      "waitForScan": "スキャン完了後にエクスポートできます"
+    },
     "multiSelect": "複数選択",
     "deleteSelectedAction": "削除",
     "selectedCount": "{count} 項目を選択",

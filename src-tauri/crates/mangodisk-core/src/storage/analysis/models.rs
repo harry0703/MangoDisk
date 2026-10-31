@@ -143,6 +143,9 @@ mod entry_protocol_tests {
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct AnalysisResult {
+    /// Identifies the retained index revision without trusting transport paths or timestamps.
+    #[serde(skip)]
+    pub(crate) index_snapshot: Option<AnalysisIndexSnapshot>,
     pub policy_version: u32,
     pub coverage: super::AnalysisCoverage,
     pub scan_mode: AnalysisScanMode,
@@ -168,6 +171,13 @@ pub struct AnalysisResult {
     /// Shallow metadata for shared ancestors omitted from the bounded chart.
     #[serde(skip)]
     pub(crate) shared_directories: std::sync::Arc<Vec<AnalysisDirectoryNode>>,
+}
+
+#[derive(Debug, Clone)]
+pub(crate) struct AnalysisIndexSnapshot {
+    pub(crate) root: std::path::PathBuf,
+    pub(crate) generation: u64,
+    pub(crate) mutation_revision: u64,
 }
 
 #[derive(Debug, Clone)]

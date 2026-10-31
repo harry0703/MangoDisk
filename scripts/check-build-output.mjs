@@ -139,17 +139,24 @@ const localeChunkLimitOverrides = new Map([
   // Application chunk limits remain fixed.
   // Structured deletion guidance adds 32 net labels. Raise only measured locale
   // margins; application chunk limits stay unchanged.
-  ['fr-fr', { bytes: 341632, gzipBytes: 68608 }],
-  ['de-de', { bytes: 330880, gzipBytes: 69120 }],
-  ['es-es', { bytes: 332800, gzipBytes: 66944 }],
-  ['pt-br', { bytes: 326144, gzipBytes: 65920 }],
-  ['ko-kr', { bytes: 325376, gzipBytes: 65280 }],
+  // JSON analysis export adds 25 localized labels and explanations. Round only
+  // exceeded measured locale sizes to 32 raw / 16 gzip bytes; application limits stay fixed.
+  // Layered summaries add five labels. Round only measured locale growth to
+  // 32 raw / 16 gzip bytes; retain application chunk budgets.
+  // Clearer export selection copy adds up to 32 gzip bytes in four locales.
+  // Directory-size export filters add three labels and clarify the full-mode hint.
+  // Extend only measured locale margins; application chunk budgets stay fixed.
+  ['fr-fr', { bytes: 343552, gzipBytes: 68864 }],
+  ['de-de', { bytes: 332704, gzipBytes: 69376 }],
+  ['es-es', { bytes: 334592, gzipBytes: 67120 }],
+  ['pt-br', { bytes: 328000, gzipBytes: 66112 }],
+  ['ko-kr', { bytes: 327360, gzipBytes: 65616 }],
   // Retain the finishing-charge labels' additional 128 raw bytes for ja/ru.
-  ['ja-jp', { bytes: 355968, gzipBytes: 67968 }],
-  ['ru-ru', { bytes: 429824, gzipBytes: 76800 }],
-  ['zh-cn', { bytes: 311296, gzipBytes: 63104 }],
-  ['zh-tw', { bytes: 311296, gzipBytes: 63616 }],
-  ['tr-tr', { bytes: 319616, gzipBytes: 64640 }],
+  ['ja-jp', { bytes: 358112, gzipBytes: 68304 }],
+  ['ru-ru', { bytes: 432448, gzipBytes: 77104 }],
+  ['zh-cn', { bytes: 311296, gzipBytes: 63312 }],
+  ['zh-tw', { bytes: 311296, gzipBytes: 63808 }],
+  ['tr-tr', { bytes: 321568, gzipBytes: 64896 }],
 ]);
 
 function fail(message) {

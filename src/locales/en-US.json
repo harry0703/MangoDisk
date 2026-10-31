@@ -1708,6 +1708,10 @@
     "taskJoinFailed": "Background task stopped"
   },
   "errorReasons": {
+    "analysisExportUnavailable": {
+      "title": "Export analysis results",
+      "message": "The detailed data for this scan is no longer available. Analyze again to export"
+    },
     "folderSelectionLimitExceeded": {
       "title": "Too many folders selected",
       "message": "Select up to 64 folders at a time, then try again"
@@ -1974,6 +1978,36 @@
     }
   },
   "analysis": {
+    "export": {
+      "action": "Export results",
+      "title": "Export analysis results",
+      "description": "Export directory statistics as JSON, without file contents",
+      "loading": "Loading export information…",
+      "scope": "Export scope",
+      "scanRoot": "Entire scan scope",
+      "currentDirectory": "Current folder and subfolders",
+      "detail": "Directory detail",
+      "summary": "Key directory summary (recommended)",
+      "full": "Complete directories",
+      "summaryHint": "Prioritizes directories with high usage, many files or scan issues. Up to 500 directories; the rest stay aggregated",
+      "minimumSize": "Minimum directory size",
+      "noMinimum": "No minimum",
+      "sizeFilterHint": "Smaller directories are grouped; totals stay unchanged",
+      "fullHint": "Exports every matching directory, with no count limit",
+      "fullPaths": "Include full paths",
+      "save": "Export JSON…",
+      "rescan": "Analyze again",
+      "retry": "Retry",
+      "saveTitle": "Save analysis results",
+      "saved": "Analysis results exported",
+      "showFile": "Show file",
+      "revealFailed": "Could not show the exported file",
+      "unavailable": "The detailed data for this scan is no longer available. Analyze again to export",
+      "loadFailed": "Could not load export information. Try again",
+      "saveFailed": "Could not save the file. Choose a save location and try again",
+      "saving": "Choose a save location to save the existing scan results",
+      "waitForScan": "Export is available after the scan finishes"
+    },
     "multiSelect": "Multi-select",
     "deleteSelectedAction": "Delete",
     "selectedCount": "{count} selected",

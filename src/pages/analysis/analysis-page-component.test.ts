@@ -16,6 +16,7 @@ import MdAnalysisBrowserToolbar from './components/md-analysis-browser-toolbar.v
 import MdAnalysisFolderPane from './components/md-analysis-folder-pane.vue';
 import MdAnalysisVisualPane from './components/md-analysis-visual-pane.vue';
 import MdAnalysisScanButton from './components/md-analysis-scan-button.vue';
+import MdAnalysisExportDialog from './components/md-analysis-export-dialog.vue';
 import MdDestructiveActionDialog from '@/components/custom/md-destructive-action-dialog.vue';
 import { ByteSizeService } from '@/lib/services/settings/byte-size-service';
 import { FolderSelectionService } from '@/lib/services/storage/folder-selection-service';
@@ -49,6 +50,43 @@ beforeEach(() => {
 });
 
 describe('analysis page', () => {
+  it.each(['escape', 'scan'])('shows export loading on the button and cancels opening on %s', async action => {
+    const wrapper = shallowMount(AnalysisPage, {
+      props: {
+        result,
+        excludedFolders: [],
+        homePath: '/fixture',
+        disk: null,
+        disks: [],
+        progress: null,
+        busy: false,
+        cancelling: false,
+        deleting: false,
+      },
+      global: {
+        plugins: [i18n],
+        renderStubDefaultSlot: true,
+        stubs: { MdPageShell: { template: '<div><slot name="actions"/><slot/></div>' } },
+      },
+    });
+    try {
+      await wrapper.get('.analysis-export-button').trigger('click');
+      const dialog = wrapper.getComponent(MdAnalysisExportDialog);
+      expect(dialog.props('open')).toBe(true);
+      dialog.vm.$emit('loading', true);
+      await flushPromises();
+      expect(wrapper.get('.analysis-export-button').attributes('aria-busy')).toBe('true');
+      if (action === 'scan') await wrapper.setProps({ busy: true });
+      else {
+        document.body.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+        await flushPromises();
+      }
+      expect(dialog.props('open')).toBe(false);
+    } finally {
+      wrapper.unmount();
+    }
+  });
+
   it('shows cancellable progress while validating a rescan with existing results', async () => {
     let completeResolution!: (paths: string[]) => void;
     vi.mocked(FolderSelectionService.filterExistingDirectories).mockImplementationOnce(

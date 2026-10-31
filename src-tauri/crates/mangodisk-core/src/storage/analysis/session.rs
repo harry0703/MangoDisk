@@ -34,6 +34,36 @@ fn lock_sessions() -> Result<MutexGuard<'static, VecDeque<AnalysisSession>>, Str
         .map_err(|_| "the disk-analysis result session is unavailable".to_string())
 }
 
+pub(super) fn export_result(
+    scan_id: u64,
+) -> crate::CoreResult<(
+    super::export::AnalysisExportSnapshot,
+    crate::ScanExclusionOptions,
+)> {
+    lock_sessions()?
+        .iter()
+        .find(|session| session.result.scan_id == scan_id)
+        .map(|session| {
+            let result = &session.result;
+            (
+                super::export::AnalysisExportSnapshot {
+                    root: result.root.clone(),
+                    index_snapshot: result.index_snapshot.clone(),
+                    total_bytes: result.total_bytes,
+                    scanned_at_ms: result.scanned_at_ms,
+                    scan_mode: result.scan_mode,
+                },
+                session.exclusions.clone(),
+            )
+        })
+        .ok_or_else(|| {
+            log::info!(
+                "analysis_export_snapshot_unavailable scan_id={scan_id} reason=session_expired"
+            );
+            super::export::unavailable()
+        })
+}
+
 /// Publishes an authoritative result snapshot used by trusted follow-up operations.
 ///
 /// The UI keeps a bounded navigation cache, so Core retains the same number of recent snapshots.
@@ -318,6 +348,7 @@ mod tests {
 
     fn result(path: &str) -> AnalysisResult {
         AnalysisResult {
+            index_snapshot: None,
             policy_version: super::super::ANALYSIS_SCAN_POLICY_VERSION,
             coverage: super::super::AnalysisCoverage::new(Default::default(), 0),
             scan_mode: Default::default(),
