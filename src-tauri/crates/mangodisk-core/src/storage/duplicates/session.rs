@@ -23,7 +23,7 @@ struct DuplicateResultSession {
 pub(super) struct ValidatedDuplicateDeleteCandidate {
     pub(super) candidate: PermanentDeleteCandidate,
     pub(super) kind: DuplicateGroupKind,
-    pub(super) expected_hash: String,
+    pub(super) expected_allocated_bytes: u64,
     pub(super) expected_file_count: u64,
     pub(super) scan_root: String,
     pub(super) protected_roots: Vec<String>,
@@ -190,7 +190,7 @@ pub(super) fn validate_permanent_delete_candidates(
             validated.push(ValidatedDuplicateDeleteCandidate {
                 candidate: candidate.clone(),
                 kind: group.kind,
-                expected_hash: group.hash.clone(),
+                expected_allocated_bytes: entry.allocated_bytes,
                 expected_file_count: group.file_count_per_entry,
                 scan_root,
                 protected_roots: result.protected_roots.clone(),
@@ -225,12 +225,8 @@ pub(super) fn synchronize_result_session(
         }
         remains_duplicate
     });
-    result.groups.sort_by(|left, right| {
-        right
-            .reclaimable_bytes
-            .cmp(&left.reclaimable_bytes)
-            .then_with(|| left.hash.cmp(&right.hash))
-    });
+    // Page offsets refer to the surviving scan order. Reordering a group after
+    // deletion can move an unseen group behind the caller's consumed prefix.
     result.duplicate_file_count = result
         .groups
         .iter()
@@ -308,6 +304,65 @@ mod tests {
             path: path.to_string(),
             expected_bytes: 10,
             expected_modified_at_ms: Some(1),
+        }
+    }
+
+    #[test]
+    fn deletion_preserves_the_next_page_after_a_loaded_group_shrinks_or_disappears() {
+        let _operation_lock = test_operation_lock();
+        for removed_count in [1, 2] {
+            let mut fixture = result();
+            let template = fixture.groups[0].clone();
+            fixture.groups = (0..=DUPLICATE_RESULT_PAGE_SIZE)
+                .map(|index| {
+                    let mut group = template.clone();
+                    group.id = format!("group-{index:02}");
+                    group.hash = group.id.clone();
+                    if index != 0 {
+                        group.entries.truncate(2);
+                    }
+                    for (copy, entry) in group.entries.iter_mut().enumerate() {
+                        entry.path = format!("/fixture/{index}-{copy}.bin");
+                        entry.bytes = if index == 0 { 100 } else { 150 };
+                        entry.allocated_bytes = entry.bytes;
+                    }
+                    group.refresh_reclaimable_bytes();
+                    group
+                })
+                .collect();
+            fixture.total_group_count = fixture.groups.len() as u64;
+            fixture.returned_group_count = fixture.total_group_count;
+            fixture.scanned_file_count = fixture
+                .groups
+                .iter()
+                .map(|group| group.entries.len() as u64)
+                .sum();
+            fixture.duplicate_file_count = fixture.scanned_file_count;
+            fixture.total_duplicate_bytes = fixture
+                .groups
+                .iter()
+                .map(DuplicateGroup::total_allocated_bytes)
+                .sum();
+            fixture.reclaimable_bytes = fixture
+                .groups
+                .iter()
+                .map(|group| group.reclaimable_bytes)
+                .sum();
+            let first = publish_result_session(fixture).unwrap();
+            assert_eq!(first.groups.len(), DUPLICATE_RESULT_PAGE_SIZE);
+            let removed_paths = first.groups[0].entries[..removed_count]
+                .iter()
+                .map(|entry| entry.path.clone())
+                .collect();
+            synchronize_result_session(first.scan_id, removed_paths).unwrap();
+
+            let resolved_groups = usize::from(removed_count == 2);
+            let offset = first.groups.len() - resolved_groups;
+            let next = result_page(first.scan_id, offset as u64, 40).unwrap();
+            clear_result_session().unwrap();
+            assert_eq!(next.groups.len(), 1);
+            assert_eq!(next.groups[0].id, "group-40");
+            assert_eq!(next.next_offset, None);
         }
     }
 

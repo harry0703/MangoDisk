@@ -360,7 +360,7 @@ fn windows_batch_stops_after_a_descendant_acl_causes_partial_deletion() {
         .collect();
     let denied_file = children[1].join("file.bin");
     // Windows can authorize unlink through DELETE on the file or DELETE_CHILD
-    // on its parent. Deny both while allowing enumeration and the staging rename.
+    // on its parent. Deny both while allowing directory enumeration.
     for (path, permission) in [
         (&denied_file, "*S-1-1-0:(D)"),
         (&children[1], "*S-1-1-0:(DC)"),

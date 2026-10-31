@@ -1,5 +1,5 @@
 //! Isolated deletion probe: `analysis_delete_reproduction [idle|writer|recreate] [files] [names]`.
-//! The writer retains a directory handle across staging, like a process using
+//! The writer retains a directory handle during deletion, like a process using
 //! an already-open working directory. All files and application state are temporary.
 
 #[cfg(unix)]
@@ -182,7 +182,10 @@ mod probe {
             .count();
         println!("probe mode={mode} initial_files={initial_files} names_enabled={names_enabled} writer_created={created} writer_error={writer_error:?} remaining_files={remaining} actual_removed_files={actual_removed} target_exists={} staging_left={staging_left} elapsed_ms={delete_ms} result={result:?}", target.exists());
         if mode == "recreate" {
-            assert!(result.as_ref().unwrap().requires_rescan);
+            // Recreation can occur after the service's final metadata check.
+            // Either timing must preserve the new content and revoke selection
+            // of the old entry, without promising transactional observation.
+            let requires_rescan = result.as_ref().unwrap().requires_rescan;
             assert!(AnalysisService::resolve_open_target(
                 scan.scan_id,
                 target.to_string_lossy().into_owned(),
@@ -195,7 +198,7 @@ mod probe {
                 |_| {},
             )?;
             assert_eq!(refreshed.entries[0].file_count, 1);
-            println!("recreated_original verification=passed old_session=expired new_content=preserved refreshed_files=1");
+            println!("recreated_original verification=passed requires_rescan={requires_rescan} old_selection=revoked new_content=preserved refreshed_files=1");
         }
         // A fresh scan after the writer stops must permit deleting the remainder.
         if result.is_err() && target.exists() {
@@ -227,8 +230,8 @@ mod windows_probe {
 
     use mangodisk_core::{AnalysisService, ApplicationPaths};
 
-    /// A deny-all file handle verifies that Windows rejects staging before
-    /// mutation and permits a fresh delete after the handle is released.
+    /// A deny-all file handle verifies partial deletion reporting, preservation
+    /// of the locked remainder, and retry after the handle is released.
     pub fn run() -> Result<(), Box<dyn std::error::Error>> {
         let sandbox = tempfile::Builder::new()
             .prefix("mangodisk-delete-probe-")
@@ -282,16 +285,15 @@ mod windows_probe {
         );
         drop(handle);
         let first_error = first.expect_err("an exclusive file handle must stop deletion");
-        if first_error.mutation_state() != mangodisk_platform::PlatformMutationState::NotAttempted {
-            return Err(
-                format!("expected staging to stop before mutation: {first_error:?}").into(),
-            );
-        }
         if !target.exists() || !locked_path.exists() {
-            return Err("the rejected delete changed the selected directory".into());
+            return Err("the locked remainder must stay at its original path".into());
         }
-        if AnalysisService::resolve_open_target(scan.scan_id, selected_path).is_err() {
-            return Err("the untouched analysis session became invalid".into());
+        let session_valid =
+            AnalysisService::resolve_open_target(scan.scan_id, selected_path).is_ok();
+        let was_untouched =
+            first_error.mutation_state() == mangodisk_platform::PlatformMutationState::NotAttempted;
+        if session_valid != was_untouched {
+            return Err("analysis authority must reflect whether deletion changed the tree".into());
         }
         let retry_scan = AnalysisService::analyze_with_progress(
             Some(scanned_root.to_string_lossy().into_owned()),

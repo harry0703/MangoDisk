@@ -2131,7 +2131,7 @@
     "batchDelete": "Kalıcı Olarak Sil",
     "batchDeleteTitle": "Seçili büyük dosyalar kalıcı olarak silinsin mi?",
     "batchDeleteDescription": "Seçili dosyalar geri getirilemez",
-    "deleteSafetyNote": "Değişen veya erişilemez hâle gelen dosyalar otomatik olarak atlanır",
+    "deleteSafetyNote": "Korumalı veya erişilemeyen dosyalar atlanır. Seçilen dosyalar mevcut durumlarıyla silinir",
     "deleteCompleted": "Büyük dosya temizliği tamamlandı",
     "deleteCompletedWithWarnings": "Büyük dosya temizliği uyarılarla tamamlandı",
     "deleteCompletedDescription": "{count} dosya silindi ve {size} alan boşaltıldı; {failed} başarısız | {count} dosya silindi ve {size} alan boşaltıldı; {failed} başarısız"
@@ -2189,7 +2189,7 @@
     "deleteSingleDescription": "Bu işlem geri alınamaz",
     "deleteTitle": "Seçili yinelenen kopyalar kalıcı olarak silinsin mi?",
     "deleteDescription": "Seçili kopyalar geri getirilemez",
-    "deleteSafetyNote": "Korumalı, değişmiş veya erişilemeyen öğeler atlanır. Program dosyalarını silmeden önce kontrol edin",
+    "deleteSafetyNote": "Korumalı veya erişilemeyen öğeler atlanır. Program dosyalarını silmeden önce ne işe yaradıklarını kontrol edin",
     "copyCount": "{count} kopya | {count} kopya",
     "groupCount": "{count} yinelenen grup | {count} yinelenen grup",
     "groupSummary": "{count} kopya · her biri {size} · en fazla {reclaimable} boşaltılabilir | {count} kopya · her biri {size} · en fazla {reclaimable} boşaltılabilir",

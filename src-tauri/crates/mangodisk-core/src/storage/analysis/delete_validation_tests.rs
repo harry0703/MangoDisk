@@ -711,7 +711,7 @@ fn analysis_locked_failure_before_any_unlink_preserves_session() {
 
 #[cfg(windows)]
 #[test]
-fn analysis_locked_descendant_before_staging_preserves_session_and_cache() {
+fn analysis_locked_only_descendant_preserves_session_and_cache() {
     use std::os::windows::fs::OpenOptionsExt;
     let _operation_lock = crate::shared::operation::test_operation_lock();
     cache::clear_all().unwrap();
@@ -730,7 +730,7 @@ fn analysis_locked_descendant_before_staging_preserves_session_and_cache() {
     let failed =
         AnalysisService::delete_entry_permanently(initial.scan_id, initial.entries[0].path.clone());
     drop(locked);
-    let error = failed.expect_err("an open descendant must prevent staging the directory");
+    let error = failed.expect_err("an open descendant must prevent removing the directory");
     assert_eq!(
         error.mutation_state(),
         mangodisk_platform::PlatformMutationState::NotAttempted

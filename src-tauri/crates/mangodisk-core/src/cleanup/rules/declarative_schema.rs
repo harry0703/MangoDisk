@@ -446,7 +446,7 @@ fn validate_execution_policy(rule: &DeclarativeRuleSource) -> Result<(), String>
         return Ok(());
     }
 
-    // Whole-root staging deliberately trades per-file identity checks for one
+    // Whole-root deletion deliberately trades per-file identity checks for one
     // protected root identity. Keep the authoring contract narrow: the user
     // must opt in to the rule, every byte must match, and every static root
     // must be independently documented as disposable and rebuildable.

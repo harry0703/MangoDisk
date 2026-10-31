@@ -24,7 +24,7 @@ fn staging_count(parent: &Path) -> usize {
 
 #[test]
 #[cfg(windows)]
-fn locked_file_failure_retains_the_native_code_and_staging_stage() {
+fn locked_file_failure_retains_the_native_code_and_removal_stage() {
     use std::os::windows::fs::OpenOptionsExt;
     let sandbox = fixture();
     let path = sandbox.path().join("locked.bin");
@@ -43,7 +43,7 @@ fn locked_file_failure_retains_the_native_code_and_staging_stage() {
     .unwrap_err();
     assert_eq!(error.native_code(), Some(32));
     assert_eq!(error.reason(), Some(CoreErrorReason::ResourceBusy));
-    assert_eq!(error.stage(), "stage_rename");
+    assert_eq!(error.stage(), "remove");
     assert!(!error.is_partial());
     drop(_locked);
     assert_eq!(fs::read(&path).unwrap(), b"keep");
@@ -51,7 +51,7 @@ fn locked_file_failure_retains_the_native_code_and_staging_stage() {
 }
 
 #[test]
-fn successful_deletion_removes_file_and_staging_directory() {
+fn successful_deletion_removes_file_without_creating_staging() {
     let sandbox = fixture();
     let path = sandbox.path().join("payload.bin");
     fs::write(&path, b"payload").unwrap();
@@ -62,7 +62,7 @@ fn successful_deletion_removes_file_and_staging_directory() {
 }
 
 #[test]
-fn successful_rollback_reports_the_restored_item() {
+fn nonempty_directory_failure_leaves_the_item_in_place() {
     let sandbox = fixture();
     let path = sandbox.path().join("directory");
     fs::create_dir(&path).unwrap();
@@ -70,7 +70,6 @@ fn successful_rollback_reports_the_restored_item() {
     fs::write(path.join("concurrent.bin"), b"keep").unwrap();
     let error = delete_empty_directory_permanently(prepared).unwrap_err();
     assert!(!error.is_partial());
-    assert!(error.remaining_was_restored());
     assert_eq!(fs::read(path.join("concurrent.bin")).unwrap(), b"keep");
     assert_eq!(staging_count(sandbox.path()), 0);
 }
@@ -258,53 +257,7 @@ fn nested_unicode_directory_deletion_removes_only_the_target() {
 }
 
 #[test]
-fn staged_identity_query_failure_is_not_reported_as_replacement() {
-    let sandbox = fixture();
-    let path = sandbox.path().join("original.bin");
-    fs::write(&path, b"keep").unwrap();
-    let prepared = prepare_path_for_permanent_delete(&path).unwrap();
-    let error = verify_staged_identity(&prepared, &sandbox.path().join("missing"), "before_remove")
-        .unwrap_err();
-    assert_eq!(error.native_code, Some(2));
-    assert_ne!(error.reason(), Some(CoreErrorReason::ItemChanged));
-    assert!(!error.to_string().contains("replaced"));
-    assert_eq!(fs::read(&path).unwrap(), b"keep");
-}
-
-#[test]
-fn staged_identity_matches_the_pinned_object_after_cross_directory_move() {
-    let sandbox = fixture();
-    for directory in [false, true] {
-        let path = sandbox.path().join("original");
-        if directory {
-            fs::create_dir(&path).unwrap();
-        } else {
-            fs::write(&path, b"keep").unwrap();
-        }
-        let prepared = prepare_path_for_permanent_delete(&path).unwrap();
-        let captured = prepared.identity();
-        let stage = create_staging_directory(sandbox.path()).unwrap();
-        let staged = stage.join("target");
-        fs::rename(&path, &staged).unwrap();
-        verify_staged_identity(&prepared, &staged, "before_remove").unwrap();
-        assert_eq!(
-            prepared.identity(),
-            captured,
-            "scan authorization must keep its original capture"
-        );
-        fs::rename(&staged, &path).unwrap();
-        drop(prepared);
-        if directory {
-            fs::remove_dir(&path).unwrap();
-        } else {
-            fs::remove_file(&path).unwrap();
-        }
-        fs::remove_dir(stage).unwrap();
-    }
-}
-
-#[test]
-fn cancellation_before_removal_restores_without_reporting_partial_deletion() {
+fn cancellation_before_removal_leaves_target_without_reporting_partial_deletion() {
     let sandbox = fixture();
     let path = sandbox.path().join("directory");
     fs::create_dir(&path).unwrap();
@@ -313,7 +266,6 @@ fn cancellation_before_removal_restores_without_reporting_partial_deletion() {
     let error =
         delete_directory_tree_permanently_with_cancellation(prepared, 0, 1, &|| true).unwrap_err();
     assert!(!error.is_partial());
-    assert!(error.remaining_was_restored());
     assert_eq!(error.affected_item_count(), 0);
     assert!(path.join("zero.bin").exists());
     assert_eq!(staging_count(sandbox.path()), 0);
@@ -345,7 +297,7 @@ fn readonly_file_deletion_reports_its_actual_outcome() {
 
 #[cfg(windows)]
 #[test]
-fn locked_child_failure_restores_directory_and_preserves_native_error() {
+fn locked_child_failure_retains_directory_and_preserves_native_error() {
     use std::os::windows::fs::OpenOptionsExt;
     let sandbox = fixture();
     let path = sandbox.path().join("directory");
@@ -370,23 +322,8 @@ fn locked_child_failure_restores_directory_and_preserves_native_error() {
     assert_eq!(staging_count(sandbox.path()), 0);
 }
 
-fn staged_fixture_target(parent: &Path) -> PathBuf {
-    fs::read_dir(parent)
-        .unwrap()
-        .filter_map(Result::ok)
-        .find(|entry| {
-            entry
-                .file_name()
-                .to_string_lossy()
-                .starts_with(".mangodisk-delete-")
-        })
-        .expect("the cancellation callback runs after atomic staging")
-        .path()
-        .join("target")
-}
-
 #[test]
-fn cancellation_after_zero_byte_removal_restores_accurate_partial_counts() {
+fn cancellation_after_zero_byte_removal_retains_accurate_partial_counts() {
     let sandbox = fixture();
     let path = sandbox.path().join("directory");
     fs::create_dir(&path).unwrap();
@@ -395,68 +332,14 @@ fn cancellation_after_zero_byte_removal_restores_accurate_partial_counts() {
     }
     let prepared = prepare_path_for_permanent_delete(&path).unwrap();
     let error = delete_directory_tree_permanently_with_cancellation(prepared, 0, 3, &|| {
-        fs::read_dir(staged_fixture_target(sandbox.path()))
-            .unwrap()
-            .count()
-            < 3
+        fs::read_dir(&path).unwrap().count() < 3
     })
     .unwrap_err();
     assert!(error.is_partial());
-    assert!(error.remaining_was_restored());
     assert_eq!(error.released_bytes(), 0);
     assert_eq!(error.affected_item_count(), 1);
     assert_eq!(fs::read_dir(&path).unwrap().count(), 2);
     assert_eq!(staging_count(sandbox.path()), 0);
-}
-
-#[test]
-fn recovery_conflict_preserves_new_path_and_staged_remainder() {
-    let sandbox = fixture();
-    let path = sandbox.path().join("directory");
-    fs::create_dir(&path).unwrap();
-    fs::write(path.join("original.bin"), b"original").unwrap();
-    let prepared = prepare_path_for_permanent_delete(&path).unwrap();
-    let error = delete_directory_tree_permanently_with_cancellation(prepared, 8, 1, &|| {
-        fs::create_dir(&path).unwrap();
-        fs::write(path.join("replacement.bin"), b"replaced").unwrap();
-        true
-    })
-    .unwrap_err();
-    assert!(error.is_partial());
-    assert!(!error.remaining_was_restored());
-    assert_eq!(fs::read(path.join("replacement.bin")).unwrap(), b"replaced");
-    assert_eq!(
-        fs::read(staged_fixture_target(sandbox.path()).join("original.bin")).unwrap(),
-        b"original"
-    );
-}
-
-#[test]
-fn recovery_rejects_a_replacement_in_staging() {
-    let sandbox = fixture();
-    let path = sandbox.path().join("directory");
-    let moved = sandbox.path().join("moved-original");
-    fs::create_dir(&path).unwrap();
-    fs::write(path.join("original.bin"), b"original").unwrap();
-    let prepared = prepare_path_for_permanent_delete(&path).unwrap();
-    let error = delete_directory_tree_permanently_with_cancellation(prepared, 8, 1, &|| {
-        let staged = staged_fixture_target(sandbox.path());
-        fs::rename(&staged, &moved).unwrap();
-        fs::create_dir(&staged).unwrap();
-        fs::write(staged.join("replacement.bin"), b"replaced").unwrap();
-        true
-    })
-    .unwrap_err();
-    assert_eq!(error.reason(), Some(CoreErrorReason::ItemChanged));
-    assert!(error.is_partial());
-    assert!(!error.remaining_was_restored());
-    assert_eq!(error.observed_or_estimated_files(), Some(0));
-    assert!(!path.exists());
-    assert_eq!(fs::read(moved.join("original.bin")).unwrap(), b"original");
-    assert_eq!(
-        fs::read(staged_fixture_target(sandbox.path()).join("replacement.bin")).unwrap(),
-        b"replaced"
-    );
 }
 
 #[cfg(windows)]
@@ -511,97 +394,6 @@ fn ntfs_access_denial_preserves_the_target() {
     assert_eq!(staging_count(sandbox.path()), 0);
 }
 
-#[test]
-#[ignore = "production failure diagnostics; run alone in its own process"]
-fn validate_permanent_delete_failure_diagnostics() {
-    let log_path = PathBuf::from(std::env::var_os("MANGODISK_DELETE_BENCHMARK_LOG").unwrap());
-    *BENCHMARK_LOGGER.0.lock().unwrap() = Some(std::io::BufWriter::new(
-        fs::File::create(&log_path).unwrap(),
-    ));
-    log::set_logger(&BENCHMARK_LOGGER).unwrap();
-    log::set_max_level(log::LevelFilter::Info);
-    replacement_with_matching_size_and_timestamp_is_preserved();
-    staged_identity_query_failure_is_not_reported_as_replacement();
-    recovery_conflict_preserves_new_path_and_staged_remainder();
-    recovery_rejects_a_replacement_in_staging();
-    #[cfg(windows)]
-    locked_child_failure_restores_directory_and_preserves_native_error();
-    log::Log::flush(&BENCHMARK_LOGGER);
-    let diagnostic = fs::read_to_string(log_path).unwrap();
-    assert!(diagnostic.contains("permanent_delete_identity_mismatch"));
-    assert!(diagnostic.contains("pinned_id=") && diagnostic.contains("staged_id="));
-    assert!(diagnostic.contains("identity_source=staged_path native_code=Some(2)"));
-    assert!(diagnostic.contains("stage=restore outcome=completed remaining_restored=true"));
-    assert!(diagnostic.contains("permanent_delete_rollback_failed"));
-    assert!(diagnostic.contains("permanent_delete_recovery_blocked"));
-    assert!(diagnostic.contains("outcome=failed partial=false"));
-    assert!(
-        !diagnostic.contains("original.bin\" content=")
-            && !diagnostic.contains("replaced content=")
-    );
-    #[cfg(windows)]
-    assert!(
-        diagnostic.contains("native_code=Some(32)") || diagnostic.contains("native_code=Some(5)")
-    );
-    *BENCHMARK_LOGGER.0.lock().unwrap() = None;
-}
-
-/// Isolates identity-query overhead from rename, unlink, indexing, and fixture creation.
-/// Alternate both checks on the same staged object to reduce filesystem-cache bias.
-#[test]
-#[ignore = "paired cached-versus-live identity query benchmark"]
-fn benchmark_staged_identity_queries() {
-    let sandbox = fixture();
-    let path = sandbox.path().join("payload.bin");
-    fs::write(&path, b"payload").unwrap();
-    let prepared = prepare_path_for_permanent_delete(&path).unwrap();
-    let staging = create_staging_directory(sandbox.path()).unwrap();
-    let staged = staging.join("target");
-    fs::rename(&path, &staged).unwrap();
-    for run in 0..11 {
-        for live in if run % 2 == 0 {
-            [false, true]
-        } else {
-            [true, false]
-        } {
-            let started = Instant::now();
-            let mut matched = 0;
-            for _ in 0..1_000 {
-                matched += usize::from(if live {
-                    verify_staged_identity(&prepared, &staged, "before_remove").is_ok()
-                } else {
-                    cached_staged_identity_matches(&prepared, &staged)
-                });
-            }
-            let elapsed_us = started.elapsed().as_micros();
-            if live {
-                assert_eq!(matched, 1_000);
-            }
-            println!(
-                "identity_benchmark {}",
-                serde_json::json!({
-                    "run": run, "warmup": run == 0, "live": live,
-                    "queries": 1_000, "matched": matched, "elapsed_us": elapsed_us
-                })
-            );
-        }
-    }
-}
-
-// Keep the pre-fix query sequence explicit so later production optimizations
-// cannot silently change the benchmark's cached-identity control.
-fn cached_staged_identity_matches(target: &PreparedPermanentDelete, staged: &Path) -> bool {
-    #[cfg(windows)]
-    {
-        let handle = open_identity_handle(staged).unwrap();
-        let metadata = handle.metadata().unwrap();
-        !current_platform().is_link_like(&metadata)
-            && handle_identity(&handle).is_ok_and(|identity| identity == target.identity)
-    }
-    #[cfg(unix)]
-    physical_path_identity(staged).is_ok_and(|identity| identity == target.identity)
-}
-
 #[cfg(windows)]
 #[test]
 #[ignore = "native reparse-point fixture; run on NTFS with a regular desktop token"]
@@ -642,26 +434,27 @@ fn deletion_failure_metadata_preserves_native_reason_stage_and_mutation() {
         PermanentDeleteError::before_mutation_with_reason("changed", CoreErrorReason::ItemChanged)
             .into_failure("/fixture/stale".into());
     assert_eq!(failure.details.reason, Reason::ItemChanged);
-    let mut partial = PermanentDeleteError::after_mutation(
+    let mut partial = PermanentDeleteError::before_mutation_with_reason(
         "interrupted",
-        Some(CoreErrorReason::ResourceBusy),
-        4,
-        1,
-    );
-    partial.remaining_restored = true;
+        CoreErrorReason::ResourceBusy,
+    )
+    .at_stage("remove");
+    partial.partial = true;
+    partial.released_bytes = 4;
+    partial.affected_item_count = 1;
     partial.native_code = Some(32);
     let value = serde_json::to_value(partial.into_failure("/fixture/partial".into())).unwrap();
     assert_eq!(value["reason"], "resourceBusy");
     assert_eq!(value["nativeCode"], 32);
     assert_eq!(value["partial"], true);
-    assert_eq!(value["remainingRestored"], true);
+    assert_eq!(value["remainingRestored"], false);
     assert_eq!(value["stage"], "remove");
     assert!(value.get("details").is_none(), "transport fields stay flat");
 }
 
 #[cfg(windows)]
 #[test]
-fn locked_file_reports_sharing_violation_without_bypassing_staging() {
+fn locked_file_reports_sharing_violation_at_direct_removal() {
     use crate::filesystem::{
         PermanentDeleteFailureReason as Reason, PermanentDeleteFailureStage as Stage,
     };
@@ -684,7 +477,7 @@ fn locked_file_reports_sharing_violation_without_bypassing_staging() {
     let failure = error.into_failure(candidate.path).details;
     assert_eq!(failure.reason, Reason::ResourceBusy);
     assert_eq!(failure.native_code, Some(32));
-    assert_eq!(failure.stage, Stage::MoveToStaging);
+    assert_eq!(failure.stage, Stage::Remove);
     assert!(!failure.partial);
     assert_eq!(fs::read(&path).unwrap(), b"locked duplicate content");
     assert_eq!(staging_count(sandbox.path()), 0);
@@ -748,4 +541,53 @@ fn denied_candidate_preserves_native_metadata_during_path_validation() {
     assert_eq!(failure.native_code, Some(libc::EACCES));
     assert_eq!(failure.stage, Stage::PrepareTarget);
     assert_eq!(fs::read(&path).unwrap(), b"keep");
+}
+
+/// Run separately because production log capture owns the process-global logger.
+#[test]
+#[ignore = "isolated production deletion diagnostics"]
+fn validate_direct_delete_failure_diagnostics() {
+    let log_path = PathBuf::from(std::env::var_os("MANGODISK_DELETE_BENCHMARK_LOG").unwrap());
+    *BENCHMARK_LOGGER.0.lock().unwrap() = Some(std::io::BufWriter::new(
+        fs::File::create(&log_path).unwrap(),
+    ));
+    log::set_logger(&BENCHMARK_LOGGER).unwrap();
+    log::set_max_level(log::LevelFilter::Info);
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt;
+        let sandbox = fixture();
+        let root = sandbox.path().join("selected");
+        let blocked = root.join("denied-\nentry");
+        fs::create_dir_all(&blocked).unwrap();
+        fs::write(blocked.join("payload.bin"), b"private fixture payload").unwrap();
+        let prepared = prepare_path_for_permanent_delete(&root).unwrap();
+        fs::set_permissions(&blocked, fs::Permissions::from_mode(0o000)).unwrap();
+        let failure =
+            delete_directory_tree_permanently_with_cancellation(prepared, 23, 1, &|| false);
+        fs::set_permissions(&blocked, fs::Permissions::from_mode(0o700)).unwrap();
+        let failure = failure.unwrap_err();
+        assert_eq!(failure.native_code(), Some(libc::EACCES));
+        assert!(!failure.is_partial());
+        assert_eq!(
+            fs::read(blocked.join("payload.bin")).unwrap(),
+            b"private fixture payload"
+        );
+    }
+    #[cfg(windows)]
+    locked_child_failure_retains_directory_and_preserves_native_error();
+    log::Log::flush(&BENCHMARK_LOGGER);
+    let diagnostic = fs::read_to_string(&log_path).unwrap();
+    assert!(diagnostic.contains("stage=remove mode=direct outcome=failed"));
+    assert!(diagnostic.contains("remaining_location=original"));
+    assert!(diagnostic.contains("native_code=Some("));
+    assert!(!diagnostic.contains("private fixture payload"));
+    assert!(!diagnostic.contains(".mangodisk-delete-"));
+    #[cfg(unix)]
+    {
+        assert!(diagnostic.contains("stage=read_directory"));
+        assert!(diagnostic.contains("denied-\\nentry"));
+        assert!(!diagnostic.contains("denied-\nentry"));
+    }
+    *BENCHMARK_LOGGER.0.lock().unwrap() = None;
 }

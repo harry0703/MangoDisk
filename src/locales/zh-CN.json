@@ -2131,7 +2131,7 @@
     "batchDelete": "彻底删除",
     "batchDeleteTitle": "彻底删除所选大文件？",
     "batchDeleteDescription": "所选文件删除后无法恢复",
-    "deleteSafetyNote": "文件发生变化或无法访问时会自动跳过",
+    "deleteSafetyNote": "受保护或无法访问的文件会跳过。所选文件将按删除时的状态处理",
     "deleteCompleted": "大文件清理完成",
     "deleteCompletedWithWarnings": "大文件清理已完成，部分项目未删除",
     "deleteCompletedDescription": "已删除 {count} 个文件，释放 {size}，{failed} 个失败"
@@ -2189,7 +2189,7 @@
     "deleteSingleDescription": "删除后无法恢复",
     "deleteTitle": "彻底删除所选重复副本？",
     "deleteDescription": "所选副本删除后无法恢复",
-    "deleteSafetyNote": "受保护、已变化或无法访问的项目会跳过。程序文件请确认用途后再删除",
+    "deleteSafetyNote": "受保护或无法访问的项目会跳过。程序文件请确认用途后再删除",
     "copyCount": "{count} 个副本",
     "groupCount": "{count} 组重复文件",
     "groupSummary": "{count} 个副本 · 每个 {size} · 最多可释放 {reclaimable}",

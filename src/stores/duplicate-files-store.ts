@@ -129,6 +129,7 @@ export const useDuplicateFilesStore = defineStore('duplicate-files', {
       });
       let unlistenProgress: (() => void) | undefined;
       let unlistenGroups: (() => void) | undefined;
+      let scanInvoked = false;
       try {
         [unlistenProgress, unlistenGroups] = await Promise.all([
           DuplicateFileService.listenProgress(progress => {
@@ -153,6 +154,7 @@ export const useDuplicateFilesStore = defineStore('duplicate-files', {
             this.applyGroupBatch(batch, roots, protectedRoots);
           }),
         ]);
+        scanInvoked = true;
         const result = await DuplicateFileService.find(locations, minimumBytes, requestedExclusions, requestedNames);
         // Settings can change during hashing. Discard results produced with a
         // threshold that no longer matches the active workflow.
@@ -177,6 +179,12 @@ export const useDuplicateFilesStore = defineStore('duplicate-files', {
           this.clearResult();
         }
       } catch (error) {
+        // Core discards its previous session when a new scan starts. Retained
+        // rows remain useful for viewing, but cannot authorize another delete.
+        if (scanInvoked) {
+          this.resultComplete = false;
+          this.nextPageOffset = null;
+        }
         if (!this.cancelling) {
           LoggerService.warn(LOG_DOMAINS.duplicateFiles, LOG_EVENTS.operationFailed, {
             operation: 'find_duplicate_files',
@@ -239,15 +247,27 @@ export const useDuplicateFilesStore = defineStore('duplicate-files', {
       }
       const sourceScanId = this.result.scanId;
       const initialCategoryCount = countGroupsInCategory(this.result.groups, category);
+      let requestedResult: DuplicateFilesResult = this.result;
       this.loadingMore = true;
       try {
         while (this.nextPageOffset !== null) {
           const sourceOffset = this.nextPageOffset;
-          const currentResult = this.result;
+          const currentResult: DuplicateFilesResult | null = this.result;
           if (!currentResult || currentResult.scanId !== sourceScanId) return;
 
+          requestedResult = currentResult;
           const page = await DuplicateFileService.page(sourceScanId, sourceOffset, DUPLICATE_RESULT_PAGE_SIZE);
-          if (!this.result || this.result.scanId !== sourceScanId || page.scanId !== sourceScanId) return;
+          // A refresh or deletion may overlap a read-only page request. Neither
+          // its old contents nor its cursor may replace the active result.
+          if (
+            this.loading ||
+            this.deleting ||
+            !this.resultComplete ||
+            !this.result ||
+            this.result !== currentResult ||
+            page.scanId !== sourceScanId
+          )
+            return;
 
           const knownHashes = new Set(this.result.groups.map(group => group.hash));
           const groups: DuplicateGroup[] = [
@@ -274,6 +294,7 @@ export const useDuplicateFilesStore = defineStore('duplicate-files', {
           }
         }
       } catch (error) {
+        if (this.loading || this.deleting || !this.resultComplete || this.result !== requestedResult) return;
         if (this.result?.scanId === sourceScanId) {
           // Preserve loaded rows as read-only when the native session expires.
           this.resultComplete = false;
@@ -323,7 +344,7 @@ export const useDuplicateFilesStore = defineStore('duplicate-files', {
             expectedModifiedAtMs: entry.modifiedAtMs,
           }))
         );
-        const removedPaths = new Set(operation.removedPaths);
+        const removedPaths = new Set([...operation.removedPaths, ...(operation.alreadyAbsentPaths ?? [])]);
         // Apply the update only while the initiating result remains active.
         if (this.result === sourceResult) {
           this.result = DuplicateFileResultUtils.removePaths(sourceResult, removedPaths);

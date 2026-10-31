@@ -24,6 +24,8 @@ export interface PermanentDeleteFailure extends PermanentDeleteFailureDetails {
 
 export interface PermanentDeleteBatchResult {
   removedPaths: string[];
+  alreadyAbsentPaths?: string[];
+  releasedBytesIsEstimate?: boolean;
   failed: PermanentDeleteFailure[];
   releasedBytes: number;
 }

@@ -28,7 +28,7 @@ describe('permanent-delete result synchronization', () => {
       ],
     };
 
-    const updated = LargeFileResultUtils.removePaths(result, new Set(['/fixture/deleted.bin']), 100);
+    const updated = LargeFileResultUtils.removePaths(result, new Set(['/fixture/deleted.bin']));
 
     expect(updated.entries.map(entry => entry.path)).toEqual(['/fixture/failed.bin']);
     expect(updated.totalBytes).toBe(200);

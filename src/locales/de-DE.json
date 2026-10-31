@@ -2131,7 +2131,7 @@
     "batchDelete": "Endgültig löschen",
     "batchDeleteTitle": "Ausgewählte große Dateien dauerhaft löschen?",
     "batchDeleteDescription": "Die ausgewählten Dateien können nicht wiederhergestellt werden",
-    "deleteSafetyNote": "Dateien, die geändert wurden oder nicht mehr verfügbar sind, werden automatisch übersprungen",
+    "deleteSafetyNote": "Geschützte oder nicht zugängliche Dateien werden übersprungen. Ausgewählte Dateien werden in ihrem aktuellen Zustand gelöscht",
     "deleteCompleted": "Bereinigung großer Dateien abgeschlossen",
     "deleteCompletedWithWarnings": "Bereinigung großer Dateien mit Warnungen abgeschlossen",
     "deleteCompletedDescription": "{count} Datei gelöscht, {size} freigegeben; {failed} fehlgeschlagen | {count} Dateien gelöscht, {size} freigegeben; {failed} fehlgeschlagen"
@@ -2189,7 +2189,7 @@
     "deleteSingleDescription": "Dies kann nicht rückgängig gemacht werden",
     "deleteTitle": "Ausgewählte Duplikate dauerhaft löschen?",
     "deleteDescription": "Die ausgewählten Kopien können nicht wiederhergestellt werden",
-    "deleteSafetyNote": "Geschützte, geänderte oder unzugängliche Elemente werden übersprungen. Programmdateien vor dem Löschen prüfen",
+    "deleteSafetyNote": "Geschützte oder nicht zugängliche Elemente werden übersprungen. Prüfe Programmdateien vor dem Löschen",
     "copyCount": "{count} Kopie | {count} Kopien",
     "groupCount": "{count} Duplikatgruppe | {count} Duplikatgruppen",
     "groupSummary": "{count} Kopie · je {size} · bis zu {reclaimable} freigebbar | {count} Kopien · je {size} · bis zu {reclaimable} freigebbar",

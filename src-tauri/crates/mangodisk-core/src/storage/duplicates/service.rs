@@ -28,7 +28,7 @@ use super::candidates::{
     validate_current_path, validate_open_file, CandidateEnumeration, CandidateEnumerationRequest,
     DuplicateCandidatePolicy, FileCandidate, FileIdentity, NativeCandidateRequest,
 };
-use super::directory_aggregation::{aggregate_exact_directories, verify_live_directory};
+use super::directory_aggregation::aggregate_exact_directories;
 use super::hash_cache::{
     self, DuplicateHashCacheFile, DuplicateHashCacheRoot, DuplicateHashCacheWriteDiagnostics,
 };
@@ -714,6 +714,8 @@ impl DuplicateFileService {
             .map(|candidate| diagnostic_path(Path::new(&candidate.candidate.path)))
             .collect::<Vec<_>>();
         let mut result = PermanentDeleteBatchResult {
+            released_bytes_is_estimate: false,
+            already_absent_paths: Vec::new(),
             removed_paths: Vec::new(),
             failed: Vec::new(),
             released_bytes: 0,
@@ -730,13 +732,29 @@ impl DuplicateFileService {
             };
             match deletion {
                 Ok((target, usage, file_count, is_directory)) => {
+                    result.released_bytes_is_estimate |= is_directory;
                     result.released_bytes =
                         result.released_bytes.saturating_add(usage.allocated_bytes);
                     result.removed_paths.push(candidate.path);
                     cache::remove_entry(&target, usage, file_count, is_directory);
                     hash_cache::invalidate_containing(&target);
                 }
-                Err(error) => result.failed.push(error.into_failure(candidate.path)),
+                Err(error) if error.is_not_found() => {
+                    if result.already_absent_paths.len() < 8 {
+                        log::info!("permanent_delete_candidate_skipped domain=duplicates operation_id={} scan_id={} path={} stage={} native_code={:?} outcome=already_absent", operation.id(), scan_id,
+                            diagnostic_path(Path::new(&candidate.path)), error.stage(), error.native_code());
+                    }
+                    hash_cache::invalidate_containing(Path::new(&candidate.path));
+                    result.already_absent_paths.push(candidate.path);
+                }
+                Err(error) => {
+                    result.released_bytes_is_estimate |= error.is_partial();
+                    if result.failed.len() < 8 {
+                        log::warn!("permanent_delete_candidate_failed domain=duplicates operation_id={} scan_id={} path={} stage={} native_code={:?} partial={} outcome=retained_or_partial error={}", operation.id(), scan_id,
+                            diagnostic_path(Path::new(&candidate.path)), error.stage(), error.native_code(), error.is_partial(), mangodisk_platform::diagnostics::text(&error));
+                    }
+                    result.failed.push(error.into_failure(candidate.path));
+                }
             }
         }
         #[cfg(windows)]
@@ -746,8 +764,21 @@ impl DuplicateFileService {
             scan_id,
             &result.failed,
         );
-        if !result.removed_paths.is_empty() {
-            synchronize_result_session(scan_id, result.removed_paths.clone())?;
+        let reconciled_paths = result
+            .removed_paths
+            .iter()
+            .chain(&result.already_absent_paths)
+            .cloned()
+            .collect::<Vec<_>>();
+        if !reconciled_paths.is_empty() {
+            synchronize_result_session(scan_id, reconciled_paths)?;
+        }
+        if !result.already_absent_paths.is_empty()
+            || result.failed.iter().any(|failure| failure.details.partial)
+        {
+            if let Err(error) = cache::clear_all() {
+                log::warn!("permanent_delete_cache_invalidation_failed domain=duplicates operation_id={} error={}", operation.id(), mangodisk_platform::diagnostics::text(&error));
+            }
         }
         let history_record = file_cleanup_record(
             format!(
@@ -770,14 +801,16 @@ impl DuplicateFileService {
             );
         }
         log::info!(
-            "duplicate_permanent_delete_finished operation_id={} scan_id={} requested_count={} path_sample={:?} selected_logical_bytes={} removed_count={} failed_count={} released_allocated_bytes={} elapsed_ms={}",
+            "duplicate_permanent_delete_finished operation_id={} scan_id={} requested_count={} path_sample={:?} selected_logical_bytes={} removed_count={} already_absent_count={} failed_count={} suppressed_failure_count={} released_allocated_bytes={} elapsed_ms={}",
             operation.id(),
             scan_id,
             requested_count,
             path_sample,
             expected_bytes,
             result.removed_paths.len(),
+            result.already_absent_paths.len(),
             result.failed.len(),
+            result.failed.len().saturating_sub(8),
             result.released_bytes,
             started.elapsed().as_millis()
         );
@@ -1531,9 +1564,6 @@ fn delete_duplicate_directory_candidate(
     let candidate = &validated.candidate;
     let requested_target = PathBuf::from(&candidate.path);
     let prepared = prepare_path_for_permanent_delete(&requested_target)?;
-    current_platform()
-        .validate_path_no_links(&requested_target)
-        .map_err(PermanentDeleteError::from)?;
     let metadata = prepared.metadata();
     if !metadata.is_dir() || current_platform().is_link_like(metadata) {
         return Err(PermanentDeleteError::before_mutation(
@@ -1583,22 +1613,15 @@ fn delete_duplicate_directory_candidate(
         )
         .with_failure_reason(PermanentDeleteFailureReason::Protected));
     }
-    let usage = verify_live_directory(
-        &target,
-        &validated.expected_hash,
-        candidate.expected_bytes,
-        validated.expected_file_count,
-        operation,
-    )?;
-    let verified_target = current_platform()
-        .canonicalize_no_links(&requested_target)
-        .map_err(PermanentDeleteError::from)?;
-    if !current_platform().paths_equal(&verified_target, &target) {
-        return Err(PermanentDeleteError::before_mutation(
-            "the directory changed during safety validation",
-        )
-        .with_failure_reason(PermanentDeleteFailureReason::ItemChanged));
-    }
+    // Directory duplication is established by scanning. Deletion keeps a cheap
+    // metadata check instead of reading every file again to rebuild its digest.
+    operation
+        .ensure_not_cancelled()
+        .map_err(|error| PermanentDeleteError::before_mutation(error.to_string()))?;
+    let usage = FileSpaceUsage {
+        logical_bytes: candidate.expected_bytes,
+        allocated_bytes: validated.expected_allocated_bytes,
+    };
 
     match delete_path_permanently(
         prepared,
@@ -1606,22 +1629,6 @@ fn delete_duplicate_directory_candidate(
         validated.expected_file_count,
     ) {
         Ok(()) => Ok((target, usage, validated.expected_file_count, true)),
-        Err(error) if error.is_partial() && !requested_target.exists() => {
-            // The same-volume staging move already removed the selected path. Keep the result UI
-            // synchronized even when best-effort cleanup of the private staging tree was partial.
-            log::warn!(
-                "duplicate_directory_staging_cleanup_partial operation_id={} released_logical_bytes={} error={}",
-                operation.id(),
-                error.released_bytes(),
-                mangodisk_platform::diagnostics::text(&error)
-            );
-            Ok((
-                target,
-                FileSpaceUsage::logical_only(error.released_bytes()),
-                error.affected_item_count(),
-                true,
-            ))
-        }
         Err(error) => Err(error),
     }
 }
@@ -2550,3 +2557,7 @@ fn elapsed_ms(started: Instant) -> u64 {
 #[cfg(test)]
 #[path = "service_tests.rs"]
 mod tests;
+
+#[cfg(test)]
+#[path = "deletion_tests.rs"]
+mod deletion_tests;

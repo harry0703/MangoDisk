@@ -76,6 +76,34 @@ describe('large files store', () => {
     });
   });
 
+  it('removes already absent rows without reporting reclaimed storage or a failure', async () => {
+    const operation = { removedPaths: [], alreadyAbsentPaths: [removed.path], failed: [], releasedBytes: 0 };
+    vi.spyOn(PermanentDeleteService, 'deleteFiles').mockResolvedValue(operation);
+    vi.spyOn(useHistoryStore(), 'load').mockResolvedValue();
+    vi.spyOn(useAppStore(), 'refreshSystemDisk').mockResolvedValue(true);
+    const warn = vi.spyOn(LoggerService, 'warn').mockImplementation(() => undefined);
+    const store = useLargeFilesStore();
+    store.result = createResult();
+    expect(await store.deleteManyPermanently([removed])).toEqual(operation);
+    expect(store.result?.entries).toEqual([failed]);
+    expect(store.result?.totalBytes).toBe(failed.bytes);
+    expect(store.result?.totalCount).toBe(1);
+    expect(warn).not.toHaveBeenCalled();
+  });
+
+  it('preserves retained scan totals when an edited file releases a different amount', async () => {
+    const operation = { removedPaths: [removed.path], failed: [], releasedBytes: 1024 };
+    vi.spyOn(PermanentDeleteService, 'deleteFiles').mockResolvedValue(operation);
+    vi.spyOn(useHistoryStore(), 'load').mockResolvedValue();
+    vi.spyOn(useAppStore(), 'refreshSystemDisk').mockResolvedValue(true);
+    const store = useLargeFilesStore();
+    store.result = createResult();
+    const result = await store.deleteManyPermanently([removed]);
+    expect(result?.releasedBytes).toBe(1024);
+    expect(store.result?.totalBytes).toBe(failed.bytes);
+    expect(store.result?.entries).toEqual([failed]);
+  });
+
   it('rejects deletion while a scan is active', async () => {
     const remove = vi.spyOn(PermanentDeleteService, 'deleteFiles');
     const store = useLargeFilesStore();

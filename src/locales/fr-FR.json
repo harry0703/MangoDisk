@@ -2131,7 +2131,7 @@
     "batchDelete": "Supprimer définitivement",
     "batchDeleteTitle": "Supprimer définitivement les gros fichiers sélectionnés ?",
     "batchDeleteDescription": "Les fichiers sélectionnés ne peuvent pas être récupérés",
-    "deleteSafetyNote": "Les fichiers modifiés ou devenus indisponibles sont automatiquement ignorés",
+    "deleteSafetyNote": "Les fichiers protégés ou inaccessibles sont ignorés. Les fichiers sélectionnés sont supprimés dans leur état actuel",
     "deleteCompleted": "Nettoyage des fichiers volumineux terminé",
     "deleteCompletedWithWarnings": "Nettoyage de fichiers volumineux terminé avec des avertissements",
     "deleteCompletedDescription": "{count} fichier supprimé, {size} libérés ; {failed} échecs | {count} fichiers supprimés, {size} libérés ; {failed} échecs"
@@ -2189,7 +2189,7 @@
     "deleteSingleDescription": "Cette action est irréversible",
     "deleteTitle": "Supprimer définitivement les copies en double sélectionnées ?",
     "deleteDescription": "Les copies sélectionnées ne peuvent pas être récupérées",
-    "deleteSafetyNote": "Les éléments protégés, modifiés ou inaccessibles sont ignorés. Vérifiez les fichiers de programme avant de les supprimer",
+    "deleteSafetyNote": "Les éléments protégés ou inaccessibles sont ignorés. Vérifiez les fichiers de programme avant de les supprimer",
     "copyCount": "{count} copie | {count} copies",
     "groupCount": "{count} groupe de doublons | {count} groupes de doublons",
     "groupSummary": "{count} copie · {size} par copie · jusqu’à {reclaimable} à libérer | {count} copies · {size} par copie · jusqu’à {reclaimable} à libérer",

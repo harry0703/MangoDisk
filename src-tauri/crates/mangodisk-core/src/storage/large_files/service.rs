@@ -3,7 +3,7 @@ use std::{path::Path, time::Instant};
 
 use crate::{
     filesystem::{
-        metadata::diagnostic_path, permanent_delete::delete_file_candidate_permanently,
+        metadata::diagnostic_path, permanent_delete::delete_selected_file_permanently,
         PermanentDeleteBatchResult,
     },
     history::{file_cleanup_record, FileCleanupHistoryCategory, HistoryService},
@@ -107,25 +107,34 @@ impl LargeFileService {
             .map(|candidate| diagnostic_path(Path::new(&candidate.path)))
             .collect::<Vec<_>>();
         let mut result = PermanentDeleteBatchResult {
+            released_bytes_is_estimate: false,
+            already_absent_paths: Vec::new(),
             removed_paths: Vec::new(),
             failed: Vec::new(),
             released_bytes: 0,
         };
         for candidate in candidates {
-            match delete_file_candidate_permanently(&candidate) {
+            match delete_selected_file_permanently(Path::new(&candidate.path)) {
                 Ok((target, usage)) => {
                     result.released_bytes =
                         result.released_bytes.saturating_add(usage.allocated_bytes);
                     result.removed_paths.push(candidate.path);
                     cache::remove_entry(&target, usage, 1, false);
                 }
+                Err(error) if error.is_not_found() => {
+                    if result.already_absent_paths.len() < MAX_DELETE_FAILURE_LOGS {
+                        log::info!("permanent_delete_candidate_skipped domain=large_files operation_id={} scan_id={} path={} stage={} native_code={:?} outcome=already_absent", operation.id(), scan_id,
+                            diagnostic_path(Path::new(&candidate.path)), error.stage(), error.native_code());
+                    }
+                    result.already_absent_paths.push(candidate.path);
+                }
                 Err(error) => {
                     if result.failed.len() < MAX_DELETE_FAILURE_LOGS {
                         log::warn!(
-                            "permanent_delete_candidate_failed domain=large_files operation_id={} scan_id={} path={} stage={} reason={} native_code={:?} partial={} remaining_restored={} outcome={} error={}",
+                            "permanent_delete_candidate_failed domain=large_files operation_id={} scan_id={} path={} stage={} reason={} native_code={:?} partial={} remaining_location=original outcome={} error={}",
                             operation.id(), scan_id, diagnostic_path(Path::new(&candidate.path)),
                             error.stage(), error.reason().map_or("unspecified", |reason| reason.as_str()),
-                            error.native_code(), error.is_partial(), error.remaining_was_restored(),
+                            error.native_code(), error.is_partial(),
                             if error.is_partial() { "partially_removed" } else { "retained" },
                             mangodisk_platform::diagnostics::text(&error.to_string())
                         );
@@ -141,7 +150,18 @@ impl LargeFileService {
             scan_id,
             &result.failed,
         );
-        synchronize_removed_paths(scan_id, &result.removed_paths)?;
+        let reconciled_paths = result
+            .removed_paths
+            .iter()
+            .chain(&result.already_absent_paths)
+            .cloned()
+            .collect::<Vec<_>>();
+        synchronize_removed_paths(scan_id, &reconciled_paths)?;
+        if !result.already_absent_paths.is_empty() {
+            if let Err(error) = cache::clear_all() {
+                log::warn!("permanent_delete_cache_invalidation_failed domain=large_files operation_id={} error={}", operation.id(), mangodisk_platform::diagnostics::text(&error));
+            }
+        }
         let history_record = file_cleanup_record(
             format!(
                 "large-file-cleanup-{}-{}",
@@ -163,13 +183,14 @@ impl LargeFileService {
             );
         }
         log::info!(
-            "permanent_delete_batch_finished operation_id={} scan_id={} requested_count={} path_sample={:?} selected_allocated_bytes={} removed_count={} failed_count={} suppressed_failure_count={} released_allocated_bytes={} elapsed_ms={}",
+            "permanent_delete_batch_finished operation_id={} scan_id={} requested_count={} path_sample={:?} selected_allocated_bytes={} removed_count={} already_absent_count={} failed_count={} suppressed_failure_count={} released_allocated_bytes={} elapsed_ms={}",
             operation.id(),
             scan_id,
             requested_count,
             path_sample,
             expected_bytes,
             result.removed_paths.len(),
+            result.already_absent_paths.len(),
             result.failed.len(),
             result.failed.len().saturating_sub(MAX_DELETE_FAILURE_LOGS),
             result.released_bytes,
@@ -600,7 +621,7 @@ mod tests {
     }
 
     #[test]
-    fn changed_large_file_is_preserved_until_a_fresh_snapshot_authorizes_delete() {
+    fn changed_large_file_can_be_deleted_without_rescanning() {
         let _operation_lock = crate::shared::operation::test_operation_lock();
         cache::clear_all().expect("the large-file cache should be clear before the service test");
         HistoryService::clear().expect("the test history should be clear before the service test");
@@ -639,45 +660,55 @@ mod tests {
             .expect("the large-file candidate should reopen")
             .write_all(&[9])
             .expect("the large-file candidate should change after the scan");
-        let stale_delete = LargeFileService::delete_files_permanently(
+        let deleted = LargeFileService::delete_files_permanently(
             initial.scan_id,
             vec![selected_path.clone()],
         )
-        .expect("a live preflight failure should remain a typed batch result");
-        assert!(stale_delete.removed_paths.is_empty());
-        assert_eq!(stale_delete.failed.len(), 1);
+        .expect("explicit selection should delete the current regular file");
+        assert_eq!(deleted.removed_paths, vec![selected_path.clone()]);
+        assert!(deleted.failed.is_empty());
+        assert!(!path.exists());
         assert!(
-            path.exists(),
-            "failed preflight must preserve the changed file"
+            LargeFileService::resolve_open_target(initial.scan_id, selected_path).is_err(),
+            "a deleted file must disappear from the authoritative result session"
         );
+        let history = HistoryService::list().expect("large-file cleanup history should load");
+        assert_eq!(history.len(), 1);
+        assert_eq!(history[0].affected_item_count, 1);
+        assert_eq!(history[0].failed_item_count, 0);
 
-        let refreshed = LargeFileService::find_with_progress(
+        HistoryService::clear().expect("the test history should be clear after the service test");
+        cache::clear_all().expect("the large-file cache should be clear after the service test");
+    }
+    #[test]
+    fn missing_large_file_is_reconciled_without_counting_released_space() {
+        let _guard = crate::shared::operation::test_operation_lock();
+        cache::clear_all().unwrap();
+        let fixture = LargeFileFixture::new();
+        let path = fixture.file();
+        fs::write(
+            &path,
+            vec![3_u8; (LARGE_FILE_CANDIDATE_FLOOR_BYTES + 1) as usize],
+        )
+        .unwrap();
+        let scan = LargeFileService::find_with_progress(
             vec![fixture.root.to_string_lossy().into_owned()],
             1,
             LargeFileScanMode::Complete,
             vec![],
             |_| {},
         )
-        .expect("the changed large-file fixture should rescan successfully");
-        let deleted = LargeFileService::delete_files_permanently(
-            refreshed.scan_id,
-            vec![selected_path.clone()],
-        )
-        .expect("a candidate matching the fresh snapshot should be deleted");
-
-        assert_eq!(deleted.removed_paths, vec![selected_path.clone()]);
-        assert!(deleted.failed.is_empty());
-        assert!(!path.exists());
-        assert!(
-            LargeFileService::resolve_open_target(refreshed.scan_id, selected_path).is_err(),
-            "a deleted file must disappear from the authoritative result session"
-        );
-        let history = HistoryService::list().expect("large-file cleanup history should load");
-        assert_eq!(history.len(), 2);
-        assert_eq!(history[0].affected_item_count, 1);
-        assert_eq!(history[1].failed_item_count, 1);
-
-        HistoryService::clear().expect("the test history should be clear after the service test");
-        cache::clear_all().expect("the large-file cache should be clear after the service test");
+        .unwrap();
+        let selected = scan.entries[0].path.clone();
+        fs::remove_file(&path).unwrap();
+        let result =
+            LargeFileService::delete_files_permanently(scan.scan_id, vec![selected.clone()])
+                .unwrap();
+        assert!(result.removed_paths.is_empty());
+        assert!(result.failed.is_empty());
+        assert_eq!(result.already_absent_paths, std::slice::from_ref(&selected));
+        assert_eq!(result.released_bytes, 0);
+        assert!(LargeFileService::resolve_open_target(scan.scan_id, selected).is_err());
+        cache::clear_all().unwrap();
     }
 }

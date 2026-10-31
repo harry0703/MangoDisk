@@ -2131,7 +2131,7 @@
     "batchDelete": "完全に削除",
     "batchDeleteTitle": "選択した大容量ファイルを完全に削除しますか？",
     "batchDeleteDescription": "選択したファイルは元に戻せません",
-    "deleteSafetyNote": "変更されたファイルまたは利用できなくなったファイルは自動的にスキップされます",
+    "deleteSafetyNote": "保護されているファイルやアクセスできないファイルはスキップします。選択したファイルは削除時の状態で処理します",
     "deleteCompleted": "大容量ファイルのクリーンアップが完了しました",
     "deleteCompletedWithWarnings": "大容量ファイルのクリーンアップが警告付きで完了しました",
     "deleteCompletedDescription": "{count} ファイルを削除し、{size} を解放しました。{failed} ファイルは削除できませんでした | {count} ファイルを削除し、{size} を解放しました。{failed} ファイルは削除できませんでした"
@@ -2189,7 +2189,7 @@
     "deleteSingleDescription": "この操作は元に戻せません",
     "deleteTitle": "選択した重複コピーを完全に削除しますか？",
     "deleteDescription": "選択したコピーは回復できません",
-    "deleteSafetyNote": "保護された項目、変更された項目、アクセスできない項目はスキップします。プログラムファイルは用途を確認してから削除してください",
+    "deleteSafetyNote": "保護されている項目やアクセスできない項目はスキップします。プログラムファイルは用途を確認してから削除してください",
     "copyCount": "{count} 個のコピー | {count} 個のコピー",
     "groupCount": "{count} 重複グループ | {count} 重複グループ",
     "groupSummary": "{count} 個 · 1 個あたり {size} · 最大 {reclaimable} を解放 | {count} 個 · 1 個あたり {size} · 最大 {reclaimable} を解放",

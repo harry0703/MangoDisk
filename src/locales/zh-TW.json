@@ -2131,7 +2131,7 @@
     "batchDelete": "永久刪除",
     "batchDeleteTitle": "永久刪除所選大型檔案？",
     "batchDeleteDescription": "所選檔案刪除後無法復原",
-    "deleteSafetyNote": "檔案發生變化或無法存取時會自動跳過",
+    "deleteSafetyNote": "受保護或無法存取的檔案會略過。所選檔案將依刪除時的狀態處理",
     "deleteCompleted": "大型檔案清理完成",
     "deleteCompletedWithWarnings": "大型檔案清理已完成，部分項目未刪除",
     "deleteCompletedDescription": "已刪除 {count} 個檔案，釋放 {size}，{failed} 個失敗"
@@ -2189,7 +2189,7 @@
     "deleteSingleDescription": "刪除後無法復原",
     "deleteTitle": "永久刪除所選重複副本？",
     "deleteDescription": "所選副本刪除後無法復原",
-    "deleteSafetyNote": "受保護、已變更或無法存取的項目會略過。程式檔案請確認用途後再刪除",
+    "deleteSafetyNote": "受保護或無法存取的項目會略過。程式檔案請確認用途後再刪除",
     "copyCount": "{count} 個副本",
     "groupCount": "{count} 組重複檔案",
     "groupSummary": "{count} 個副本 · 每個 {size} · 最多可釋放 {reclaimable}",

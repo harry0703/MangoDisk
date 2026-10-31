@@ -2131,7 +2131,7 @@
     "batchDelete": "Delete Permanently",
     "batchDeleteTitle": "Permanently delete selected large files?",
     "batchDeleteDescription": "The selected files cannot be recovered",
-    "deleteSafetyNote": "Files that changed or became unavailable are skipped automatically",
+    "deleteSafetyNote": "Protected or inaccessible files are skipped. Selected files are deleted in their current state",
     "deleteCompleted": "Large file cleanup complete",
     "deleteCompletedWithWarnings": "Large file cleanup completed with warnings",
     "deleteCompletedDescription": "Deleted {count} file and released {size}; {failed} failed | Deleted {count} files and released {size}; {failed} failed"
@@ -2189,7 +2189,7 @@
     "deleteSingleDescription": "This cannot be undone",
     "deleteTitle": "Permanently delete selected duplicate copies?",
     "deleteDescription": "The selected copies cannot be recovered",
-    "deleteSafetyNote": "Protected, changed or inaccessible items are skipped. Check program files before deleting",
+    "deleteSafetyNote": "Protected or inaccessible items are skipped. Check program files before deleting",
     "copyCount": "{count} copy | {count} copies",
     "groupCount": "{count} duplicate group | {count} duplicate groups",
     "groupSummary": "{count} copy · {size} each · up to {reclaimable} reclaimable | {count} copies · {size} each · up to {reclaimable} reclaimable",

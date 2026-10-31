@@ -547,7 +547,11 @@ async function deleteLargeFilesPermanently(entries: LargeFileEntry[]) {
     },
     result.removedPaths.length
   );
-  const options = { description, id: LARGE_FILE_DELETE_TOAST_ID };
+  const absentCount = result.alreadyAbsentPaths?.length ?? 0;
+  const absentDescription = absentCount
+    ? ` · ${t('fileDeletion.reasons.notFound')}: ${FormatService.integer(absentCount)}`
+    : '';
+  const options = { description: description + absentDescription, id: LARGE_FILE_DELETE_TOAST_ID };
   if (result.failed.length) toast.warning(t('largeFiles.deleteCompletedWithWarnings'), options);
   else toast.success(t('largeFiles.deleteCompleted'), options);
 }

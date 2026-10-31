@@ -66,7 +66,7 @@ leaves the existing result available; ordinary restarts do not replay the reques
 `AnalysisService::delete_entries_permanently` accepts at most 500 unique paths
 from one authoritative scan's direct-child entries. It validates the entire
 selection's membership before mutation, holds one filesystem mutation claim,
-and runs the existing single-item safety, staging, verification and cache
+and runs the existing single-item safety checks, direct deletion and cache
 reconciliation for each item. Protected paths, links/reparse points and scan
 exclusions remain enforced in Core regardless of cached UI hints.
 

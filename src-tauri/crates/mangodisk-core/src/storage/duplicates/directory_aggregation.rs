@@ -1,24 +1,19 @@
 use std::{
     collections::{HashMap, HashSet},
-    fs::{self, File},
+    fs,
     hash::{Hash, Hasher},
-    io::Read,
     path::{Path, PathBuf},
 };
 
-use mangodisk_platform::{current_platform, FileSpaceUsage, Platform};
+use mangodisk_platform::{current_platform, Platform};
 
 use super::{DuplicateEntryDeletePolicy, DuplicateFileEntry, DuplicateGroup, DuplicateGroupKind};
 use crate::{
-    filesystem::{
-        metadata::{diagnostic_path, modified_ms, native_path_string},
-        permanent_delete::{permanent_delete_io_error, PermanentDeleteError},
-    },
+    filesystem::metadata::{modified_ms, native_path_string},
     shared::operation::OperationGuard,
 };
 
 const MAX_DIRECTORY_AGGREGATION_DEPTH: usize = 20;
-const HASH_BUFFER_BYTES: usize = 1024 * 1024;
 
 #[derive(Debug, Default)]
 pub(super) struct DirectoryAggregationDiagnostics {
@@ -226,32 +221,6 @@ pub(super) fn aggregate_exact_directories(
     })
 }
 
-/// Recomputes a directory fingerprint from live file contents before permanent deletion.
-pub(super) fn verify_live_directory(
-    path: &Path,
-    expected_hash: &str,
-    expected_bytes: u64,
-    expected_file_count: u64,
-    operation: &OperationGuard,
-) -> Result<FileSpaceUsage, PermanentDeleteError> {
-    let fingerprint = fingerprint_live_directory(path, operation, 0)?
-        .ok_or_else(|| "the directory contains an unsupported or inaccessible item".to_string())?;
-    let actual_hash = directory_hash(&fingerprint.digest);
-    if actual_hash != expected_hash
-        || fingerprint.logical_bytes != expected_bytes
-        || fingerprint.file_count != expected_file_count
-    {
-        return Err(PermanentDeleteError::before_mutation_with_reason(
-            "the directory contents changed after scanning",
-            crate::shared::CoreErrorReason::ItemChanged,
-        ));
-    }
-    Ok(FileSpaceUsage {
-        logical_bytes: fingerprint.logical_bytes,
-        allocated_bytes: fingerprint.allocated_bytes,
-    })
-}
-
 fn known_files(
     groups: &[DuplicateGroup],
     excluded_file_hashes: &HashSet<String>,
@@ -371,118 +340,6 @@ fn fingerprint_known_directory(
         allocated_bytes,
         file_count,
     )))
-}
-
-fn fingerprint_live_directory(
-    path: &Path,
-    operation: &OperationGuard,
-    depth: usize,
-) -> Result<Option<DirectoryFingerprint>, PermanentDeleteError> {
-    if depth > MAX_DIRECTORY_AGGREGATION_DEPTH {
-        return Ok(None);
-    }
-    operation
-        .ensure_not_cancelled()
-        .map_err(|error| error.to_string())?;
-    let entries = fs::read_dir(path).map_err(|error| {
-        permanent_delete_io_error(
-            &format!(
-                "failed to read duplicate directory path={}",
-                diagnostic_path(path)
-            ),
-            error,
-        )
-    })?;
-    let mut tokens = Vec::<Vec<u8>>::new();
-    let mut logical_bytes = 0_u64;
-    let mut allocated_bytes = 0_u64;
-    let mut file_count = 0_u64;
-    for entry in entries {
-        let child = entry
-            .map_err(|error| {
-                permanent_delete_io_error(
-                    &format!(
-                        "failed to read duplicate directory entry path={}",
-                        diagnostic_path(path)
-                    ),
-                    error,
-                )
-            })?
-            .path();
-        let metadata = fs::symlink_metadata(&child).map_err(|error| {
-            permanent_delete_io_error(
-                &format!(
-                    "failed to read duplicate metadata path={}",
-                    diagnostic_path(&child)
-                ),
-                error,
-            )
-        })?;
-        if current_platform().is_link_like(&metadata) {
-            return Ok(None);
-        }
-        if metadata.is_file() {
-            let hash = hash_file(&child, operation)?;
-            let usage = current_platform().file_space_usage(&child, &metadata);
-            logical_bytes = logical_bytes.saturating_add(usage.logical_bytes);
-            allocated_bytes = allocated_bytes.saturating_add(usage.allocated_bytes);
-            file_count = file_count.saturating_add(1);
-            tokens.push(file_token(metadata.len(), hash.as_bytes()));
-        } else if metadata.is_dir() {
-            let Some(child_fingerprint) = fingerprint_live_directory(&child, operation, depth + 1)?
-            else {
-                return Ok(None);
-            };
-            logical_bytes = logical_bytes.saturating_add(child_fingerprint.logical_bytes);
-            allocated_bytes = allocated_bytes.saturating_add(child_fingerprint.allocated_bytes);
-            file_count = file_count.saturating_add(child_fingerprint.file_count);
-            tokens.push(directory_token(&child_fingerprint));
-        } else {
-            return Ok(None);
-        }
-    }
-    if file_count == 0 {
-        return Ok(None);
-    }
-    Ok(Some(fingerprint_tokens(
-        tokens,
-        logical_bytes,
-        allocated_bytes,
-        file_count,
-    )))
-}
-
-fn hash_file(path: &Path, operation: &OperationGuard) -> Result<String, PermanentDeleteError> {
-    let mut file = File::open(path).map_err(|error| {
-        permanent_delete_io_error(
-            &format!(
-                "failed to open duplicate file path={}",
-                diagnostic_path(path)
-            ),
-            error,
-        )
-    })?;
-    let mut hasher = blake3::Hasher::new();
-    let mut buffer = vec![0_u8; HASH_BUFFER_BYTES];
-    loop {
-        operation
-            .ensure_not_cancelled()
-            .map_err(|error| error.to_string())?;
-        let read = file.read(&mut buffer).map_err(|error| {
-            permanent_delete_io_error(
-                &format!(
-                    "failed to read duplicate file path={}",
-                    diagnostic_path(path)
-                ),
-                error,
-            )
-        })?;
-        if read == 0 {
-            break;
-        }
-        hasher.update(&buffer[..read]);
-    }
-    Ok(hasher.finalize().to_hex().to_string())
 }
 
 fn fingerprint_tokens(
@@ -723,108 +580,5 @@ mod tests {
             .collect::<HashSet<_>>();
         assert_eq!(paths, HashSet::from([left, right]));
         fs::remove_dir_all(root).expect("remove directory aggregation fixture");
-    }
-
-    #[test]
-    fn live_directory_verification_rejects_content_changes() {
-        let _operation_lock = test_operation_lock();
-        let root = test_root("live-verification");
-        let directory = root.join("candidate");
-        fs::create_dir_all(directory.join("nested")).expect("create candidate directory");
-        fs::write(directory.join("a.bin"), b"one").expect("write candidate file");
-        fs::write(directory.join("nested/b.bin"), b"two").expect("write nested candidate file");
-        let operation = OperationGuard::start(CoordinatedOperationKind::PermanentDelete)
-            .expect("start delete verification operation");
-        let fingerprint = fingerprint_live_directory(&directory, &operation, 0)
-            .expect("fingerprint candidate directory")
-            .expect("candidate directory is supported");
-        let expected_hash = directory_hash(&fingerprint.digest);
-
-        verify_live_directory(
-            &directory,
-            &expected_hash,
-            fingerprint.logical_bytes,
-            fingerprint.file_count,
-            &operation,
-        )
-        .expect("unchanged directory should verify");
-        fs::write(directory.join("a.bin"), b"changed").expect("mutate candidate file");
-        let error = verify_live_directory(
-            &directory,
-            &expected_hash,
-            fingerprint.logical_bytes,
-            fingerprint.file_count,
-            &operation,
-        )
-        .expect_err("changed directory must fail closed");
-
-        assert_eq!(
-            error.reason(),
-            Some(crate::shared::CoreErrorReason::ItemChanged)
-        );
-        operation.complete();
-        fs::remove_dir_all(root).expect("remove directory aggregation fixture");
-    }
-
-    #[test]
-    fn live_directory_verification_preserves_missing_directory_evidence() {
-        use crate::filesystem::{
-            PermanentDeleteFailureReason as Reason, PermanentDeleteFailureStage as Stage,
-        };
-
-        let _operation_lock = test_operation_lock();
-        let root = tempfile::tempdir().unwrap();
-        let missing = root.path().join("missing");
-        let operation = OperationGuard::start(CoordinatedOperationKind::DuplicateFiles).unwrap();
-        let failure = verify_live_directory(&missing, "", 0, 0, &operation)
-            .unwrap_err()
-            .into_failure(native_path_string(&missing))
-            .details;
-        assert_eq!(failure.reason, Reason::NotFound);
-        assert_eq!(failure.stage, Stage::Validate);
-        assert!(failure.native_code.is_some());
-        assert!(!failure.partial);
-        operation.complete();
-    }
-
-    #[cfg(unix)]
-    #[test]
-    #[ignore = "requires unprivileged permission enforcement on a disposable file"]
-    fn live_directory_verification_preserves_denied_file_evidence() {
-        use crate::filesystem::{
-            PermanentDeleteFailureReason as Reason, PermanentDeleteFailureStage as Stage,
-        };
-        use std::os::unix::fs::PermissionsExt;
-
-        assert_ne!(unsafe { libc::geteuid() }, 0, "run as an ordinary user");
-        let _operation_lock = test_operation_lock();
-        let root = tempfile::tempdir().expect("create disposable directory");
-        let path = root.path().join("denied.bin");
-        fs::write(&path, b"keep duplicate content").unwrap();
-        let operation = OperationGuard::start(CoordinatedOperationKind::DuplicateFiles).unwrap();
-        let fingerprint = fingerprint_live_directory(root.path(), &operation, 0)
-            .unwrap()
-            .unwrap();
-        fs::set_permissions(&path, fs::Permissions::from_mode(0o000)).unwrap();
-        let result = verify_live_directory(
-            root.path(),
-            &directory_hash(&fingerprint.digest),
-            fingerprint.logical_bytes,
-            fingerprint.file_count,
-            &operation,
-        );
-        fs::set_permissions(&path, fs::Permissions::from_mode(0o600)).unwrap();
-        let failure = result
-            .unwrap_err()
-            .into_failure(native_path_string(root.path()))
-            .details;
-        println!("denied_directory_verification={failure:?}");
-        assert_eq!(fs::read(&path).unwrap(), b"keep duplicate content");
-        assert_eq!(failure.reason, Reason::AccessDenied);
-        assert_eq!(failure.native_code, Some(libc::EACCES));
-        assert!(failure.message.contains("denied.bin"));
-        assert_eq!(failure.stage, Stage::Validate);
-        assert!(!failure.partial);
-        operation.complete();
     }
 }

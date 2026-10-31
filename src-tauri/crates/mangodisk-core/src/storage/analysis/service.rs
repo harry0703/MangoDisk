@@ -284,13 +284,12 @@ impl AnalysisService {
                     }
                 }
                 log::warn!(
-                    "analysis_permanent_delete_failed operation_id={} scan_id={} partial={} released_logical_bytes={:?} removed_files={:?} remaining_restored={} elapsed_ms={} error={}",
+                    "analysis_permanent_delete_failed operation_id={} scan_id={} partial={} released_logical_bytes={:?} removed_files={:?} remaining_location=original elapsed_ms={} error={}",
                     operation.id(),
                     scan_id,
                     error.is_partial(),
                     error.observed_or_estimated_bytes(),
                     error.observed_or_estimated_files(),
-                    error.remaining_was_restored(),
                     started.elapsed().as_millis(),
                     mangodisk_platform::diagnostics::text(&error)
                 );
@@ -300,12 +299,7 @@ impl AnalysisService {
                 }
                 if error.is_partial() {
                     core_error = core_error.with_possible_side_effects();
-                    if !error.remaining_was_restored() {
-                        core_error = core_error
-                            .with_reason(crate::shared::CoreErrorReason::DeleteRecoveryFailed);
-                    } else if error.reason()
-                        != Some(crate::shared::CoreErrorReason::DirectoryNotEmpty)
-                    {
+                    if error.reason() != Some(crate::shared::CoreErrorReason::DirectoryNotEmpty) {
                         core_error = core_error
                             .with_reason(crate::shared::CoreErrorReason::DeleteIncomplete);
                     }
@@ -314,7 +308,6 @@ impl AnalysisService {
             }
         };
         let cache_started = Instant::now();
-        // Staging frees the original name before recursive deletion completes.
         // A concurrently recreated entry belongs to another operation and must
         // remain visible; uncertainty also requires a fresh authoritative scan.
         outcome.result.requires_rescan = original_path_requires_rescan(&outcome.target);

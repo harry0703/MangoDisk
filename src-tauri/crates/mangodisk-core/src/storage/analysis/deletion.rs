@@ -38,7 +38,7 @@ pub(crate) struct AnalysisDeleteOutcome {
 
 /// Validates and permanently deletes one analysis entry without updating a domain cache.
 /// The service owns session and index synchronization after this domain preflight.
-/// Filesystem primitives retain physical identity, staging and recovery ownership.
+/// Filesystem primitives own direct removal and partial-progress reporting.
 pub(crate) fn delete_candidate(
     candidate: AnalysisEntryCandidate,
 ) -> Result<AnalysisDeleteOutcome, PermanentDeleteError> {
@@ -56,9 +56,6 @@ pub(crate) fn delete_candidate(
         .canonicalize_no_links(&requested_root)
         .map_err(|error| format!("failed to access the current analysis directory: {error}"))?;
     let requested_target = PathBuf::from(&candidate.path);
-    current_platform()
-        .validate_path_no_links(&requested_target)
-        .map_err(|error| error.to_string())?;
     let prepared = prepare_path_for_permanent_delete(&requested_target)?;
     let requested_metadata = prepared.metadata();
     // Canonicalization follows symbolic links. Reject links and reparse
@@ -96,9 +93,8 @@ pub(crate) fn delete_candidate(
     // The explicit confirmation authorizes deletion of the current regular
     // file or directory at this direct-child path. Scan metadata is retained
     // only for result accounting: rejecting normal changes between analysis
-    // and confirmation made a user-requested delete appear broken. Physical
-    // identity remains pinned from this preparation through the staging rename,
-    // so a concurrent replacement during execution still fails closed.
+    // and confirmation made a user-requested delete appear broken. A lightweight
+    // identity check precedes direct removal; later concurrent mutation is accepted.
     if current_platform()
         .should_skip(
             &target,
@@ -115,14 +111,6 @@ pub(crate) fn delete_candidate(
         );
     }
 
-    let verified_target = current_platform()
-        .canonicalize_no_links(&requested_target)
-        .map_err(|error| error.to_string())?;
-    if verified_target != target {
-        return Err("the item changed during safety validation"
-            .to_string()
-            .into());
-    }
     let mut names = mangodisk_platform::NameExclusions::compile(&candidate.exclusions.names)?;
     names.protect_folder_names(current_platform().protected_deletion_folder_names());
     let overlaps_path = candidate.exclusions.paths.iter().any(|excluded| {

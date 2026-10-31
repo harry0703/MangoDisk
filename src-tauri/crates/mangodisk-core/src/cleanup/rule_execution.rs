@@ -16,7 +16,7 @@ use crate::{
     applications::catalog::ProcessSnapshot,
     cleanup::{
         exclusions::CleanupExclusions,
-        measurement::{measure_path_filtered, measure_path_filtered_with_pruning, MeasureResult},
+        measurement::{measure_path_filtered_with_pruning, MeasureResult},
         rules::{
             matches_rule,
             root_validation::{
@@ -28,7 +28,7 @@ use crate::{
         CleanupActionKind, CleanupActionReason, CleanupActionResult, CleanupActionStatus,
     },
     filesystem::{
-        metadata::{diagnostic_path, is_link_like, modified_ms},
+        metadata::{diagnostic_path, is_link_like},
         permanent_delete::{
             delete_directory_contents_permanently_with_cancellation,
             delete_directory_tree_permanently_with_cancellation,
@@ -354,7 +354,7 @@ pub(super) fn execute_rule_with_exclusions(
 
 /// Tries the optimized complete-root deletion and reports whether this call
 /// fully handled the root. `false` is a safe, pre-mutation downgrade request;
-/// any failure after staging starts is recorded here and never retried through
+/// any failure after direct deletion starts is recorded here and never retried through
 /// a second deletion strategy.
 fn try_delete_whole_root(
     rule: &CompiledRule,
@@ -384,9 +384,8 @@ fn try_delete_whole_root(
         return false;
     }
 
-    // Capture the physical root identity once. The permanent deletion boundary
-    // checks the same identity after its atomic rename, so a concurrent path
-    // replacement cannot redirect the recursive removal.
+    // Capture the root identity for the lightweight final deletion check.
+    // The traversal applies cancellation and link policy at the original path.
     let prepared = match prepare_path_for_permanent_delete(root) {
         Ok(prepared) if prepared.metadata().is_dir() => prepared,
         Ok(_) => {
@@ -426,7 +425,7 @@ fn try_delete_whole_root(
             );
         }
         Err(error) => {
-            record_bulk_delete_error(root, &error, is_cancelled, stats);
+            record_bulk_delete_error(root, &error, stats);
             report_item(root, stats);
             log::warn!(
                 "cleanup_whole_root_delete_failed rule_id={} released_bytes={} affected_item_count={} error={}",
@@ -810,27 +809,6 @@ fn delete_entry(
         // attempt. This preserves truthful expected-byte reporting for partial
         // failures without requiring a separate measurement traversal.
         stats.matched_bytes = stats.matched_bytes.saturating_add(metadata.len());
-        if !path
-            .parent()
-            .is_some_and(|parent| revalidate_cleanup_directory(parent, canonical_parent))
-        {
-            stats.failed_item_count += 1;
-            return false;
-        }
-        let Ok(verified) = fs::symlink_metadata(path)
-            .inspect_err(|error| record_cleanup_failure(path, "inspect_entry", error, stats))
-        else {
-            stats.failed_item_count += 1;
-            return false;
-        };
-        if is_link_like(&verified)
-            || !verified.is_file()
-            || verified.len() != metadata.len()
-            || modified_ms(&verified) != modified_ms(metadata)
-        {
-            stats.failed_item_count += 1;
-            return false;
-        }
         let released_bytes = metadata.len();
         let removed = match delete_path_permanently(prepared, released_bytes, 1) {
             Ok(()) => {
@@ -875,22 +853,8 @@ fn delete_entry(
                 }
                 return !path.exists();
             }
-            Err(error) if !error.is_partial() && !(traversal.is_cancelled)() => {
-                log::info!(
-                    "cleanup_complete_directory_fallback path={} error={}",
-                    diagnostic_path(path),
-                    mangodisk_platform::diagnostics::text(&error)
-                );
-                let Ok(prepared) = prepare_path_for_permanent_delete(path).inspect_err(|error| {
-                    record_cleanup_failure(path, "prepare_delete", error, stats)
-                }) else {
-                    stats.failed_item_count = stats.failed_item_count.saturating_add(1);
-                    return false;
-                };
-                prepared
-            }
             Err(error) => {
-                record_bulk_delete_error(path, &error, traversal.is_cancelled, stats);
+                record_bulk_delete_error(path, &error, stats);
                 (traversal.report_item)(path, stats);
                 return false;
             }
@@ -980,31 +944,9 @@ fn delete_entry(
     should_remove && all_removed
 }
 
-fn record_bulk_delete_error(
-    restored_path: &Path,
-    error: &PermanentDeleteError,
-    is_cancelled: &(dyn Fn() -> bool + Sync),
-    stats: &mut DeleteStats,
-) {
-    record_cleanup_failure(restored_path, "delete_directory", error, stats);
-    // Cancellation must remain responsive; only failure paths perform the
-    // additional traversal needed to account for a restored remainder.
-    let remaining = if error.remaining_was_restored() && !is_cancelled() {
-        measure_path_filtered(restored_path, Some(&MatcherSpec::All), &|_, _| true)
-    } else {
-        MeasureResult::default()
-    };
-    if remaining.skipped_count > 0 {
-        log::warn!(
-            "cleanup_partial_remainder_measurement_incomplete path={} skipped_count={}",
-            diagnostic_path(restored_path),
-            remaining.skipped_count
-        );
-    }
-    stats.matched_bytes = stats
-        .matched_bytes
-        .saturating_add(error.released_bytes())
-        .saturating_add(remaining.bytes);
+fn record_bulk_delete_error(path: &Path, error: &PermanentDeleteError, stats: &mut DeleteStats) {
+    record_cleanup_failure(path, "delete_directory", error, stats);
+    stats.matched_bytes = stats.matched_bytes.saturating_add(error.released_bytes());
     stats.deleted_bytes = stats.deleted_bytes.saturating_add(error.released_bytes());
     stats.affected_item_count = stats
         .affected_item_count
@@ -1043,6 +985,14 @@ fn record_unreachable_entry(
     error: &std::io::Error,
     stats: &mut DeleteStats,
 ) {
+    if error.kind() == std::io::ErrorKind::NotFound {
+        log::debug!(
+            "cleanup_entry_skipped path={} stage={stage} native_code={:?} outcome=already_absent",
+            diagnostic_path(path),
+            error.raw_os_error()
+        );
+        return;
+    }
     record_cleanup_failure(path, stage, error, stats);
     if error.kind() != std::io::ErrorKind::PermissionDenied {
         stats.failed_item_count += 1;
@@ -1105,7 +1055,7 @@ mod bulk_cleanup_tests {
     use crate::filesystem::permanent_delete::physical_path_identity_snapshot;
 
     #[test]
-    fn permission_denied_entries_log_without_counting_as_failures() {
+    fn inaccessible_and_disappeared_entries_do_not_count_as_deletion_failures() {
         let mut stats = DeleteStats::default();
         let permission_error = std::io::Error::from(std::io::ErrorKind::PermissionDenied);
         let io_error = std::io::Error::from(std::io::ErrorKind::NotFound);
@@ -1125,8 +1075,8 @@ mod bulk_cleanup_tests {
             &io_error,
             &mut stats,
         );
-        assert_eq!(stats.failed_item_count, 1);
-        assert_eq!(stats.logged_failure_count, 2);
+        assert_eq!(stats.failed_item_count, 0);
+        assert_eq!(stats.logged_failure_count, 1);
     }
 
     #[test]
@@ -1231,7 +1181,7 @@ mod bulk_cleanup_tests {
     }
 
     #[test]
-    fn restored_partial_cleanup_counts_deleted_and_remaining_bytes() {
+    fn partial_cleanup_counts_observed_deletions_without_rescanning() {
         let sandbox = TestDirectory::new("bulk-partial-accounting-test");
         let target = sandbox.0.join("cache");
         fs::create_dir_all(&target).expect("create the partial cleanup directory");
@@ -1246,16 +1196,15 @@ mod bulk_cleanup_tests {
         let error = delete_directory_contents_permanently_with_cancellation(prepared, &|| {
             checks.fetch_add(1, Ordering::Relaxed) >= 256
         })
-        .expect_err("cancellation must stop the staged contents cleanup");
+        .expect_err("cancellation must stop the direct contents cleanup");
         assert!(error.is_partial());
-        assert!(error.remaining_was_restored());
 
         let mut stats = DeleteStats::default();
-        record_bulk_delete_error(&target, &error, &|| false, &mut stats);
+        record_bulk_delete_error(&target, &error, &mut stats);
 
-        assert_eq!(stats.matched_bytes, file_count * 5);
+        assert_eq!(stats.matched_bytes, stats.deleted_bytes);
         assert!(stats.deleted_bytes > 0);
-        assert!(stats.deleted_bytes < stats.matched_bytes);
+        assert!(stats.deleted_bytes < file_count * 5);
         assert_eq!(stats.failed_item_count, 1);
     }
 

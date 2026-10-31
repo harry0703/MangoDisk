@@ -2131,7 +2131,7 @@
     "batchDelete": "Excluir Permanentemente",
     "batchDeleteTitle": "Excluir permanentemente os arquivos grandes selecionados?",
     "batchDeleteDescription": "Os arquivos selecionados não podem ser recuperados",
-    "deleteSafetyNote": "Arquivos que foram alterados ou ficaram indisponíveis são ignorados automaticamente",
+    "deleteSafetyNote": "Arquivos protegidos ou inacessíveis são ignorados. Os arquivos selecionados são excluídos no estado atual",
     "deleteCompleted": "Limpeza de arquivos grandes concluída",
     "deleteCompletedWithWarnings": "Limpeza de arquivos grandes concluída com avisos",
     "deleteCompletedDescription": "{count} arquivo excluído e {size} liberados; {failed} com falha | {count} arquivos excluídos e {size} liberados; {failed} com falha"
@@ -2189,7 +2189,7 @@
     "deleteSingleDescription": "Isso não pode ser desfeito",
     "deleteTitle": "Excluir permanentemente as cópias duplicadas selecionadas?",
     "deleteDescription": "As cópias selecionadas não poderão ser recuperadas",
-    "deleteSafetyNote": "Itens protegidos, alterados ou inacessíveis são ignorados. Confira os arquivos de programa antes de excluir",
+    "deleteSafetyNote": "Itens protegidos ou inacessíveis são ignorados. Confira os arquivos de programas antes de excluí-los",
     "copyCount": "{count} cópia | {count} cópias",
     "groupCount": "{count} grupo duplicado | {count} grupos duplicados",
     "groupSummary": "{count} cópia · {size} cada · até {reclaimable} recuperáveis | {count} cópias · {size} cada · até {reclaimable} recuperáveis",

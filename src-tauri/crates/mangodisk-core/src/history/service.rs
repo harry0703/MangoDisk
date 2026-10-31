@@ -498,9 +498,15 @@ pub(crate) fn file_cleanup_record(
         dry_run: false,
         selected_item_count,
         affected_item_count: result.removed_paths.len() as u64,
-        expected_bytes,
-        released_bytes: Some(result.released_bytes),
-        released_bytes_is_estimate: false,
+        // Existing estimate-only records display this field as projected release.
+        // Failed and already absent selections must not inflate that estimate.
+        expected_bytes: if result.released_bytes_is_estimate {
+            result.released_bytes
+        } else {
+            expected_bytes
+        },
+        released_bytes: (!result.released_bytes_is_estimate).then_some(result.released_bytes),
+        released_bytes_is_estimate: result.released_bytes_is_estimate,
         failed_item_count: result.failed.len() as u64,
         details,
     }
@@ -753,6 +759,8 @@ mod tests {
     #[test]
     fn file_cleanup_record_uses_the_requested_product_category() {
         let result = crate::PermanentDeleteBatchResult {
+            released_bytes_is_estimate: false,
+            already_absent_paths: Vec::new(),
             removed_paths: vec!["/fixture/removed.bin".to_string()],
             failed: vec![crate::PermanentDeleteFailure {
                 path: "/fixture/failed.bin".to_string(),
@@ -807,6 +815,8 @@ mod tests {
             })
             .collect::<Vec<_>>();
         let result = crate::PermanentDeleteBatchResult {
+            released_bytes_is_estimate: false,
+            already_absent_paths: Vec::new(),
             removed_paths: vec![],
             failed,
             released_bytes: 0,
@@ -847,6 +857,8 @@ mod tests {
             .expect("the fixture must contain a failed path")
             .clone();
         let result = crate::PermanentDeleteBatchResult {
+            released_bytes_is_estimate: false,
+            already_absent_paths: Vec::new(),
             removed_paths: selected_paths[..selected_paths.len() - 1].to_vec(),
             failed: vec![crate::PermanentDeleteFailure {
                 path: failed_path.clone(),
@@ -925,5 +937,30 @@ mod tests {
         }"#;
 
         assert!(serde_json::from_str::<OperationRecord>(json).is_err());
+    }
+    #[test]
+    fn estimated_directory_cleanup_does_not_claim_measured_released_bytes() {
+        let result = crate::PermanentDeleteBatchResult {
+            removed_paths: vec!["/fixture/directory".into()],
+            already_absent_paths: vec!["/fixture/missing".into()],
+            failed: vec![],
+            released_bytes: 4096,
+            released_bytes_is_estimate: true,
+        };
+        let record = file_cleanup_record(
+            "directory-estimate".into(),
+            FileCleanupHistoryCategory::DuplicateFiles,
+            1,
+            2,
+            vec!["/fixture/directory".into(), "/fixture/missing".into()],
+            12288,
+            &result,
+        );
+        assert!(record.released_bytes_is_estimate);
+        assert_eq!(record.released_bytes, None);
+        assert_eq!(record.expected_bytes, 4096);
+        assert_eq!(record.affected_item_count, 1);
+        assert_eq!(record.failed_item_count, 0);
+        validate_operation_record(&record).unwrap();
     }
 }

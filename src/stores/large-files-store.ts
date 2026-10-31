@@ -173,8 +173,8 @@ export const useLargeFilesStore = defineStore('large-files', {
           entries.map(entry => entry.path)
         );
         if (sourceResult && this.result === sourceResult) {
-          const removedPaths = new Set(result.removedPaths);
-          this.result = LargeFileResultUtils.removePaths(sourceResult, removedPaths, result.releasedBytes);
+          const removedPaths = new Set([...result.removedPaths, ...(result.alreadyAbsentPaths ?? [])]);
+          this.result = LargeFileResultUtils.removePaths(sourceResult, removedPaths);
         }
         await useHistoryStore().load({ reportError: false });
         await appStore.refreshSystemDisk();

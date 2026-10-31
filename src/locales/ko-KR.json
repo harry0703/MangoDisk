@@ -2131,7 +2131,7 @@
     "batchDelete": "영구 삭제",
     "batchDeleteTitle": "선택한 대용량 파일을 영구 삭제하시겠습니까?",
     "batchDeleteDescription": "선택한 파일은 복구할 수 없습니다",
-    "deleteSafetyNote": "변경되었거나 사용할 수 없게 된 파일은 자동으로 건너뜁니다",
+    "deleteSafetyNote": "보호되거나 접근할 수 없는 파일은 건너뜁니다. 선택한 파일은 삭제 시점의 상태로 처리됩니다",
     "deleteCompleted": "대용량 파일 정리 완료",
     "deleteCompletedWithWarnings": "경고와 함께 대용량 파일 정리 완료",
     "deleteCompletedDescription": "파일 {count}개를 삭제하고 {size}를 확보했습니다. {failed}개 실패"
@@ -2189,7 +2189,7 @@
     "deleteSingleDescription": "이 작업은 되돌릴 수 없습니다",
     "deleteTitle": "선택한 중복 복사본을 영구 삭제하시겠습니까?",
     "deleteDescription": "선택한 복사본은 복구할 수 없습니다",
-    "deleteSafetyNote": "보호되거나 변경되었거나 접근할 수 없는 항목은 건너뜁니다. 프로그램 파일은 용도를 확인한 후 삭제하세요",
+    "deleteSafetyNote": "보호되거나 접근할 수 없는 항목은 건너뜁니다. 프로그램 파일은 용도를 확인한 후 삭제하세요",
     "copyCount": "복사본 {count}개",
     "groupCount": "중복 그룹 {count}개",
     "groupSummary": "복사본 {count}개 · 각 {size} · 최대 {reclaimable} 회수 가능",
