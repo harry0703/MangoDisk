@@ -148,6 +148,16 @@ export const useAppStore = defineStore('app', {
         diagnostic: normalizeError(error),
       });
     },
+    setSidebarExpanded(expanded: boolean) {
+      this.settings = { ...this.settings, sidebarExpanded: expanded };
+      void PreferenceStorageService.saveSidebarExpanded(expanded, this.settings).catch(error => {
+        LoggerService.warn(LOG_DOMAINS.settings, LOG_EVENTS.savedSettingsSaveFailed, {
+          key: 'sidebarExpanded',
+          error,
+        });
+        this.reportError(error);
+      });
+    },
     saveSettings(settings: AppSettings) {
       this.settings = AppSettingsUtils.parse(settings, ByteSizeService.currentUnitBase());
       void PreferenceStorageService.saveSettings(this.settings).catch(error => {

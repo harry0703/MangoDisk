@@ -86,6 +86,19 @@ export class PreferenceStorageService {
     return this.write(SETTINGS_KEYS.settings, settings);
   }
 
+  static saveSidebarExpanded(expanded: boolean, fallbackSettings: AppSettings): Promise<void> {
+    return this.enqueueMutation(async store => {
+      const saved = await store.get<unknown>(SETTINGS_KEYS.settings);
+      if (saved != null && (typeof saved !== 'object' || Array.isArray(saved))) {
+        throw new Error('Invalid app settings document');
+      }
+      // Startup can fall back to defaults after a transient read failure. Patch
+      // the stored document so a navigation toggle cannot replace other choices.
+      await store.set(SETTINGS_KEYS.settings, { ...(saved ?? fallbackSettings), sidebarExpanded: expanded });
+      await store.save();
+    });
+  }
+
   static clearSettings(): Promise<void> {
     return this.remove(SETTINGS_KEYS.settings);
   }

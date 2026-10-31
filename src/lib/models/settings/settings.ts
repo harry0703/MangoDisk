@@ -124,6 +124,7 @@ export function isColorThemeId(value: unknown): value is ColorThemeId {
 
 export interface AppSettings {
   hideCleanupReadFailureAlerts: boolean;
+  sidebarExpanded: boolean | null;
   language: LanguageId;
   theme: ThemeId;
   colorTheme: ColorThemeId;

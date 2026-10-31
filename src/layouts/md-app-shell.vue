@@ -155,7 +155,7 @@ const systemSettingsStore = useSystemSettingsStore();
 // WebKit can leave range-based media-query utilities in their collapsed state
 // after a native window is narrowed and widened again. The explicit state also
 // keeps a user's toggle separate from the responsive window-width decision.
-const sidebarLayout = ref(createSidebarLayoutState(window.innerWidth));
+const sidebarLayout = ref(createSidebarLayoutState(window.innerWidth, store.settings.sidebarExpanded));
 const sidebarExpanded = computed(() => sidebarLayout.value.expanded);
 const UPDATE_CHECK_ERROR_TOAST_ID = 'app-update-check-error';
 const LARGE_FILE_DELETE_TOAST_ID = 'large-file-delete-result';
@@ -349,6 +349,7 @@ function syncSidebarExpansion() {
 
 function toggleSidebar() {
   sidebarLayout.value = toggleSidebarLayout(sidebarLayout.value);
+  store.setSidebarExpanded(sidebarLayout.value.expanded);
 }
 
 onMounted(() => {

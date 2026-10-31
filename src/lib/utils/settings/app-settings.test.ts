@@ -12,6 +12,7 @@ describe('AppSettingsUtils', () => {
     expect(settings.language).toBe(LANGUAGE_IDS.enUS);
     expect(settings.largeFileMinimumBytes).toBe(100 * 1024 * 1024);
     expect(settings.duplicateFileMinimumBytes).toBe(200 * 1024);
+    expect(settings.sidebarExpanded).toBeNull();
   });
 
   it('uses decimal preset bytes for macOS settings', () => {
@@ -76,6 +77,26 @@ describe('AppSettingsUtils', () => {
     expect(() => AppSettingsUtils.parse({})).toThrow('Invalid app settings document');
   });
 
+  it('retains responsive layout when upgrading settings without a sidebar choice', () => {
+    const { sidebarExpanded, ...released } = AppSettingsUtils.defaults(LANGUAGE_IDS.zhCN);
+
+    expect(sidebarExpanded).toBeNull();
+    expect(AppSettingsUtils.parse(released)).toEqual({ ...released, sidebarExpanded: null });
+  });
+
+  it.each([true, false, null])('round-trips the sidebar preference %s', sidebarExpanded => {
+    const saved = { ...AppSettingsUtils.defaults(LANGUAGE_IDS.zhTW), sidebarExpanded };
+    expect(AppSettingsUtils.parse(JSON.parse(JSON.stringify(saved)))).toEqual(saved);
+  });
+
+  it.each([undefined, 0, 'false', {}, []])(
+    'falls back from an invalid sidebar choice %j without losing preferences',
+    sidebarExpanded => {
+      const saved = { ...AppSettingsUtils.defaults(LANGUAGE_IDS.zhTW), theme: THEME_IDS.dark, sidebarExpanded };
+      expect(AppSettingsUtils.parse(saved)).toEqual({ ...saved, sidebarExpanded: null });
+    }
+  );
+
   it('shows read-failure alerts by default and accepts the hide choice', () => {
     const settings = AppSettingsUtils.defaults(LANGUAGE_IDS.zhCN);
     expect(settings.hideCleanupReadFailureAlerts).toBe(false);
@@ -102,6 +123,7 @@ describe('AppSettingsUtils', () => {
       expect(AppSettingsUtils.parse(legacy, unitBase)).toEqual({
         ...legacy,
         hideCleanupReadFailureAlerts: false,
+        sidebarExpanded: null,
         colorTheme: COLOR_THEME_IDS.mango,
         largeFileMinimumBytes: largeBytes,
         duplicateFileMinimumBytes: duplicateBytes,

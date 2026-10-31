@@ -19,6 +19,7 @@ export function defaults(
 ): AppSettings {
   return {
     hideCleanupReadFailureAlerts: false,
+    sidebarExpanded: null,
     language,
     theme: THEME_IDS.system,
     colorTheme: COLOR_THEME_IDS.mango,
@@ -35,7 +36,7 @@ export function parse(value: unknown, unitBase: ByteUnitBase = BYTE_UNIT_BASES.b
     'duplicateFileMinimumBytes',
     'duplicateKeeperRule',
   ] as const;
-  const optionalKeys = ['hideCleanupReadFailureAlerts', 'colorTheme'] as const;
+  const optionalKeys = ['hideCleanupReadFailureAlerts', 'colorTheme', 'sidebarExpanded'] as const;
   const savedOptionalKeys = optionalKeys.filter(key => typeof value === 'object' && value !== null && key in value);
   if (!hasExactKeys(value, [...legacyKeys, ...savedOptionalKeys])) {
     throw new Error('Invalid app settings document');
@@ -47,6 +48,9 @@ export function parse(value: unknown, unitBase: ByteUnitBase = BYTE_UNIT_BASES.b
     'hideCleanupReadFailureAlerts' in settings ? settings.hideCleanupReadFailureAlerts : false;
   // An unavailable palette must not discard valid language or scan preferences.
   const colorTheme = isColorThemeId(settings.colorTheme) ? settings.colorTheme : COLOR_THEME_IDS.mango;
+  // Missing or invalid shell preferences retain responsive layout without
+  // discarding unrelated settings from older releases.
+  const sidebarExpanded = typeof settings.sidebarExpanded === 'boolean' ? settings.sidebarExpanded : null;
   const largeFileMinimumBytes = normalizePresetBytes(
     settings.largeFileMinimumBytes,
     LARGE_FILE_MINIMUM_PRESETS,
@@ -69,6 +73,7 @@ export function parse(value: unknown, unitBase: ByteUnitBase = BYTE_UNIT_BASES.b
   }
   return {
     hideCleanupReadFailureAlerts,
+    sidebarExpanded,
     colorTheme,
     language: settings.language,
     theme: settings.theme,

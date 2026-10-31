@@ -25,23 +25,34 @@ describe('application shell layout', () => {
     expect(resizeSidebarLayout(collapsed, APP_SHELL_EXPANDED_MIN_WIDTH_PX + 200)).toEqual(collapsed);
   });
 
-  it('collapses on a narrow viewport and restores the last explicit preference when widened', () => {
+  it('adapts to window width without creating an explicit preference', () => {
     const expanded = createSidebarLayoutState(APP_SHELL_EXPANDED_MIN_WIDTH_PX);
     const narrow = resizeSidebarLayout(expanded, APP_SHELL_EXPANDED_MIN_WIDTH_PX - 1);
-    const manuallyCollapsed = toggleSidebarLayout(expanded);
-    const narrowAfterManualCollapse = resizeSidebarLayout(manuallyCollapsed, APP_SHELL_EXPANDED_MIN_WIDTH_PX - 1);
 
-    expect(narrow).toMatchObject({ expanded: false, preferredExpanded: true, wideViewport: false });
+    expect(narrow).toMatchObject({ expanded: false, preferredExpanded: null, wideViewport: false });
     expect(resizeSidebarLayout(narrow, APP_SHELL_EXPANDED_MIN_WIDTH_PX)).toMatchObject({
       expanded: true,
-      preferredExpanded: true,
+      preferredExpanded: null,
       wideViewport: true,
     });
-    expect(resizeSidebarLayout(narrowAfterManualCollapse, APP_SHELL_EXPANDED_MIN_WIDTH_PX)).toMatchObject({
-      expanded: false,
-      preferredExpanded: false,
-      wideViewport: true,
-    });
+  });
+
+  it.each([true, false])('restores the saved sidebar choice %s at every window width', preferredExpanded => {
+    for (const width of [APP_SHELL_EXPANDED_MIN_WIDTH_PX - 1, APP_SHELL_EXPANDED_MIN_WIDTH_PX]) {
+      expect(createSidebarLayoutState(width, preferredExpanded)).toMatchObject({
+        expanded: preferredExpanded,
+        preferredExpanded,
+      });
+    }
+  });
+
+  it.each([true, false])('keeps the explicit choice %s when crossing the breakpoint', preferredExpanded => {
+    let layout = createSidebarLayoutState(APP_SHELL_EXPANDED_MIN_WIDTH_PX, !preferredExpanded);
+    layout = toggleSidebarLayout(layout);
+    for (const width of [APP_SHELL_EXPANDED_MIN_WIDTH_PX - 1, APP_SHELL_EXPANDED_MIN_WIDTH_PX]) {
+      layout = resizeSidebarLayout(layout, width);
+      expect(layout).toMatchObject({ expanded: preferredExpanded, preferredExpanded });
+    }
   });
 
   it('allows an explicit expansion in a narrow window', () => {

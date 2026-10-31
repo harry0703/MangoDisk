@@ -10,6 +10,7 @@ import { LanguageService } from '@/lib/services/settings/language-service';
 import { ThemeService } from '@/lib/services/settings/theme-service';
 import { ByteSizeService } from '@/lib/services/settings/byte-size-service';
 import { COLOR_THEME_IDS, LANGUAGE_IDS, THEME_IDS } from '@/lib/models/settings/settings';
+import type { AppSettings } from '@/lib/models/settings/settings';
 import { DUPLICATE_KEEPER_RULE_IDS } from '@/lib/models/storage/duplicate-file';
 import { BYTE_UNIT_BASES } from '@/lib/utils/presentation/format';
 import * as AppSettingsUtils from '@/lib/utils/settings/app-settings';
@@ -46,6 +47,7 @@ describe('app store settings upgrade', () => {
       expect(store.settings).toEqual({
         ...legacy,
         hideCleanupReadFailureAlerts: false,
+        sidebarExpanded: null,
         colorTheme: COLOR_THEME_IDS.mango,
         largeFileMinimumBytes: 500 * unitBase ** 2,
         duplicateFileMinimumBytes: 10 * unitBase ** 2,
@@ -74,6 +76,26 @@ describe('app store settings upgrade', () => {
     expect(save).toHaveBeenCalledWith(settings);
     expect(ThemeService.apply).toHaveBeenCalledWith(THEME_IDS.dark);
     expect(ThemeService.applyColorTheme).toHaveBeenCalledWith(COLOR_THEME_IDS.warmGray);
+  });
+
+  it.each([true, false])('restores sidebar choice %s after restarting the app store', async sidebarExpanded => {
+    vi.spyOn(ByteSizeService, 'currentUnitBase').mockReturnValue(BYTE_UNIT_BASES.binary);
+    let persisted: unknown = null;
+    vi.spyOn(PreferenceStorageService, 'saveSidebarExpanded').mockImplementation(async (expanded, settings) => {
+      persisted = JSON.parse(JSON.stringify(settings));
+      expect(settings.sidebarExpanded).toBe(expanded);
+    });
+    vi.spyOn(PreferenceStorageService, 'loadSettings').mockImplementation(async () => persisted);
+    const store = useAppStore();
+    const settings = { ...store.settings, theme: THEME_IDS.dark, sidebarExpanded };
+
+    store.settings = { ...store.settings, theme: THEME_IDS.dark };
+    store.setSidebarExpanded(sidebarExpanded);
+    setActivePinia(createPinia());
+    const restarted = useAppStore();
+    await restarted.loadSettings();
+
+    expect(restarted.settings).toEqual(settings);
   });
 
   it('preserves a saved alert choice in the current format', async () => {
@@ -151,6 +173,32 @@ describe('app store settings upgrade', () => {
     expect(LoggerService.warn).toHaveBeenCalledWith(LOG_DOMAINS.settings, LOG_EVENTS.savedSettingsLoadFailed, {
       error,
     });
+  });
+
+  it('preserves unreadable settings when the user only changes the sidebar', async () => {
+    vi.spyOn(ByteSizeService, 'currentUnitBase').mockReturnValue(BYTE_UNIT_BASES.binary);
+    vi.spyOn(LanguageService, 'detectSystemLanguage').mockReturnValue(LANGUAGE_IDS.enUS);
+    const saved = {
+      ...AppSettingsUtils.defaults(LANGUAGE_IDS.jaJP),
+      theme: THEME_IDS.dark,
+      colorTheme: COLOR_THEME_IDS.warmGray,
+    };
+    let persisted: AppSettings = saved;
+    vi.spyOn(PreferenceStorageService, 'loadSettings').mockRejectedValue(new Error('temporary read failure'));
+    const saveSettings = vi.spyOn(PreferenceStorageService, 'saveSettings').mockImplementation(async settings => {
+      persisted = settings;
+    });
+    vi.spyOn(PreferenceStorageService, 'saveSidebarExpanded').mockImplementation(async expanded => {
+      persisted = { ...persisted, sidebarExpanded: expanded };
+    });
+    const store = useAppStore();
+    await store.loadSettings();
+
+    store.setSidebarExpanded(true);
+
+    expect(persisted).toMatchObject({ language: saved.language, theme: saved.theme, colorTheme: saved.colorTheme });
+    expect(saveSettings).not.toHaveBeenCalled();
+    expect(store.settings.sidebarExpanded).toBe(true);
   });
 });
 

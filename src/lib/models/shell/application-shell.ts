@@ -10,30 +10,32 @@ export function isAppShellExpanded(viewportWidth: number): boolean {
 
 export interface SidebarLayoutState {
   expanded: boolean;
-  preferredExpanded: boolean;
+  preferredExpanded: boolean | null;
   wideViewport: boolean;
 }
 
-export function createSidebarLayoutState(viewportWidth: number): SidebarLayoutState {
+export function createSidebarLayoutState(
+  viewportWidth: number,
+  preferredExpanded: boolean | null = null
+): SidebarLayoutState {
   const wideViewport = isAppShellExpanded(viewportWidth);
   return {
-    expanded: wideViewport,
-    preferredExpanded: true,
+    expanded: preferredExpanded ?? wideViewport,
+    preferredExpanded,
     wideViewport,
   };
 }
 
 /**
- * Keeps an explicit user toggle stable during ordinary window resizing. Only
- * crossing the shell breakpoint changes the responsive mode: narrow windows
- * collapse to protect page content, while wide windows restore the user's last
- * explicit choice instead of always forcing the navigation open again.
+ * Window width controls the layout until the user makes an explicit choice.
+ * Resizing must not override that choice or turn a responsive collapse into a
+ * persisted preference.
  */
 export function resizeSidebarLayout(state: SidebarLayoutState, viewportWidth: number): SidebarLayoutState {
   const wideViewport = isAppShellExpanded(viewportWidth);
   if (wideViewport === state.wideViewport) return state;
   return {
-    expanded: wideViewport ? state.preferredExpanded : false,
+    expanded: state.preferredExpanded ?? wideViewport,
     preferredExpanded: state.preferredExpanded,
     wideViewport,
   };
