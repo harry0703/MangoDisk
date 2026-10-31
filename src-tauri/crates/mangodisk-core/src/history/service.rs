@@ -768,7 +768,10 @@ mod tests {
             removed_paths: vec!["/fixture/removed.bin".to_string()],
             failed: vec![crate::PermanentDeleteFailure {
                 path: "/fixture/failed.bin".to_string(),
-                message: "fixture failure".to_string(),
+                details: crate::filesystem::PermanentDeleteFailureDetails {
+                    message: "fixture failure".to_string(),
+                    ..Default::default()
+                },
             }],
             released_bytes: 10,
         };
@@ -816,7 +819,10 @@ mod tests {
             removed_paths: selected_paths[..selected_paths.len() - 1].to_vec(),
             failed: vec![crate::PermanentDeleteFailure {
                 path: failed_path.clone(),
-                message: "fixture failure".to_string(),
+                details: crate::filesystem::PermanentDeleteFailureDetails {
+                    message: "fixture failure".to_string(),
+                    ..Default::default()
+                },
             }],
             released_bytes: 10,
         };

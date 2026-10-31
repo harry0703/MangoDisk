@@ -44,7 +44,7 @@ use crate::filesystem::{
         delete_file_candidate_permanently, delete_path_permanently,
         prepare_path_for_permanent_delete,
     },
-    PermanentDeleteBatchResult, PermanentDeleteCandidate, PermanentDeleteFailure,
+    PermanentDeleteBatchResult, PermanentDeleteCandidate,
 };
 use crate::history::{file_cleanup_record, FileCleanupHistoryCategory, HistoryService};
 use crate::shared::operation::{CoordinatedOperationKind, OperationGuard};
@@ -723,8 +723,7 @@ impl DuplicateFileService {
             let candidate = validated.candidate.clone();
             let deletion = match validated.kind {
                 DuplicateGroupKind::File => delete_file_candidate_permanently(&candidate)
-                    .map(|(target, usage)| (target, usage, 1, false))
-                    .map_err(|error| error.to_string()),
+                    .map(|(target, usage)| (target, usage, 1, false)),
                 DuplicateGroupKind::Directory => {
                     delete_duplicate_directory_candidate(&validated, &operation)
                 }
@@ -737,10 +736,7 @@ impl DuplicateFileService {
                     cache::remove_entry(&target, usage, file_count, is_directory);
                     hash_cache::invalidate_containing(&target);
                 }
-                Err(error) => result.failed.push(PermanentDeleteFailure {
-                    path: candidate.path,
-                    message: error,
-                }),
+                Err(error) => result.failed.push(error.into_failure(candidate.path)),
             }
         }
         #[cfg(windows)]
@@ -1527,47 +1523,65 @@ impl DuplicateFileService {
 fn delete_duplicate_directory_candidate(
     validated: &ValidatedDuplicateDeleteCandidate,
     operation: &OperationGuard,
-) -> Result<(PathBuf, FileSpaceUsage, u64, bool), String> {
+) -> Result<
+    (PathBuf, FileSpaceUsage, u64, bool),
+    crate::filesystem::permanent_delete::PermanentDeleteError,
+> {
+    use crate::filesystem::{permanent_delete::PermanentDeleteError, PermanentDeleteFailureReason};
     let candidate = &validated.candidate;
     let requested_target = PathBuf::from(&candidate.path);
-    let prepared =
-        prepare_path_for_permanent_delete(&requested_target).map_err(|error| error.to_string())?;
+    let prepared = prepare_path_for_permanent_delete(&requested_target)?;
     current_platform()
         .validate_path_no_links(&requested_target)
-        .map_err(|error| error.to_string())?;
+        .map_err(PermanentDeleteError::from)?;
     let metadata = prepared.metadata();
     if !metadata.is_dir() || current_platform().is_link_like(metadata) {
-        return Err("only regular directories can be permanently deleted".to_string());
+        return Err(PermanentDeleteError::before_mutation(
+            "only regular directories can be permanently deleted",
+        )
+        .with_failure_reason(PermanentDeleteFailureReason::Protected));
     }
     if candidate.expected_modified_at_ms.is_none()
         || modified_ms(metadata) != candidate.expected_modified_at_ms
     {
-        return Err("the directory changed after scanning".to_string());
+        return Err(
+            PermanentDeleteError::before_mutation("the directory changed after scanning")
+                .with_failure_reason(PermanentDeleteFailureReason::ItemChanged),
+        );
     }
 
     let target = current_platform()
         .canonicalize_no_links(&requested_target)
-        .map_err(|error| format!("failed to access the requested directory: {error}"))?;
+        .map_err(PermanentDeleteError::from)?;
     let root = current_platform()
         .canonicalize_no_links(Path::new(&validated.scan_root))
-        .map_err(|error| format!("failed to access the duplicate scan root: {error}"))?;
+        .map_err(PermanentDeleteError::from)?;
     if validated.protected_roots.iter().any(|protected_root| {
         let protected_root = Path::new(protected_root);
         current_platform().path_is_same_or_child(&target, protected_root)
             || current_platform().path_is_same_or_child(protected_root, &target)
     }) {
-        return Err("a protected duplicate item cannot be deleted".to_string());
+        return Err(PermanentDeleteError::before_mutation(
+            "a protected duplicate item cannot be deleted",
+        )
+        .with_failure_reason(PermanentDeleteFailureReason::Protected));
     }
     if current_platform().paths_equal(&target, &root)
         || !current_platform().path_is_same_or_child(&target, &root)
     {
-        return Err("the directory is outside the current duplicate scan root".to_string());
+        return Err(PermanentDeleteError::before_mutation(
+            "the directory is outside the current duplicate scan root",
+        )
+        .with_failure_reason(PermanentDeleteFailureReason::Protected));
     }
     if current_platform()
         .should_skip(&target, &root, ScanPurpose::DuplicateFiles)
         .is_some()
     {
-        return Err("MangoDisk cannot process a protected duplicate directory".to_string());
+        return Err(PermanentDeleteError::before_mutation(
+            "MangoDisk cannot process a protected duplicate directory",
+        )
+        .with_failure_reason(PermanentDeleteFailureReason::Protected));
     }
     let usage = verify_live_directory(
         &target,
@@ -1578,9 +1592,12 @@ fn delete_duplicate_directory_candidate(
     )?;
     let verified_target = current_platform()
         .canonicalize_no_links(&requested_target)
-        .map_err(|error| error.to_string())?;
+        .map_err(PermanentDeleteError::from)?;
     if !current_platform().paths_equal(&verified_target, &target) {
-        return Err("the directory changed during safety validation".to_string());
+        return Err(PermanentDeleteError::before_mutation(
+            "the directory changed during safety validation",
+        )
+        .with_failure_reason(PermanentDeleteFailureReason::ItemChanged));
     }
 
     match delete_path_permanently(
@@ -1605,7 +1622,7 @@ fn delete_duplicate_directory_candidate(
                 true,
             ))
         }
-        Err(error) => Err(error.to_string()),
+        Err(error) => Err(error),
     }
 }
 

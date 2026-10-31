@@ -623,3 +623,129 @@ fn ntfs_native_identity_query_rejects_junction() {
     assert_eq!(fs::read(real.join("keep.bin")).unwrap(), b"keep");
     fs::remove_dir(junction).unwrap();
 }
+
+#[test]
+fn deletion_failure_metadata_preserves_native_reason_stage_and_mutation() {
+    use crate::filesystem::{
+        PermanentDeleteFailureReason as Reason, PermanentDeleteFailureStage as Stage,
+    };
+    let error = permanent_delete_io_error(
+        "create staging",
+        std::io::Error::from(std::io::ErrorKind::PermissionDenied),
+    )
+    .at_stage("create_staging");
+    let failure = error.into_failure("/fixture/denied".into());
+    assert_eq!(failure.details.reason, Reason::AccessDenied);
+    assert_eq!(failure.details.stage, Stage::CreateStaging);
+    assert!(!failure.details.partial);
+    let failure =
+        PermanentDeleteError::before_mutation_with_reason("changed", CoreErrorReason::ItemChanged)
+            .into_failure("/fixture/stale".into());
+    assert_eq!(failure.details.reason, Reason::ItemChanged);
+    let mut partial = PermanentDeleteError::after_mutation(
+        "interrupted",
+        Some(CoreErrorReason::ResourceBusy),
+        4,
+        1,
+    );
+    partial.remaining_restored = true;
+    partial.native_code = Some(32);
+    let value = serde_json::to_value(partial.into_failure("/fixture/partial".into())).unwrap();
+    assert_eq!(value["reason"], "resourceBusy");
+    assert_eq!(value["nativeCode"], 32);
+    assert_eq!(value["partial"], true);
+    assert_eq!(value["remainingRestored"], true);
+    assert_eq!(value["stage"], "remove");
+    assert!(value.get("details").is_none(), "transport fields stay flat");
+}
+
+#[cfg(windows)]
+#[test]
+fn locked_file_reports_sharing_violation_without_bypassing_staging() {
+    use crate::filesystem::{
+        PermanentDeleteFailureReason as Reason, PermanentDeleteFailureStage as Stage,
+    };
+    use std::os::windows::fs::OpenOptionsExt;
+    let sandbox = fixture();
+    let path = sandbox.path().join("locked.bin");
+    fs::write(&path, b"locked duplicate content").unwrap();
+    let metadata = fs::metadata(&path).unwrap();
+    let locked = fs::OpenOptions::new()
+        .read(true)
+        .share_mode(3)
+        .open(&path)
+        .unwrap();
+    let candidate = PermanentDeleteCandidate {
+        path: path.to_string_lossy().into_owned(),
+        expected_bytes: metadata.len(),
+        expected_modified_at_ms: modified_ms(&metadata),
+    };
+    let error = delete_file_candidate_permanently(&candidate).unwrap_err();
+    let failure = error.into_failure(candidate.path).details;
+    assert_eq!(failure.reason, Reason::ResourceBusy);
+    assert_eq!(failure.native_code, Some(32));
+    assert_eq!(failure.stage, Stage::MoveToStaging);
+    assert!(!failure.partial);
+    assert_eq!(fs::read(&path).unwrap(), b"locked duplicate content");
+    assert_eq!(staging_count(sandbox.path()), 0);
+    drop(locked);
+}
+
+#[test]
+fn missing_candidate_preserves_not_found_metadata_during_path_validation() {
+    use crate::filesystem::{
+        PermanentDeleteFailureReason as Reason, PermanentDeleteFailureStage as Stage,
+    };
+    let sandbox = fixture();
+    let path = sandbox.path().join("removed-after-scan.bin");
+    fs::write(&path, b"temporary duplicate").unwrap();
+    let metadata = fs::metadata(&path).unwrap();
+    fs::remove_file(&path).unwrap();
+    let candidate = PermanentDeleteCandidate {
+        path: path.to_string_lossy().into_owned(),
+        expected_bytes: metadata.len(),
+        expected_modified_at_ms: modified_ms(&metadata),
+    };
+    let failure = delete_file_candidate_permanently(&candidate)
+        .unwrap_err()
+        .into_failure(candidate.path)
+        .details;
+    println!("missing_candidate_failure={failure:?}");
+    assert_eq!(failure.reason, Reason::NotFound);
+    assert!(failure.native_code.is_some());
+    assert_eq!(failure.stage, Stage::PrepareTarget);
+    assert!(!failure.partial);
+}
+
+#[cfg(unix)]
+#[test]
+#[ignore = "requires unprivileged permission enforcement on a disposable local directory"]
+fn denied_candidate_preserves_native_metadata_during_path_validation() {
+    use crate::filesystem::{
+        PermanentDeleteFailureReason as Reason, PermanentDeleteFailureStage as Stage,
+    };
+    use std::os::unix::fs::PermissionsExt;
+    assert_ne!(unsafe { libc::geteuid() }, 0, "run as an ordinary user");
+    let sandbox = fixture();
+    let parent = sandbox.path().join("denied");
+    fs::create_dir(&parent).unwrap();
+    let path = parent.join("keep.bin");
+    fs::write(&path, b"keep").unwrap();
+    let metadata = fs::metadata(&path).unwrap();
+    fs::set_permissions(&parent, fs::Permissions::from_mode(0o000)).unwrap();
+    let result = delete_file_candidate_permanently(&PermanentDeleteCandidate {
+        path: path.to_string_lossy().into_owned(),
+        expected_bytes: metadata.len(),
+        expected_modified_at_ms: modified_ms(&metadata),
+    });
+    fs::set_permissions(&parent, fs::Permissions::from_mode(0o700)).unwrap();
+    let failure = result
+        .unwrap_err()
+        .into_failure(path.to_string_lossy().into_owned())
+        .details;
+    println!("denied_candidate_failure={failure:?}");
+    assert_eq!(failure.reason, Reason::AccessDenied);
+    assert_eq!(failure.native_code, Some(libc::EACCES));
+    assert_eq!(failure.stage, Stage::PrepareTarget);
+    assert_eq!(fs::read(&path).unwrap(), b"keep");
+}

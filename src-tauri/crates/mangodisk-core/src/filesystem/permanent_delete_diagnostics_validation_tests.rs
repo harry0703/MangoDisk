@@ -127,7 +127,10 @@ fn benchmark_duplicate_delete_volume_diagnostics() {
         0,
         &[crate::filesystem::PermanentDeleteFailure {
             path: "\\\\?\\Volume{00000000-0000-0000-0000-000000000000}\\missing.bin".into(),
-            message: "synthetic unavailable-volume probe".into(),
+            details: crate::filesystem::models::PermanentDeleteFailureDetails {
+                message: "synthetic unavailable-volume probe".into(),
+                ..Default::default()
+            },
         }],
     );
     super::wait_for_volume_diagnostics();

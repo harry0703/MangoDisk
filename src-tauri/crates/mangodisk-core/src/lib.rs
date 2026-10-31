@@ -63,6 +63,7 @@ pub use cleanup::{CleanupPlanService, CleanupScanService, CleanupService};
 pub use filesystem::{
     metadata::diagnostic_path, DirectorySelectionOutcome, DirectorySelectionService,
     PermanentDeleteBatchResult, PermanentDeleteCandidate, PermanentDeleteFailure,
+    PermanentDeleteFailureDetails, PermanentDeleteFailureReason, PermanentDeleteFailureStage,
     ResolvedDirectory, ScanExclusionOptions, VolumeInfo,
 };
 pub use history::{

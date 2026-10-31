@@ -363,7 +363,10 @@ mod tests {
             .into_iter()
             .map(|path| PermanentDeleteFailure {
                 path,
-                message: "delete failed".into(),
+                details: crate::filesystem::models::PermanentDeleteFailureDetails {
+                    message: "delete failed".into(),
+                    ..Default::default()
+                },
             })
             .collect::<Vec<_>>();
         let batch = VolumeDiagnosticBatch::capture("duplicates", 7, 11, &failures);

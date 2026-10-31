@@ -36,7 +36,48 @@ pub struct PermanentDeleteCandidate {
 #[serde(rename_all = "camelCase")]
 pub struct PermanentDeleteFailure {
     pub path: String,
+    #[serde(flatten)]
+    pub details: PermanentDeleteFailureDetails,
+}
+
+/// Stable presentation metadata. Diagnostics never determine UI behavior.
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PermanentDeleteFailureDetails {
     pub message: String,
+    #[serde(default)]
+    pub reason: PermanentDeleteFailureReason,
+    #[serde(default)]
+    pub stage: PermanentDeleteFailureStage,
+    #[serde(default)]
+    pub native_code: Option<i32>,
+    #[serde(default)]
+    pub partial: bool,
+    #[serde(default)]
+    pub remaining_restored: bool,
+}
+
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum PermanentDeleteFailureReason {
+    AccessDenied,
+    ResourceBusy,
+    ItemChanged,
+    Protected,
+    NotFound,
+    #[default]
+    Other,
+}
+
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum PermanentDeleteFailureStage {
+    #[default]
+    Validate,
+    PrepareTarget,
+    CreateStaging,
+    MoveToStaging,
+    Remove,
 }
 
 #[derive(Debug, Clone, Serialize)]

@@ -4,9 +4,22 @@ export interface PermanentDeleteCandidate {
   expectedModifiedAtMs: number | null;
 }
 
-export interface PermanentDeleteFailure {
-  path: string;
+export type PermanentDeleteFailureReason =
+  'accessDenied' | 'resourceBusy' | 'itemChanged' | 'protected' | 'notFound' | 'other';
+export type PermanentDeleteFailureStage = 'validate' | 'prepareTarget' | 'createStaging' | 'moveToStaging' | 'remove';
+
+export interface PermanentDeleteFailureDetails {
   message: string;
+  // Optional metadata preserves older history records and legacy command fixtures.
+  reason?: PermanentDeleteFailureReason;
+  stage?: PermanentDeleteFailureStage;
+  nativeCode?: number | null;
+  partial?: boolean;
+  remainingRestored?: boolean;
+}
+
+export interface PermanentDeleteFailure extends PermanentDeleteFailureDetails {
+  path: string;
 }
 
 export interface PermanentDeleteBatchResult {

@@ -50,18 +50,22 @@ impl PlatformError {
 #[derive(Debug, Clone)]
 pub struct PlatformError {
     code: PlatformErrorCode,
-    diagnostic: String,
+    diagnostic: Box<str>,
     mutation_state: PlatformMutationState,
     failure_reason: Option<PlatformFailureReason>,
+    io_kind: Option<std::io::ErrorKind>,
+    native_code: Option<i32>,
 }
 
 impl PlatformError {
     pub fn new(code: PlatformErrorCode, diagnostic: impl Into<String>) -> Self {
         Self {
             code,
-            diagnostic: diagnostic.into(),
+            diagnostic: diagnostic.into().into_boxed_str(),
             mutation_state: PlatformMutationState::NotAttempted,
             failure_reason: None,
+            io_kind: None,
+            native_code: None,
         }
     }
 
@@ -76,6 +80,14 @@ impl PlatformError {
 
     pub fn code(&self) -> PlatformErrorCode {
         self.code
+    }
+
+    pub fn io_kind(&self) -> Option<std::io::ErrorKind> {
+        self.io_kind
+    }
+
+    pub fn native_code(&self) -> Option<i32> {
+        self.native_code
     }
 
     pub fn diagnostic(&self) -> &str {
@@ -114,14 +126,17 @@ impl PlatformError {
             }
             _ => PlatformErrorCode::Io,
         };
-        Self::new(
+        let mut failure = Self::new(
             code,
             format!(
                 "{operation}: kind={:?} os_code={:?} error={error}",
                 error.kind(),
                 error.raw_os_error()
             ),
-        )
+        );
+        failure.io_kind = Some(error.kind());
+        failure.native_code = error.raw_os_error();
+        failure
     }
 }
 
@@ -156,6 +171,8 @@ mod tests {
         let native = std::io::Error::from_raw_os_error(2);
         let error = PlatformError::io("read_fixture", &native);
         assert_eq!(error.code(), PlatformErrorCode::Io);
+        assert_eq!(error.io_kind(), Some(std::io::ErrorKind::NotFound));
+        assert_eq!(error.native_code(), Some(2));
         assert!(error.diagnostic().contains("os_code=Some(2)"));
         assert!(error.diagnostic().contains(&native.to_string()));
     }

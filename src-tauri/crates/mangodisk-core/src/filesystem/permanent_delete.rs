@@ -121,6 +121,7 @@ pub(crate) struct PermanentDeleteError {
     counts_unknown: bool,
     native_code: Option<i32>,
     stage: &'static str,
+    failure_reason: super::models::PermanentDeleteFailureReason,
 }
 
 /// Captures a stable target before domain-specific validation begins.
@@ -134,7 +135,7 @@ pub(crate) fn prepare_path_for_permanent_delete(
     reject_system_managed_file(path)?;
     current_platform()
         .validate_path_no_links(path)
-        .map_err(|error| error.to_string())?;
+        .map_err(|error| PermanentDeleteError::from(error).at_stage("prepare_target"))?;
 
     #[cfg(unix)]
     let (metadata, identity, identity_handle) = {
@@ -158,8 +159,11 @@ pub(crate) fn prepare_path_for_permanent_delete(
         }
         current_platform()
             .validate_path_no_links(path)
-            .map_err(|error| error.to_string())?;
-        let verified = fs::symlink_metadata(path).map_err(|error| error.to_string())?;
+            .map_err(|error| PermanentDeleteError::from(error).at_stage("prepare_target"))?;
+        let verified = fs::symlink_metadata(path).map_err(|error| {
+            permanent_delete_io_error("failed to verify deletion target metadata", error)
+                .at_stage("prepare_target")
+        })?;
         if current_platform().is_link_like(&verified) || metadata_identity(&verified) != identity {
             return Err("the item changed while its physical identity was captured"
                 .to_string()
@@ -178,7 +182,7 @@ pub(crate) fn prepare_path_for_permanent_delete(
         let identity = handle_identity(&identity_handle)?;
         current_platform()
             .validate_path_no_links(path)
-            .map_err(|error| error.to_string())?;
+            .map_err(|error| PermanentDeleteError::from(error).at_stage("prepare_target"))?;
         (metadata, identity, identity_handle)
     };
 
@@ -232,10 +236,14 @@ impl PermanentDeleteError {
             counts_unknown: false,
             native_code: None,
             stage: "validate",
+            failure_reason: Default::default(),
         }
     }
 
-    fn before_mutation_with_reason(message: impl Into<String>, reason: CoreErrorReason) -> Self {
+    pub(crate) fn before_mutation_with_reason(
+        message: impl Into<String>,
+        reason: CoreErrorReason,
+    ) -> Self {
         Self {
             message: message.into(),
             reason: Some(reason),
@@ -246,6 +254,7 @@ impl PermanentDeleteError {
             counts_unknown: false,
             native_code: None,
             stage: "validate",
+            failure_reason: Default::default(),
         }
     }
 
@@ -265,6 +274,47 @@ impl PermanentDeleteError {
             counts_unknown: false,
             native_code: None,
             stage: "remove",
+            failure_reason: Default::default(),
+        }
+    }
+
+    pub(crate) fn with_failure_reason(
+        mut self,
+        reason: super::models::PermanentDeleteFailureReason,
+    ) -> Self {
+        self.failure_reason = reason;
+        self
+    }
+
+    pub(crate) fn into_failure(self, path: String) -> super::models::PermanentDeleteFailure {
+        use super::models::{
+            PermanentDeleteFailure, PermanentDeleteFailureDetails,
+            PermanentDeleteFailureReason as Reason, PermanentDeleteFailureStage as Stage,
+        };
+        let reason = match self.reason {
+            Some(CoreErrorReason::SystemManagedFile) => Reason::Protected,
+            Some(CoreErrorReason::ResourceBusy) => Reason::ResourceBusy,
+            Some(CoreErrorReason::AccessDeniedOrBusy) => Reason::AccessDenied,
+            Some(CoreErrorReason::ItemChanged) => Reason::ItemChanged,
+            _ => self.failure_reason,
+        };
+        let stage = match self.stage {
+            "prepare_target" => Stage::PrepareTarget,
+            "create_staging" => Stage::CreateStaging,
+            "stage_rename" => Stage::MoveToStaging,
+            "remove" => Stage::Remove,
+            _ => Stage::Validate,
+        };
+        PermanentDeleteFailure {
+            path,
+            details: PermanentDeleteFailureDetails {
+                message: self.message,
+                reason,
+                stage,
+                native_code: self.native_code,
+                partial: self.partial,
+                remaining_restored: self.remaining_restored,
+            },
         }
     }
 
@@ -322,13 +372,47 @@ impl From<String> for PermanentDeleteError {
     }
 }
 
-fn permanent_delete_io_error(context: &str, error: std::io::Error) -> PermanentDeleteError {
+impl From<mangodisk_platform::PlatformError> for PermanentDeleteError {
+    fn from(error: mangodisk_platform::PlatformError) -> Self {
+        use mangodisk_platform::PlatformErrorCode;
+        let mut failure = if let Some(kind) = error.io_kind() {
+            let native = error.native_code().map_or_else(
+                || std::io::Error::from(kind),
+                std::io::Error::from_raw_os_error,
+            );
+            permanent_delete_io_error("platform path validation failed", native)
+        } else {
+            match error.code() {
+                PlatformErrorCode::AccessDenied => Self::before_mutation_with_reason(
+                    error.to_string(),
+                    CoreErrorReason::AccessDeniedOrBusy,
+                ),
+                PlatformErrorCode::ItemChanged => Self::before_mutation_with_reason(
+                    error.to_string(),
+                    CoreErrorReason::ItemChanged,
+                ),
+                _ => Self::before_mutation(error.to_string()),
+            }
+        };
+        // Preserve the operation context as well as typed native evidence.
+        failure.message = error.to_string();
+        failure
+    }
+}
+
+pub(crate) fn permanent_delete_io_error(
+    context: &str,
+    error: std::io::Error,
+) -> PermanentDeleteError {
     let message = format!("{context}: {error}");
     let mut failure = match permanent_delete_io_reason(&error) {
         Some(reason) => PermanentDeleteError::before_mutation_with_reason(message, reason),
         None => PermanentDeleteError::before_mutation(message),
     };
     failure.native_code = error.raw_os_error();
+    if error.kind() == std::io::ErrorKind::NotFound {
+        failure.failure_reason = super::models::PermanentDeleteFailureReason::NotFound;
+    }
     failure
 }
 
@@ -1284,6 +1368,7 @@ fn rollback_staged_target(
             } else {
                 let mut error = PermanentDeleteError::before_mutation(message);
                 error.reason = failure_reason;
+                error.stage = "remove";
                 error.remaining_restored = true;
                 error
             })
@@ -1571,7 +1656,7 @@ pub(crate) fn delete_file_candidate_permanently(
     validate_permanent_delete_candidate(prepared.metadata(), candidate)?;
     let target = current_platform()
         .canonicalize_no_links(&requested_target)
-        .map_err(|error| format!("failed to access the requested file: {error}"))?;
+        .map_err(PermanentDeleteError::from)?;
     if current_platform()
         .should_skip(
             &target,
@@ -1580,19 +1665,19 @@ pub(crate) fn delete_file_candidate_permanently(
         )
         .is_some()
     {
-        return Err(
-            "MangoDisk cannot process a protected system or application file"
-                .to_string()
-                .into(),
-        );
+        return Err(PermanentDeleteError::before_mutation(
+            "MangoDisk cannot process a protected system or application file",
+        )
+        .with_failure_reason(super::models::PermanentDeleteFailureReason::Protected));
     }
     let verified_target = current_platform()
         .canonicalize_no_links(&requested_target)
-        .map_err(|error| error.to_string())?;
+        .map_err(PermanentDeleteError::from)?;
     if verified_target != target {
-        return Err("the file changed during safety validation"
-            .to_string()
-            .into());
+        return Err(PermanentDeleteError::before_mutation_with_reason(
+            "the file changed during safety validation",
+            CoreErrorReason::ItemChanged,
+        ));
     }
     validate_permanent_delete_candidate(prepared.metadata(), candidate)?;
     let usage = current_platform().file_space_usage(&requested_target, prepared.metadata());
@@ -1603,15 +1688,21 @@ pub(crate) fn delete_file_candidate_permanently(
 fn validate_permanent_delete_candidate(
     metadata: &fs::Metadata,
     candidate: &PermanentDeleteCandidate,
-) -> Result<(), String> {
+) -> Result<(), PermanentDeleteError> {
     if !metadata.is_file() || current_platform().is_link_like(metadata) {
-        return Err("only regular files can be permanently deleted".to_string());
+        return Err(PermanentDeleteError::before_mutation(
+            "only regular files can be permanently deleted",
+        )
+        .with_failure_reason(super::models::PermanentDeleteFailureReason::Protected));
     }
     if candidate.expected_modified_at_ms.is_none()
         || metadata.len() != candidate.expected_bytes
         || modified_ms(metadata) != candidate.expected_modified_at_ms
     {
-        return Err("the file changed after scanning".to_string());
+        return Err(PermanentDeleteError::before_mutation_with_reason(
+            "the file changed after scanning",
+            CoreErrorReason::ItemChanged,
+        ));
     }
     Ok(())
 }

@@ -4,7 +4,7 @@ use std::{path::Path, time::Instant};
 use crate::{
     filesystem::{
         metadata::diagnostic_path, permanent_delete::delete_file_candidate_permanently,
-        PermanentDeleteBatchResult, PermanentDeleteFailure,
+        PermanentDeleteBatchResult,
     },
     history::{file_cleanup_record, FileCleanupHistoryCategory, HistoryService},
     shared::{
@@ -130,10 +130,7 @@ impl LargeFileService {
                             mangodisk_platform::diagnostics::text(&error.to_string())
                         );
                     }
-                    result.failed.push(PermanentDeleteFailure {
-                        path: candidate.path,
-                        message: error.to_string(),
-                    });
+                    result.failed.push(error.into_failure(candidate.path));
                 }
             }
         }
