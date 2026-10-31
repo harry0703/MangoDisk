@@ -203,6 +203,40 @@ fn scan_key(
     Ok(())
 }
 
+pub(super) fn log_change_request(request: &PlatformStartupChangeRequest) {
+    if request.source_id != "windows.registry.run" {
+        return;
+    }
+    for source in registry_sources() {
+        let prefix = provider_item_prefix(source);
+        let Some(value_name) = request.provider_item_id.strip_prefix(&prefix) else {
+            continue;
+        };
+        let display_name = &request.expected_artifact.display_name;
+        // Provider IDs normalize case. A default value instead has a derived display label,
+        // which must never replace its empty native value name in diagnostics.
+        let value_name = if display_name.to_lowercase() == value_name {
+            display_name.as_str()
+        } else {
+            value_name
+        };
+        log::info!(
+            "windows_startup_registry_change_requested provider_item_id={} display_name={} registry_root={} registry_key={} registry_view={} registry_value_name={} approval_key={} desired_state={:?}",
+            crate::diagnostics::text(&request.provider_item_id),
+            crate::diagnostics::text(display_name),
+            source.root_name,
+            crate::diagnostics::text(source.key_path),
+            source.view_name,
+            crate::diagnostics::text(value_name),
+            crate::diagnostics::text(
+                &source.approval_bucket.map(|bucket| format!(r"{STARTUP_APPROVED_PATH}\{bucket}")).unwrap_or_default()
+            ),
+            request.desired_state
+        );
+        break;
+    }
+}
+
 pub(super) fn change(
     request: &PlatformStartupChangeRequest,
 ) -> PlatformResult<PlatformStartupChangeResult> {
@@ -409,6 +443,15 @@ pub(super) fn changed_startup_approved_bytes(
     Ok(bytes)
 }
 
+fn provider_item_prefix(source: RegistrySource) -> String {
+    format!(
+        "registry:{}:{}:{}:",
+        source.root_name,
+        source.view_name,
+        source.key_path.to_lowercase()
+    )
+}
+
 fn artifact_from_value(
     source: RegistrySource,
     value_name: &str,
@@ -452,10 +495,8 @@ fn artifact_from_value(
     let metadata_description_available = version_metadata.description.is_some();
     PlatformStartupArtifact {
         provider_item_id: format!(
-            "registry:{}:{}:{}:{}",
-            source.root_name,
-            source.view_name,
-            source.key_path.to_lowercase(),
+            "{}{}",
+            provider_item_prefix(source),
             value_name.to_lowercase()
         ),
         source_kind: PlatformStartupSourceKind::RegistryRun,
@@ -630,6 +671,19 @@ mod tests {
         PlatformStartupConfiguredState, PlatformStartupDesiredState, PlatformStartupDiagnosticCode,
     };
     use winreg::{enums::REG_BINARY, RegKey, RegValue};
+
+    #[test]
+    fn registry_provider_identity_preserves_value_name_boundaries() {
+        let source = registry_sources()
+            .into_iter()
+            .next()
+            .expect("the current-user Run source must exist");
+        let artifact = artifact_from_value(source, "Fixture:\u{503c}\nName", "cmd.exe", None);
+        assert_eq!(
+            artifact.provider_item_id,
+            "registry:hkcu:64:software\\microsoft\\windows\\currentversion\\run:fixture:\u{503c}\nname"
+        );
+    }
 
     #[test]
     fn quoted_command_preserves_executable_and_arguments() {

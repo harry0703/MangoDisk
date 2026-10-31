@@ -82,6 +82,8 @@ fn joined_source(
 pub(super) fn change(
     request: &PlatformStartupChangeRequest,
 ) -> PlatformResult<PlatformStartupChangeResult> {
+    // Elevated helpers exit before desktop logging is initialized, so retain locations here.
+    registry::log_change_request(request);
     if requires_privileges(request) {
         return crate::startup_helper::change_with_privileges(request, None);
     }
@@ -92,6 +94,9 @@ pub(super) fn change_many(
     requests: &[PlatformStartupChangeRequest],
 ) -> PlatformResult<Vec<PlatformResult<PlatformStartupChangeResult>>> {
     let started = Instant::now();
+    for request in requests {
+        registry::log_change_request(request);
+    }
     let privileged = requests
         .iter()
         .enumerate()
@@ -437,6 +442,92 @@ mod tests {
 
         assert_eq!(results, vec![Some(2), Some(4), Some(6)]);
         assert_eq!(peak.load(Ordering::SeqCst), 1);
+    }
+
+    #[test]
+    #[ignore = "requires administrator rights and a startup helper; captures process-local logs"]
+    fn actual_elevated_registry_changes_retain_location_logs_in_parent() {
+        assert!(std::env::var_os("MANGODISK_TEST_ELEVATION_HELPER_EXE").is_some());
+        struct Evidence(Mutex<Vec<String>>);
+        impl log::Log for Evidence {
+            fn enabled(&self, _: &log::Metadata<'_>) -> bool {
+                true
+            }
+
+            fn log(&self, record: &log::Record<'_>) {
+                self.0.lock().unwrap().push(record.args().to_string());
+            }
+
+            fn flush(&self) {}
+        }
+        static EVIDENCE: Evidence = Evidence(Mutex::new(Vec::new()));
+        log::set_logger(&EVIDENCE).expect("the isolated diagnostic owns its logger");
+        log::set_max_level(log::LevelFilter::Info);
+
+        let suffix = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .as_nanos();
+        let value_name = format!("MangoDiskRegistryLogFixture{suffix}");
+        let root = RegKey::predef(HKEY_LOCAL_MACHINE);
+        let (run, _) = root
+            .create_subkey_with_flags(RUN_PATH, KEY_READ | KEY_SET_VALUE | KEY_WOW64_64KEY)
+            .expect("the isolated machine Run fixture must be writable");
+        let _cleanup = MachineRegistryFixture {
+            value_name: value_name.clone(),
+        };
+        run.set_value(
+            &value_name,
+            &r#""C:\Windows\System32\notepad.exe" --mangodisk-log-fixture"#,
+        )
+        .expect("the isolated Run fixture must be created");
+
+        for desired_state in [
+            PlatformStartupDesiredState::Disabled,
+            PlatformStartupDesiredState::Enabled,
+            PlatformStartupDesiredState::Removed,
+        ] {
+            let artifact = machine_fixture(&value_name);
+            let request = PlatformStartupChangeRequest {
+                provider_item_id: artifact.provider_item_id.clone(),
+                source_id: "windows.registry.run".to_owned(),
+                expected_artifact: artifact,
+                desired_state,
+            };
+            let result = if desired_state == PlatformStartupDesiredState::Enabled {
+                vec![change(&request)]
+            } else {
+                change_many(&[request]).expect("the actual helper batch must finish")
+            };
+            assert!(
+                result[0]
+                    .as_ref()
+                    .expect("the isolated change must succeed")
+                    .verified
+            );
+        }
+
+        let evidence = EVIDENCE.0.lock().unwrap();
+        for line in evidence.iter() {
+            println!("{line}");
+        }
+        let registry_lines = evidence
+            .iter()
+            .filter(|line| line.starts_with("windows_startup_registry_change_requested "))
+            .collect::<Vec<_>>();
+        assert_eq!(
+            registry_lines.len(),
+            3,
+            "each elevated change must retain registry location in the parent log"
+        );
+        for line in registry_lines {
+            assert!(line.contains("registry_root=hklm"));
+            assert!(line.contains("registry_view=64"));
+            assert!(line.contains(&format!("registry_value_name=\"{value_name}\"")));
+            assert!(line.contains(r"Software\\Microsoft\\Windows\\CurrentVersion\\Run"));
+            assert!(line.contains(r"Explorer\\StartupApproved\\Run"));
+            assert!(!line.contains("--mangodisk-log-fixture"));
+        }
     }
 
     #[test]

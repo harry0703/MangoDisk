@@ -261,14 +261,27 @@ impl StartupService {
             .collect::<BTreeSet<_>>()
             .len();
         log::info!(
-            "startup_change_execution_started operation_id={} desired_state={:?} target_count={} source_count={} direct_count={} elevated_count={}",
+            "startup_change_execution_started operation_id={} plan_id={} desired_state={:?} target_count={} source_count={} direct_count={} elevated_count={}",
             operation.id(),
+            pending.public_plan.plan_id,
             pending.public_plan.desired_state,
             requests.len(),
             source_count,
             requests.len().saturating_sub(elevated_count),
             elevated_count
         );
+        for target in &pending.targets {
+            log::info!(
+                "startup_change_item_started operation_id={} item_id={} {} source_id={} desired_state={:?} previous_state={:?} execution_path={}",
+                operation.id(),
+                target.item_id,
+                startup_change_item_identity(&target.request),
+                target.request.source_id,
+                target.request.desired_state,
+                target.request.expected_artifact.configured_state,
+                startup_change_execution_path(&target.request)
+            );
+        }
         if operation.cancelled().load(Ordering::Relaxed) {
             for target in &pending.targets {
                 log_startup_change_item_failure(
@@ -462,9 +475,10 @@ fn change_item_result(
                 StartupChangeOutcomeStatus::Changed
             };
             log::info!(
-                "startup_change_item_completed operation_id={} item_id={} source_id={} source_kind={:?} scope={:?} control_capability={:?} execution_path={} desired_state={:?} previous_state={:?} configured_state={:?} outcome={:?} verified=true",
+                "startup_change_item_completed operation_id={} item_id={} {} source_id={} source_kind={:?} scope={:?} control_capability={:?} execution_path={} desired_state={:?} previous_state={:?} configured_state={:?} outcome={:?} verified=true",
                 operation_id,
                 target.item_id,
+                startup_change_item_identity(&target.request),
                 target.request.source_id,
                 target.request.expected_artifact.source_kind,
                 target.request.expected_artifact.scope,
@@ -532,10 +546,10 @@ fn log_startup_change_item_failure(
     mutation_state: &str,
 ) {
     log::warn!(
-        "startup_change_item_failed operation_id={} item_id={} provider_item_id={} service_name={:?} source_id={} source_kind={:?} scope={:?} control_capability={:?} execution_path={} desired_state={:?} expected_state={:?} failure_stage={} reason={:?} mutation_state={} diagnostic_detail={}",
+        "startup_change_item_failed operation_id={} item_id={} {} service_name={:?} source_id={} source_kind={:?} scope={:?} control_capability={:?} execution_path={} desired_state={:?} expected_state={:?} failure_stage={} reason={:?} mutation_state={} diagnostic_detail={}",
         operation_id,
         target.item_id,
-        mangodisk_platform::diagnostics::text(&target.request.provider_item_id),
+        startup_change_item_identity(&target.request),
         (target.request.source_id == "windows.services")
             .then(|| target.request.provider_item_id.strip_prefix("service:"))
             .flatten(),
@@ -551,6 +565,16 @@ fn log_startup_change_item_failure(
         mutation_state,
         diagnostic_detail.as_deref().unwrap_or("none")
     );
+}
+
+fn startup_change_item_identity(request: &PlatformStartupChangeRequest) -> String {
+    let artifact = &request.expected_artifact;
+    format!(
+        "provider_item_id={} display_name={} owner_name={}",
+        mangodisk_platform::diagnostics::text(&request.provider_item_id),
+        mangodisk_platform::diagnostics::text(&artifact.display_name),
+        mangodisk_platform::diagnostics::text(artifact.owner.name.as_deref().unwrap_or(""))
+    )
 }
 
 fn startup_change_execution_path(request: &PlatformStartupChangeRequest) -> &'static str {
@@ -1210,6 +1234,42 @@ mod tests {
     #[test]
     fn post_change_readback_failure_is_reported_without_failing_the_change() {
         assert!(refresh_catalog_after_change(&FailingScanPlatform, 42).is_none());
+    }
+
+    #[test]
+    fn change_diagnostics_preserve_names_and_registry_identity_without_command_arguments() {
+        let mut artifact = test_artifact(
+            PlatformStartupControlCapability::ElevationRequired,
+            PlatformStartupConfiguredState::Enabled,
+        );
+        artifact.display_name = "Fixture launcher\nforged_record=true".to_owned();
+        artifact.owner.name = Some("Fixture application".to_owned());
+        artifact.target.arguments = vec!["--token=must-not-be-logged".to_owned()];
+        let request = PlatformStartupChangeRequest {
+            provider_item_id:
+                r"registry:hklm:64:software\microsoft\windows\currentversion\run:fixture launcher"
+                    .to_owned(),
+            source_id: "windows.registry.run".to_owned(),
+            expected_artifact: artifact,
+            desired_state: PlatformStartupDesiredState::Disabled,
+        };
+
+        let identity = startup_change_item_identity(&request);
+        assert!(identity.contains(
+            r"registry:hklm:64:software\\microsoft\\windows\\currentversion\\run:fixture launcher"
+        ));
+        assert!(identity.contains(r#"display_name="Fixture launcher\nforged_record=true""#));
+        assert!(identity.contains(r#"owner_name="Fixture application""#));
+        assert!(!identity.contains('\n'));
+        assert!(!identity.contains("must-not-be-logged"));
+
+        let mut unnamed_owner = request;
+        unnamed_owner.expected_artifact.owner.name = None;
+        unnamed_owner.expected_artifact.display_name = "🦀".repeat(9000);
+        let identity = startup_change_item_identity(&unnamed_owner);
+        assert!(identity.contains(r#"owner_name="""#));
+        assert!(identity.contains("…[truncated]"));
+        assert!(identity.chars().count() < 8500);
     }
 
     #[test]
