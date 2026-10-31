@@ -2159,7 +2159,6 @@
     "verifiedContentData": "읽은 콘텐츠 데이터",
     "scanHint": "파일은 내용으로 비교합니다. 대용량 파일은 필요할 때만 전체를 읽습니다",
     "deleteCompleted": "중복 파일 정리 완료",
-    "deleteCompletedWithWarnings": "경고와 함께 중복 파일 정리 완료",
     "deleteCompletedDescription": "중복 파일 {count}개를 삭제하고 {size}를 확보했습니다. {failed}개 실패",
     "summaryCount": "중복 그룹 {count}개 발견",
     "summaryReclaimable": "최대 회수 가능",
@@ -2190,7 +2189,7 @@
     "deleteSingleDescription": "이 작업은 되돌릴 수 없습니다",
     "deleteTitle": "선택한 중복 복사본을 영구 삭제하시겠습니까?",
     "deleteDescription": "선택한 복사본은 복구할 수 없습니다",
-    "deleteSafetyNote": "보호된 위치의 파일은 삭제되지 않습니다. 변경되었거나 사용할 수 없는 파일은 자동으로 건너뜁니다",
+    "deleteSafetyNote": "보호되거나 변경되었거나 접근할 수 없는 항목은 건너뜁니다. 프로그램 파일은 용도를 확인한 후 삭제하세요",
     "copyCount": "복사본 {count}개",
     "groupCount": "중복 그룹 {count}개",
     "groupSummary": "복사본 {count}개 · 각 {size} · 최대 {reclaimable} 회수 가능",
@@ -4659,5 +4658,34 @@
       "black": "검정",
       "white": "흰색"
     }
+  },
+  "fileDeletion": {
+    "failedTitle": "삭제 실패",
+    "partialTitle": "일부 항목이 삭제되지 않았습니다",
+    "viewDetails": "자세히 보기",
+    "itemCount": "{count}개 항목",
+    "partial": "일부 내용이 삭제되었을 수 있습니다. 남은 항목을 확인하세요",
+    "partialRestored": "일부 내용이 삭제되었을 수 있으며 나머지는 원래 위치로 이동되었습니다",
+    "copyDetails": "오류 정보 복사",
+    "copied": "복사됨",
+    "failed": "복사하지 못했습니다. 다시 시도하세요",
+    "showMore": "더 보기",
+    "reasons": {
+      "accessDenied": "접근 거부",
+      "resourceBusy": "사용 중인 항목",
+      "itemChanged": "항목 변경됨",
+      "protected": "보호된 항목",
+      "notFound": "항목이 더 이상 없음",
+      "other": "기타 오류"
+    },
+    "hints": {
+      "itemChanged": "다시 검색한 후 삭제하세요",
+      "protected": "시스템이나 앱을 보호하기 위해 삭제를 차단했습니다",
+      "other": "오류 정보를 복사하여 도움을 요청하세요"
+    },
+    "failedSummary": "미삭제: {failed}개",
+    "viewFiles": "삭제되지 않은 파일 보기",
+    "retryHint": "파일 권한이나 사용 중인 앱을 확인하고 필요하면 다시 검색하세요",
+    "removedSummary": "{removed}개 삭제 · {size} 확보"
   }
 }

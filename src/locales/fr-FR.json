@@ -2159,7 +2159,6 @@
     "verifiedContentData": "Données de contenu lues",
     "scanHint": "Les fichiers sont comparés par contenu. Les fichiers volumineux sont lus entièrement uniquement en cas de besoin",
     "deleteCompleted": "Nettoyage des doublons terminé",
-    "deleteCompletedWithWarnings": "Nettoyage des doublons terminé avec des avertissements",
     "deleteCompletedDescription": "{count} doublon supprimé, {size} libérés ; {failed} échecs | {count} doublons supprimés, {size} libérés ; {failed} échecs",
     "summaryCount": "{count} groupe de doublons trouvé | {count} groupes de doublons trouvés",
     "summaryReclaimable": "Gain d’espace maximal :",
@@ -2190,7 +2189,7 @@
     "deleteSingleDescription": "Cette action est irréversible",
     "deleteTitle": "Supprimer définitivement les copies en double sélectionnées ?",
     "deleteDescription": "Les copies sélectionnées ne peuvent pas être récupérées",
-    "deleteSafetyNote": "Les fichiers situés dans des emplacements protégés ne sont jamais supprimés. Les fichiers modifiés ou indisponibles sont automatiquement ignorés",
+    "deleteSafetyNote": "Les éléments protégés, modifiés ou inaccessibles sont ignorés. Vérifiez les fichiers de programme avant de les supprimer",
     "copyCount": "{count} copie | {count} copies",
     "groupCount": "{count} groupe de doublons | {count} groupes de doublons",
     "groupSummary": "{count} copie · {size} par copie · jusqu’à {reclaimable} à libérer | {count} copies · {size} par copie · jusqu’à {reclaimable} à libérer",
@@ -4659,5 +4658,34 @@
       "black": "Noir",
       "white": "Blanc"
     }
+  },
+  "fileDeletion": {
+    "failedTitle": "Échec de la suppression",
+    "partialTitle": "Certains éléments n’ont pas été supprimés",
+    "viewDetails": "Voir les détails",
+    "itemCount": "Éléments : {count}",
+    "partial": "Une partie du contenu a peut-être été supprimée. Vérifiez les éléments restants",
+    "partialRestored": "Une partie a peut-être été supprimée ; le reste a été replacé à son emplacement initial",
+    "copyDetails": "Copier les informations d’erreur",
+    "copied": "Copié",
+    "failed": "Échec de la copie. Réessayez",
+    "showMore": "Afficher plus",
+    "reasons": {
+      "accessDenied": "Accès refusé",
+      "resourceBusy": "Élément utilisé",
+      "itemChanged": "Élément modifié",
+      "protected": "Élément protégé",
+      "notFound": "Élément introuvable",
+      "other": "Autre erreur"
+    },
+    "hints": {
+      "itemChanged": "Relancez l’analyse avant de supprimer",
+      "protected": "La suppression a été bloquée pour protéger le système ou une application",
+      "other": "Copiez les informations d’erreur pour obtenir de l’aide"
+    },
+    "failedSummary": "Non supprimés : {failed}",
+    "viewFiles": "Voir les fichiers non supprimés",
+    "retryHint": "Vérifiez l’accès ou les applications utilisant ces fichiers, puis relancez l’analyse si nécessaire",
+    "removedSummary": "{removed} supprimés · {size} libérés"
   }
 }

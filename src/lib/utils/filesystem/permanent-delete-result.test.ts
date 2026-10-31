@@ -178,3 +178,47 @@ describe('permanent-delete result synchronization', () => {
     expect(updated.reclaimableBytes).toBe(8);
   });
 });
+
+import { deleteFailureDiagnostic, deleteFailureHintKey, groupDeleteFailures } from './permanent-delete-result';
+
+describe('permanent deletion presentation', () => {
+  it('groups by typed metadata without interpreting diagnostic text', () => {
+    const groups = groupDeleteFailures([
+      { path: '/a', message: 'Access denied', reason: 'resourceBusy' },
+      { path: '/b', message: 'Busy', reason: 'accessDenied' },
+      { path: '/c', message: 'Access denied' },
+    ]);
+    expect(groups.map(group => [group.reason, group.items.map(item => item.path)])).toEqual([
+      ['accessDenied', ['/b']],
+      ['resourceBusy', ['/a']],
+      ['other', ['/c']],
+    ]);
+  });
+  it.each([
+    ['accessDenied', 'fileDeletion.retryHint'],
+    ['resourceBusy', 'fileDeletion.retryHint'],
+    ['itemChanged', 'fileDeletion.hints.itemChanged'],
+    ['notFound', 'fileDeletion.hints.itemChanged'],
+    ['protected', 'fileDeletion.hints.protected'],
+    ['other', 'fileDeletion.hints.other'],
+  ] as const)('selects concise guidance for %s', (reason, expected) => {
+    expect(deleteFailureHintKey([{ path: '/fixture', message: '', reason }])).toBe(expected);
+  });
+  it('copies native evidence and leaves legacy mutation status unknown', () => {
+    const data = JSON.parse(
+      deleteFailureDiagnostic([
+        {
+          path: '/line\nbreak',
+          message: 'native error',
+          reason: 'accessDenied',
+          stage: 'createStaging',
+          nativeCode: 5,
+          partial: false,
+          remainingRestored: false,
+        },
+      ])
+    );
+    expect(data[0]).toMatchObject({ path: '/line\nbreak', stage: 'createStaging', nativeCode: 5, partial: false });
+    expect(JSON.parse(deleteFailureDiagnostic([{ path: '/old', message: '' }]))[0].partial).toBeNull();
+  });
+});

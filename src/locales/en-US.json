@@ -2159,7 +2159,6 @@
     "verifiedContentData": "Content data read",
     "scanHint": "Files are compared by content. Large files are read fully only when needed",
     "deleteCompleted": "Duplicate cleanup complete",
-    "deleteCompletedWithWarnings": "Duplicate cleanup completed with warnings",
     "deleteCompletedDescription": "Deleted {count} duplicate and released {size}; {failed} failed | Deleted {count} duplicates and released {size}; {failed} failed",
     "summaryCount": "Found {count} duplicate group | Found {count} duplicate groups",
     "summaryReclaimable": "can reclaim up to",
@@ -2190,7 +2189,7 @@
     "deleteSingleDescription": "This cannot be undone",
     "deleteTitle": "Permanently delete selected duplicate copies?",
     "deleteDescription": "The selected copies cannot be recovered",
-    "deleteSafetyNote": "Files in protected locations are never deleted. Changed or unavailable files are skipped automatically",
+    "deleteSafetyNote": "Protected, changed or inaccessible items are skipped. Check program files before deleting",
     "copyCount": "{count} copy | {count} copies",
     "groupCount": "{count} duplicate group | {count} duplicate groups",
     "groupSummary": "{count} copy · {size} each · up to {reclaimable} reclaimable | {count} copies · {size} each · up to {reclaimable} reclaimable",
@@ -4659,5 +4658,34 @@
       "black": "Black",
       "white": "White"
     }
+  },
+  "fileDeletion": {
+    "failedTitle": "Deletion failed",
+    "partialTitle": "Some items were not deleted",
+    "viewDetails": "View details",
+    "itemCount": "Items: {count}",
+    "partial": "Some contents may have been deleted. Check the remaining items",
+    "partialRestored": "Some contents may have been deleted; the remainder was moved back to its original location",
+    "copyDetails": "Copy error information",
+    "copied": "Copied",
+    "failed": "Could not copy. Try again",
+    "showMore": "Show more",
+    "reasons": {
+      "accessDenied": "Access denied",
+      "resourceBusy": "Item in use",
+      "itemChanged": "Item changed",
+      "protected": "Protected item",
+      "notFound": "Item no longer exists",
+      "other": "Other error"
+    },
+    "hints": {
+      "itemChanged": "Scan again before deleting",
+      "protected": "Deletion was blocked to protect the system or an application",
+      "other": "Copy the error information for help"
+    },
+    "failedSummary": "Not deleted: {failed}",
+    "viewFiles": "View undeleted files",
+    "retryHint": "Check file access or apps using the files, and scan again if needed",
+    "removedSummary": "Deleted {removed} · Released {size}"
   }
 }

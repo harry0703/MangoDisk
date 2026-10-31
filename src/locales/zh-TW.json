@@ -2159,7 +2159,6 @@
     "verifiedContentData": "已讀取驗證資料",
     "scanHint": "按檔案內容進行比較，大檔案只在需要時完整讀取",
     "deleteCompleted": "重複檔案清理完成",
-    "deleteCompletedWithWarnings": "重複檔案清理已完成，部分項目未刪除",
     "deleteCompletedDescription": "已刪除 {count} 個副本，釋放 {size}，{failed} 個失敗",
     "summaryCount": "發現 {count} 組重複檔案",
     "summaryReclaimable": "最多可釋放",
@@ -2190,7 +2189,7 @@
     "deleteSingleDescription": "刪除後無法復原",
     "deleteTitle": "永久刪除所選重複副本？",
     "deleteDescription": "所選副本刪除後無法復原",
-    "deleteSafetyNote": "受保護位置中的檔案不會刪除；有變更或無法存取的檔案會自動跳過",
+    "deleteSafetyNote": "受保護、已變更或無法存取的項目會略過。程式檔案請確認用途後再刪除",
     "copyCount": "{count} 個副本",
     "groupCount": "{count} 組重複檔案",
     "groupSummary": "{count} 個副本 · 每個 {size} · 最多可釋放 {reclaimable}",
@@ -4659,5 +4658,34 @@
       "black": "黑色",
       "white": "白色"
     }
+  },
+  "fileDeletion": {
+    "failedTitle": "刪除失敗",
+    "partialTitle": "部分項目未刪除",
+    "viewDetails": "查看詳情",
+    "itemCount": "{count} 項",
+    "partial": "部分內容可能已刪除，請檢查剩餘項目",
+    "partialRestored": "部分內容可能已刪除，其餘內容已移回原位置",
+    "copyDetails": "複製錯誤資訊",
+    "copied": "已複製",
+    "failed": "複製失敗，請重試",
+    "showMore": "顯示更多",
+    "reasons": {
+      "accessDenied": "拒絕存取",
+      "resourceBusy": "檔案使用中",
+      "itemChanged": "檔案已變更",
+      "protected": "受保護項目",
+      "notFound": "項目已不存在",
+      "other": "其他錯誤"
+    },
+    "hints": {
+      "itemChanged": "請重新掃描後再刪除",
+      "protected": "為保護系統或應用程式，未執行刪除",
+      "other": "可複製錯誤資訊協助排查"
+    },
+    "failedSummary": "{failed} 項未刪除",
+    "viewFiles": "查看未刪除檔案",
+    "retryHint": "檢查檔案權限或佔用情況，必要時重新掃描",
+    "removedSummary": "已刪除 {removed} 項 · 已釋放 {size}"
   }
 }

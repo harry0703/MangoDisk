@@ -35,6 +35,9 @@ const commandErrorCodes = [
   'taskJoinFailed',
 ];
 const dynamicKeyGroups = {
+  'fileDeletion.reasons': ['accessDenied', 'resourceBusy', 'itemChanged', 'protected', 'notFound', 'other'],
+  'fileDeletion.hints': ['itemChanged', 'protected', 'other'],
+  fileDeletion: ['copied', 'failed'],
   // Native floating menus and typed platform display-mode selectors.
   floatingMonitor: ['menuBar', 'taskbar', 'tray', 'floating', 'both', 'resetPosition'],
   'floatingMonitor.fontSizes': ['standard', 'larger', 'large', 'extraLarge'],

@@ -2159,7 +2159,6 @@
     "verifiedContentData": "Dados do conteúdo lidos",
     "scanHint": "Arquivos são comparados pelo conteúdo. Arquivos grandes são lidos completamente apenas quando necessário",
     "deleteCompleted": "Limpeza de duplicatas concluída",
-    "deleteCompletedWithWarnings": "Limpeza de duplicatas concluída com avisos",
     "deleteCompletedDescription": "{count} cópia duplicada excluída e {size} liberados; {failed} com falha | {count} cópias duplicadas excluídas e {size} liberados; {failed} com falha",
     "summaryCount": "{count} grupo de arquivos duplicados encontrado | {count} grupos de arquivos duplicados encontrados",
     "summaryReclaimable": "até este espaço pode ser liberado",
@@ -2190,7 +2189,7 @@
     "deleteSingleDescription": "Isso não pode ser desfeito",
     "deleteTitle": "Excluir permanentemente as cópias duplicadas selecionadas?",
     "deleteDescription": "As cópias selecionadas não poderão ser recuperadas",
-    "deleteSafetyNote": "Arquivos em locais protegidos nunca são excluídos. Arquivos alterados ou indisponíveis são ignorados automaticamente",
+    "deleteSafetyNote": "Itens protegidos, alterados ou inacessíveis são ignorados. Confira os arquivos de programa antes de excluir",
     "copyCount": "{count} cópia | {count} cópias",
     "groupCount": "{count} grupo duplicado | {count} grupos duplicados",
     "groupSummary": "{count} cópia · {size} cada · até {reclaimable} recuperáveis | {count} cópias · {size} cada · até {reclaimable} recuperáveis",
@@ -4659,5 +4658,34 @@
       "black": "Preto",
       "white": "Branco"
     }
+  },
+  "fileDeletion": {
+    "failedTitle": "Falha ao excluir",
+    "partialTitle": "Alguns itens não foram excluídos",
+    "viewDetails": "Ver detalhes",
+    "itemCount": "Itens: {count}",
+    "partial": "Parte do conteúdo pode ter sido excluída. Confira os itens restantes",
+    "partialRestored": "Parte pode ter sido excluída; o restante foi movido de volta ao local original",
+    "copyDetails": "Copiar informações do erro",
+    "copied": "Copiado",
+    "failed": "Não foi possível copiar. Tente novamente",
+    "showMore": "Mostrar mais",
+    "reasons": {
+      "accessDenied": "Acesso negado",
+      "resourceBusy": "Item em uso",
+      "itemChanged": "Item alterado",
+      "protected": "Item protegido",
+      "notFound": "O item não existe mais",
+      "other": "Outro erro"
+    },
+    "hints": {
+      "itemChanged": "Analise novamente antes de excluir",
+      "protected": "A exclusão foi bloqueada para proteger o sistema ou um aplicativo",
+      "other": "Copie as informações do erro para obter ajuda"
+    },
+    "failedSummary": "Não excluídos: {failed}",
+    "viewFiles": "Ver arquivos não excluídos",
+    "retryHint": "Verifique o acesso ou os apps que usam os arquivos e analise novamente se necessário",
+    "removedSummary": "{removed} excluídos · {size} liberados"
   }
 }

@@ -2159,7 +2159,6 @@
     "verifiedContentData": "Okunan içerik verisi",
     "scanHint": "Dosyalar içeriklerine göre karşılaştırılır. Büyük dosyalar yalnızca gerektiğinde tamamen okunur",
     "deleteCompleted": "Yinelenen dosya temizliği tamamlandı",
-    "deleteCompletedWithWarnings": "Yinelenen dosya temizliği uyarılarla tamamlandı",
     "deleteCompletedDescription": "{count} yinelenen dosya silindi ve {size} alan boşaltıldı; {failed} başarısız | {count} yinelenen dosya silindi ve {size} alan boşaltıldı; {failed} başarısız",
     "summaryCount": "{count} yinelenen dosya grubu bulundu | {count} yinelenen dosya grubu bulundu",
     "summaryReclaimable": "en fazla şu kadar alan boşaltılabilir:",
@@ -2190,7 +2189,7 @@
     "deleteSingleDescription": "Bu işlem geri alınamaz",
     "deleteTitle": "Seçili yinelenen kopyalar kalıcı olarak silinsin mi?",
     "deleteDescription": "Seçili kopyalar geri getirilemez",
-    "deleteSafetyNote": "Korumalı konumlardaki dosyalar asla silinmez. Değişmiş veya erişilemeyen dosyalar otomatik atlanır",
+    "deleteSafetyNote": "Korumalı, değişmiş veya erişilemeyen öğeler atlanır. Program dosyalarını silmeden önce kontrol edin",
     "copyCount": "{count} kopya | {count} kopya",
     "groupCount": "{count} yinelenen grup | {count} yinelenen grup",
     "groupSummary": "{count} kopya · her biri {size} · en fazla {reclaimable} boşaltılabilir | {count} kopya · her biri {size} · en fazla {reclaimable} boşaltılabilir",
@@ -4659,5 +4658,34 @@
       "black": "Siyah",
       "white": "Beyaz"
     }
+  },
+  "fileDeletion": {
+    "failedTitle": "Silinemedi",
+    "partialTitle": "Bazı öğeler silinemedi",
+    "viewDetails": "Ayrıntıları görüntüle",
+    "itemCount": "{count} öğe",
+    "partial": "İçeriğin bir kısmı silinmiş olabilir. Kalan öğeleri kontrol edin",
+    "partialRestored": "İçeriğin bir kısmı silinmiş olabilir; kalanı özgün konumuna geri taşındı",
+    "copyDetails": "Hata bilgilerini kopyala",
+    "copied": "Kopyalandı",
+    "failed": "Kopyalanamadı. Yeniden deneyin",
+    "showMore": "Daha fazla göster",
+    "reasons": {
+      "accessDenied": "Erişim reddedildi",
+      "resourceBusy": "Öğe kullanımda",
+      "itemChanged": "Öğe değişti",
+      "protected": "Korunan öğe",
+      "notFound": "Öğe artık mevcut değil",
+      "other": "Diğer hata"
+    },
+    "hints": {
+      "itemChanged": "Silmeden önce yeniden tarayın",
+      "protected": "Sistemi veya bir uygulamayı korumak için silme engellendi",
+      "other": "Yardım almak için hata bilgilerini kopyalayın"
+    },
+    "failedSummary": "Silinmeyen: {failed}",
+    "viewFiles": "Silinmeyen dosyaları göster",
+    "retryHint": "Dosya erişimini veya dosyaları kullanan uygulamaları kontrol edin; gerekirse yeniden tarayın",
+    "removedSummary": "{removed} öğe silindi · {size} alan boşaltıldı"
   }
 }

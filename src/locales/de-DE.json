@@ -2159,7 +2159,6 @@
     "verifiedContentData": "Inhaltsdaten gelesen",
     "scanHint": "Dateien werden nach Inhalt verglichen. Große Dateien werden nur bei Bedarf vollständig gelesen",
     "deleteCompleted": "Duplikatbereinigung abgeschlossen",
-    "deleteCompletedWithWarnings": "Duplikatbereinigung mit Warnungen abgeschlossen",
     "deleteCompletedDescription": "{count} Duplikat gelöscht, {size} freigegeben; {failed} fehlgeschlagen | {count} Duplikate gelöscht, {size} freigegeben; {failed} fehlgeschlagen",
     "summaryCount": "{count} Duplikatgruppe gefunden | {count} Duplikatgruppen gefunden",
     "summaryReclaimable": "Maximal freigebbar:",
@@ -2190,7 +2189,7 @@
     "deleteSingleDescription": "Dies kann nicht rückgängig gemacht werden",
     "deleteTitle": "Ausgewählte Duplikate dauerhaft löschen?",
     "deleteDescription": "Die ausgewählten Kopien können nicht wiederhergestellt werden",
-    "deleteSafetyNote": "Dateien an geschützten Speicherorten werden niemals gelöscht. Geänderte oder nicht verfügbare Dateien werden automatisch übersprungen",
+    "deleteSafetyNote": "Geschützte, geänderte oder unzugängliche Elemente werden übersprungen. Programmdateien vor dem Löschen prüfen",
     "copyCount": "{count} Kopie | {count} Kopien",
     "groupCount": "{count} Duplikatgruppe | {count} Duplikatgruppen",
     "groupSummary": "{count} Kopie · je {size} · bis zu {reclaimable} freigebbar | {count} Kopien · je {size} · bis zu {reclaimable} freigebbar",
@@ -4659,5 +4658,34 @@
       "black": "Schwarz",
       "white": "Weiß"
     }
+  },
+  "fileDeletion": {
+    "failedTitle": "Löschen fehlgeschlagen",
+    "partialTitle": "Einige Elemente wurden nicht gelöscht",
+    "viewDetails": "Details anzeigen",
+    "itemCount": "Einträge: {count}",
+    "partial": "Ein Teil des Inhalts wurde möglicherweise gelöscht. Verbleibende Einträge prüfen",
+    "partialRestored": "Ein Teil wurde möglicherweise gelöscht; der Rest wurde an den ursprünglichen Ort zurückverschoben",
+    "copyDetails": "Fehlerinformationen kopieren",
+    "copied": "Kopiert",
+    "failed": "Kopieren fehlgeschlagen. Erneut versuchen",
+    "showMore": "Mehr anzeigen",
+    "reasons": {
+      "accessDenied": "Zugriff verweigert",
+      "resourceBusy": "Eintrag wird verwendet",
+      "itemChanged": "Eintrag geändert",
+      "protected": "Geschützter Eintrag",
+      "notFound": "Eintrag nicht mehr vorhanden",
+      "other": "Anderer Fehler"
+    },
+    "hints": {
+      "itemChanged": "Vor dem Löschen erneut scannen",
+      "protected": "Das Löschen wurde zum Schutz des Systems oder einer Anwendung blockiert",
+      "other": "Fehlerinformationen zur Klärung kopieren"
+    },
+    "failedSummary": "Nicht gelöscht: {failed}",
+    "viewFiles": "Nicht gelöschte Dateien anzeigen",
+    "retryHint": "Dateizugriff oder verwendende Apps prüfen; bei Bedarf erneut scannen",
+    "removedSummary": "{removed} gelöscht · {size} freigegeben"
   }
 }

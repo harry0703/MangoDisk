@@ -2159,7 +2159,6 @@
     "verifiedContentData": "Datos de contenido leídos",
     "scanHint": "Los archivos se comparan por contenido. Los archivos grandes se leen completamente solo cuando es necesario",
     "deleteCompleted": "Limpieza de duplicados completada",
-    "deleteCompletedWithWarnings": "Limpieza de duplicados completada con advertencias",
     "deleteCompletedDescription": "{count} duplicado eliminado, {size} liberados; {failed} fallidos | {count} duplicados eliminados, {size} liberados; {failed} fallidos",
     "summaryCount": "{count} grupo de duplicados encontrado | {count} grupos de duplicados encontrados",
     "summaryReclaimable": "Máximo recuperable:",
@@ -2190,7 +2189,7 @@
     "deleteSingleDescription": "Esto no se puede deshacer",
     "deleteTitle": "¿Eliminar permanentemente las copias duplicadas seleccionadas?",
     "deleteDescription": "Las copias seleccionadas no se pueden recuperar",
-    "deleteSafetyNote": "Los archivos en ubicaciones protegidas nunca se eliminan. Los archivos modificados o no disponibles se omiten automáticamente",
+    "deleteSafetyNote": "Se omiten los elementos protegidos, modificados o inaccesibles. Revisa los archivos de programa antes de eliminarlos",
     "copyCount": "{count} copia | {count} copias",
     "groupCount": "{count} grupo de duplicados | {count} grupos de duplicados",
     "groupSummary": "{count} copia · {size} cada una · hasta {reclaimable} liberables | {count} copias · {size} cada una · hasta {reclaimable} liberables",
@@ -4659,5 +4658,34 @@
       "black": "Negro",
       "white": "Blanco"
     }
+  },
+  "fileDeletion": {
+    "failedTitle": "Error al eliminar",
+    "partialTitle": "Algunos elementos no se eliminaron",
+    "viewDetails": "Ver detalles",
+    "itemCount": "Elementos: {count}",
+    "partial": "Puede haberse eliminado parte del contenido. Revisa los elementos restantes",
+    "partialRestored": "Puede haberse eliminado parte del contenido; el resto se devolvió a su ubicación original",
+    "copyDetails": "Copiar información del error",
+    "copied": "Copiado",
+    "failed": "No se pudo copiar. Inténtalo de nuevo",
+    "showMore": "Mostrar más",
+    "reasons": {
+      "accessDenied": "Acceso denegado",
+      "resourceBusy": "Elemento en uso",
+      "itemChanged": "Elemento modificado",
+      "protected": "Elemento protegido",
+      "notFound": "El elemento ya no existe",
+      "other": "Otro error"
+    },
+    "hints": {
+      "itemChanged": "Vuelve a analizar antes de eliminar",
+      "protected": "Se bloqueó la eliminación para proteger el sistema o una aplicación",
+      "other": "Copia la información del error para solicitar ayuda"
+    },
+    "failedSummary": "Sin eliminar: {failed}",
+    "viewFiles": "Ver archivos sin eliminar",
+    "retryHint": "Revisa el acceso o las aplicaciones que usan los archivos; analiza de nuevo si es necesario",
+    "removedSummary": "{removed} eliminados · {size} liberados"
   }
 }

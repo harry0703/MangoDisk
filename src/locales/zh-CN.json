@@ -2159,7 +2159,6 @@
     "verifiedContentData": "已读取校验数据",
     "scanHint": "按文件内容进行比较，大文件只在需要时完整读取",
     "deleteCompleted": "重复文件清理完成",
-    "deleteCompletedWithWarnings": "重复文件清理已完成，部分项目未删除",
     "deleteCompletedDescription": "已删除 {count} 个副本，释放 {size}，{failed} 个失败",
     "summaryCount": "发现 {count} 组重复文件",
     "summaryReclaimable": "最多可释放",
@@ -2190,7 +2189,7 @@
     "deleteSingleDescription": "删除后无法恢复",
     "deleteTitle": "彻底删除所选重复副本？",
     "deleteDescription": "所选副本删除后无法恢复",
-    "deleteSafetyNote": "受保护位置中的文件不会删除；发生变化或无法访问的文件会自动跳过",
+    "deleteSafetyNote": "受保护、已变化或无法访问的项目会跳过。程序文件请确认用途后再删除",
     "copyCount": "{count} 个副本",
     "groupCount": "{count} 组重复文件",
     "groupSummary": "{count} 个副本 · 每个 {size} · 最多可释放 {reclaimable}",
@@ -4659,5 +4658,34 @@
       "black": "黑色",
       "white": "白色"
     }
+  },
+  "fileDeletion": {
+    "failedTitle": "删除失败",
+    "partialTitle": "部分项目未删除",
+    "viewDetails": "查看详情",
+    "itemCount": "{count} 项",
+    "partial": "可能已删除部分内容，请检查剩余项目",
+    "partialRestored": "部分内容可能已删除，剩余内容已移回原位置",
+    "copyDetails": "复制错误信息",
+    "copied": "已复制",
+    "failed": "复制失败，请重试",
+    "showMore": "显示更多",
+    "reasons": {
+      "accessDenied": "拒绝访问",
+      "resourceBusy": "文件被占用",
+      "itemChanged": "文件已变化",
+      "protected": "受保护项目",
+      "notFound": "项目已不存在",
+      "other": "其他错误"
+    },
+    "hints": {
+      "itemChanged": "请重新扫描后再删除",
+      "protected": "为保护系统或应用，未执行删除",
+      "other": "可复制错误信息协助排查"
+    },
+    "failedSummary": "{failed} 项未删除",
+    "viewFiles": "查看未删除文件",
+    "retryHint": "检查文件权限或占用情况，必要时重新扫描",
+    "removedSummary": "已删除 {removed} 项 · 已释放 {size}"
   }
 }

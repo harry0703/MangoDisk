@@ -2159,7 +2159,6 @@
     "verifiedContentData": "検証のために読み取ったデータ",
     "scanHint": "ファイルは内容で比較されます。大容量ファイルは必要な場合にのみ完全に読み込まれます",
     "deleteCompleted": "重複ファイルのクリーンアップが完了しました",
-    "deleteCompletedWithWarnings": "重複ファイルのクリーンアップが警告付きで完了しました",
     "deleteCompletedDescription": "重複ファイルを {count} 件削除し、{size} を解放しました。{failed} 件は削除できませんでした | 重複ファイルを {count} 件削除し、{size} を解放しました。{failed} 件は削除できませんでした",
     "summaryCount": "重複ファイルが {count} グループ見つかりました | 重複ファイルが {count} グループ見つかりました",
     "summaryReclaimable": "最大解放可能容量",
@@ -2190,7 +2189,7 @@
     "deleteSingleDescription": "この操作は元に戻せません",
     "deleteTitle": "選択した重複コピーを完全に削除しますか？",
     "deleteDescription": "選択したコピーは回復できません",
-    "deleteSafetyNote": "保護された場所のファイルは削除されません。変更されたファイルや利用できないファイルは自動的にスキップされます",
+    "deleteSafetyNote": "保護された項目、変更された項目、アクセスできない項目はスキップします。プログラムファイルは用途を確認してから削除してください",
     "copyCount": "{count} 個のコピー | {count} 個のコピー",
     "groupCount": "{count} 重複グループ | {count} 重複グループ",
     "groupSummary": "{count} 個 · 1 個あたり {size} · 最大 {reclaimable} を解放 | {count} 個 · 1 個あたり {size} · 最大 {reclaimable} を解放",
@@ -4659,5 +4658,34 @@
       "black": "黒",
       "white": "白"
     }
+  },
+  "fileDeletion": {
+    "failedTitle": "削除できませんでした",
+    "partialTitle": "一部の項目が未削除です",
+    "viewDetails": "詳細を見る",
+    "itemCount": "{count} 件",
+    "partial": "一部の内容が削除された可能性があります。残りの項目を確認してください",
+    "partialRestored": "一部の内容が削除された可能性があります。残りは元の場所に戻されました",
+    "copyDetails": "エラー情報をコピー",
+    "copied": "コピーしました",
+    "failed": "コピーできませんでした。再試行してください",
+    "showMore": "さらに表示",
+    "reasons": {
+      "accessDenied": "アクセス拒否",
+      "resourceBusy": "使用中の項目",
+      "itemChanged": "変更された項目",
+      "protected": "保護された項目",
+      "notFound": "項目が存在しません",
+      "other": "その他のエラー"
+    },
+    "hints": {
+      "itemChanged": "再スキャンしてから削除してください",
+      "protected": "システムやアプリを保護するため、削除を中止しました",
+      "other": "エラー情報をコピーして原因の確認にお使いください"
+    },
+    "failedSummary": "未削除: {failed} 件",
+    "viewFiles": "未削除のファイルを表示",
+    "retryHint": "アクセス権やファイルを使用中のアプリを確認し、必要に応じて再スキャンしてください",
+    "removedSummary": "{removed} 項目を削除 · {size} を解放"
   }
 }
