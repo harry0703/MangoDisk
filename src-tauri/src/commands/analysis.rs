@@ -33,6 +33,7 @@ pub async fn export_analysis_result(
         .add_filter(
             match format {
                 AnalysisExportFormat::Json => "JSON",
+                AnalysisExportFormat::Markdown => "Markdown",
             },
             &[format.extension()],
         )

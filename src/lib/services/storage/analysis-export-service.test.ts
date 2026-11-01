@@ -45,6 +45,14 @@ describe('nested analysis export transport', () => {
     }
     expect(invokeMock).not.toHaveBeenCalled();
   });
+  it('passes Markdown selection through without changing report or picker ownership', async () => {
+    invokeMock.mockResolvedValueOnce({ schemaVersion: 2, path: '/out.md', entryCount: 12, fileBytes: 1024 });
+    await AnalysisExportService.save({ ...request, format: 'markdown' }, 'Save results');
+    expect(invokeMock).toHaveBeenCalledWith('export_analysis_result', {
+      request: { ...request, format: 'markdown' },
+      dialogTitle: 'Save results',
+    });
+  });
   it('preserves typed snapshot expiration errors', async () => {
     const error = { code: 'invalidInput', details: { reason: 'analysisExportUnavailable' }, retryable: false };
     invokeMock.mockRejectedValueOnce(error);

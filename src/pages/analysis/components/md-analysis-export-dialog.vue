@@ -17,6 +17,7 @@ import type { AnalysisResult } from '@/lib/models/storage/analysis';
 import {
   ANALYSIS_EXPORT_DEPTHS,
   ANALYSIS_EXPORT_ENTRY_LIMITS,
+  ANALYSIS_EXPORT_FORMATS,
 } from '@/lib/models/storage/analysis-export';
 import { useAnalysisExportPreferencesStore } from '@/stores/analysis-export-preferences-store';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -130,6 +131,21 @@ watch(
             ><span class="export-path">{{ result.root }}</span></MdTooltip
           >
         </div>
+        <section class="export-field">
+          <p id="analysis-export-format" class="export-list-label">{{ t('analysis.export.format') }}</p>
+          <Select :model-value="preferences.format" @update:model-value="exportPreferences.setFormat">
+            <SelectTrigger size="sm" class="w-full" aria-labelledby="analysis-export-format">
+              <SelectValue>{{
+                t(preferences.format === 'json' ? 'analysis.export.formatJson' : 'analysis.export.formatMarkdown')
+              }}</SelectValue>
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem v-for="format in ANALYSIS_EXPORT_FORMATS" :key="format" :value="format">{{
+                t(format === 'json' ? 'analysis.export.formatJson' : 'analysis.export.formatMarkdown')
+              }}</SelectItem>
+            </SelectContent>
+          </Select>
+        </section>
         <section class="export-field">
           <p id="analysis-export-depth" class="export-list-label">{{ t('analysis.export.depth') }}</p>
           <Select :model-value="String(preferences.maxDepth)" @update:model-value="changeDepth">

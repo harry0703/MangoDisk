@@ -50,10 +50,21 @@ allowed. Expired sessions and unavailable or superseded indexes return
 Opening the dialog uses local display metadata only. Report preparation runs on
 a blocking worker and freezes its result before the native picker opens.
 
-The GUI remembers depth, entry limit and full-path choices in its existing settings
+The GUI remembers format, depth, entry limit and full-path choices in its existing settings
 document. Preferences load at application startup, so opening the dialog adds no
 settings IO. Canceling export, navigating or starting another scan does not reset
 these choices; scan IDs and report destinations are not stored as export preferences.
+
+Formats are `json` (default) and `markdown`. Older requests and saved preferences
+without a format retain JSON. Both formats use the same frozen report, selection
+budgets and atomic-save boundary. The native picker uses the selected extension
+(`.json` or `.md`); the format is not an additional JSON report field.
+
+Markdown streams the tree with portable English evidence labels, exact integer
+bytes, measurement times, size status and separate remaining/omission groups.
+Names and optional paths are JSON-escaped strings inside variable-length code
+spans, so special names cannot inject Markdown structure, links or raw HTML.
+It does not read source files or build another full report text in memory.
 
 Reports use `schemaVersion: 5`; versions 1–4 are earlier directory export formats.
 Consumers must reject unsupported versions. Reports are write-only evidence,

@@ -13,23 +13,29 @@ use crate::{
     CoreError, CoreResult,
 };
 
+#[path = "analysis_markdown.rs"]
+mod markdown;
+
 #[derive(Debug, Default, Clone, Copy, PartialEq, Eq, serde::Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub enum AnalysisExportFormat {
     #[default]
     Json,
+    Markdown,
 }
 
 impl AnalysisExportFormat {
     pub fn extension(self) -> &'static str {
         match self {
             Self::Json => "json",
+            Self::Markdown => "md",
         }
     }
 
     pub fn as_str(self) -> &'static str {
         match self {
             Self::Json => "json",
+            Self::Markdown => "markdown",
         }
     }
 }
@@ -291,6 +297,7 @@ impl AnalysisReport {
                         serde_json::to_writer(&mut writer, self)?;
                         writer.write_all(b"\n")?;
                     }
+                    AnalysisExportFormat::Markdown => markdown::write(self, &mut writer)?,
                 }
                 writer.flush()?;
             }

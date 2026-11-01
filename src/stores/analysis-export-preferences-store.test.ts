@@ -45,6 +45,7 @@ describe('analysis export preference lifecycle', () => {
     store.setDepth(6);
     store.setEntryLimit(0);
     store.setFullPaths(true);
+    store.setFormat('markdown');
     setActivePinia(createPinia());
     const restarted = useAnalysisExportPreferencesStore();
     await restarted.initialize();
@@ -53,7 +54,7 @@ describe('analysis export preference lifecycle', () => {
       maxDepth: 6,
       maxEntries: 0,
       includeFullPaths: true,
-      format: 'json',
+      format: 'markdown',
     });
   });
 

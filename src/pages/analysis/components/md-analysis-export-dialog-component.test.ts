@@ -71,7 +71,8 @@ describe('analysis list export dialog', () => {
     expect(wrapper.getComponent({ name: 'Dialog' }).props('open')).toBe(true);
     expect(wrapper.text()).toContain('Current folder');
     expect(wrapper.text()).toContain(result.root);
-    expect(wrapper.findAll('[role=combobox]')).toHaveLength(2);
+    expect(wrapper.findAll('[role=combobox]')).toHaveLength(3);
+    expect(wrapper.get('[aria-labelledby=analysis-export-format]').text()).toBe('JSON');
     expect(wrapper.get('[aria-labelledby=analysis-export-depth]').text()).toBe('Depth 2');
     expect(wrapper.get('[aria-labelledby=analysis-export-limit]').text()).toBe('500 items');
     expect(wrapper.text()).toContain('Up to 500 items across all levels combined');
@@ -104,18 +105,19 @@ describe('analysis list export dialog', () => {
   it('retains six levels and all available details across reopening, new scans and page remounts', async () => {
     const wrapper = mountDialog();
     const selects = wrapper.findAllComponents({ name: 'Select' });
-    selects[0]!.vm.$emit('update:modelValue', '6');
-    selects[1]!.vm.$emit('update:modelValue', '1000');
+    selects[0]!.vm.$emit('update:modelValue', 'markdown');
+    selects[1]!.vm.$emit('update:modelValue', '6');
+    selects[2]!.vm.$emit('update:modelValue', '1000');
     await flushPromises();
     expect(wrapper.text()).toContain('Up to 1,000 items across all levels combined');
-    selects[1]!.vm.$emit('update:modelValue', '0');
+    selects[2]!.vm.$emit('update:modelValue', '0');
     await flushPromises();
     expect(wrapper.text()).toContain('Export all available details within the selected depth');
     expect(wrapper.text()).not.toContain('Up to 0 items');
     await exportButton(wrapper).trigger('click');
     await flushPromises();
     expect(saveMock).toHaveBeenCalledExactlyOnceWith(
-      { scanId: 7, includeFullPaths: false, maxDepth: 6, maxEntries: 0, format: 'json' },
+      { scanId: 7, includeFullPaths: false, maxDepth: 6, maxEntries: 0, format: 'markdown' },
       'Save analysis results'
     );
     expect(wrapper.get('[aria-labelledby=analysis-export-limit]').text()).toBe('All available details');
@@ -128,6 +130,7 @@ describe('analysis list export dialog', () => {
     wrapper.unmount();
     const reentered = mountDialog();
     expect(reentered.get('[aria-labelledby=analysis-export-depth]').text()).toBe('Depth 6');
+    expect(reentered.get('[aria-labelledby=analysis-export-format]').text()).toBe('Markdown');
     expect(reentered.get('[aria-labelledby=analysis-export-limit]').text()).toBe('All available details');
     reentered.unmount();
   });

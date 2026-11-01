@@ -3,7 +3,7 @@ export const ANALYSIS_EXPORT_DEPTHS = [1, 2, 3, 4, 5, 6] as const;
 export const ANALYSIS_EXPORT_ENTRY_LIMITS = [200, 500, 1000, 2000, 0] as const;
 export type AnalysisExportDepth = (typeof ANALYSIS_EXPORT_DEPTHS)[number];
 export type AnalysisExportEntryLimit = (typeof ANALYSIS_EXPORT_ENTRY_LIMITS)[number];
-export const ANALYSIS_EXPORT_FORMATS = ['json'] as const;
+export const ANALYSIS_EXPORT_FORMATS = ['json', 'markdown'] as const;
 export type AnalysisExportFormat = (typeof ANALYSIS_EXPORT_FORMATS)[number];
 
 export const ANALYSIS_EXPORT_PREFERENCES_SCHEMA_VERSION = 1;

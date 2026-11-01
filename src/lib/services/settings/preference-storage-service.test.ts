@@ -63,7 +63,7 @@ describe('PreferenceStorageService', () => {
       maxDepth: 6 as const,
       maxEntries: 0 as const,
       includeFullPaths: true,
-      format: 'json' as const,
+      format: 'markdown' as const,
     };
     const initial = PreferenceStorageService.saveAnalysisExportPreferences(first);
     first.includeFullPaths = false;

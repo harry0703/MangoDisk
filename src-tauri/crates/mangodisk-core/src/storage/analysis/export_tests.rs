@@ -361,6 +361,52 @@ fn invalid_limits_and_expired_sessions_never_fall_back_to_scanning() {
     assert!(serde_json::from_value::<AnalysisExportRequest>(serde_json::json!({"scanId":1,"maxDepth":2,"maxEntries":500,"includeFullPaths":false,"format":"csv"})).is_err());
 }
 
+#[test]
+fn markdown_and_json_share_one_frozen_selection_after_the_source_disappears() {
+    let _lock = crate::shared::operation::test_operation_lock();
+    let parent = tempfile::tempdir().unwrap();
+    let root = parent.path().join("source");
+    std::fs::create_dir_all(root.join("child/deep")).unwrap();
+    std::fs::write(root.join("child/file.bin"), b"private file content marker").unwrap();
+    std::fs::write(root.join("child/deep/hidden.bin"), vec![1; 4096]).unwrap();
+    let result = analyze(&root);
+    let params = AnalysisExportRequest {
+        include_full_paths: true,
+        ..request(result.scan_id, 2, 500)
+    };
+    let json_report = prepare(params).unwrap();
+    let markdown = prepare(AnalysisExportRequest {
+        format: AnalysisExportFormat::Markdown,
+        ..params
+    })
+    .unwrap();
+    assert_eq!(
+        serde_json::to_value(&json_report).unwrap(),
+        serde_json::to_value(&markdown).unwrap()
+    );
+    assert!(json_report.suggested_file_name().ends_with(".json"));
+    assert!(markdown.suggested_file_name().ends_with(".md"));
+    std::fs::rename(&root, parent.path().join("moved")).unwrap();
+    cache::clear_all().unwrap();
+    let output = tempfile::tempdir().unwrap();
+    let destination = output.path().join("report.md");
+    std::fs::write(&destination, b"previous report").unwrap();
+    let receipt = markdown.save(&destination).unwrap();
+    let text = std::fs::read_to_string(&destination).unwrap();
+    assert!(text.starts_with("# MangoDisk disk analysis\n"));
+    assert!(text.contains("**Summary — Not expanded (depth limit)**"));
+    assert!(text.contains("**File** ` \"file.bin\" `"));
+    assert!(!text.contains("private file content marker"));
+    assert_eq!(receipt.entry_count, json_report.entry_count);
+    assert_eq!(receipt.file_bytes, text.len() as u64);
+    assert_eq!(receipt.schema_version, 2);
+    assert!(markdown.save(Path::new("relative.md")).is_err());
+    let blocked = output.path().join("blocked.md");
+    std::fs::create_dir(&blocked).unwrap();
+    assert!(markdown.save(&blocked).is_err());
+    assert_eq!(std::fs::read_dir(output.path()).unwrap().count(), 2);
+}
+
 #[cfg(target_os = "linux")]
 #[test]
 fn non_utf8_directory_names_use_native_keys_without_losing_nested_files() {

@@ -13,6 +13,13 @@ describe('analysis export preference validation', () => {
     });
   });
 
+  it('restores Markdown while retaining older preferences that have no format', () => {
+    const saved = { schemaVersion: 1, maxDepth: 6, maxEntries: 1000, includeFullPaths: true };
+    expect(parse(saved)).toEqual({ ...saved, format: 'json' });
+    expect(parse({ ...saved, format: 'markdown' })).toEqual({ ...saved, format: 'markdown' });
+    expect(parse({ ...saved, format: 'csv' })).toEqual({ ...saved, format: 'json' });
+  });
+
   it('rejects unknown documents and repairs invalid fields independently', () => {
     for (const value of [null, [], 'export', {}, { schemaVersion: 2, maxDepth: 6 }]) {
       expect(parse(value)).toEqual(defaults());
