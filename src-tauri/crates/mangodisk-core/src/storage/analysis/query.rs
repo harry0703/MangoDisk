@@ -51,6 +51,12 @@ impl KnownChild<'_> {
     }
 }
 
+pub(super) struct DirectDirectoryTotals {
+    pub bytes: u64,
+    pub file_count: u64,
+    pub directory_count: u64,
+}
+
 pub(super) enum CachedList {
     Ready {
         entries: Vec<DirectoryEntryInfo>,
@@ -139,6 +145,25 @@ impl<'a> AnalysisQuery<'a> {
         parent: &Path,
     ) -> impl Iterator<Item = CoreResult<KnownChild<'b>>> + 'b {
         self.directories(parent).chain(self.files(parent))
+    }
+
+    pub fn directory_totals(&self, parent: &Path) -> CoreResult<DirectDirectoryTotals> {
+        let (mut bytes, mut files, mut directories) = (0_u64, 0_u64, 0_u64);
+        for child in self.directories(parent) {
+            let child = child?;
+            if let ChildMeasurement::Directory(value) = child.measurement {
+                let overflow =
+                    || CoreError::invalid_input("analysis directory accounting overflowed");
+                bytes = bytes.checked_add(value.bytes).ok_or_else(overflow)?;
+                files = files.checked_add(value.file_count).ok_or_else(overflow)?;
+                directories = directories.checked_add(1).ok_or_else(overflow)?;
+            }
+        }
+        Ok(DirectDirectoryTotals {
+            bytes,
+            file_count: files,
+            directory_count: directories,
+        })
     }
 
     pub fn positive_directory_count(&self, parent: &Path) -> u64 {

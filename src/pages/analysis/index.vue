@@ -91,7 +91,6 @@ function cancelScan() {
 }
 const scanBusy = computed(() => props.busy || resolvingScope.value);
 const exportOpen = ref(false);
-const exportLoading = ref(false);
 const exportSnapshot = shallowRef<AnalysisResult | null>(null);
 function openExport() {
   if (!props.result || exportOpen.value || scanBusy.value || props.deleting || props.recoveryRequired) return;
@@ -198,11 +197,6 @@ function setSelectionMode(enabled: boolean) {
 // WebKit may keep mouse actions focused on body, outside the page's bubbling path.
 function handleBodyEscape(event: KeyboardEvent) {
   if (event.key !== 'Escape' || event.defaultPrevented) return;
-  if (exportLoading.value) {
-    event.preventDefault();
-    exportOpen.value = false;
-    return;
-  }
   if (event.target === document.body) exitSelection(event);
 }
 function exitSelection(event: KeyboardEvent) {
@@ -493,13 +487,11 @@ function navigateHistory(index: number) {
         <MdTooltip
           v-if="result"
           :text="
-            exportLoading
-              ? t('analysis.export.loading')
-              : scanBusy
-                ? t('analysis.export.waitForScan')
-                : recoveryRequired
-                  ? t('analysis.export.unavailable')
-                  : t('analysis.export.action')
+            scanBusy
+              ? t('analysis.export.waitForScan')
+              : recoveryRequired
+                ? t('analysis.export.unavailable')
+                : t('analysis.export.action')
           "
         >
           <span
@@ -507,14 +499,11 @@ function navigateHistory(index: number) {
               variant="outline"
               class="analysis-export-button"
               :aria-label="t('analysis.export.action')"
-              :disabled="scanBusy || deleting || recoveryRequired || exportLoading"
-              :aria-busy="exportLoading || undefined"
+              :disabled="scanBusy || deleting || recoveryRequired"
               @click="openExport"
-              ><MdIcon
-                :name="exportLoading ? ICON_NAMES.refresh : ICON_NAMES.download"
-                :class="{ 'icon-spin': exportLoading }"
-                :size="17"
-              /><span class="analysis-export-label">{{ t('analysis.export.action') }}</span></Button
+              ><MdIcon :name="ICON_NAMES.download" :size="17" /><span class="analysis-export-label">{{
+                t('analysis.export.action')
+              }}</span></Button
             ></span
           >
         </MdTooltip>
@@ -690,7 +679,6 @@ function navigateHistory(index: number) {
     <MdAnalysisExportDialog
       v-model:open="exportOpen"
       :result="exportSnapshot"
-      @loading="exportLoading = $event"
       @rescan="emit('analyze', $event, true, true)"
     />
   </MdPageShell>

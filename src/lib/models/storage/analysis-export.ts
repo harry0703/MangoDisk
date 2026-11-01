@@ -1,35 +1,33 @@
-import type { ByteSizePreset } from '@/lib/models/settings/byte-size';
-import type { AnalysisResult, AnalysisScanMode } from '@/lib/models/storage/analysis';
+export const ANALYSIS_EXPORT_SCHEMA_VERSION = 2;
+export const ANALYSIS_EXPORT_DEPTHS = [1, 2, 3, 4, 5, 6] as const;
+export const ANALYSIS_EXPORT_ENTRY_LIMITS = [200, 500, 1000, 2000, 0] as const;
+export type AnalysisExportDepth = (typeof ANALYSIS_EXPORT_DEPTHS)[number];
+export type AnalysisExportEntryLimit = (typeof ANALYSIS_EXPORT_ENTRY_LIMITS)[number];
+export const ANALYSIS_EXPORT_FORMATS = ['json'] as const;
+export type AnalysisExportFormat = (typeof ANALYSIS_EXPORT_FORMATS)[number];
 
-export const ANALYSIS_EXPORT_SCHEMA_VERSION = 1;
-export type AnalysisExportScope = 'scanRoot' | 'currentDirectory';
-export type AnalysisExportDetail = 'summary' | 'full';
+export const ANALYSIS_EXPORT_PREFERENCES_SCHEMA_VERSION = 1;
 
-export const ANALYSIS_EXPORT_MINIMUM_SIZE_PRESETS: readonly ByteSizePreset[] = [
-  { amount: 10, unit: 'MB' },
-  { amount: 100, unit: 'MB' },
-  { amount: 1, unit: 'GB' },
-];
-
-export interface AnalysisExportScopeInfo {
-  path: string;
-  scannedAtMs: number;
-  totalBytes: number;
-  fileCount: number;
-  coverage: NonNullable<AnalysisResult['coverage']>;
+export interface AnalysisExportPreferences {
+  schemaVersion: typeof ANALYSIS_EXPORT_PREFERENCES_SCHEMA_VERSION;
+  maxDepth: AnalysisExportDepth;
+  maxEntries: AnalysisExportEntryLimit;
+  includeFullPaths: boolean;
+  format: AnalysisExportFormat;
 }
 
-export interface AnalysisExportOptions {
-  schemaVersion: typeof ANALYSIS_EXPORT_SCHEMA_VERSION;
+export interface AnalysisExportRequest {
   scanId: number;
-  scanMode: AnalysisScanMode;
-  scanRoot: AnalysisExportScopeInfo;
-  currentDirectory: AnalysisExportScopeInfo;
+  maxDepth: AnalysisExportDepth;
+  /** Zero means all available cached detail within the selected depth. */
+  maxEntries: AnalysisExportEntryLimit;
+  includeFullPaths: boolean;
+  format: AnalysisExportFormat;
 }
 
 export interface AnalysisExportReceipt {
   schemaVersion: typeof ANALYSIS_EXPORT_SCHEMA_VERSION;
   path: string;
-  directoryCount: number;
+  entryCount: number;
   fileBytes: number;
 }

@@ -50,7 +50,7 @@ beforeEach(() => {
 });
 
 describe('analysis page', () => {
-  it.each(['escape', 'scan'])('shows export loading on the button and cancels opening on %s', async action => {
+  it.each(['navigate', 'scan'])('opens export immediately and closes it on %s', async action => {
     const wrapper = shallowMount(AnalysisPage, {
       props: {
         result,
@@ -73,14 +73,10 @@ describe('analysis page', () => {
       await wrapper.get('.analysis-export-button').trigger('click');
       const dialog = wrapper.getComponent(MdAnalysisExportDialog);
       expect(dialog.props('open')).toBe(true);
-      dialog.vm.$emit('loading', true);
-      await flushPromises();
-      expect(wrapper.get('.analysis-export-button').attributes('aria-busy')).toBe('true');
+      expect(dialog.props('result')).toEqual(result);
+      expect(wrapper.get('.analysis-export-button').attributes('aria-busy')).toBeUndefined();
       if (action === 'scan') await wrapper.setProps({ busy: true });
-      else {
-        document.body.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
-        await flushPromises();
-      }
+      else await wrapper.setProps({ result: { ...result, scanId: 8, root: '/fixture/child' } });
       expect(dialog.props('open')).toBe(false);
     } finally {
       wrapper.unmount();

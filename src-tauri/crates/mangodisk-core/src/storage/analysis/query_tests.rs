@@ -79,9 +79,12 @@ fn private_and_published_queries_share_the_same_top_list_without_source_io() {
         publication
     )
     .unwrap());
-    let actual = cache::read_snapshot(|cache| {
+    let (actual, totals) = cache::read_snapshot(|cache| {
         let query = AnalysisQuery::from_cache(&cache);
-        rows(&query, root, aggregate)
+        (
+            rows(&query, root, aggregate),
+            query.directory_totals(root).unwrap(),
+        )
     })
     .unwrap();
     cache::clear_all().unwrap();
@@ -91,6 +94,10 @@ fn private_and_published_queries_share_the_same_top_list_without_source_io() {
     );
     assert_eq!(actual.len(), ANALYSIS_VISIBLE_ENTRY_LIMIT);
     assert_eq!(actual[0].name, "file-500");
+    assert_eq!(
+        (totals.bytes, totals.file_count, totals.directory_count),
+        (4096, 3, 2)
+    );
     assert_eq!(
         files.len(),
         500,

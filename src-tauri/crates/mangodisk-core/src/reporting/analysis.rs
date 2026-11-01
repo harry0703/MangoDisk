@@ -5,7 +5,7 @@ use std::{
 };
 
 use chrono::{TimeZone, Utc};
-use mangodisk_platform::{ScanNameExclusion, ScanOmissionCounts};
+use mangodisk_platform::ScanOmissionCounts;
 use serde::{ser::SerializeMap, Serialize, Serializer};
 
 use crate::{
@@ -13,32 +13,50 @@ use crate::{
     CoreError, CoreResult,
 };
 
-/// Standalone, versioned evidence for external tools. It is never accepted as deletion authority.
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq, serde::Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub enum AnalysisExportFormat {
+    #[default]
+    Json,
+}
+
+impl AnalysisExportFormat {
+    pub fn extension(self) -> &'static str {
+        match self {
+            Self::Json => "json",
+        }
+    }
+
+    pub fn as_str(self) -> &'static str {
+        match self {
+            Self::Json => "json",
+        }
+    }
+}
+
+/// Version 5 is nested, write-only scan evidence, never deletion authority.
+/// Consumers must reject unsupported versions; reports are not imported as app state.
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct AnalysisReport {
     schema_version: u8,
+    byte_metric: ReportByteMetric,
+    scanned_at_ms: u64,
+    pub(crate) root: AnalysisReportEntry,
+    #[serde(skip)]
+    pub(crate) scan: AnalysisReportScan,
     #[serde(skip)]
     path_format: ReportPathFormat,
-    byte_metric: ReportByteMetric,
-    #[serde(flatten)]
-    pub(crate) scan: AnalysisReportScan,
-    #[serde(skip_serializing_if = "AnalysisReportExclusions::is_empty")]
-    exclusions: AnalysisReportExclusions,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    scanned_at_range_ms: Option<[u64; 2]>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    min_directory_bytes: Option<u64>,
-    pub(crate) directories: Vec<AnalysisReportDirectory>,
+    #[serde(skip)]
+    pub(crate) entry_count: usize,
+    #[serde(skip)]
+    format: AnalysisExportFormat,
 }
 
-#[derive(Serialize)]
-#[serde(rename_all = "camelCase")]
 enum ReportPathFormat {
     Relative,
     Absolute,
 }
-
 impl ReportPathFormat {
     fn as_str(&self) -> &'static str {
         match self {
@@ -55,29 +73,25 @@ enum ReportByteMetric {
     LogicalBytes,
 }
 
-#[derive(Serialize)]
-#[serde(rename_all = "camelCase")]
 pub(crate) struct AnalysisReportScan {
-    #[serde(skip)]
     pub id: u64,
-    #[serde(skip)]
     pub root_name: String,
-    pub root: String,
     pub scanned_at_ms: u64,
-    #[serde(skip)]
     pub scan_mode: AnalysisScanMode,
-    #[serde(skip)]
-    pub total_bytes: u64,
-    #[serde(skip_serializing_if = "std::ops::Not::not")]
-    pub subtree_of_original_scan: bool,
 }
 
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
-pub(crate) struct AnalysisReportDirectory {
-    pub path: String,
+pub(crate) struct AnalysisReportEntry {
+    pub name: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub path: Option<String>,
     pub bytes: u64,
-    pub file_count: u64,
+    pub is_directory: bool,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub file_count: Option<u64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub modified_at_ms: Option<u64>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub scanned_at_ms: Option<u64>,
     #[serde(skip_serializing_if = "complete_size")]
@@ -87,20 +101,65 @@ pub(crate) struct AnalysisReportDirectory {
         serialize_with = "nonzero_omissions"
     )]
     pub omissions: ScanOmissionCounts,
-    #[serde(skip_serializing_if = "std::ops::Not::not")]
-    pub path_is_lossy: bool,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub collapsed: Option<AnalysisReportSubtreeTotals>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub filtered: Option<AnalysisReportSubtreeTotals>,
+    pub children: Option<Vec<AnalysisReportEntry>>,
+    #[serde(skip_serializing_if = "AnalysisReportRemaining::is_empty")]
+    pub remaining: AnalysisReportRemaining,
+}
+
+/// Each bucket represents disjoint omitted immediate children. File counts include
+/// all scanned files in omitted directory subtrees; directory counts are direct children only.
+#[derive(Default, Clone, Copy, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub(crate) struct AnalysisReportTotals {
+    pub bytes: u64,
+    pub file_count: u64,
+    #[serde(rename = "directDirectoryCount", skip_serializing_if = "zero")]
+    pub directory_count: u64,
+}
+
+impl AnalysisReportTotals {
+    pub(crate) fn is_empty(self) -> bool {
+        self.bytes == 0 && self.file_count == 0 && self.directory_count == 0
+    }
+    pub(crate) fn add(&mut self, value: Self) -> CoreResult<()> {
+        let overflow = || CoreError::invalid_input("analysis export accounting overflowed");
+        self.bytes = self.bytes.checked_add(value.bytes).ok_or_else(overflow)?;
+        self.file_count = self
+            .file_count
+            .checked_add(value.file_count)
+            .ok_or_else(overflow)?;
+        self.directory_count = self
+            .directory_count
+            .checked_add(value.directory_count)
+            .ok_or_else(overflow)?;
+        Ok(())
+    }
+}
+
+fn zero(value: &u64) -> bool {
+    *value == 0
 }
 
 #[derive(Default, Serialize)]
 #[serde(rename_all = "camelCase")]
-pub(crate) struct AnalysisReportSubtreeTotals {
-    pub directory_count: usize,
-    pub bytes: u64,
-    pub file_count: u64,
+pub(crate) struct AnalysisReportRemaining {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub depth_limit: Option<AnalysisReportTotals>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub entry_limit: Option<AnalysisReportTotals>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub list_limit: Option<AnalysisReportTotals>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub details_not_retained: Option<AnalysisReportTotals>,
+}
+impl AnalysisReportRemaining {
+    fn is_empty(&self) -> bool {
+        self.depth_limit.is_none()
+            && self.entry_limit.is_none()
+            && self.list_limit.is_none()
+            && self.details_not_retained.is_none()
+    }
 }
 
 fn complete_size(status: &AnalysisEntrySizeStatus) -> bool {
@@ -130,63 +189,40 @@ fn empty_omissions(counts: &ScanOmissionCounts) -> bool {
     counts.total() == 0
 }
 
-#[derive(Default, Serialize)]
-#[serde(rename_all = "camelCase")]
-pub(crate) struct AnalysisReportExclusions {
-    #[serde(skip_serializing_if = "Vec::is_empty")]
-    pub paths: Vec<String>,
-    #[serde(skip_serializing_if = "Vec::is_empty")]
-    pub name_rules: Vec<ScanNameExclusion>,
-}
-
-impl AnalysisReportExclusions {
-    fn is_empty(&self) -> bool {
-        self.paths.is_empty() && self.name_rules.is_empty()
-    }
-}
-
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct AnalysisExportReceipt {
     pub schema_version: u8,
     pub path: String,
-    pub directory_count: usize,
+    pub entry_count: usize,
     pub file_bytes: u64,
 }
 
 impl AnalysisReport {
     pub(crate) fn new(
         scan: AnalysisReportScan,
-        mut directories: Vec<AnalysisReportDirectory>,
-        mut exclusions: AnalysisReportExclusions,
+        root: AnalysisReportEntry,
+        entry_count: usize,
         full_paths: bool,
-        scanned_at_range_ms: Option<[u64; 2]>,
-        min_directory_bytes: u64,
+        format: AnalysisExportFormat,
     ) -> Self {
-        let root_path = if full_paths { scan.root.as_str() } else { "." };
-        directories.sort_by(|left, right| {
-            (left.path != root_path)
-                .cmp(&(right.path != root_path))
-                .then_with(|| left.path.cmp(&right.path))
-        });
-        exclusions.paths.sort();
         Self {
-            schema_version: 4,
-            path_format: if full_paths {
-                ReportPathFormat::Absolute
-            } else {
-                ReportPathFormat::Relative
-            },
+            schema_version: 5,
             byte_metric: if scan.scan_mode == AnalysisScanMode::Fast {
                 ReportByteMetric::LogicalBytes
             } else {
                 ReportByteMetric::AllocatedBytes
             },
+            scanned_at_ms: scan.scanned_at_ms,
+            root,
             scan,
-            exclusions,
-            directories,
-            scanned_at_range_ms,
-            min_directory_bytes: (min_directory_bytes > 0).then_some(min_directory_bytes),
+            entry_count,
+            format,
+            path_format: if full_paths {
+                ReportPathFormat::Absolute
+            } else {
+                ReportPathFormat::Relative
+            },
         }
     }
 
@@ -214,11 +250,15 @@ impl AnalysisReport {
             .single()
             .map(|time| time.format("%Y%m%d-%H%M%SZ").to_string())
             .unwrap_or_else(|| "scan".into());
-        format!("mangodisk-{name}-{timestamp}.json")
+        format!("mangodisk-{name}-{timestamp}.{}", self.format.extension())
+    }
+
+    pub fn format(&self) -> AnalysisExportFormat {
+        self.format
     }
 
     pub(crate) fn total_bytes(&self) -> u64 {
-        self.scan.total_bytes
+        self.root.bytes
     }
 
     /// Publish only a complete report. A failed serialization or write leaves the destination intact.
@@ -226,11 +266,12 @@ impl AnalysisReport {
         let started = Instant::now();
         let diagnostic = mangodisk_platform::diagnostics::text(&destination.display());
         log::info!(
-            "analysis_export_save_started scan_id={} destination={} directories={} path_format={}",
+            "analysis_export_save_started scan_id={} destination={} entries={} path_format={} format={}",
             self.scan.id,
             diagnostic,
-            self.directories.len(),
-            self.path_format.as_str()
+            self.entry_count,
+            self.path_format.as_str(),
+            self.format.as_str()
         );
         let mut stage = "create_temporary";
         let result = (|| -> Result<u64, Box<dyn std::error::Error>> {
@@ -245,8 +286,12 @@ impl AnalysisReport {
             stage = "serialize_and_write";
             {
                 let mut writer = BufWriter::new(temporary.as_file_mut());
-                serde_json::to_writer(&mut writer, self)?;
-                writer.write_all(b"\n")?;
+                match self.format {
+                    AnalysisExportFormat::Json => {
+                        serde_json::to_writer(&mut writer, self)?;
+                        writer.write_all(b"\n")?;
+                    }
+                }
                 writer.flush()?;
             }
             stage = "sync";
@@ -258,11 +303,11 @@ impl AnalysisReport {
         })();
         match result {
             Ok(file_bytes) => {
-                log::info!("analysis_export_save_finished scan_id={} destination={} file_bytes={} directories={} elapsed_ms={}", self.scan.id, diagnostic, file_bytes, self.directories.len(), started.elapsed().as_millis());
+                log::info!("analysis_export_save_finished scan_id={} destination={} file_bytes={} entries={} elapsed_ms={}", self.scan.id, diagnostic, file_bytes, self.entry_count, started.elapsed().as_millis());
                 Ok(AnalysisExportReceipt {
-                    schema_version: 1,
+                    schema_version: 2,
                     path: destination.to_string_lossy().into_owned(),
-                    directory_count: self.directories.len(),
+                    entry_count: self.entry_count,
                     file_bytes,
                 })
             }

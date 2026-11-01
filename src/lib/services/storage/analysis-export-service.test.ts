@@ -1,89 +1,65 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-
 import { AnalysisExportService } from './analysis-export-service';
+import type { AnalysisExportRequest } from '@/lib/models/storage/analysis-export';
 
 const { invokeMock } = vi.hoisted(() => ({ invokeMock: vi.fn() }));
 vi.mock('@tauri-apps/api/core', () => ({ invoke: invokeMock }));
 vi.mock('@/lib/services/diagnostics/logger-service', () => ({ LoggerService: { info: vi.fn(), warn: vi.fn() } }));
+const request: AnalysisExportRequest = {
+  scanId: 7,
+  maxDepth: 2,
+  maxEntries: 500,
+  includeFullPaths: false,
+  format: 'json',
+};
 
-describe('analysis export transport', () => {
+describe('nested analysis export transport', () => {
   beforeEach(() => invokeMock.mockReset());
-
-  it('rejects incompatible or mismatched option responses', async () => {
-    for (const response of [
-      { schemaVersion: 2, scanId: 7 },
-      { schemaVersion: 1, scanId: 8 },
-      { schemaVersion: 1, scanId: 7, scanMode: 'standard', scanRoot: null, currentDirectory: null },
-    ]) {
-      invokeMock.mockResolvedValueOnce(response);
-      await expect(AnalysisExportService.options(7)).rejects.toThrow('Unsupported');
-    }
-  });
-
-  it('does not reject native scan byte totals beyond JavaScript safe integer precision', async () => {
-    const coverage = {
-      schemaVersion: 1,
-      elevated: false,
-      omissions: { permissionDenied: 0, readErrors: 0, excluded: 0, linkOrMount: 0, other: 0 },
-    };
-    const scope = { path: '/archive', scannedAtMs: 1, totalBytes: 2 ** 53, fileCount: 2, coverage };
-    const response = { schemaVersion: 1, scanId: 7, scanMode: 'standard', scanRoot: scope, currentDirectory: scope };
-    invokeMock.mockResolvedValueOnce(response);
-    await expect(AnalysisExportService.options(7)).resolves.toEqual(response);
-    for (const totalBytes of [-1, 0.5, NaN, Infinity, '9007199254740992']) {
-      invokeMock.mockResolvedValueOnce({ ...response, scanRoot: { ...scope, totalBytes } });
-      await expect(AnalysisExportService.options(7)).rejects.toThrow('Unsupported');
-    }
-  });
-
-  it('keeps the save destination and report JSON inside the native adapter', async () => {
-    const receipt = { schemaVersion: 1, path: '/exports/report.json', directoryCount: 12, fileBytes: 2048 };
+  it('sends only selection parameters, keeping the report and destination native', async () => {
+    const receipt = { schemaVersion: 2, path: '/exports/report.json', entryCount: 12, fileBytes: 2048 };
     invokeMock.mockResolvedValueOnce(receipt);
-    await expect(
-      AnalysisExportService.save(7, 'currentDirectory', false, 'Save results', 'summary', 0)
-    ).resolves.toEqual(receipt);
+    await expect(AnalysisExportService.save(request, 'Save results')).resolves.toEqual(receipt);
     expect(invokeMock).toHaveBeenCalledExactlyOnceWith('export_analysis_result', {
-      scanId: 7,
-      scope: 'currentDirectory',
-      includeFullPaths: false,
+      request,
       dialogTitle: 'Save results',
-      detail: 'summary',
-      minDirectoryBytes: 0,
     });
   });
-
-  it('treats native picker dismissal as cancellation', async () => {
+  it('allows an empty report and native picker cancellation', async () => {
+    invokeMock.mockResolvedValueOnce({ schemaVersion: 2, path: '/empty.json', entryCount: 0, fileBytes: 100 });
+    await expect(AnalysisExportService.save(request, 'Save results')).resolves.toMatchObject({ entryCount: 0 });
     invokeMock.mockResolvedValueOnce(null);
-    await expect(AnalysisExportService.save(7, 'scanRoot', true, 'Save results', 'full', 0)).resolves.toBeNull();
+    await expect(
+      AnalysisExportService.save({ ...request, maxDepth: 6, maxEntries: 0 }, 'Save results')
+    ).resolves.toBeNull();
   });
-
-  it('preserves typed expiration errors for the rescan interaction', async () => {
-    const error = { code: 'invalidInput', details: { reason: 'analysisExportUnavailable' }, retryable: false };
-    invokeMock.mockRejectedValueOnce(error);
-    await expect(AnalysisExportService.save(7, 'scanRoot', false, 'Save results', 'summary', 0)).rejects.toEqual(error);
-  });
-
-  it('rejects malformed receipts instead of reporting successful export', async () => {
-    invokeMock.mockResolvedValueOnce({ schemaVersion: 1, path: '', directoryCount: 0, fileBytes: -1 });
-    await expect(AnalysisExportService.save(7, 'scanRoot', false, 'Save results', 'summary', 0)).rejects.toThrow(
-      'receipt'
-    );
-  });
-  it.each(['summary', 'full'] as const)('sends the byte threshold for %s exports', async detail => {
-    invokeMock.mockResolvedValueOnce(null);
-    await AnalysisExportService.save(7, 'scanRoot', false, 'Save results', detail, 100000000);
-    expect(invokeMock).toHaveBeenCalledExactlyOnceWith(
-      'export_analysis_result',
-      expect.objectContaining({ detail, minDirectoryBytes: 100000000 })
-    );
-  });
-
-  it('rejects invalid byte thresholds before invoking native export', async () => {
-    for (const value of [-1, 0.5, NaN, Infinity, Number.MAX_SAFE_INTEGER + 1]) {
-      await expect(AnalysisExportService.save(7, 'scanRoot', false, 'Save results', 'full', value)).rejects.toThrow(
-        'minimum directory bytes'
+  it('rejects invalid depth, budget or session before invoking native code', async () => {
+    for (const invalid of [
+      { ...request, maxDepth: 7 },
+      { ...request, maxEntries: 123 },
+      { ...request, scanId: 0 },
+      { ...request, format: 'csv' },
+    ]) {
+      await expect(AnalysisExportService.save(invalid as AnalysisExportRequest, 'Save results')).rejects.toThrow(
+        'request'
       );
     }
     expect(invokeMock).not.toHaveBeenCalled();
+  });
+  it('preserves typed snapshot expiration errors', async () => {
+    const error = { code: 'invalidInput', details: { reason: 'analysisExportUnavailable' }, retryable: false };
+    invokeMock.mockRejectedValueOnce(error);
+    await expect(AnalysisExportService.save(request, 'Save results')).rejects.toEqual(error);
+  });
+  it('rejects incompatible or malformed receipts', async () => {
+    const valid = { schemaVersion: 2, path: '/out.json', entryCount: 0, fileBytes: 100 };
+    for (const response of [
+      { ...valid, schemaVersion: 1 },
+      { ...valid, path: '' },
+      { ...valid, entryCount: -1 },
+      { ...valid, fileBytes: 0 },
+    ]) {
+      invokeMock.mockResolvedValueOnce(response);
+      await expect(AnalysisExportService.save(request, 'Save results')).rejects.toThrow('receipt');
+    }
   });
 });

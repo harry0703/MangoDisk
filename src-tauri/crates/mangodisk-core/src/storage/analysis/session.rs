@@ -36,25 +36,21 @@ fn lock_sessions() -> Result<MutexGuard<'static, VecDeque<AnalysisSession>>, Str
 
 pub(super) fn export_result(
     scan_id: u64,
-) -> crate::CoreResult<(
-    super::export::AnalysisExportSnapshot,
-    crate::ScanExclusionOptions,
-)> {
+) -> crate::CoreResult<super::export::AnalysisExportSnapshot> {
     lock_sessions()?
         .iter()
         .find(|session| session.result.scan_id == scan_id)
         .map(|session| {
             let result = &session.result;
-            (
-                super::export::AnalysisExportSnapshot {
-                    root: result.root.clone(),
-                    index_snapshot: result.index_snapshot.clone(),
-                    total_bytes: result.total_bytes,
-                    scanned_at_ms: result.scanned_at_ms,
-                    scan_mode: result.scan_mode,
-                },
-                session.exclusions.clone(),
-            )
+            super::export::AnalysisExportSnapshot {
+                root: result.root.clone(),
+                total_bytes: result.total_bytes,
+                index_snapshot: result.index_snapshot.clone(),
+                scanned_at_ms: result.scanned_at_ms,
+                scan_mode: result.scan_mode,
+                coverage: result.coverage.clone(),
+                entries: result.entries.clone(),
+            }
         })
         .ok_or_else(|| {
             log::info!(

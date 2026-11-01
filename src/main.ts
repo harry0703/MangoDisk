@@ -8,6 +8,7 @@ import { i18n } from './i18n';
 import { useAppStore } from './stores/app-store';
 import { useAiStore } from './stores/ai-store';
 import { useAnalysisStore } from './stores/analysis-store';
+import { useAnalysisExportPreferencesStore } from './stores/analysis-export-preferences-store';
 
 const app = createApp(App);
 const pinia = createPinia();
@@ -20,6 +21,7 @@ async function startApplication() {
     useAiStore(pinia).loadPreferences(),
     useAnalysisStore(pinia).initializeViewPreferences(),
     useAnalysisStore(pinia).initializeScanMode(),
+    useAnalysisExportPreferencesStore(pinia).initialize(),
   ]);
   app.mount('#app');
 }

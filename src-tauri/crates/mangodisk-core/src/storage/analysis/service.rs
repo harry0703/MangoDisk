@@ -26,24 +26,10 @@ use super::session::{
 pub struct AnalysisService;
 
 impl AnalysisService {
-    pub fn export_options(scan_id: u64) -> CoreResult<super::AnalysisExportOptions> {
-        super::export::options(scan_id)
-    }
-
     pub fn prepare_export(
-        scan_id: u64,
-        scope: super::AnalysisExportScope,
-        include_full_paths: bool,
-        detail: super::AnalysisExportDetail,
-        min_directory_bytes: u64,
+        request: super::AnalysisExportRequest,
     ) -> CoreResult<crate::reporting::AnalysisReport> {
-        super::export::prepare(
-            scan_id,
-            scope,
-            include_full_paths,
-            detail,
-            min_directory_bytes,
-        )
+        super::export::prepare(request)
     }
     /// Rescans may use only a root from an authoritative, retained analysis session.
     pub fn rescan_root(scan_id: u64) -> CoreResult<String> {

@@ -4,7 +4,7 @@ pub use coverage::{AnalysisCoverage, ANALYSIS_SCAN_POLICY_VERSION};
 mod deletion;
 pub(in crate::storage) mod directory_loader;
 mod export;
-mod export_summary;
+mod export_selection;
 pub(in crate::storage) mod hierarchy;
 pub(in crate::storage) mod index_projection;
 mod models;
@@ -13,9 +13,7 @@ mod remainder;
 mod service;
 mod session;
 
-pub use export::{
-    AnalysisExportDetail, AnalysisExportOptions, AnalysisExportScope, AnalysisExportScopeInfo,
-};
+pub use export::AnalysisExportRequest;
 pub use models::{
     AnalysisDeleteBatchResult, AnalysisDeleteFailure, AnalysisDeleteResult, AnalysisDirectoryNode,
     AnalysisEntrySizeStatus, AnalysisRemainderPage, AnalysisRemainderRequest, AnalysisResult,

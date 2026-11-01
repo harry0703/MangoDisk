@@ -27,85 +27,79 @@ presentation budgets. The 500-row list limit, chart budgets, scan-wide candidate
 budget, hard-link metadata and root/session lifetimes retain their separate roles.
 No per-directory full file cache or extra global navigation index is introduced.
 
-## JSON export of existing analysis
+## Nested export of existing analysis
 
-The desktop result page exports read-only directory statistics from the retained
-Core index. It never enumerates the source again. The request is bound to a native
-scan ID, index publication generation, mutation revision and byte metric; replaced
-or evicted data produces `analysisExportUnavailable` and requires an explicit new
-analysis. The export can cover the original retained scan scope or the currently
-browsed subtree. Preparing a report freezes its data before the native save dialog
-opens. Later scans do not change that prepared report.
+Export starts at the currently browsed directory. Depth 1 contains exactly the
+published list, including rows outside the virtual viewport; depths 2–6 add
+available directory and file detail beneath its directory rows. The default is
+2 levels and 500 entries. Limits are 200, 500, 1000, 2000, or zero for all available
+detail within the chosen depth. Directories and files share one scan-wide export
+budget; the root container and accounting buckets do not consume entries.
 
-Reports use `schemaVersion: 4`. Readers must reject unsupported schema versions;
-versions 1–3 were earlier export formats. The JSON contains `root`, `scannedAtMs`,
-`byteMetric` and a flat `directories` array. Each ordinary directory contains only
-`path`, recursive `bytes` and `fileCount`. The first row is the root and contains the export totals;
-ancestor and descendant totals overlap and must not be added together.
+Selection is breadth-first. At each level all eligible parents compete by
+size, with stable native-path ties. The current layer is selected before deeper
+layers. A bounded heap prevents wide directories from allocating an unbounded
+candidate list for a limited export. Choosing all available detail explicitly
+allows a larger temporary report; it never expands scan-time file retention.
 
-Relative paths are the default, with `/` separators and `.` for the directory root.
-The report's `root` is the folder name in relative mode or the native absolute path
-when explicitly requested. No absolute scan or exclusion prefix is included in
-relative mode. Directory names and name exclusions can still reveal personal data.
-Lossy native names are marked `pathIsLossy`; rendered paths are not deletion authority.
+Core verifies the native session's index generation, mutation revision, timestamp
+and byte metric before reading the existing navigation, directory and retained
+file indexes. No source enumeration, metadata refresh or automatic rescan is
+allowed. Expired sessions and unavailable or superseded indexes return
+`analysisExportUnavailable`; an explicit new analysis is a separate user action.
+Opening the dialog uses local display metadata only. Report preparation runs on
+a blocking worker and freezes its result before the native picker opens.
 
-Exceptional fields are emitted only when needed: per-directory `scannedAtMs` when
-a reused measurement differs from the report time, `sizeStatus` for partial or
-unavailable data, and nonzero `omissions`. Missing status means complete, missing
-omissions means zero. Omission counts describe encountered entries, not unknown
-descendants. Nonempty `exclusions` identify skipped paths and configured name rules.
-`subtreeOfOriginalScan: true` indicates that hard-link allocation was accounted in
-an enclosing scan; bytes charged outside the exported subtree are not included.
+The GUI remembers depth, entry limit and full-path choices in its existing settings
+document. Preferences load at application startup, so opening the dialog adds no
+settings IO. Canceling export, navigating or starting another scan does not reset
+these choices; scan IDs and report destinations are not stored as export preferences.
 
-Key directory summary is the default. It retains at most 500 directory rows, including
-all ancestors of each selected row. Expansion prioritizes the largest share of
-bytes, file count or scan omissions, with deterministic shallow/path tie-breaking.
-Both modes accept a minimum directory size in the scan's byte metric, defaulting
-to zero (no filter). The GUI resolves 10 MB, 100 MB and 1 GB presets using the
-platform's existing unit convention. Full export retains every matching directory
-without a count limit. The root, incomplete measurements, and ancestors needed
-to connect matching or incomplete directories remain eligible regardless of size.
-Summary applies its 500-row budget after size filtering; it may still collapse
-eligible or incomplete subtrees when that budget is exhausted.
+Reports use `schemaVersion: 5`; versions 1–4 are earlier directory export formats.
+Consumers must reject unsupported versions. Reports are write-only evidence,
+not imported app state or deletion authority. Header fields are `byteMetric` and
+`scannedAtMs`; the `root` object contains nested `children` arrays. Nodes contain
+`name`, `bytes`, `isDirectory`, directory `fileCount`, optional `modifiedAtMs`,
+and optional absolute `path` when requested. Default names match the displayed
+list and can be lossy on filesystems that allow non-UTF-8 names. Folder and file
+names can still disclose personal information.
 
-Rows may contain `filtered: { directoryCount, bytes, fileCount }` for subtrees
-without size matches or incomplete measurements. Summary may also contain
-`collapsed` with the same fields for eligible subtrees hidden by its row budget.
-A bucket's reason describes why that entire child subtree is absent; descendants
-inside it are not counted again in another bucket. `minDirectoryBytes` appears
-only when a positive threshold was selected.
-Each bucket combines unexported immediate-child subtrees; `directoryCount`
-counts all hidden descendants, while bytes and file counts sum each subtree once.
-Each bucket is already included in the row totals. Direct files remain derivable:
-subtract exported immediate-child totals and both buckets from the row.
-Do not add ancestor rows or omitted-subtree buckets to the export root's totals.
-The number of measured directories is the row count plus both buckets’ directory
-counts. No synthetic path is used for either bucket.
+Directory bytes and file counts retain their recursive measured totals. For each
+node, the sum of immediate exported child totals and remaining buckets equals
+that node's measured totals; ancestor and descendant values must not be added
+together. Hard-link aliases retain scan-time charging, including zero-byte aliases.
+A directory measured at a different time has its own `scannedAtMs`; ordinary nodes
+omit the duplicate timestamp. This preserves composite caches after subtree refresh.
 
-Filtering and folding never change `omissions` or `sizeStatus`: these describe the scan,
-including hidden descendants, rather than export detail. Missing both buckets
-means all immediate child directories are shown. When hidden measurements have
-mixed timestamps, report-level `scannedAtRangeMs: [earliest, latest]` preserves
-that distinction; individual visible rows still carry differing timestamps.
-No summary mode, ranking scores, row limits or duplicate global totals are serialized.
+`remaining` is emitted only when needed, with disjoint buckets:
 
-Scanning is not atomic and the source can change after measurement. Allocated bytes use the engine's native allocation/fallback;
-logical bytes use file lengths. No export timestamp, prose notes, application
-metadata, internal IDs, duplicate totals or parent paths are serialized. No file
-content, complete file list or per-skipped-entry error list is included.
+- `depthLimit`: children below the selected depth;
+- `entryLimit`: available entries omitted by the shared export budget;
+- `listLimit`: retained root entries outside the currently published list;
+- `detailsNotRetained`: scanned files whose names were not retained in either
+  the current list or the file index.
 
-Export options copy only scan identity and accounting metadata from the session,
-not the chart hierarchy or file entries. Both options and report preparation run
-on blocking workers; opening the dialog performs no source filesystem IO. Filtering and
-selection run only after the user exports. The export dialog dims the chart without a real-time backdrop blur.
+Each bucket contains measured `bytes` and recursive `fileCount` for its omitted
+branches; `directDirectoryCount`, when present, counts omitted immediate child
+directories, not all descendants. Missing fields/buckets are zero. A depth-limited
+node omits `children`; an expanded node includes its known children, possibly an
+empty array. Empty arrays do not prove that an inaccessible directory is empty.
+Nonzero `omissions` and non-complete `sizeStatus` separately describe actual scan
+coverage; export folding never increments scan omission counts. Omission counts
+are recursive and must not be summed across ancestor and descendant nodes.
 
-Only the native picker supplies the output path. Serialization stays in Rust to
-preserve 64-bit counts and avoid sending large reports through IPC. Output is
-compact UTF-8 JSON written to a sibling temporary file, flushed and synced,
-then atomically published. A failed write preserves the prior destination. Logs
-record scan ID, scope/path mode, size threshold, filtered/collapsed counts, revision rejection reason, directory count,
-destination, write stage, native failure and elapsed time, never report contents.
-The formal CLI remains unchanged.
+Directory/file accounting uses checked integer arithmetic. Inconsistent or stale
+source records reject the export instead of silently inventing residual totals.
+No file contents, fingerprints, internal IDs, export timestamps or prose notes
+are serialized. Standard mode reports native allocated bytes; fast mode reports
+logical bytes. Native 64-bit integers stay in Rust without a WebView JSON round trip.
+
+Only the native picker supplies the destination. A sibling temporary file is
+flushed and synced before atomic publication; failed writes preserve the existing
+destination. The transport receipt uses schema version 2 with `entryCount`,
+output `path` and `fileBytes`. Logs retain scan ID, selected depth/budget/path mode,
+row count, destination, write stage, native errors and elapsed time, never report
+contents. The formal CLI remains unchanged.
 
 ## Scan modes
 

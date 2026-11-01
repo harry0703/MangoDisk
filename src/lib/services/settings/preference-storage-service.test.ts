@@ -55,6 +55,29 @@ describe('PreferenceStorageService', () => {
     expect(saveMock).toHaveBeenCalledOnce();
   });
 
+  it('serializes immutable export preferences without replacing other settings', async () => {
+    const settings = AppSettingsUtils.defaults();
+    await PreferenceStorageService.saveSettings(settings);
+    const first = {
+      schemaVersion: 1 as const,
+      maxDepth: 6 as const,
+      maxEntries: 0 as const,
+      includeFullPaths: true,
+      format: 'json' as const,
+    };
+    const initial = PreferenceStorageService.saveAnalysisExportPreferences(first);
+    first.includeFullPaths = false;
+    const latest = { ...first, maxDepth: 3 as const, maxEntries: 1000 as const };
+    const followup = PreferenceStorageService.saveAnalysisExportPreferences(latest);
+    latest.includeFullPaths = true;
+    await Promise.all([initial, followup]);
+    expect(await PreferenceStorageService.loadAnalysisExportPreferences()).toEqual({
+      ...latest,
+      includeFullPaths: false,
+    });
+    expect(await PreferenceStorageService.loadSettings()).toEqual(settings);
+  });
+
   it('keeps settings domains as separate keys in the same store', async () => {
     const preferences = {
       selectedPaths: {

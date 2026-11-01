@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, ref, shallowRef, watch } from 'vue';
+import { ref, watch } from 'vue';
+import { storeToRefs } from 'pinia';
 import { useI18n } from 'vue-i18n';
 import { toast } from 'vue-sonner';
 
@@ -10,90 +11,43 @@ import MdTooltip from '@/components/custom/md-tooltip.vue';
 import MdOperationDialog from '@/components/custom/md-operation-dialog.vue';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { ICON_NAMES } from '@/lib/models/presentation/ui';
 import type { AnalysisResult } from '@/lib/models/storage/analysis';
-import type {
-  AnalysisExportDetail,
-  AnalysisExportOptions,
-  AnalysisExportScope,
+import {
+  ANALYSIS_EXPORT_DEPTHS,
+  ANALYSIS_EXPORT_ENTRY_LIMITS,
 } from '@/lib/models/storage/analysis-export';
+import { useAnalysisExportPreferencesStore } from '@/stores/analysis-export-preferences-store';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { LOG_DOMAINS, LOG_EVENTS } from '@/lib/models/diagnostics/telemetry';
 import { AnalysisExportService } from '@/lib/services/storage/analysis-export-service';
 import { FileManagerService } from '@/lib/services/filesystem/file-manager-service';
+import { FormatService } from '@/lib/services/presentation/format-service';
 import { LoggerService } from '@/lib/services/diagnostics/logger-service';
-import { ANALYSIS_EXPORT_MINIMUM_SIZE_PRESETS } from '@/lib/models/storage/analysis-export';
-import { ByteSizeService } from '@/lib/services/settings/byte-size-service';
 import * as PathUtils from '@/lib/utils/filesystem/path';
 import { parseCommandError, parseCommandErrorReason } from '@/lib/utils/diagnostics/error';
 
 const props = defineProps<{ open: boolean; result: AnalysisResult | null }>();
-const emit = defineEmits<{ 'update:open': [open: boolean]; loading: [loading: boolean]; rescan: [path: string] }>();
+const emit = defineEmits<{ 'update:open': [open: boolean]; rescan: [path: string] }>();
 const { t } = useI18n({ useScope: 'global' });
-const options = shallowRef<AnalysisExportOptions | null>(null);
-const scope = ref<AnalysisExportScope>('scanRoot');
-const includeFullPaths = ref(false);
-const detail = ref<AnalysisExportDetail>('summary');
-const minDirectoryBytes = ref(0);
-const minimumSizeOptions = ByteSizeService.presetOptions(ANALYSIS_EXPORT_MINIMUM_SIZE_PRESETS);
-const minimumSizeLabel = computed(
-  () =>
-    minimumSizeOptions.find(option => option.bytes === minDirectoryBytes.value)?.label ?? t('analysis.export.noMinimum')
-);
-const loading = ref(false);
+const exportPreferences = useAnalysisExportPreferencesStore();
+const { preferences } = storeToRefs(exportPreferences);
 const saving = ref(false);
 const unavailable = ref(false);
-const failure = ref<'load' | 'save' | null>(null);
-let request = 0;
+const failed = ref(false);
 
-watch(loading, value => emit('loading', value), { flush: 'sync' });
-
-const selected = computed(() => options.value?.[scope.value === 'scanRoot' ? 'scanRoot' : 'currentDirectory']);
-const hasScopeChoice = computed(
-  () =>
-    options.value &&
-    PathUtils.comparisonKey(options.value.scanRoot.path) !==
-      PathUtils.comparisonKey(options.value.currentDirectory.path)
-);
-
-function changeMinimumSize(value: unknown) {
+function changeDepth(value: unknown) {
   if (typeof value !== 'string') return;
-  const bytes = Number(value);
-  if (bytes === 0 || minimumSizeOptions.some(option => option.bytes === bytes)) minDirectoryBytes.value = bytes;
+  exportPreferences.setDepth(Number(value));
 }
-
-function changeDetail(value: unknown) {
-  if (value === 'summary' || value === 'full') detail.value = value;
+function changeLimit(value: unknown) {
+  if (typeof value !== 'string') return;
+  exportPreferences.setEntryLimit(Number(value));
 }
 
 function close(open: boolean) {
   if (!saving.value) emit('update:open', open);
-}
-
-async function load() {
-  const id = ++request;
-  const scanId = props.result?.scanId;
-  options.value = null;
-  failure.value = null;
-  unavailable.value = false;
-  if (!scanId) return;
-  loading.value = true;
-  try {
-    const response = await AnalysisExportService.options(scanId);
-    if (id === request && props.open) options.value = response;
-  } catch (error) {
-    if (id !== request || !props.open) return;
-    unavailable.value = parseCommandErrorReason(parseCommandError(error)) === 'analysisExportUnavailable';
-    failure.value = unavailable.value ? null : 'load';
-    LoggerService.warn(LOG_DOMAINS.analysis, LOG_EVENTS.operationFailed, {
-      operation: 'analysis_export_options',
-      scanId,
-      error,
-    });
-  } finally {
-    if (id === request) loading.value = false;
-  }
 }
 
 async function reveal(path: string) {
@@ -110,30 +64,24 @@ async function reveal(path: string) {
 }
 
 async function save() {
-  if (saving.value || loading.value) return;
+  if (saving.value || !props.result) return;
   if (unavailable.value) {
-    const path = selected.value?.path ?? props.result?.root;
-    if (path) {
-      emit('update:open', false);
-      emit('rescan', path);
-    }
+    emit('update:open', false);
+    emit('rescan', props.result.root);
     return;
   }
-  if (failure.value === 'load') {
-    await load();
-    return;
-  }
-  if (!options.value) return;
   saving.value = true;
-  failure.value = null;
+  failed.value = false;
   try {
     const receipt = await AnalysisExportService.save(
-      options.value.scanId,
-      scope.value,
-      includeFullPaths.value,
-      t('analysis.export.saveTitle'),
-      detail.value,
-      minDirectoryBytes.value
+      {
+        scanId: props.result.scanId,
+        includeFullPaths: preferences.value.includeFullPaths,
+        maxDepth: preferences.value.maxDepth,
+        maxEntries: preferences.value.maxEntries,
+        format: preferences.value.format,
+      },
+      t('analysis.export.saveTitle')
     );
     if (!receipt) return;
     emit('update:open', false);
@@ -148,7 +96,7 @@ async function save() {
     });
   } catch (error) {
     unavailable.value = parseCommandErrorReason(parseCommandError(error)) === 'analysisExportUnavailable';
-    failure.value = unavailable.value ? null : 'save';
+    failed.value = !unavailable.value;
   } finally {
     saving.value = false;
   }
@@ -157,150 +105,82 @@ async function save() {
 watch(
   () => [props.open, props.result?.scanId] as const,
   ([open]) => {
-    request++;
     if (open) {
-      scope.value = 'scanRoot';
-      includeFullPaths.value = false;
-      detail.value = 'summary';
-      minDirectoryBytes.value = 0;
-      void load();
-    } else {
-      loading.value = false;
+      unavailable.value = false;
+      failed.value = false;
     }
   },
   { immediate: true }
 );
-onBeforeUnmount(() => {
-  request++;
-});
 </script>
 
 <template>
-  <Dialog :open="open && !saving && !loading" @update:open="close">
-    <MdDialogContent
-      size="compact"
-      :blur-background="false"
-      :scale-on-open="false"
-      class="analysis-export-dialog flex min-h-0 flex-col"
-    >
+  <Dialog :open="open && !saving" @update:open="close">
+    <MdDialogContent size="compact" :blur-background="false" :scale-on-open="false" class="flex min-h-0 flex-col">
       <MdDialogHeader>
         <DialogTitle>{{ t('analysis.export.title') }}</DialogTitle>
         <DialogDescription>{{ t('analysis.export.description') }}</DialogDescription>
       </MdDialogHeader>
       <div class="export-body">
-        <p v-if="loading" role="status" class="text-muted-foreground">{{ t('analysis.export.loading') }}</p>
-        <p v-else-if="unavailable" role="status" class="export-notice">{{ t('analysis.export.unavailable') }}</p>
-        <p v-else-if="failure === 'load'" role="alert" class="text-destructive-text">
-          {{ t('analysis.export.loadFailed') }}
-        </p>
-        <template v-if="options && !unavailable">
-          <section class="export-section">
-            <fieldset v-if="hasScopeChoice" class="export-scopes">
-              <legend>{{ t('analysis.export.scope') }}</legend>
-              <label
-                v-for="item in ['scanRoot', 'currentDirectory'] as const"
-                :key="item"
-                class="export-scope"
-                :class="{ selected: scope === item }"
-              >
-                <input
-                  v-model="scope"
-                  type="radio"
-                  name="analysis-export-scope"
-                  :value="item"
-                  class="peer sr-only"
-                  :aria-labelledby="`analysis-export-scope-${item}`"
-                />
-                <span
-                  aria-hidden="true"
-                  class="mt-0.5 grid size-4 shrink-0 place-items-center rounded-full border border-muted-foreground/60 bg-background peer-checked:border-primary peer-checked:bg-primary peer-focus-visible:ring-2 peer-focus-visible:ring-ring/35 peer-focus-visible:ring-offset-2 peer-focus-visible:ring-offset-background"
-                >
-                  <span
-                    class="size-1.5 rounded-full bg-primary-foreground"
-                    :class="scope === item ? 'opacity-100' : 'opacity-0'"
-                  />
-                </span>
-                <span class="export-scope-copy">
-                  <span :id="`analysis-export-scope-${item}`" class="export-label">{{
-                    t(item === 'scanRoot' ? 'analysis.export.scanRoot' : 'analysis.export.currentDirectory')
-                  }}</span>
-                  <MdTooltip :text="options[item].path"
-                    ><span class="export-path">{{ options[item].path }}</span></MdTooltip
-                  >
-                </span>
-              </label>
-            </fieldset>
-            <template v-else>
-              <p class="export-section-label">{{ t('analysis.export.scope') }}</p>
-              <div class="export-root">
-                <span class="export-label">{{ t('analysis.export.scanRoot') }}</span>
-                <MdTooltip :text="options.scanRoot.path"
-                  ><span class="export-path">{{ options.scanRoot.path }}</span></MdTooltip
-                >
-              </div>
-            </template>
-          </section>
-          <section class="export-section">
-            <p id="analysis-export-detail-label" class="export-section-label">{{ t('analysis.export.detail') }}</p>
-            <Select :model-value="detail" @update:model-value="changeDetail">
-              <SelectTrigger size="sm" class="w-full" aria-labelledby="analysis-export-detail-label">
-                <SelectValue>{{
-                  t(detail === 'summary' ? 'analysis.export.summary' : 'analysis.export.full')
-                }}</SelectValue>
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="summary">{{ t('analysis.export.summary') }}</SelectItem>
-                <SelectItem value="full">{{ t('analysis.export.full') }}</SelectItem>
-              </SelectContent>
-            </Select>
-            <div class="export-detail-hints export-field-hint">
-              <p
-                v-for="mode in ['summary', 'full'] as const"
-                :key="mode"
-                class="export-hint"
-                :class="{ 'export-detail-hint-hidden': detail !== mode }"
-                :aria-hidden="detail !== mode"
-              >
-                {{ t(mode === 'summary' ? 'analysis.export.summaryHint' : 'analysis.export.fullHint') }}
-              </p>
-            </div>
-          </section>
-          <section class="export-section">
-            <p id="analysis-export-minimum-label" class="export-section-label">
-              {{ t('analysis.export.minimumSize') }}
-            </p>
-            <Select :model-value="String(minDirectoryBytes)" @update:model-value="changeMinimumSize">
-              <SelectTrigger size="sm" class="w-full" aria-labelledby="analysis-export-minimum-label">
-                <SelectValue>{{ minimumSizeLabel }}</SelectValue>
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="0">{{ t('analysis.export.noMinimum') }}</SelectItem>
-                <SelectItem v-for="option in minimumSizeOptions" :key="option.bytes" :value="String(option.bytes)">{{
-                  option.label
-                }}</SelectItem>
-              </SelectContent>
-            </Select>
-            <p class="export-hint export-field-hint">{{ t('analysis.export.sizeFilterHint') }}</p>
-          </section>
-          <label class="export-paths">
-            <Checkbox :model-value="includeFullPaths" @update:model-value="includeFullPaths = $event === true" />
-            <span class="export-label">{{ t('analysis.export.fullPaths') }}</span>
-          </label>
-          <p v-if="failure === 'save'" role="alert" class="text-destructive-text">
-            {{ t('analysis.export.saveFailed') }}
+        <div v-if="result" class="export-current-list">
+          <p class="export-list-label">
+            {{ t('analysis.export.currentDirectory') }}
           </p>
-        </template>
+          <MdTooltip :text="result.root"
+            ><span class="export-path">{{ result.root }}</span></MdTooltip
+          >
+        </div>
+        <section class="export-field">
+          <p id="analysis-export-depth" class="export-list-label">{{ t('analysis.export.depth') }}</p>
+          <Select :model-value="String(preferences.maxDepth)" @update:model-value="changeDepth">
+            <SelectTrigger size="sm" class="w-full" aria-labelledby="analysis-export-depth">
+              <SelectValue>{{ t('analysis.export.depthOption', { count: preferences.maxDepth }) }}</SelectValue>
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem v-for="depth in ANALYSIS_EXPORT_DEPTHS" :key="depth" :value="String(depth)">{{
+                t('analysis.export.depthOption', { count: depth })
+              }}</SelectItem>
+            </SelectContent>
+          </Select>
+          <p class="export-hint">{{ t('analysis.export.depthHint') }}</p>
+        </section>
+        <section class="export-field">
+          <p id="analysis-export-limit" class="export-list-label">{{ t('analysis.export.entryLimit') }}</p>
+          <Select :model-value="String(preferences.maxEntries)" @update:model-value="changeLimit">
+            <SelectTrigger size="sm" class="w-full" aria-labelledby="analysis-export-limit">
+              <SelectValue>{{
+                preferences.maxEntries === 0
+                  ? t('analysis.export.allAvailable')
+                  : t('analysis.export.entryOption', { count: FormatService.integer(preferences.maxEntries) })
+              }}</SelectValue>
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem v-for="limit in ANALYSIS_EXPORT_ENTRY_LIMITS" :key="limit" :value="String(limit)">{{
+                limit === 0
+                  ? t('analysis.export.allAvailable')
+                  : t('analysis.export.entryOption', { count: FormatService.integer(limit) })
+              }}</SelectItem>
+            </SelectContent>
+          </Select>
+          <p class="export-hint min-h-[2lh]">
+            {{
+              preferences.maxEntries === 0
+                ? t('analysis.export.allLimitHint')
+                : t('analysis.export.limitHint', { count: FormatService.integer(preferences.maxEntries) })
+            }}
+          </p>
+        </section>
+        <label class="export-paths">
+          <Checkbox :model-value="preferences.includeFullPaths" @update:model-value="exportPreferences.setFullPaths" />
+          <span>{{ t('analysis.export.fullPaths') }}</span>
+        </label>
+        <p v-if="unavailable" role="alert" class="text-destructive-text">{{ t('analysis.export.unavailable') }}</p>
+        <p v-else-if="failed" role="alert" class="text-destructive-text">{{ t('analysis.export.saveFailed') }}</p>
       </div>
       <MdDialogFooter>
         <Button variant="outline" @click="close(false)">{{ t('common.cancel') }}</Button>
-        <Button :disabled="loading || (!options && !unavailable && failure !== 'load')" @click="save">{{
-          t(
-            unavailable
-              ? 'analysis.export.rescan'
-              : failure === 'load'
-                ? 'analysis.export.retry'
-                : 'analysis.export.save'
-          )
+        <Button :disabled="!result" @click="save">{{
+          t(unavailable ? 'analysis.export.rescan' : 'analysis.export.save')
         }}</Button>
       </MdDialogFooter>
     </MdDialogContent>
@@ -319,94 +199,33 @@ onBeforeUnmount(() => {
 @reference "@assets/main.css";
 .export-body {
   display: grid;
-  gap: 16px;
+  gap: 20px;
   min-height: 0;
   overflow-y: auto;
-  padding: 8px var(--layout-dialog-body-inline-padding) 20px;
+  padding: 8px var(--layout-dialog-body-inline-padding) 24px;
 }
-.export-section-label,
-.export-scopes legend {
-  margin-bottom: 8px;
+.export-field,
+.export-current-list {
+  display: grid;
+  min-width: 0;
+  gap: 6px;
+}
+.export-hint,
+.export-list-label {
   font-size: var(--font-content-meta);
-  font-weight: 500;
   @apply text-muted-foreground;
-}
-.export-section {
-  display: grid;
-  min-width: 0;
-}
-.export-field-hint {
-  margin-top: 8px;
-}
-/* Share the taller localized hint's natural height so changing detail never shifts the dialog. */
-.export-detail-hints {
-  display: grid;
-}
-.export-detail-hints > p {
-  grid-area: 1 / 1;
-}
-.export-detail-hint-hidden {
-  visibility: hidden;
-}
-.export-scopes {
-  display: grid;
-  gap: 8px;
-  min-width: 0;
-}
-.export-scope,
-.export-root {
-  min-width: 0;
-  padding: 10px 12px;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-}
-.export-root {
-  display: grid;
-  gap: 4px;
-  @apply bg-muted/30;
-}
-.export-scope {
-  display: flex;
-  align-items: flex-start;
-  gap: 10px;
-  @apply cursor-pointer border-border/70 transition-colors;
-}
-.export-scope.selected {
-  @apply border-primary/30 bg-accent/15;
-}
-.export-scope-copy {
-  display: grid;
-  min-width: 0;
-  gap: 4px;
-}
-.export-label {
-  font-size: var(--font-content-body);
-  font-weight: 500;
-  line-height: 1.5;
 }
 .export-path {
   display: block;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-size: var(--font-content-meta);
-  line-height: 1.5;
-  @apply text-muted-foreground;
+  font-size: var(--font-content-body);
 }
 .export-paths {
   display: flex;
   align-items: center;
   gap: 10px;
-}
-.export-hint,
-.export-notice {
-  font-size: var(--font-content-meta);
-  line-height: 1.5;
-  @apply text-muted-foreground;
-}
-.export-notice {
-  padding: 10px 12px;
-  border-radius: 8px;
-  @apply bg-muted;
+  font-size: var(--font-content-body);
 }
 </style>
