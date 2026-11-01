@@ -1,4 +1,31 @@
-# Analysis scan metrics
+# Analysis snapshots and scan metrics
+
+## Query and loading boundaries
+
+`query.rs` borrows retained directory/file measurements and the existing navigation
+index. It owns child lookup, common entry conversion, top-list eligibility and
+snapshot identity checks. It performs no filesystem IO and keeps no additional
+long-lived cache. Incomplete retained prefixes explicitly request directory loading;
+a scan-time per-directory limit alone does not prove that global eviction kept
+all rows needed by the list.
+
+`directory_loader.rs` owns optional current-directory reads, initial metadata
+assembly and explicit remainder details. Navigation retains its existing loading
+fallback; export never invokes it. Read failures are sampled with native error
+codes and summarized separately from scan omissions. Directory measurements remain
+scan facts even when a read-only file listing observes later filesystem changes.
+
+`index_projection.rs` assembles private scan results and cached navigation through
+one result projection. `hierarchy.rs` uses one bounded tree algorithm for both
+sources, without copying selected rows into temporary measurement maps and then
+building a second tree. Private scans group eligible candidates once; cached
+queries use the existing parent/name index rather than scanning every stored row
+for each child. Native keys remain authoritative through counting and selection.
+
+List, chart and export consume the same retained measurements, with distinct
+presentation budgets. The 500-row list limit, chart budgets, scan-wide candidate
+budget, hard-link metadata and root/session lifetimes retain their separate roles.
+No per-directory full file cache or extra global navigation index is introduced.
 
 ## JSON export of existing analysis
 

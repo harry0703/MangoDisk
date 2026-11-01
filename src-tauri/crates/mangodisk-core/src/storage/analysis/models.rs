@@ -143,7 +143,7 @@ mod entry_protocol_tests {
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct AnalysisResult {
-    /// Identifies the retained index revision without trusting transport paths or timestamps.
+    /// Binds descendant reads to the index revision that produced this list.
     #[serde(skip)]
     pub(crate) index_snapshot: Option<AnalysisIndexSnapshot>,
     pub policy_version: u32,

@@ -4,7 +4,7 @@ use crate::{
     filesystem::metadata::display_path,
     storage::{
         analysis::{
-            index_projection::{analysis_remainder_entries, analysis_result},
+            directory_loader::analysis_remainder_entries, index_projection::analysis_result,
             AnalysisRemainderParent, AnalysisRemainderRequest,
         },
         large_files::{

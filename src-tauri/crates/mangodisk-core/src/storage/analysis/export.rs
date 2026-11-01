@@ -70,17 +70,6 @@ fn latest_generation(cache: &IndexReadView<'_>, root: &Path) -> Option<u64> {
         .max()
 }
 
-pub(in crate::storage) fn index_snapshot(
-    cache: &IndexReadView<'_>,
-    root: &Path,
-) -> Option<AnalysisIndexSnapshot> {
-    Some(AnalysisIndexSnapshot {
-        root: root.to_path_buf(),
-        generation: latest_generation(cache, root)?,
-        mutation_revision: cache.mutation_revision,
-    })
-}
-
 /// No filesystem reads are permitted here: an unavailable snapshot must never trigger a rescan.
 fn with_snapshot<T>(
     scan_id: u64,
@@ -101,8 +90,7 @@ fn with_snapshot<T>(
         .as_ref()
         .ok_or_else(|| reject("index_not_retained"))?;
     cache::read_snapshot(|cache| {
-        if cache.mutation_revision != identity.mutation_revision
-            || latest_generation(&cache, &identity.root) != Some(identity.generation)
+        if !super::query::matches_snapshot(&cache, identity)
         {
             log::info!("analysis_export_revision_changed scan_id={} expected_generation={} actual_generation={:?} expected_mutation_revision={} actual_mutation_revision={}", scan_id, identity.generation, latest_generation(&cache, &identity.root), identity.mutation_revision, cache.mutation_revision);
             return Err(reject("index_revision_changed"));

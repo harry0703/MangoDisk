@@ -1,3 +1,5 @@
+use crate::filesystem::metadata::modified_ms;
+use std::fs;
 #[test]
 fn cached_child_shared_groups_preserve_sibling_owners_among_unrelated_groups() {
     use super::*;
@@ -100,7 +102,7 @@ fn bounded_analysis_ranking_matches_full_sort_at_limits_and_equal_byte_ties() {
                 .then_with(|| left.path.cmp(&right.path))
         });
         expected.truncate(super::ANALYSIS_VISIBLE_ENTRY_LIMIT);
-        super::rank_visible_analysis_entries(&mut entries);
+        super::super::query::rank_entries(&mut entries);
         assert_eq!(
             entries.iter().map(|entry| &entry.path).collect::<Vec<_>>(),
             expected.iter().map(|entry| &entry.path).collect::<Vec<_>>()
@@ -133,7 +135,7 @@ fn benchmark_bounded_analysis_ranking() {
             let mut entries = source.clone();
             let start = std::time::Instant::now();
             if bounded {
-                super::rank_visible_analysis_entries(&mut entries);
+                super::super::query::rank_entries(&mut entries);
             } else {
                 entries.sort_by(|left, right| {
                     right
@@ -288,10 +290,9 @@ fn analysis_result_bounds_large_projections_and_preserves_exact_totals() {
             &mangodisk_platform::NameExclusions::default(),
         )
         .unwrap();
-        build_analysis_result(
-            root.path(),
-            DirectoryAggregate::default(),
+        let entries = build_analysis_entries(
             children,
+            super::super::AnalysisScanMode::Standard,
             |_| None,
             |path| {
                 let bytes = path.file_stem()?.to_str()?.parse().ok()?;
@@ -302,7 +303,14 @@ fn analysis_result_bounds_large_projections_and_preserves_exact_totals() {
                     modified_at_ms: modified_ms(&fs::metadata(path).unwrap()),
                 })
             },
+        );
+        let count = entries.iter().filter(|entry| entry.bytes > 0).count();
+        build_analysis_result_from_entries(
+            root.path(),
+            DirectoryAggregate::default(),
+            entries,
             Default::default(),
+            count,
         )
     };
     let exact = build();
@@ -391,5 +399,45 @@ fn unreadable_directory_status_does_not_contaminate_known_empty_siblings() {
                 .size_status,
             crate::AnalysisEntrySizeStatus::Unavailable
         );
+    }
+}
+
+#[cfg(unix)]
+#[test]
+fn colliding_display_names_preserve_each_directorys_own_chart_count() {
+    use std::os::unix::ffi::OsStringExt;
+    let root = Path::new("/fixture");
+    let directories = HashMap::from([
+        (
+            root.to_path_buf(),
+            DirectoryAggregate {
+                bytes: 32768,
+                ..Default::default()
+            },
+        ),
+        (
+            root.join(std::ffi::OsString::from_vec(vec![b'd', 0x80])),
+            DirectoryAggregate {
+                bytes: 8192,
+                file_count: 2,
+                direct_file_count: 2,
+                ..Default::default()
+            },
+        ),
+        (
+            root.join(std::ffi::OsString::from_vec(vec![b'd', 0x81])),
+            DirectoryAggregate {
+                bytes: 12288,
+                file_count: 5,
+                direct_file_count: 5,
+                ..Default::default()
+            },
+        ),
+    ]);
+    for _ in 0..8 {
+        let nodes = build_directory_hierarchy(root, &directories, &HashMap::new());
+        assert_eq!(nodes.len(), 2);
+        assert_eq!(nodes[0].total_entry_count, 5);
+        assert_eq!(nodes[1].total_entry_count, 2);
     }
 }

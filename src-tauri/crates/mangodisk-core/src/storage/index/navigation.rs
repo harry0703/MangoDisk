@@ -68,38 +68,6 @@ impl NavigationIndex {
             .count() as u64
     }
 
-    pub(in crate::storage) fn direct_snapshot(
-        &self,
-        root: &Path,
-        directories: &HashMap<PathBuf, DirectoryAggregate>,
-        files: &HashMap<PathBuf, IndexedFile>,
-    ) -> (
-        HashMap<PathBuf, DirectoryAggregate>,
-        HashMap<PathBuf, IndexedFile>,
-    ) {
-        let direct_directories = self
-            .directories
-            .get(root)
-            .into_iter()
-            .flatten()
-            .filter_map(|name| {
-                let path = root.join(name);
-                directories.get(&path).map(|value| (path, *value))
-            })
-            .collect();
-        let direct_files = self
-            .files
-            .get(root)
-            .into_iter()
-            .flatten()
-            .filter_map(|name| {
-                let path = root.join(name);
-                files.get(&path).map(|value| (path, *value))
-            })
-            .collect();
-        (direct_directories, direct_files)
-    }
-
     /// A leaf has no descendant aliases, so its own retained names suffice to
     /// select shared identities without inspecting unrelated scan-wide rows.
     pub(in crate::storage) fn leaf_shared_identities(
@@ -251,6 +219,7 @@ mod tests {
                         directories,
                         files
                     )
+                    .unwrap()
                 )
                 .unwrap(),
                 serde_json::to_value(
@@ -272,9 +241,45 @@ mod tests {
         files.retain(|path, _| !path.starts_with(&removed_branch));
         index.remove(&removed_branch, true);
         compare(&index, &directories, &files);
-        let (direct_directories, direct_files) =
-            index.direct_snapshot(&removed_branch, &directories, &files);
-        assert!(direct_directories.is_empty() && direct_files.is_empty());
+        assert!(index
+            .directory_names(&removed_branch)
+            .unwrap_or_default()
+            .is_empty());
+        assert!(index
+            .file_names(&removed_branch)
+            .unwrap_or_default()
+            .is_empty());
         assert_eq!(index.directory_count(root, &directories), 89);
+    }
+    #[test]
+    fn inconsistent_navigation_rejects_projection_instead_of_losing_a_child() {
+        let root = Path::new("/fixture");
+        let directories = HashMap::from([(
+            root.into(),
+            DirectoryAggregate {
+                bytes: 4096,
+                ..Default::default()
+            },
+        )]);
+        let mut files = HashMap::from([(
+            root.join("file"),
+            IndexedFile {
+                shared_identity: None,
+                bytes: 4096,
+                logical_bytes: 4096,
+                modified_at_ms: None,
+            },
+        )]);
+        let navigation = NavigationIndex::build(&directories, &files);
+        files.clear();
+        assert!(
+            crate::storage::analysis::hierarchy::hierarchy_from_navigation(
+                &navigation,
+                root,
+                &directories,
+                &files
+            )
+            .is_err()
+        );
     }
 }

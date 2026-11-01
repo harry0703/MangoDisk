@@ -85,9 +85,7 @@ pub(super) fn list(
         .canonicalize_no_links(Path::new(&parent.path))
         .map_err(CoreError::from)?;
     let (total_bytes, entries) =
-        crate::storage::analysis::index_projection::analysis_remainder_entries(
-            &root, parent, request,
-        )?;
+        super::directory_loader::analysis_remainder_entries(&root, parent, request)?;
     let snapshot = Arc::new(RemainderSnapshot {
         id: NEXT_ID.fetch_add(1, Ordering::Relaxed),
         scan_id: request.scan_id,
