@@ -7,14 +7,14 @@ use block2::RcBlock;
 use objc2::{
     rc::Retained,
     runtime::{AnyObject, Bool},
-    AnyThread, MainThreadMarker,
+    AnyThread, MainThreadMarker, sel,
 };
 use objc2_app_kit::{
     NSAccessibility, NSAppearanceCustomization, NSCellImagePosition, NSColor,
     NSCompositingOperation, NSFont, NSFontAttributeName, NSForegroundColorAttributeName, NSImage,
     NSRectFillUsingOperation, NSStringDrawing,
 };
-use objc2_foundation::{NSData, NSDictionary, NSPoint, NSRect, NSSize, NSString};
+use objc2_foundation::{NSData, NSDictionary, NSObjectProtocol, NSPoint, NSRect, NSSize, NSString};
 
 #[derive(Default)]
 pub struct Cache {
@@ -229,7 +229,14 @@ pub fn apply(
         let mtm = MainThreadMarker::new().expect("native tray rendering runs on the main thread");
         let item = tray.ns_status_item()?;
         let button = item.button(mtm)?;
-        let appearance = button.effectiveAppearance().name().to_string();
+        // `effectiveAppearance` is a macOS 10.14 (Mojave) API. On 10.13 it is
+        // absent, and dark mode did not exist as a system feature until then,
+        // so falling back to a light appearance is correct.
+        let appearance = if button.respondsToSelector(sel!(effectiveAppearance)) {
+            button.effectiveAppearance().name().to_string()
+        } else {
+            String::new()
+        };
         let identity = Retained::as_ptr(&button) as usize;
         let redraw = changed || appearance != previous_appearance || identity != previous_button;
         if redraw {

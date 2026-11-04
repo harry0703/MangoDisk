@@ -22,10 +22,11 @@ function localeChunkName(moduleId: string): string | null {
 // prevents Vite from moving while the desktop window still opens the old URL.
 export default defineConfig({
   build: {
-    // MangoDisk supports Monterey's system WKWebView. Pinning the frontend
-    // target prevents dependencies from silently raising the syntax baseline
+    // MangoDisk supports the legacy High Sierra (macOS 10.13) system WKWebView.
+    // Safari 11 is the newest browser on 10.13, so pinning the frontend target
+    // there prevents dependencies from silently raising the syntax baseline
     // to the much newer Safari version used by Vite's default target.
-    target: 'safari15.6',
+    target: 'safari11',
     rolldownOptions: {
       input: {
         main: fileURLToPath(new URL('./index.html', import.meta.url)),

@@ -24,6 +24,7 @@
   "bundle": {
     "targets": ["app", "dmg"],
     "macOS": {
+      "minimumSystemVersion": "10.13",
       "dmg": {
         "background": "./assets/dmg-background.jpg",
         "windowSize": {

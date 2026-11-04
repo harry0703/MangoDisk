@@ -1,0 +1,54 @@
+name: build-macos-legacy
+
+# 构建兼容 macOS 10.13 (2013 iMac, x86_64) 的 DMG / .app。
+#
+# Tauri 的 macOS bundler 依赖 hdiutil/ditto/codesign 等 macOS 专属工具，
+# 无法从 Windows 交叉编译，因此必须在 macOS 环境构建。
+# 本 workflow 在 GitHub Actions 的 macos runner 上远程构建 x86_64 产物。
+#
+# 用法：
+#   1. 把你的代码 push 到 GitHub 仓库（fork 或自己的仓库都行）
+#   2. 在 GitHub 仓库的 Actions 页面手动触发：Actions → Build macOS legacy → Run workflow
+#   3. 构建完成后到 Artifacts 下载 mangodisk-macos-x86_64（含 DMG 和 .app）
+
+on:
+  workflow_dispatch: {}
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  macos-x86_64:
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          package-manager: pnpm
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: x86_64-apple-darwin
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      # 默认 pnpm tauri:build 会先跑全套检查（vitest + cargo test + vue-tsc +
+      # vite build + check-build-output），首次构建约 10-20 分钟。
+      # 如果你想跳过测试快速出包，把下面这行换成：
+      #   run: pnpm exec tauri build --target x86_64-apple-darwin
+      # 并且临时把 src-tauri/tauri.conf.json 的 build.beforeBuildCommand
+      # 从 "pnpm build" 改成 "pnpm build:frontend"（只构建前端，跳过测试）。
+      - name: Build macOS bundle (x86_64 — 2013 iMac)
+        run: pnpm tauri:build --target x86_64-apple-darwin
+
+      - name: Upload DMG / .app
+        uses: actions/upload-artifact@v4
+        with:
+          name: mangodisk-macos-x86_64
+          path: src-tauri/target/x86_64-apple-darwin/release/bundle/macos/
+          if-no-files-found: error
