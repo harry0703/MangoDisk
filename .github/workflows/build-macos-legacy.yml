@@ -4,11 +4,17 @@ name: build-macos-legacy
 #
 # Tauri 的 macOS bundler 依赖 hdiutil/ditto/codesign 等 macOS 专属工具，
 # 无法从 Windows 交叉编译，因此必须在 macOS 环境构建。
-# 本 workflow 在 GitHub Actions 的 macos runner 上远程构建 x86_64 产物。
+#
+# runner 选择（重要）：
+#   GitHub 已于 2025-12-04 全面下线 macos-13（Intel）。目前唯一可用的 Intel
+#   macOS runner 是 macos-15-intel（可用至 2027-08）。
+#   2013 iMac 是 x86_64 架构，必须用 Intel runner 产出原生 x86_64 产物；
+#   macos-15 / macos-latest 是 arm64，交叉编译 x86_64 虽可行，但 DMG 打包链路
+#   更容易出意外。
 #
 # 用法：
 #   1. 把你的代码 push 到 GitHub 仓库（fork 或自己的仓库都行）
-#   2. 在 GitHub 仓库的 Actions 页面手动触发：Actions → Build macOS legacy → Run workflow
+#   2. 在 Actions 页面手动触发：Actions → build-macos-legacy → Run workflow
 #   3. 构建完成后到 Artifacts 下载 mangodisk-macos-x86_64（含 DMG 和 .app）
 
 on:
@@ -21,34 +27,41 @@ permissions:
 
 jobs:
   macos-x86_64:
-    runs-on: macos-14
+    # macos-15-intel = Intel x86_64 runner，产物架构与 2013 iMac 一致。
+    runs-on: macos-15-intel
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: actions/setup-node@v4
+      # pnpm/action-setup 读取 package.json 的 packageManager 字段（pnpm@11.13.1），
+      # 保证与仓库锁定版本一致，避免 --frozen-lockfile 因 pnpm 主版本不同而失败。
+      - uses: pnpm/action-setup@v6
+
+      - uses: actions/setup-node@v7
         with:
           node-version: 24
-          package-manager: pnpm
+          cache: pnpm
 
-      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
         with:
-          targets: x86_64-apple-darwin
+          workspaces: . -> target
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      # 默认 pnpm tauri:build 会先跑全套检查（vitest + cargo test + vue-tsc +
-      # vite build + check-build-output），首次构建约 10-20 分钟。
-      # 如果你想跳过测试快速出包，把下面这行换成：
-      #   run: pnpm exec tauri build --target x86_64-apple-darwin
-      # 并且临时把 src-tauri/tauri.conf.json 的 build.beforeBuildCommand
-      # 从 "pnpm build" 改成 "pnpm build:frontend"（只构建前端，跳过测试）。
+      # createUpdaterArtifacts 在 tauri.conf.json 中是 true，但没有 updater 私钥
+      # 会直接让打包失败；上游的 Linux 打包脚本用同样方式覆盖掉它。
+      # --no-sign 跳过 codesign，产物未签名，安装时右键打开即可。
+      # beforeBuildCommand 收窄为 pnpm build:frontend，只跑前端类型检查 + vite build
+      # + 产物体积预算校验，跳过 vitest / cargo test，以缩短首次出包时间。
       - name: Build macOS bundle (x86_64 — 2013 iMac)
-        run: pnpm tauri:build --target x86_64-apple-darwin
+        env:
+          TAURI_CONFIG_OVERRIDE: '{"bundle":{"createUpdaterArtifacts":false},"build":{"beforeBuildCommand":"pnpm build:frontend"}}'
+        run: pnpm tauri build --target x86_64-apple-darwin --bundles app,dmg --no-sign --config "$TAURI_CONFIG_OVERRIDE"
 
       - name: Upload DMG / .app
         uses: actions/upload-artifact@v4
         with:
           name: mangodisk-macos-x86_64
-          path: src-tauri/target/x86_64-apple-darwin/release/bundle/macos/
+          # cargo workspace 根在仓库根目录，产物落在 ./target，而不是 ./src-tauri/target
+          path: target/x86_64-apple-darwin/release/bundle/macos/
           if-no-files-found: error
