@@ -12,6 +12,7 @@ import ko from '@/locales/ko-KR.json';
 import pt from '@/locales/pt-BR.json';
 import ru from '@/locales/ru-RU.json';
 import tr from '@/locales/tr-TR.json';
+import uk from '@/locales/uk-UA.json';
 import type { CpuTemperature, MetricReading } from '@/lib/models/system-resources/system-resources';
 const reading = (): MetricReading<CpuTemperature> => ({
   status: 'ready',
@@ -25,21 +26,24 @@ const render = (compact = false) =>
     global: { plugins: [createI18n({ legacy: false, locale: 'en-US', messages: { 'en-US': enUS } })] },
   });
 describe('CPU temperature presentation', () => {
-  it.each([enUS, zhCN, zhTW, ja, ko, pt, ru, tr])('distinguishes Intel fallback sensor meanings', async messages => {
-    const wrapper = mount(MdCpuTemperature, {
-      props: { reading: reading(), observedAtMs: 1000 },
-      global: { plugins: [createI18n({ legacy: false, locale: 'test', messages: { test: messages } })] },
-    });
-    try {
-      for (const kind of ['diode', 'proximity'] as const) {
-        await wrapper.setProps({ reading: { ...reading(), value: { ...reading().value!, kind, sensorCount: 1 } } });
-        expect(wrapper.getComponent(MdTooltip).props('text')).toBe(messages.cpuTemperature[`${kind}Hint`]);
-        expect(wrapper.get('strong').text()).toBe('49°C');
+  it.each([enUS, zhCN, zhTW, ja, ko, pt, ru, tr, uk])(
+    'distinguishes Intel fallback sensor meanings',
+    async messages => {
+      const wrapper = mount(MdCpuTemperature, {
+        props: { reading: reading(), observedAtMs: 1000 },
+        global: { plugins: [createI18n({ legacy: false, locale: 'test', messages: { test: messages } })] },
+      });
+      try {
+        for (const kind of ['diode', 'proximity'] as const) {
+          await wrapper.setProps({ reading: { ...reading(), value: { ...reading().value!, kind, sensorCount: 1 } } });
+          expect(wrapper.getComponent(MdTooltip).props('text')).toBe(messages.cpuTemperature[`${kind}Hint`]);
+          expect(wrapper.get('strong').text()).toBe('49°C');
+        }
+      } finally {
+        wrapper.unmount();
       }
-    } finally {
-      wrapper.unmount();
     }
-  });
+  );
   it('describes AMD die temperature without the Intel package sensor hint', async () => {
     const wrapper = render();
     try {
@@ -66,20 +70,23 @@ describe('CPU temperature presentation', () => {
       }
     }
   });
-  it.each([enUS, zhCN, zhTW, ja, ko, pt, ru, tr])('localizes the sensor hint without an inline caption', messages => {
-    const wrapper = mount(MdCpuTemperature, {
-      props: { reading: reading(), observedAtMs: 1000 },
-      global: { plugins: [createI18n({ legacy: false, locale: 'test', messages: { test: messages } })] },
-    });
-    expect(wrapper.get('.temperature-help').attributes('aria-label')).toBe(messages.cpuTemperature.label);
-    expect(wrapper.get('.temperature-help').text()).toBe('');
-    expect(wrapper.get('.temperature-heading').text()).toContain(messages.cpuTemperature.label);
-    expect(wrapper.getComponent(MdTooltip).props('text')).toBe(
-      messages.cpuTemperature.coreAverageHint.replace('{count}', '16')
-    );
-    expect(wrapper.find('.temperature-scope').exists()).toBe(false);
-    wrapper.unmount();
-  });
+  it.each([enUS, zhCN, zhTW, ja, ko, pt, ru, tr, uk])(
+    'localizes the sensor hint without an inline caption',
+    messages => {
+      const wrapper = mount(MdCpuTemperature, {
+        props: { reading: reading(), observedAtMs: 1000 },
+        global: { plugins: [createI18n({ legacy: false, locale: 'test', messages: { test: messages } })] },
+      });
+      expect(wrapper.get('.temperature-help').attributes('aria-label')).toBe(messages.cpuTemperature.label);
+      expect(wrapper.get('.temperature-help').text()).toBe('');
+      expect(wrapper.get('.temperature-heading').text()).toContain(messages.cpuTemperature.label);
+      expect(wrapper.getComponent(MdTooltip).props('text')).toBe(
+        messages.cpuTemperature.coreAverageHint.replace('{count}', '16')
+      );
+      expect(wrapper.find('.temperature-scope').exists()).toBe(false);
+      wrapper.unmount();
+    }
+  );
   it('keeps the overview value compact with an accessible CPU label', () => {
     const wrapper = render(true);
     expect(wrapper.find('.temperature-value').text()).toBe('49°C');
