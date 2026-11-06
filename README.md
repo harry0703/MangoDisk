@@ -82,9 +82,17 @@ Reduce unnecessary settings that slow down your system or get in the way. Balanc
 
 Fix common problems like missing search results, incorrect icons, no sound, or network connection failures—without hunting down fixes or typing complex commands. Get your computer back to normal sooner.
 
+### 10. Context Menus (Windows)
+
+> Available since version 1.2.3
+
+Keep right-click menus tidy and easy to use. Browse entries by menu location or app, disable, restore or remove supported items, and adjust menus for individual file types.
+
+Add everyday actions such as copying paths and opening a terminal, along with shortcuts to system tools.
+
 > **Activity**
 
-### 10. Operation History
+### 11. Operation History
 
 Keep a clear record of every cleanup and system change. See how much space you recovered, what completed successfully, and whether anything still needs your attention.
 
@@ -92,9 +100,11 @@ Keep a clear record of every cleanup and system change. See how much space you r
 
 > Available since version 1.1.1
 
-Check CPU and memory usage, network speeds, and disk activity at a glance. See which apps use the most memory and free up memory with a click when resources are running low.
+Track CPU, GPU, memory, network speeds and disk activity in real time, with trends to help you understand resource use. On supported devices, you can also check temperatures, power usage, battery status and disk health.
 
-Keep these details in your menu bar, taskbar, or system tray—no need to open the main window.
+Quickly find resource-heavy apps, quit those you no longer need, and free memory manually or automatically.
+
+Display metrics in the menu bar, taskbar, system tray or a floating desktop window. Customize the content and appearance to keep an eye on your computer without opening the main window.
 
 ## AI Explanations
 
