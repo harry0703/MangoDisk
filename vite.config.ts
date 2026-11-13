@@ -5,7 +5,7 @@ import { fileURLToPath, URL } from 'node:url';
 import { defineConfig } from 'vite';
 
 const localeModulePattern =
-  /\/src\/locales\/modules\/(de-de|en-us|es-es|fr-fr|ja-jp|ko-kr|pt-br|ru-ru|tr-tr|zh-cn|zh-tw)\.ts$/u;
+  /\/src\/locales\/modules\/(de-de|en-us|es-es|fr-fr|ja-jp|ko-kr|pt-br|ru-ru|tr-tr|uk-ua|zh-cn|zh-tw)\.ts$/u;
 
 /**
  * Resolve locale chunk names only from project-owned modules. Depending on
