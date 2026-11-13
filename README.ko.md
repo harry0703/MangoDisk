@@ -20,9 +20,9 @@
 <p align="center">
   <a href="https://mangodisk.app/">
     <picture>
-      <source media="(prefers-color-scheme: dark)" srcset="https://assets.mangodisk.app/images/readme/en-dark.jpg">
-      <source media="(prefers-color-scheme: light)" srcset="https://assets.mangodisk.app/images/readme/en-light.jpg">
-      <img src="https://assets.mangodisk.app/images/readme/en-light.jpg" width="1200" alt="MangoDisk 디스크 정리, 저장 공간 분석, 개인정보 보호, 시스템 최적화">
+      <source media="(prefers-color-scheme: dark)" srcset="https://assets.mangodisk.app/images/screenshots/en/dark-00-overview.jpg?ver=2.0.0">
+      <source media="(prefers-color-scheme: light)" srcset="https://assets.mangodisk.app/images/screenshots/en/light-00-overview.jpg?ver=2.0.0">
+      <img src="https://assets.mangodisk.app/images/screenshots/en/light-00-overview.jpg?ver=2.0.0" width="1200" alt="MangoDisk 개요 화면">
     </picture>
   </a>
 </p>
@@ -33,7 +33,7 @@
 
 ### 1. 심층 정리
 
-시스템, 앱, 개발자 도구, 로컬 프로젝트 곳곳에 흩어진 정리 가능한 콘텐츠를 한 번의 스캔으로 찾습니다. 위치마다 직접 확인할 필요 없이 MangoDisk가 회수 가능한 공간별로 결과를 묶어 보여줍니다:
+일상 작업과 개발, AI 도구 사용 중에 쌓인 파일로 저장 공간이 부족해졌나요? 곳곳에 흩어진 캐시, 빌드 산출물, 로컬 모델을 한곳에서 확인하고, 숨겨진 폴더를 일일이 찾지 않아도 필요한 파일을 위한 공간을 확보할 수 있습니다.
 
 - **시스템 및 사용자 캐시**: 시간이 지나며 쌓인 시스템 임시 파일, 진단 데이터, 다시 만들 수 있는 캐시가 차지한 공간을 회수합니다.
 - **앱 캐시**: 앱 캐시, 로그, 업데이트 패키지, 임시 콘텐츠가 조용히 저장 공간을 잠식하지 않게 합니다.
@@ -41,7 +41,8 @@
 - **개발자 도구 및 Xcode**: 패키지 관리자, IDE, 컴파일러 캐시, Xcode 개발 데이터가 차지한 큰 용량을 빠르게 되찾습니다.
 - **컨테이너 캐시**: Docker 등 컨테이너 도구의 사용하지 않는 빌드 캐시와 다시 만들 수 있는 데이터가 쓰는 공간을 확보합니다.
 - **프로젝트 빌드 산출물**: Node.js, Rust, Gradle, Swift, Python, .NET, Godot, CMake 등 프로젝트의 다시 만들 수 있는 의존성, 캐시, 빌드 디렉터리가 쓰는 공간을 되찾습니다.
-- **AI 모델 및 캐시**: 대용량 로컬 AI 모델, 다운로드 캐시, 임시 전송 파일을 빠르게 찾아냅니다.
+- **AI 도구**: ChatGPT, Codex, Claude 등에 쌓인 캐시, 오래된 로그, 다운로드 임시 파일을 정리합니다. 도구마다 데이터가 저장된 폴더를 직접 찾을 필요가 없습니다.
+- **AI 모델**: Ollama, LM Studio, Hugging Face, ComfyUI 등의 로컬 모델이 차지하는 용량을 확인하고, 더 이상 쓰지 않는 모델을 삭제해 새 모델과 일상 파일을 위한 공간을 확보합니다. 모델은 직접 선택해야 하며, 나중에 다시 사용하려면 재다운로드가 필요합니다.
 - **앱 최적화**: 지원되는 앱을 정상 사용에 영향 없이 줄여 디스크 여유 공간을 늘립니다.
 
 스마트 추천이 안전한 선택을 빠르게 돕습니다. 항목을 하나씩 검토하고 회수 예상 공간을 미리 확인할 수 있어 모든 정리를 예측 가능하게, 직접 통제하며 진행할 수 있습니다.
@@ -134,14 +135,14 @@ MangoDisk는 자체 정리 규칙을 관리합니다. 서드파티 프로젝트�
 
 <p align="center">
   <strong>심층 정리</strong><br>
-  <sub>시스템, 앱, 개발자 도구, 프로젝트 전반의 정리 가능한 콘텐츠를 찾아 더 많은 공간을 회수합니다</sub>
+  <sub>쌓인 캐시와 빌드 산출물, 더 이상 쓰지 않는 AI 모델을 정리해 필요한 파일을 위한 공간을 확보하세요</sub>
 </p>
 
 <p align="center">
   <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="https://assets.mangodisk.app/images/screenshots/en/dark-01-deep-cleanup.jpg">
-    <source media="(prefers-color-scheme: light)" srcset="https://assets.mangodisk.app/images/screenshots/en/light-01-deep-cleanup.jpg">
-    <img src="https://assets.mangodisk.app/images/screenshots/en/light-01-deep-cleanup.jpg" width="1200" alt="MangoDisk 심층 정리 화면">
+    <source media="(prefers-color-scheme: dark)" srcset="https://assets.mangodisk.app/images/screenshots/en/dark-01-deep-cleanup.jpg?ver=2.0.0">
+    <source media="(prefers-color-scheme: light)" srcset="https://assets.mangodisk.app/images/screenshots/en/light-01-deep-cleanup.jpg?ver=2.0.0">
+    <img src="https://assets.mangodisk.app/images/screenshots/en/light-01-deep-cleanup.jpg?ver=2.0.0" width="1200" alt="MangoDisk 심층 정리 화면">
   </picture>
 </p>
 
@@ -150,80 +151,96 @@ MangoDisk는 자체 정리 규칙을 관리합니다. 서드파티 프로젝트�
     <td width="50%" align="center">
       <strong>대용량 파일 정리</strong><br>
       <sub>폴더를 뒤지지 않고 가장 많은 공간을 차지하는 파일을 찾습니다</sub><br><br>
-      <picture>
-        <source media="(prefers-color-scheme: dark)" srcset="https://assets.mangodisk.app/images/screenshots/en/dark-02-large-file-cleanup.jpg">
-        <source media="(prefers-color-scheme: light)" srcset="https://assets.mangodisk.app/images/screenshots/en/light-02-large-file-cleanup.jpg">
-        <img src="https://assets.mangodisk.app/images/screenshots/en/light-02-large-file-cleanup.jpg" width="100%" alt="MangoDisk 대용량 파일 정리 화면">
-      </picture>
+      <a href="https://assets.mangodisk.app/images/screenshots/en/light-02-large-file-cleanup.jpg?ver=2.0.0" target="_blank" rel="noopener noreferrer">
+        <picture>
+          <source media="(prefers-color-scheme: dark)" srcset="https://assets.mangodisk.app/images/screenshots/en/dark-02-large-file-cleanup.jpg?ver=2.0.0">
+          <source media="(prefers-color-scheme: light)" srcset="https://assets.mangodisk.app/images/screenshots/en/light-02-large-file-cleanup.jpg?ver=2.0.0">
+          <img src="https://assets.mangodisk.app/images/screenshots/en/light-02-large-file-cleanup.jpg?ver=2.0.0" width="100%" alt="MangoDisk 대용량 파일 정리 화면">
+        </picture>
+      </a>
     </td>
     <td width="50%" align="center">
       <strong>중복 파일 정리</strong><br>
       <sub>복사본을 하나 이상 남기면서 완전히 동일한 중복 파일을 안전하게 제거합니다</sub><br><br>
-      <picture>
-        <source media="(prefers-color-scheme: dark)" srcset="https://assets.mangodisk.app/images/screenshots/en/dark-03-duplicate-cleanup.jpg">
-        <source media="(prefers-color-scheme: light)" srcset="https://assets.mangodisk.app/images/screenshots/en/light-03-duplicate-cleanup.jpg">
-        <img src="https://assets.mangodisk.app/images/screenshots/en/light-03-duplicate-cleanup.jpg" width="100%" alt="MangoDisk 중복 파일 정리 화면">
-      </picture>
+      <a href="https://assets.mangodisk.app/images/screenshots/en/light-03-duplicate-cleanup.jpg?ver=2.0.0" target="_blank" rel="noopener noreferrer">
+        <picture>
+          <source media="(prefers-color-scheme: dark)" srcset="https://assets.mangodisk.app/images/screenshots/en/dark-03-duplicate-cleanup.jpg?ver=2.0.0">
+          <source media="(prefers-color-scheme: light)" srcset="https://assets.mangodisk.app/images/screenshots/en/light-03-duplicate-cleanup.jpg?ver=2.0.0">
+          <img src="https://assets.mangodisk.app/images/screenshots/en/light-03-duplicate-cleanup.jpg?ver=2.0.0" width="100%" alt="MangoDisk 중복 파일 정리 화면">
+        </picture>
+      </a>
     </td>
   </tr>
   <tr>
     <td width="50%" align="center">
       <strong>디스크 공간 분석</strong><br>
       <sub>저장 공간이 어디에 쓰이는지 보고 가장 큰 파일과 폴더를 빠르게 찾습니다</sub><br><br>
-      <picture>
-        <source media="(prefers-color-scheme: dark)" srcset="https://assets.mangodisk.app/images/screenshots/en/dark-05-disk-space-analysis.jpg">
-        <source media="(prefers-color-scheme: light)" srcset="https://assets.mangodisk.app/images/screenshots/en/light-05-disk-space-analysis.jpg">
-        <img src="https://assets.mangodisk.app/images/screenshots/en/light-05-disk-space-analysis.jpg" width="100%" alt="MangoDisk 디스크 공간 분석 화면">
-      </picture>
+      <a href="https://assets.mangodisk.app/images/screenshots/en/light-05-disk-space-analysis.jpg?ver=2.0.0" target="_blank" rel="noopener noreferrer">
+        <picture>
+          <source media="(prefers-color-scheme: dark)" srcset="https://assets.mangodisk.app/images/screenshots/en/dark-05-disk-space-analysis.jpg?ver=2.0.0">
+          <source media="(prefers-color-scheme: light)" srcset="https://assets.mangodisk.app/images/screenshots/en/light-05-disk-space-analysis.jpg?ver=2.0.0">
+          <img src="https://assets.mangodisk.app/images/screenshots/en/light-05-disk-space-analysis.jpg?ver=2.0.0" width="100%" alt="MangoDisk 디스크 공간 분석 화면">
+        </picture>
+      </a>
     </td>
     <td width="50%" align="center">
       <strong>시작 항목 관리</strong><br>
       <sub>불필요한 시작 프로그램을 줄여 더 빠른 로그인과 더 적은 백그라운드 활동을 만듭니다</sub><br><br>
-      <picture>
-        <source media="(prefers-color-scheme: dark)" srcset="https://assets.mangodisk.app/images/screenshots/en/dark-06-startup-items.jpg">
-        <source media="(prefers-color-scheme: light)" srcset="https://assets.mangodisk.app/images/screenshots/en/light-06-startup-items.jpg">
-        <img src="https://assets.mangodisk.app/images/screenshots/en/light-06-startup-items.jpg" width="100%" alt="MangoDisk 시작 항목 관리 화면">
-      </picture>
+      <a href="https://assets.mangodisk.app/images/screenshots/en/light-06-startup-items.jpg?ver=2.0.0" target="_blank" rel="noopener noreferrer">
+        <picture>
+          <source media="(prefers-color-scheme: dark)" srcset="https://assets.mangodisk.app/images/screenshots/en/dark-06-startup-items.jpg?ver=2.0.0">
+          <source media="(prefers-color-scheme: light)" srcset="https://assets.mangodisk.app/images/screenshots/en/light-06-startup-items.jpg?ver=2.0.0">
+          <img src="https://assets.mangodisk.app/images/screenshots/en/light-06-startup-items.jpg?ver=2.0.0" width="100%" alt="MangoDisk 시작 항목 관리 화면">
+        </picture>
+      </a>
     </td>
   </tr>
   <tr>
     <td width="50%" align="center">
       <strong>앱 제거 및 정리</strong><br>
       <sub>앱을 제거하고 관련 잔여 파일까지 지워 더 많은 공간을 회수합니다</sub><br><br>
-      <picture>
-        <source media="(prefers-color-scheme: dark)" srcset="https://assets.mangodisk.app/images/screenshots/en/dark-04-app-uninstaller.jpg">
-        <source media="(prefers-color-scheme: light)" srcset="https://assets.mangodisk.app/images/screenshots/en/light-04-app-uninstaller.jpg">
-        <img src="https://assets.mangodisk.app/images/screenshots/en/light-04-app-uninstaller.jpg" width="100%" alt="MangoDisk 앱 제거 화면">
-      </picture>
+      <a href="https://assets.mangodisk.app/images/screenshots/en/light-04-app-uninstaller.jpg?ver=2.0.0" target="_blank" rel="noopener noreferrer">
+        <picture>
+          <source media="(prefers-color-scheme: dark)" srcset="https://assets.mangodisk.app/images/screenshots/en/dark-04-app-uninstaller.jpg?ver=2.0.0">
+          <source media="(prefers-color-scheme: light)" srcset="https://assets.mangodisk.app/images/screenshots/en/light-04-app-uninstaller.jpg?ver=2.0.0">
+          <img src="https://assets.mangodisk.app/images/screenshots/en/light-04-app-uninstaller.jpg?ver=2.0.0" width="100%" alt="MangoDisk 앱 제거 화면">
+        </picture>
+      </a>
     </td>
     <td width="50%" align="center">
       <strong>시스템 최적화</strong><br>
       <sub>성능, 개인정보 보호, 일상적인 사용성을 한 번의 클릭으로 최적화합니다</sub><br><br>
-      <picture>
-        <source media="(prefers-color-scheme: dark)" srcset="https://assets.mangodisk.app/images/screenshots/en/dark-07-system-optimization.jpg">
-        <source media="(prefers-color-scheme: light)" srcset="https://assets.mangodisk.app/images/screenshots/en/light-07-system-optimization.jpg">
-        <img src="https://assets.mangodisk.app/images/screenshots/en/light-07-system-optimization.jpg" width="100%" alt="MangoDisk 시스템 최적화 화면">
-      </picture>
+      <a href="https://assets.mangodisk.app/images/screenshots/en/light-07-system-optimization.jpg?ver=2.0.0" target="_blank" rel="noopener noreferrer">
+        <picture>
+          <source media="(prefers-color-scheme: dark)" srcset="https://assets.mangodisk.app/images/screenshots/en/dark-07-system-optimization.jpg?ver=2.0.0">
+          <source media="(prefers-color-scheme: light)" srcset="https://assets.mangodisk.app/images/screenshots/en/light-07-system-optimization.jpg?ver=2.0.0">
+          <img src="https://assets.mangodisk.app/images/screenshots/en/light-07-system-optimization.jpg?ver=2.0.0" width="100%" alt="MangoDisk 시스템 최적화 화면">
+        </picture>
+      </a>
     </td>
   </tr>
   <tr>
     <td width="50%" align="center">
       <strong>시스템 유지 관리</strong><br>
       <sub>흔한 시스템 문제를 빠르게 고쳐 컴퓨터를 정상으로 되돌립니다</sub><br><br>
-      <picture>
-        <source media="(prefers-color-scheme: dark)" srcset="https://assets.mangodisk.app/images/screenshots/en/dark-08-system-maintenance.jpg">
-        <source media="(prefers-color-scheme: light)" srcset="https://assets.mangodisk.app/images/screenshots/en/light-08-system-maintenance.jpg">
-        <img src="https://assets.mangodisk.app/images/screenshots/en/light-08-system-maintenance.jpg" width="100%" alt="MangoDisk 시스템 유지 관리 화면">
-      </picture>
+      <a href="https://assets.mangodisk.app/images/screenshots/en/light-08-system-maintenance.jpg?ver=2.0.0" target="_blank" rel="noopener noreferrer">
+        <picture>
+          <source media="(prefers-color-scheme: dark)" srcset="https://assets.mangodisk.app/images/screenshots/en/dark-08-system-maintenance.jpg?ver=2.0.0">
+          <source media="(prefers-color-scheme: light)" srcset="https://assets.mangodisk.app/images/screenshots/en/light-08-system-maintenance.jpg?ver=2.0.0">
+          <img src="https://assets.mangodisk.app/images/screenshots/en/light-08-system-maintenance.jpg?ver=2.0.0" width="100%" alt="MangoDisk 시스템 유지 관리 화면">
+        </picture>
+      </a>
     </td>
     <td width="50%" align="center">
       <strong>개인정보 정리</strong><br>
       <sub>활동 흔적을 덜 남기고 일상적인 사용을 더 비공개로 유지합니다</sub><br><br>
-      <picture>
-        <source media="(prefers-color-scheme: dark)" srcset="https://assets.mangodisk.app/images/screenshots/en/dark-09-privacy-cleanup.jpg">
-        <source media="(prefers-color-scheme: light)" srcset="https://assets.mangodisk.app/images/screenshots/en/light-09-privacy-cleanup.jpg">
-        <img src="https://assets.mangodisk.app/images/screenshots/en/light-09-privacy-cleanup.jpg" width="100%" alt="MangoDisk 개인정보 정리 화면">
-      </picture>
+      <a href="https://assets.mangodisk.app/images/screenshots/en/light-09-privacy-cleanup.jpg?ver=2.0.0" target="_blank" rel="noopener noreferrer">
+        <picture>
+          <source media="(prefers-color-scheme: dark)" srcset="https://assets.mangodisk.app/images/screenshots/en/dark-09-privacy-cleanup.jpg?ver=2.0.0">
+          <source media="(prefers-color-scheme: light)" srcset="https://assets.mangodisk.app/images/screenshots/en/light-09-privacy-cleanup.jpg?ver=2.0.0">
+          <img src="https://assets.mangodisk.app/images/screenshots/en/light-09-privacy-cleanup.jpg?ver=2.0.0" width="100%" alt="MangoDisk 개인정보 정리 화면">
+        </picture>
+      </a>
     </td>
   </tr>
 </table>
@@ -275,6 +292,12 @@ winget install --id MangoDisk.MangoDisk --exact --source winget
 **권장 환경:** Ubuntu 22.04 LTS 이상. x64와 ARM64를 지원합니다.
 
 `.deb` 패키지와 AppImage를 제공합니다. 다른 Linux 배포판에서의 호환성은 시스템 라이브러리와 데스크톱 환경에 따라 달라집니다.
+
+**Homebrew로 설치:** 최신 Homebrew와 데스크톱 환경이 필요합니다.
+
+```sh
+brew install --cask harry0703/tap/mangodisk
+```
 
 **터미널에서 설치(Debian/Ubuntu):** 아키텍처를 자동으로 감지해 해당 아키텍처의 최신 `.deb` 패키지를 설치합니다.
 

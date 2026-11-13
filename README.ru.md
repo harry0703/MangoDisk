@@ -20,9 +20,9 @@
 <p align="center">
   <a href="https://mangodisk.app/">
     <picture>
-      <source media="(prefers-color-scheme: dark)" srcset="https://assets.mangodisk.app/images/readme/en-dark.jpg">
-      <source media="(prefers-color-scheme: light)" srcset="https://assets.mangodisk.app/images/readme/en-light.jpg">
-      <img src="https://assets.mangodisk.app/images/readme/en-light.jpg" width="1200" alt="MangoDisk: очистка диска, анализ хранилища, защита конфиденциальности и оптимизация системы">
+      <source media="(prefers-color-scheme: dark)" srcset="https://assets.mangodisk.app/images/screenshots/en/dark-00-overview.jpg?ver=2.0.0">
+      <source media="(prefers-color-scheme: light)" srcset="https://assets.mangodisk.app/images/screenshots/en/light-00-overview.jpg?ver=2.0.0">
+      <img src="https://assets.mangodisk.app/images/screenshots/en/light-00-overview.jpg?ver=2.0.0" width="1200" alt="Обзорная панель MangoDisk">
     </picture>
   </a>
 </p>
@@ -33,7 +33,7 @@
 
 ### 1. Глубокая очистка
 
-За одно сканирование находит данные, которые можно удалить, в системе, приложениях, инструментах разработчика и локальных проектах. MangoDisk избавляет от ручной проверки каждого расположения и группирует результаты по объёму освобождаемого места:
+Освободите место, которое незаметно занимают повседневная работа, разработка и инструменты ИИ. MangoDisk собирает кэши, результаты сборки и локальные модели в одном списке — больше не нужно искать их по скрытым папкам.
 
 - **Системные и пользовательские кэши**: освобождает место, которое со временем заняли системные временные файлы, диагностические данные и кэши, допускающие повторное создание.
 - **Кэши приложений**: не позволяет кэшам, журналам, пакетам обновлений и временным данным приложений незаметно занимать всё больше места.
@@ -41,7 +41,8 @@
 - **Инструменты разработчика и Xcode**: быстро освобождает значительный объём хранилища, занятый менеджерами пакетов, IDE, кэшами компиляторов и данными разработки Xcode.
 - **Кэши контейнеров**: удаляет неиспользуемые кэши сборки и восстанавливаемые данные Docker и других контейнерных инструментов.
 - **Артефакты сборки проектов**: освобождает место, занятое восстанавливаемыми зависимостями, кэшами и каталогами сборки проектов Node.js, Rust, Gradle, Swift, Python, .NET, Godot, CMake и других экосистем.
-- **Модели и кэши ИИ**: быстро обнаруживает крупные локальные модели ИИ, кэши загрузок и временные файлы передачи.
+- **Инструменты ИИ**: освобождает место, занятое кэшами, старыми журналами и временными загрузками ChatGPT, Codex, Claude и других инструментов, без ручного поиска папок каждого приложения.
+- **Модели ИИ**: показывает, сколько места занимают локальные модели Ollama, LM Studio, Hugging Face и ComfyUI. Удалите ненужные, чтобы освободить место для новых моделей и повседневных файлов. Модели выбираются вручную; для повторного использования их потребуется скачать заново.
 - **Оптимизация приложений**: уменьшает размер поддерживаемых приложений без нарушения их нормальной работы.
 
 Умные рекомендации помогают быстро выбирать безопасные действия. Каждый элемент также можно проверить отдельно и заранее увидеть оценку освобождаемого места, сохраняя очистку предсказуемой и контролируемой.
@@ -134,14 +135,14 @@ MangoDisk поддерживает собственные правила очи�
 
 <p align="center">
   <strong>Глубокая очистка</strong><br>
-  <sub>Поиск очищаемых данных в системе, приложениях, инструментах разработчика и проектах</sub>
+  <sub>Освободите место для нужных файлов: удалите накопившиеся кэши, результаты сборки и ненужные модели ИИ</sub>
 </p>
 
 <p align="center">
   <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="https://assets.mangodisk.app/images/screenshots/en/dark-01-deep-cleanup.jpg">
-    <source media="(prefers-color-scheme: light)" srcset="https://assets.mangodisk.app/images/screenshots/en/light-01-deep-cleanup.jpg">
-    <img src="https://assets.mangodisk.app/images/screenshots/en/light-01-deep-cleanup.jpg" width="1200" alt="Интерфейс глубокой очистки MangoDisk">
+    <source media="(prefers-color-scheme: dark)" srcset="https://assets.mangodisk.app/images/screenshots/en/dark-01-deep-cleanup.jpg?ver=2.0.0">
+    <source media="(prefers-color-scheme: light)" srcset="https://assets.mangodisk.app/images/screenshots/en/light-01-deep-cleanup.jpg?ver=2.0.0">
+    <img src="https://assets.mangodisk.app/images/screenshots/en/light-01-deep-cleanup.jpg?ver=2.0.0" width="1200" alt="Интерфейс глубокой очистки MangoDisk">
   </picture>
 </p>
 
@@ -150,80 +151,96 @@ MangoDisk поддерживает собственные правила очи�
     <td width="50%" align="center">
       <strong>Очистка крупных файлов</strong><br>
       <sub>Поиск файлов, занимающих больше всего места, без ручного обхода папок</sub><br><br>
-      <picture>
-        <source media="(prefers-color-scheme: dark)" srcset="https://assets.mangodisk.app/images/screenshots/en/dark-02-large-file-cleanup.jpg">
-        <source media="(prefers-color-scheme: light)" srcset="https://assets.mangodisk.app/images/screenshots/en/light-02-large-file-cleanup.jpg">
-        <img src="https://assets.mangodisk.app/images/screenshots/en/light-02-large-file-cleanup.jpg" width="100%" alt="Интерфейс очистки крупных файлов MangoDisk">
-      </picture>
+      <a href="https://assets.mangodisk.app/images/screenshots/en/light-02-large-file-cleanup.jpg?ver=2.0.0" target="_blank" rel="noopener noreferrer">
+        <picture>
+          <source media="(prefers-color-scheme: dark)" srcset="https://assets.mangodisk.app/images/screenshots/en/dark-02-large-file-cleanup.jpg?ver=2.0.0">
+          <source media="(prefers-color-scheme: light)" srcset="https://assets.mangodisk.app/images/screenshots/en/light-02-large-file-cleanup.jpg?ver=2.0.0">
+          <img src="https://assets.mangodisk.app/images/screenshots/en/light-02-large-file-cleanup.jpg?ver=2.0.0" width="100%" alt="Интерфейс очистки крупных файлов MangoDisk">
+        </picture>
+      </a>
     </td>
     <td width="50%" align="center">
       <strong>Очистка дубликатов</strong><br>
       <sub>Безопасное удаление точных дубликатов с сохранением не менее одной копии</sub><br><br>
-      <picture>
-        <source media="(prefers-color-scheme: dark)" srcset="https://assets.mangodisk.app/images/screenshots/en/dark-03-duplicate-cleanup.jpg">
-        <source media="(prefers-color-scheme: light)" srcset="https://assets.mangodisk.app/images/screenshots/en/light-03-duplicate-cleanup.jpg">
-        <img src="https://assets.mangodisk.app/images/screenshots/en/light-03-duplicate-cleanup.jpg" width="100%" alt="Интерфейс очистки дубликатов MangoDisk">
-      </picture>
+      <a href="https://assets.mangodisk.app/images/screenshots/en/light-03-duplicate-cleanup.jpg?ver=2.0.0" target="_blank" rel="noopener noreferrer">
+        <picture>
+          <source media="(prefers-color-scheme: dark)" srcset="https://assets.mangodisk.app/images/screenshots/en/dark-03-duplicate-cleanup.jpg?ver=2.0.0">
+          <source media="(prefers-color-scheme: light)" srcset="https://assets.mangodisk.app/images/screenshots/en/light-03-duplicate-cleanup.jpg?ver=2.0.0">
+          <img src="https://assets.mangodisk.app/images/screenshots/en/light-03-duplicate-cleanup.jpg?ver=2.0.0" width="100%" alt="Интерфейс очистки дубликатов MangoDisk">
+        </picture>
+      </a>
     </td>
   </tr>
   <tr>
     <td width="50%" align="center">
       <strong>Анализ дискового пространства</strong><br>
       <sub>Поиск самых больших файлов и папок с наглядным представлением занятого места</sub><br><br>
-      <picture>
-        <source media="(prefers-color-scheme: dark)" srcset="https://assets.mangodisk.app/images/screenshots/en/dark-05-disk-space-analysis.jpg">
-        <source media="(prefers-color-scheme: light)" srcset="https://assets.mangodisk.app/images/screenshots/en/light-05-disk-space-analysis.jpg">
-        <img src="https://assets.mangodisk.app/images/screenshots/en/light-05-disk-space-analysis.jpg" width="100%" alt="Интерфейс анализа дискового пространства MangoDisk">
-      </picture>
+      <a href="https://assets.mangodisk.app/images/screenshots/en/light-05-disk-space-analysis.jpg?ver=2.0.0" target="_blank" rel="noopener noreferrer">
+        <picture>
+          <source media="(prefers-color-scheme: dark)" srcset="https://assets.mangodisk.app/images/screenshots/en/dark-05-disk-space-analysis.jpg?ver=2.0.0">
+          <source media="(prefers-color-scheme: light)" srcset="https://assets.mangodisk.app/images/screenshots/en/light-05-disk-space-analysis.jpg?ver=2.0.0">
+          <img src="https://assets.mangodisk.app/images/screenshots/en/light-05-disk-space-analysis.jpg?ver=2.0.0" width="100%" alt="Интерфейс анализа дискового пространства MangoDisk">
+        </picture>
+      </a>
     </td>
     <td width="50%" align="center">
       <strong>Управление автозагрузкой</strong><br>
       <sub>Отключение ненужных программ для ускорения входа и снижения фоновой активности</sub><br><br>
-      <picture>
-        <source media="(prefers-color-scheme: dark)" srcset="https://assets.mangodisk.app/images/screenshots/en/dark-06-startup-items.jpg">
-        <source media="(prefers-color-scheme: light)" srcset="https://assets.mangodisk.app/images/screenshots/en/light-06-startup-items.jpg">
-        <img src="https://assets.mangodisk.app/images/screenshots/en/light-06-startup-items.jpg" width="100%" alt="Интерфейс управления автозагрузкой MangoDisk">
-      </picture>
+      <a href="https://assets.mangodisk.app/images/screenshots/en/light-06-startup-items.jpg?ver=2.0.0" target="_blank" rel="noopener noreferrer">
+        <picture>
+          <source media="(prefers-color-scheme: dark)" srcset="https://assets.mangodisk.app/images/screenshots/en/dark-06-startup-items.jpg?ver=2.0.0">
+          <source media="(prefers-color-scheme: light)" srcset="https://assets.mangodisk.app/images/screenshots/en/light-06-startup-items.jpg?ver=2.0.0">
+          <img src="https://assets.mangodisk.app/images/screenshots/en/light-06-startup-items.jpg?ver=2.0.0" width="100%" alt="Интерфейс управления автозагрузкой MangoDisk">
+        </picture>
+      </a>
     </td>
   </tr>
   <tr>
     <td width="50%" align="center">
       <strong>Удаление приложений и связанных данных</strong><br>
       <sub>Удаление приложений и их остаточных файлов для освобождения места</sub><br><br>
-      <picture>
-        <source media="(prefers-color-scheme: dark)" srcset="https://assets.mangodisk.app/images/screenshots/en/dark-04-app-uninstaller.jpg">
-        <source media="(prefers-color-scheme: light)" srcset="https://assets.mangodisk.app/images/screenshots/en/light-04-app-uninstaller.jpg">
-        <img src="https://assets.mangodisk.app/images/screenshots/en/light-04-app-uninstaller.jpg" width="100%" alt="Интерфейс удаления приложений MangoDisk">
-      </picture>
+      <a href="https://assets.mangodisk.app/images/screenshots/en/light-04-app-uninstaller.jpg?ver=2.0.0" target="_blank" rel="noopener noreferrer">
+        <picture>
+          <source media="(prefers-color-scheme: dark)" srcset="https://assets.mangodisk.app/images/screenshots/en/dark-04-app-uninstaller.jpg?ver=2.0.0">
+          <source media="(prefers-color-scheme: light)" srcset="https://assets.mangodisk.app/images/screenshots/en/light-04-app-uninstaller.jpg?ver=2.0.0">
+          <img src="https://assets.mangodisk.app/images/screenshots/en/light-04-app-uninstaller.jpg?ver=2.0.0" width="100%" alt="Интерфейс удаления приложений MangoDisk">
+        </picture>
+      </a>
     </td>
     <td width="50%" align="center">
       <strong>Оптимизация системы</strong><br>
       <sub>Настройка производительности, конфиденциальности и удобства одним нажатием</sub><br><br>
-      <picture>
-        <source media="(prefers-color-scheme: dark)" srcset="https://assets.mangodisk.app/images/screenshots/en/dark-07-system-optimization.jpg">
-        <source media="(prefers-color-scheme: light)" srcset="https://assets.mangodisk.app/images/screenshots/en/light-07-system-optimization.jpg">
-        <img src="https://assets.mangodisk.app/images/screenshots/en/light-07-system-optimization.jpg" width="100%" alt="Интерфейс оптимизации системы MangoDisk">
-      </picture>
+      <a href="https://assets.mangodisk.app/images/screenshots/en/light-07-system-optimization.jpg?ver=2.0.0" target="_blank" rel="noopener noreferrer">
+        <picture>
+          <source media="(prefers-color-scheme: dark)" srcset="https://assets.mangodisk.app/images/screenshots/en/dark-07-system-optimization.jpg?ver=2.0.0">
+          <source media="(prefers-color-scheme: light)" srcset="https://assets.mangodisk.app/images/screenshots/en/light-07-system-optimization.jpg?ver=2.0.0">
+          <img src="https://assets.mangodisk.app/images/screenshots/en/light-07-system-optimization.jpg?ver=2.0.0" width="100%" alt="Интерфейс оптимизации системы MangoDisk">
+        </picture>
+      </a>
     </td>
   </tr>
   <tr>
     <td width="50%" align="center">
       <strong>Обслуживание системы</strong><br>
       <sub>Быстрое исправление распространённых системных проблем</sub><br><br>
-      <picture>
-        <source media="(prefers-color-scheme: dark)" srcset="https://assets.mangodisk.app/images/screenshots/en/dark-08-system-maintenance.jpg">
-        <source media="(prefers-color-scheme: light)" srcset="https://assets.mangodisk.app/images/screenshots/en/light-08-system-maintenance.jpg">
-        <img src="https://assets.mangodisk.app/images/screenshots/en/light-08-system-maintenance.jpg" width="100%" alt="Интерфейс обслуживания системы MangoDisk">
-      </picture>
+      <a href="https://assets.mangodisk.app/images/screenshots/en/light-08-system-maintenance.jpg?ver=2.0.0" target="_blank" rel="noopener noreferrer">
+        <picture>
+          <source media="(prefers-color-scheme: dark)" srcset="https://assets.mangodisk.app/images/screenshots/en/dark-08-system-maintenance.jpg?ver=2.0.0">
+          <source media="(prefers-color-scheme: light)" srcset="https://assets.mangodisk.app/images/screenshots/en/light-08-system-maintenance.jpg?ver=2.0.0">
+          <img src="https://assets.mangodisk.app/images/screenshots/en/light-08-system-maintenance.jpg?ver=2.0.0" width="100%" alt="Интерфейс обслуживания системы MangoDisk">
+        </picture>
+      </a>
     </td>
     <td width="50%" align="center">
       <strong>Очистка конфиденциальных данных</strong><br>
       <sub>Сокращение следов активности и защита повседневной конфиденциальности</sub><br><br>
-      <picture>
-        <source media="(prefers-color-scheme: dark)" srcset="https://assets.mangodisk.app/images/screenshots/en/dark-09-privacy-cleanup.jpg">
-        <source media="(prefers-color-scheme: light)" srcset="https://assets.mangodisk.app/images/screenshots/en/light-09-privacy-cleanup.jpg">
-        <img src="https://assets.mangodisk.app/images/screenshots/en/light-09-privacy-cleanup.jpg" width="100%" alt="Интерфейс очистки конфиденциальных данных MangoDisk">
-      </picture>
+      <a href="https://assets.mangodisk.app/images/screenshots/en/light-09-privacy-cleanup.jpg?ver=2.0.0" target="_blank" rel="noopener noreferrer">
+        <picture>
+          <source media="(prefers-color-scheme: dark)" srcset="https://assets.mangodisk.app/images/screenshots/en/dark-09-privacy-cleanup.jpg?ver=2.0.0">
+          <source media="(prefers-color-scheme: light)" srcset="https://assets.mangodisk.app/images/screenshots/en/light-09-privacy-cleanup.jpg?ver=2.0.0">
+          <img src="https://assets.mangodisk.app/images/screenshots/en/light-09-privacy-cleanup.jpg?ver=2.0.0" width="100%" alt="Интерфейс очистки конфиденциальных данных MangoDisk">
+        </picture>
+      </a>
     </td>
   </tr>
 </table>
@@ -275,6 +292,12 @@ winget install --id MangoDisk.MangoDisk --exact --source winget
 **Рекомендуется:** Ubuntu 22.04 LTS или новее на x64 или ARM64.
 
 Доступны пакеты `.deb` и образы AppImage. Совместимость с другими дистрибутивами Linux зависит от их системных библиотек и окружения рабочего стола.
+
+**Установка через Homebrew:** нужны актуальная версия Homebrew и графическое окружение рабочего стола.
+
+```sh
+brew install --cask harry0703/tap/mangodisk
+```
 
 **Установка из терминала (Debian/Ubuntu):** команда определит архитектуру компьютера и установит подходящий `.deb` последней версии.
 

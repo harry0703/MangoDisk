@@ -20,9 +20,9 @@
 <p align="center">
   <a href="https://mangodisk.app/">
     <picture>
-      <source media="(prefers-color-scheme: dark)" srcset="https://assets.mangodisk.app/images/readme/en-dark.jpg">
-      <source media="(prefers-color-scheme: light)" srcset="https://assets.mangodisk.app/images/readme/en-light.jpg">
-      <img src="https://assets.mangodisk.app/images/readme/en-light.jpg" width="1200" alt="MangoDisk disk cleanup, storage analysis, privacy protection, and system optimization">
+      <source media="(prefers-color-scheme: dark)" srcset="https://assets.mangodisk.app/images/screenshots/en/dark-00-overview.jpg?ver=2.0.0">
+      <source media="(prefers-color-scheme: light)" srcset="https://assets.mangodisk.app/images/screenshots/en/light-00-overview.jpg?ver=2.0.0">
+      <img src="https://assets.mangodisk.app/images/screenshots/en/light-00-overview.jpg?ver=2.0.0" width="1200" alt="MangoDisk Overview dashboard">
     </picture>
   </a>
 </p>
@@ -33,7 +33,7 @@
 
 ### 1. Deep Cleanup
 
-Find cleanable content scattered across the system, applications, developer tools, and local projects in one scan. MangoDisk saves you from checking each location manually and groups the results by reclaimable space:
+Recover storage used by everyday apps, development work, and AI tools. Find caches, build artifacts, and local models in one place, without hunting through hidden folders:
 
 - **System and user caches**: Reclaim space taken up over time by system temporary files, diagnostic data, and rebuildable caches.
 - **Application caches**: Keep application caches, logs, update packages, and temporary content from quietly consuming more and more storage.
@@ -41,7 +41,8 @@ Find cleanable content scattered across the system, applications, developer tool
 - **Developer tools and Xcode**: Quickly recover substantial storage used by package managers, IDEs, compiler caches, and Xcode development data.
 - **Container caches**: Free up space used by inactive build caches and rebuildable data from Docker and other container tools.
 - **Project build artifacts**: Recover space used by rebuildable dependencies, caches, and build directories across Node.js, Rust, Gradle, Swift, Python, .NET, Godot, CMake, and other projects.
-- **AI models and caches**: Quickly spot large local AI models, download caches, and temporary transfer files.
+- **AI tools**: Reclaim space taken up by caches, old logs, and temporary downloads from tools such as ChatGPT, Codex, and Claude, without tracking down each tool's data folders.
+- **AI models**: See how much space local models from Ollama, LM Studio, Hugging Face, and ComfyUI use, and remove those you no longer need to make room for new models and everyday files. Models are selected manually and must be downloaded again if needed later.
 - **Application optimization**: Shrink supported applications without affecting normal use, leaving more room on your disk.
 
 Smart recommendations help you make safe choices quickly. You can also review items individually and see the estimated reclaimable space upfront, keeping every cleanup predictable and under your control.
@@ -134,14 +135,14 @@ The complete rule library and revision history are open for inspection: [view th
 
 <p align="center">
   <strong>Deep Cleanup</strong><br>
-  <sub>Find cleanable content across the system, applications, developer tools, and projects to reclaim more space</sub>
+  <sub>Make room for what matters by clearing accumulated caches, build artifacts, and AI models you no longer need</sub>
 </p>
 
 <p align="center">
   <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="https://assets.mangodisk.app/images/screenshots/en/dark-01-deep-cleanup.jpg">
-    <source media="(prefers-color-scheme: light)" srcset="https://assets.mangodisk.app/images/screenshots/en/light-01-deep-cleanup.jpg">
-    <img src="https://assets.mangodisk.app/images/screenshots/en/light-01-deep-cleanup.jpg" width="1200" alt="MangoDisk Deep Cleanup interface">
+    <source media="(prefers-color-scheme: dark)" srcset="https://assets.mangodisk.app/images/screenshots/en/dark-01-deep-cleanup.jpg?ver=2.0.0">
+    <source media="(prefers-color-scheme: light)" srcset="https://assets.mangodisk.app/images/screenshots/en/light-01-deep-cleanup.jpg?ver=2.0.0">
+    <img src="https://assets.mangodisk.app/images/screenshots/en/light-01-deep-cleanup.jpg?ver=2.0.0" width="1200" alt="MangoDisk Deep Cleanup interface">
   </picture>
 </p>
 
@@ -150,80 +151,96 @@ The complete rule library and revision history are open for inspection: [view th
     <td width="50%" align="center">
       <strong>Large File Cleanup</strong><br>
       <sub>Find the files taking up the most space without digging through folders</sub><br><br>
-      <picture>
-        <source media="(prefers-color-scheme: dark)" srcset="https://assets.mangodisk.app/images/screenshots/en/dark-02-large-file-cleanup.jpg">
-        <source media="(prefers-color-scheme: light)" srcset="https://assets.mangodisk.app/images/screenshots/en/light-02-large-file-cleanup.jpg">
-        <img src="https://assets.mangodisk.app/images/screenshots/en/light-02-large-file-cleanup.jpg" width="100%" alt="MangoDisk Large File Cleanup interface">
-      </picture>
+      <a href="https://assets.mangodisk.app/images/screenshots/en/light-02-large-file-cleanup.jpg?ver=2.0.0" target="_blank" rel="noopener noreferrer">
+        <picture>
+          <source media="(prefers-color-scheme: dark)" srcset="https://assets.mangodisk.app/images/screenshots/en/dark-02-large-file-cleanup.jpg?ver=2.0.0">
+          <source media="(prefers-color-scheme: light)" srcset="https://assets.mangodisk.app/images/screenshots/en/light-02-large-file-cleanup.jpg?ver=2.0.0">
+          <img src="https://assets.mangodisk.app/images/screenshots/en/light-02-large-file-cleanup.jpg?ver=2.0.0" width="100%" alt="MangoDisk Large File Cleanup interface">
+        </picture>
+      </a>
     </td>
     <td width="50%" align="center">
       <strong>Duplicate File Cleanup</strong><br>
       <sub>Safely remove exact duplicates while keeping at least one copy</sub><br><br>
-      <picture>
-        <source media="(prefers-color-scheme: dark)" srcset="https://assets.mangodisk.app/images/screenshots/en/dark-03-duplicate-cleanup.jpg">
-        <source media="(prefers-color-scheme: light)" srcset="https://assets.mangodisk.app/images/screenshots/en/light-03-duplicate-cleanup.jpg">
-        <img src="https://assets.mangodisk.app/images/screenshots/en/light-03-duplicate-cleanup.jpg" width="100%" alt="MangoDisk Duplicate File Cleanup interface">
-      </picture>
+      <a href="https://assets.mangodisk.app/images/screenshots/en/light-03-duplicate-cleanup.jpg?ver=2.0.0" target="_blank" rel="noopener noreferrer">
+        <picture>
+          <source media="(prefers-color-scheme: dark)" srcset="https://assets.mangodisk.app/images/screenshots/en/dark-03-duplicate-cleanup.jpg?ver=2.0.0">
+          <source media="(prefers-color-scheme: light)" srcset="https://assets.mangodisk.app/images/screenshots/en/light-03-duplicate-cleanup.jpg?ver=2.0.0">
+          <img src="https://assets.mangodisk.app/images/screenshots/en/light-03-duplicate-cleanup.jpg?ver=2.0.0" width="100%" alt="MangoDisk Duplicate File Cleanup interface">
+        </picture>
+      </a>
     </td>
   </tr>
   <tr>
     <td width="50%" align="center">
       <strong>Disk Space Analysis</strong><br>
       <sub>See where your storage is going and quickly find the largest files and folders</sub><br><br>
-      <picture>
-        <source media="(prefers-color-scheme: dark)" srcset="https://assets.mangodisk.app/images/screenshots/en/dark-05-disk-space-analysis.jpg">
-        <source media="(prefers-color-scheme: light)" srcset="https://assets.mangodisk.app/images/screenshots/en/light-05-disk-space-analysis.jpg">
-        <img src="https://assets.mangodisk.app/images/screenshots/en/light-05-disk-space-analysis.jpg" width="100%" alt="MangoDisk Disk Space Analysis interface">
-      </picture>
+      <a href="https://assets.mangodisk.app/images/screenshots/en/light-05-disk-space-analysis.jpg?ver=2.0.0" target="_blank" rel="noopener noreferrer">
+        <picture>
+          <source media="(prefers-color-scheme: dark)" srcset="https://assets.mangodisk.app/images/screenshots/en/dark-05-disk-space-analysis.jpg?ver=2.0.0">
+          <source media="(prefers-color-scheme: light)" srcset="https://assets.mangodisk.app/images/screenshots/en/light-05-disk-space-analysis.jpg?ver=2.0.0">
+          <img src="https://assets.mangodisk.app/images/screenshots/en/light-05-disk-space-analysis.jpg?ver=2.0.0" width="100%" alt="MangoDisk Disk Space Analysis interface">
+        </picture>
+      </a>
     </td>
     <td width="50%" align="center">
       <strong>Startup Item Management</strong><br>
       <sub>Reduce unnecessary startup programs for faster sign-in and less background activity</sub><br><br>
-      <picture>
-        <source media="(prefers-color-scheme: dark)" srcset="https://assets.mangodisk.app/images/screenshots/en/dark-06-startup-items.jpg">
-        <source media="(prefers-color-scheme: light)" srcset="https://assets.mangodisk.app/images/screenshots/en/light-06-startup-items.jpg">
-        <img src="https://assets.mangodisk.app/images/screenshots/en/light-06-startup-items.jpg" width="100%" alt="MangoDisk Startup Item Management interface">
-      </picture>
+      <a href="https://assets.mangodisk.app/images/screenshots/en/light-06-startup-items.jpg?ver=2.0.0" target="_blank" rel="noopener noreferrer">
+        <picture>
+          <source media="(prefers-color-scheme: dark)" srcset="https://assets.mangodisk.app/images/screenshots/en/dark-06-startup-items.jpg?ver=2.0.0">
+          <source media="(prefers-color-scheme: light)" srcset="https://assets.mangodisk.app/images/screenshots/en/light-06-startup-items.jpg?ver=2.0.0">
+          <img src="https://assets.mangodisk.app/images/screenshots/en/light-06-startup-items.jpg?ver=2.0.0" width="100%" alt="MangoDisk Startup Item Management interface">
+        </picture>
+      </a>
     </td>
   </tr>
   <tr>
     <td width="50%" align="center">
       <strong>Application Uninstall and Cleanup</strong><br>
       <sub>Uninstall applications and remove related leftovers to reclaim more space</sub><br><br>
-      <picture>
-        <source media="(prefers-color-scheme: dark)" srcset="https://assets.mangodisk.app/images/screenshots/en/dark-04-app-uninstaller.jpg">
-        <source media="(prefers-color-scheme: light)" srcset="https://assets.mangodisk.app/images/screenshots/en/light-04-app-uninstaller.jpg">
-        <img src="https://assets.mangodisk.app/images/screenshots/en/light-04-app-uninstaller.jpg" width="100%" alt="MangoDisk Application Uninstaller interface">
-      </picture>
+      <a href="https://assets.mangodisk.app/images/screenshots/en/light-04-app-uninstaller.jpg?ver=2.0.0" target="_blank" rel="noopener noreferrer">
+        <picture>
+          <source media="(prefers-color-scheme: dark)" srcset="https://assets.mangodisk.app/images/screenshots/en/dark-04-app-uninstaller.jpg?ver=2.0.0">
+          <source media="(prefers-color-scheme: light)" srcset="https://assets.mangodisk.app/images/screenshots/en/light-04-app-uninstaller.jpg?ver=2.0.0">
+          <img src="https://assets.mangodisk.app/images/screenshots/en/light-04-app-uninstaller.jpg?ver=2.0.0" width="100%" alt="MangoDisk Application Uninstaller interface">
+        </picture>
+      </a>
     </td>
     <td width="50%" align="center">
       <strong>System Optimization</strong><br>
       <sub>Optimize performance, privacy, and everyday usability in one click</sub><br><br>
-      <picture>
-        <source media="(prefers-color-scheme: dark)" srcset="https://assets.mangodisk.app/images/screenshots/en/dark-07-system-optimization.jpg">
-        <source media="(prefers-color-scheme: light)" srcset="https://assets.mangodisk.app/images/screenshots/en/light-07-system-optimization.jpg">
-        <img src="https://assets.mangodisk.app/images/screenshots/en/light-07-system-optimization.jpg" width="100%" alt="MangoDisk System Optimization interface">
-      </picture>
+      <a href="https://assets.mangodisk.app/images/screenshots/en/light-07-system-optimization.jpg?ver=2.0.0" target="_blank" rel="noopener noreferrer">
+        <picture>
+          <source media="(prefers-color-scheme: dark)" srcset="https://assets.mangodisk.app/images/screenshots/en/dark-07-system-optimization.jpg?ver=2.0.0">
+          <source media="(prefers-color-scheme: light)" srcset="https://assets.mangodisk.app/images/screenshots/en/light-07-system-optimization.jpg?ver=2.0.0">
+          <img src="https://assets.mangodisk.app/images/screenshots/en/light-07-system-optimization.jpg?ver=2.0.0" width="100%" alt="MangoDisk System Optimization interface">
+        </picture>
+      </a>
     </td>
   </tr>
   <tr>
     <td width="50%" align="center">
       <strong>System Maintenance</strong><br>
       <sub>Fix common system issues quickly and get your computer back to normal</sub><br><br>
-      <picture>
-        <source media="(prefers-color-scheme: dark)" srcset="https://assets.mangodisk.app/images/screenshots/en/dark-08-system-maintenance.jpg">
-        <source media="(prefers-color-scheme: light)" srcset="https://assets.mangodisk.app/images/screenshots/en/light-08-system-maintenance.jpg">
-        <img src="https://assets.mangodisk.app/images/screenshots/en/light-08-system-maintenance.jpg" width="100%" alt="MangoDisk System Maintenance interface">
-      </picture>
+      <a href="https://assets.mangodisk.app/images/screenshots/en/light-08-system-maintenance.jpg?ver=2.0.0" target="_blank" rel="noopener noreferrer">
+        <picture>
+          <source media="(prefers-color-scheme: dark)" srcset="https://assets.mangodisk.app/images/screenshots/en/dark-08-system-maintenance.jpg?ver=2.0.0">
+          <source media="(prefers-color-scheme: light)" srcset="https://assets.mangodisk.app/images/screenshots/en/light-08-system-maintenance.jpg?ver=2.0.0">
+          <img src="https://assets.mangodisk.app/images/screenshots/en/light-08-system-maintenance.jpg?ver=2.0.0" width="100%" alt="MangoDisk System Maintenance interface">
+        </picture>
+      </a>
     </td>
     <td width="50%" align="center">
       <strong>Privacy Cleanup</strong><br>
       <sub>Leave fewer activity traces behind and keep everyday use more private</sub><br><br>
-      <picture>
-        <source media="(prefers-color-scheme: dark)" srcset="https://assets.mangodisk.app/images/screenshots/en/dark-09-privacy-cleanup.jpg">
-        <source media="(prefers-color-scheme: light)" srcset="https://assets.mangodisk.app/images/screenshots/en/light-09-privacy-cleanup.jpg">
-        <img src="https://assets.mangodisk.app/images/screenshots/en/light-09-privacy-cleanup.jpg" width="100%" alt="MangoDisk Privacy Cleanup interface">
-      </picture>
+      <a href="https://assets.mangodisk.app/images/screenshots/en/light-09-privacy-cleanup.jpg?ver=2.0.0" target="_blank" rel="noopener noreferrer">
+        <picture>
+          <source media="(prefers-color-scheme: dark)" srcset="https://assets.mangodisk.app/images/screenshots/en/dark-09-privacy-cleanup.jpg?ver=2.0.0">
+          <source media="(prefers-color-scheme: light)" srcset="https://assets.mangodisk.app/images/screenshots/en/light-09-privacy-cleanup.jpg?ver=2.0.0">
+          <img src="https://assets.mangodisk.app/images/screenshots/en/light-09-privacy-cleanup.jpg?ver=2.0.0" width="100%" alt="MangoDisk Privacy Cleanup interface">
+        </picture>
+      </a>
     </td>
   </tr>
 </table>
@@ -275,6 +292,12 @@ winget install --id MangoDisk.MangoDisk --exact --source winget
 **Recommended:** Ubuntu 22.04 LTS or later, on x64 or ARM64.
 
 Available as `.deb` packages and AppImages. Compatibility with other Linux distributions depends on their system libraries and desktop environment.
+
+**Install with Homebrew:** Requires a recent Homebrew version and a desktop environment.
+
+```sh
+brew install --cask harry0703/tap/mangodisk
+```
 
 **Install from the terminal (Debian/Ubuntu):** This command detects your architecture and installs the latest matching `.deb` package.
 
