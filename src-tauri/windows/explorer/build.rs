@@ -72,7 +72,8 @@ pub fn build() {
  xmlns:com="http://schemas.microsoft.com/appx/manifest/com/windows10"
  xmlns:desktop4="http://schemas.microsoft.com/appx/manifest/desktop/windows10/4"
  xmlns:desktop5="http://schemas.microsoft.com/appx/manifest/desktop/windows10/5"
- IgnorableNamespaces="uap uap10 rescap com desktop4 desktop5">
+ xmlns:desktop10="http://schemas.microsoft.com/appx/manifest/desktop/windows10/10"
+ IgnorableNamespaces="uap uap10 rescap com desktop4 desktop5 desktop10">
  <Identity Name="MangoDisk.ExplorerIntegration" Publisher="{}" Version="{version}" ProcessorArchitecture="{architecture}"/>
  <Properties><DisplayName>MangoDisk</DisplayName><PublisherDisplayName>MangoDisk</PublisherDisplayName><Logo>logo.png</Logo><uap10:AllowExternalContent>true</uap10:AllowExternalContent></Properties>
  <Resources><Resource Language="en-us"/></Resources>
@@ -81,13 +82,16 @@ pub fn build() {
  <Applications><Application Id="ExplorerIntegration" Executable="MangoDisk.exe" uap10:RuntimeBehavior="win32App" uap10:TrustLevel="mediumIL">
  <uap:VisualElements AppListEntry="none" DisplayName="MangoDisk" Description="MangoDisk" BackgroundColor="transparent" Square150x150Logo="logo.png" Square44x44Logo="logo.png"/>
  <Extensions>
- <com:Extension Category="windows.comServer"><com:ComServer><com:SurrogateServer DisplayName="MangoDisk"><com:Class Id="93E49F90-CEBD-4BA0-93BA-733A3C732214" Path="MangoDiskExplorer.dll" ThreadingModel="STA"/></com:SurrogateServer></com:ComServer></com:Extension>
+ <com:Extension Category="windows.comServer"><com:ComServer><com:SurrogateServer DisplayName="MangoDisk"><com:Class Id="{clsid}" Path="MangoDiskExplorer.dll" ThreadingModel="STA"/></com:SurrogateServer></com:ComServer></com:Extension>
  <desktop4:Extension Category="windows.fileExplorerContextMenus"><desktop4:FileExplorerContextMenus>
- <desktop5:ItemType Type="Directory"><desktop5:Verb Id="AnalyzeDirectory" Clsid="93E49F90-CEBD-4BA0-93BA-733A3C732214"/></desktop5:ItemType>
+ <desktop5:ItemType Type="Directory"><desktop5:Verb Id="AnalyzeDirectory" Clsid="{clsid}"/></desktop5:ItemType>
+ <desktop5:ItemType Type="Directory\Background"><desktop5:Verb Id="AnalyzeDirectoryBackground" Clsid="{clsid}"/></desktop5:ItemType>
+ <desktop10:ItemType Type="Drive"><desktop10:Verb Id="AnalyzeDrive" Clsid="{clsid}"/></desktop10:ItemType>
  </desktop4:FileExplorerContextMenus></desktop4:Extension>
  </Extensions></Application></Applications>
 </Package>"#,
-        xml(&publisher)
+        xml(&publisher),
+        clsid = "93E49F90-CEBD-4BA0-93BA-733A3C732214"
     );
     let package_source = output.join("explorer-package");
     fs::create_dir_all(&package_source).unwrap();

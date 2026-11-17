@@ -84,6 +84,7 @@ pub fn run_removal_mode(arguments: impl IntoIterator<Item = std::ffi::OsString>)
 }
 
 fn remove_current_registration() -> io::Result<()> {
+    remove_legacy_staging();
     let current_user = RegKey::predef(HKEY_CURRENT_USER);
     let key = match current_user
         .open_subkey_with_flags(KEY, winreg::enums::KEY_READ | winreg::enums::KEY_WRITE)
@@ -102,6 +103,15 @@ fn remove_current_registration() -> io::Result<()> {
     Ok(())
 }
 
+/// The documented shell override that restores the Windows 10 context menu.
+/// Packaged verbs never render in that menu, so the classic verbs have to stay
+/// registered whenever the override is present.
+fn classic_menu_forced() -> bool {
+    RegKey::predef(HKEY_CURRENT_USER)
+        .open_subkey(r"Software\Classes\CLSID\{86ca1aa0-34aa-4e8b-a509-50c905bae2a2}\InprocServer32")
+        .is_ok()
+}
+
 fn unregister_menu() -> io::Result<()> {
     if windows_build()? >= 22000 {
         let _runtime = Runtime::new()?;
@@ -110,9 +120,23 @@ fn unregister_menu() -> io::Result<()> {
     unregister_classic()
 }
 
+/// Contexts that use the in-process command handler. `Directory` covers folders
+/// and drives alike, so a separate `Drive` verb would add a second identical
+/// entry to every drive menu.
+const CLASSIC_CONTEXTS: [&str; 1] = [r"Directory"];
+/// A folder's empty background has no selection for the handler to inspect, so
+/// it gets a plain command verb that receives the folder as `%V`.
+const BACKGROUND_CONTEXT: &str = r"Directory\Background";
+/// Contexts registered by earlier builds; removed so no duplicate survives.
+const RETIRED_CLASSIC_CONTEXTS: [&str; 1] = [r"Drive"];
+
 fn unregister_classic() -> io::Result<()> {
     let current_user = RegKey::predef(HKEY_CURRENT_USER);
-    for context in [r"Directory", r"Directory\Background"] {
+    for context in CLASSIC_CONTEXTS
+        .into_iter()
+        .chain(std::iter::once(BACKGROUND_CONTEXT))
+        .chain(RETIRED_CLASSIC_CONTEXTS)
+    {
         let path = format!(r"Software\Classes\{context}\shell\MangoDisk.Analyze");
         remove_owned_verb(&current_user, &path)?;
     }
@@ -182,12 +206,12 @@ fn set_enabled_locked(enabled: bool, title: &str, payload: Payload<'_>) -> io::R
             register_identity(&directory)?;
         }
     }
-    if modern {
+    if !modern || classic_menu_forced() {
+        register_classic(&executable, &dll, title, modern)?;
+    } else {
         // Packaged verbs also appear in the classic menu. Registering both
         // mechanisms on Windows 11 creates duplicate entries there.
         unregister_classic()?;
-    } else {
-        register_classic(&dll, title)?;
     }
     key.set_value("SchemaVersion", &1u32)?;
     key.set_value("Executable", &executable.as_os_str())?;
@@ -203,9 +227,69 @@ fn set_enabled_locked(enabled: bool, title: &str, payload: Payload<'_>) -> io::R
     read_status()
 }
 
+/// Machine-scoped staging root. ProgramData is shared by every user on the
+/// device and is not the per-user, malware-writable tree that security
+/// products treat as suspicious when executables appear in it.
+fn staging_root() -> io::Result<PathBuf> {
+    let base = std::env::var_os("ProgramData")
+        .filter(|value| !value.is_empty())
+        .ok_or_else(|| io::Error::other("ProgramData is unavailable"))?;
+    Ok(PathBuf::from(base)
+        .join("MangoDisk")
+        .join("ExplorerIntegration"))
+}
+
+/// Staging directory used by versions that kept the payload in the user
+/// profile. Nothing reads it any more, so it is removed once found.
+fn legacy_staging_root() -> Option<PathBuf> {
+    Some(
+        dirs::data_local_dir()?
+            .join("app.mangodisk.desktop")
+            .join("explorer-integration"),
+    )
+}
+
+fn remove_legacy_staging() {
+    let Some(root) = legacy_staging_root() else {
+        return;
+    };
+    let Ok(metadata) = fs::symlink_metadata(&root) else {
+        return;
+    };
+    // Never follow a reparse point, and never delete the directory that holds
+    // the executable currently running (a portable copy started from there).
+    if metadata.file_attributes() & 0x400 != 0 {
+        return;
+    }
+    if std::env::current_exe().is_ok_and(|current| current.starts_with(&root)) {
+        return;
+    }
+    // Only remove a directory that still contains this component's payload.
+    let ours = fs::read_dir(&root).is_ok_and(|entries| {
+        entries.flatten().any(|entry| {
+            let version = entry.path();
+            version.is_dir()
+                && (version.join("MangoDiskExplorer.dll").is_file()
+                    || version.join("identity.msix").is_file())
+        })
+    });
+    if !ours {
+        return;
+    }
+    match fs::remove_dir_all(&root) {
+        Ok(()) => log::info!(
+            "explorer_integration_legacy_staging_removed path={}",
+            crate::diagnostics::text(&root.display())
+        ),
+        Err(error) => log::warn!(
+            "explorer_integration_legacy_staging_remove_failed path={} error={error}",
+            crate::diagnostics::text(&root.display())
+        ),
+    }
+}
+
 fn stage(executable: &Path, payload: &Payload<'_>, modern: bool) -> io::Result<PathBuf> {
-    let root =
-        dirs::data_local_dir().ok_or_else(|| io::Error::other("LocalAppData is unavailable"))?;
+    let root = staging_root()?;
     let metadata = fs::metadata(executable)?;
     let mut hash = blake3::Hasher::new();
     hash.update(payload.dll);
@@ -219,9 +303,7 @@ fn stage(executable: &Path, payload: &Payload<'_>, modern: bool) -> io::Result<P
             .as_nanos()
             .to_le_bytes(),
     );
-    let directory = root
-        .join("app.mangodisk.desktop/explorer-integration")
-        .join(hash.finalize().to_hex().as_str());
+    let directory = root.join(hash.finalize().to_hex().as_str());
     // Validate each application-owned ancestor, not just the final DLL path.
     for ancestor in directory
         .ancestors()
@@ -237,30 +319,13 @@ fn stage(executable: &Path, payload: &Payload<'_>, modern: bool) -> io::Result<P
     if modern {
         write_payload(&directory.join("identity.msix"), payload.identity)?;
         write_payload(&directory.join("logo.png"), payload.logo)?;
-        // Sparse package applications require a stable executable beneath their
-        // external root. Reuse this exact main executable without another helper
-        // implementation. A hard link adds no image copy on the usual same-volume
-        // layout; portable executables on another volume use an ordinary copy.
-        let anchor = directory.join("MangoDisk.exe");
-        match fs::symlink_metadata(&anchor) {
-            Ok(_) => reject_reparse(&anchor)?,
-            Err(error) if error.kind() == io::ErrorKind::NotFound => {
-                match fs::hard_link(executable, &anchor) {
-                    Ok(()) => (),
-                    Err(_) => {
-                        let mut temporary = tempfile::NamedTempFile::new_in(&directory)?;
-                        io::copy(&mut fs::File::open(executable)?, temporary.as_file_mut())?;
-                        temporary.as_file().sync_all()?;
-                        temporary
-                            .persist_noclobber(&anchor)
-                            .map_err(|error| error.error)?;
-                    }
-                }
-            }
-            Err(error) => return Err(error),
-        }
-        reject_reparse(&anchor)?;
+        // The manifest's application entry exists only to give the sparse package
+        // an identity, and File Explorer never launches it: the shell loads the
+        // DLL above through the declared COM surrogate. Copying or linking the
+        // desktop executable here would put a second copy of it on disk purely to
+        // satisfy a name, so the executable stays where it was installed.
     }
+    remove_legacy_staging();
     Ok(directory)
 }
 
@@ -339,16 +404,36 @@ fn cleanup_old_versions(current: &Path) {
     }
 }
 
-fn register_classic(dll: &Path, title: &str) -> io::Result<()> {
+fn register_classic(executable: &Path, dll: &Path, title: &str, modern: bool) -> io::Result<()> {
     let current_user = RegKey::predef(HKEY_CURRENT_USER);
     let (server, _) =
         current_user.create_subkey(format!(r"Software\Classes\CLSID\{CLSID}\InprocServer32"))?;
     server.set_value("", &dll.as_os_str())?;
     server.set_value("ThreadingModel", &"Apartment")?;
-    let (verb, _) =
-        current_user.create_subkey(r"Software\Classes\Directory\shell\MangoDisk.Analyze")?;
-    verb.set_value("ExplorerCommandHandler", &CLSID)?;
-    verb.set_value("MUIVerb", &title)?;
+    for context in CLASSIC_CONTEXTS {
+        let (verb, _) = current_user
+            .create_subkey(format!(r"Software\Classes\{context}\shell\MangoDisk.Analyze"))?;
+        verb.set_value("ExplorerCommandHandler", &CLSID)?;
+        verb.set_value("MUIVerb", &title)?;
+    }
+    // A sparse package already publishes the background verb, and Explorer shows
+    // both when the classic key exists too. Only the pre-package path needs it.
+    if modern {
+        return Ok(());
+    }
+    let (background, _) = current_user.create_subkey(format!(
+        r"Software\Classes\{BACKGROUND_CONTEXT}\shell\MangoDisk.Analyze"
+    ))?;
+    background.set_value("", &title)?;
+    background.set_value("Icon", &format!("{},0", executable.display()))?;
+    let (command, _) = background.create_subkey("command")?;
+    command.set_value(
+        "",
+        &format!(
+            "\"{}\" --analyze-directory \"%V\"",
+            executable.display()
+        ),
+    )?;
     Ok(())
 }
 
