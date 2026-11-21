@@ -20,9 +20,9 @@
 <p align="center">
   <a href="https://mangodisk.app/tw">
     <picture>
-      <source media="(prefers-color-scheme: dark)" srcset="https://assets.mangodisk.app/images/screenshots/tw/dark-00-overview.jpg?ver=2.0.0">
-      <source media="(prefers-color-scheme: light)" srcset="https://assets.mangodisk.app/images/screenshots/tw/light-00-overview.jpg?ver=2.0.0">
-      <img src="https://assets.mangodisk.app/images/screenshots/tw/light-00-overview.jpg?ver=2.0.0" width="1200" alt="MangoDisk 總覽介面">
+      <source media="(prefers-color-scheme: dark)" srcset="https://assets.mangodisk.app/images/screenshots/tw/dark-00-overview.jpg?ver=2.1.1">
+      <source media="(prefers-color-scheme: light)" srcset="https://assets.mangodisk.app/images/screenshots/tw/light-00-overview.jpg?ver=2.1.1">
+      <img src="https://assets.mangodisk.app/images/screenshots/tw/light-00-overview.jpg?ver=2.1.1" width="1200" alt="MangoDisk 總覽介面">
     </picture>
   </a>
 </p>
@@ -146,10 +146,55 @@ MangoDisk 預設只進行唯讀掃描。執行清理、刪除、解除安裝或�
 
 <p align="center">
   <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="https://assets.mangodisk.app/images/screenshots/tw/dark-01-deep-cleanup.jpg?ver=2.0.0">
-    <source media="(prefers-color-scheme: light)" srcset="https://assets.mangodisk.app/images/screenshots/tw/light-01-deep-cleanup.jpg?ver=2.0.0">
-    <img src="https://assets.mangodisk.app/images/screenshots/tw/light-01-deep-cleanup.jpg?ver=2.0.0" width="1200" alt="MangoDisk 深度清理介面">
+    <source media="(prefers-color-scheme: dark)" srcset="https://assets.mangodisk.app/images/screenshots/tw/dark-01-deep-cleanup.jpg?ver=2.1.1">
+    <source media="(prefers-color-scheme: light)" srcset="https://assets.mangodisk.app/images/screenshots/tw/light-01-deep-cleanup.jpg?ver=2.1.1">
+    <img src="https://assets.mangodisk.app/images/screenshots/tw/light-01-deep-cleanup.jpg?ver=2.1.1" width="1200" alt="MangoDisk 深度清理介面">
   </picture>
+</p>
+
+<p align="center">
+  <strong>空間分布</strong><br>
+  <sub>一眼看懂空間去向，快速找出佔用最多的內容</sub>
+</p>
+
+<p align="center">
+  <a href="https://assets.mangodisk.app/images/screenshots/tw/light-05-disk-space-analysis.jpg?ver=2.1.1" target="_blank" rel="noopener noreferrer">
+    <picture>
+      <source media="(prefers-color-scheme: dark)" srcset="https://assets.mangodisk.app/images/screenshots/tw/dark-05-disk-space-analysis.jpg?ver=2.1.1">
+      <source media="(prefers-color-scheme: light)" srcset="https://assets.mangodisk.app/images/screenshots/tw/light-05-disk-space-analysis.jpg?ver=2.1.1">
+      <img src="https://assets.mangodisk.app/images/screenshots/tw/light-05-disk-space-analysis.jpg?ver=2.1.1" width="1200" alt="MangoDisk 磁碟空間分析介面">
+    </picture>
+  </a>
+</p>
+
+<p align="center">
+  <strong>空間變化</strong><br>
+  <sub>比較兩次掃描，查看哪些檔案和資料夾的空間占用增加或減少</sub>
+</p>
+
+<p align="center">
+  <a href="https://assets.mangodisk.app/images/screenshots/tw/light-05-disk-space-analysis-space-changes.jpg?ver=2.1.1" target="_blank" rel="noopener noreferrer">
+    <picture>
+      <source media="(prefers-color-scheme: dark)" srcset="https://assets.mangodisk.app/images/screenshots/tw/dark-05-disk-space-analysis-space-changes.jpg?ver=2.1.1">
+      <source media="(prefers-color-scheme: light)" srcset="https://assets.mangodisk.app/images/screenshots/tw/light-05-disk-space-analysis-space-changes.jpg?ver=2.1.1">
+      <img src="https://assets.mangodisk.app/images/screenshots/tw/light-05-disk-space-analysis-space-changes.jpg?ver=2.1.1" width="1200" alt="MangoDisk 空間變化畫面的掃描比較結果">
+    </picture>
+  </a>
+</p>
+
+<p align="center">
+  <strong>系統監控</strong><br>
+  <sub>CPU、記憶體、網路與磁碟狀態一目了然</sub>
+</p>
+
+<p align="center">
+  <a href="https://assets.mangodisk.app/images/screenshots/tw/light-system-monitoring-memory.jpg?ver=2.1.1" target="_blank" rel="noopener noreferrer">
+    <picture>
+      <source media="(prefers-color-scheme: dark)" srcset="https://assets.mangodisk.app/images/screenshots/tw/dark-system-monitoring-memory.jpg?ver=2.1.1">
+      <source media="(prefers-color-scheme: light)" srcset="https://assets.mangodisk.app/images/screenshots/tw/light-system-monitoring-memory.jpg?ver=2.1.1">
+      <img src="https://assets.mangodisk.app/images/screenshots/tw/light-system-monitoring-memory.jpg?ver=2.1.1" width="720" alt="MangoDisk 系統監控與記憶體管理介面">
+    </picture>
+  </a>
 </p>
 
 <table>
@@ -157,94 +202,83 @@ MangoDisk 預設只進行唯讀掃描。執行清理、刪除、解除安裝或�
     <td width="50%" align="center">
       <strong>大型檔案清理</strong><br>
       <sub>快速鎖定最佔空間的檔案，不必逐層翻找</sub><br><br>
-      <a href="https://assets.mangodisk.app/images/screenshots/tw/light-02-large-file-cleanup.jpg?ver=2.0.0" target="_blank" rel="noopener noreferrer">
+      <a href="https://assets.mangodisk.app/images/screenshots/tw/light-02-large-file-cleanup.jpg?ver=2.1.1" target="_blank" rel="noopener noreferrer">
         <picture>
-          <source media="(prefers-color-scheme: dark)" srcset="https://assets.mangodisk.app/images/screenshots/tw/dark-02-large-file-cleanup.jpg?ver=2.0.0">
-          <source media="(prefers-color-scheme: light)" srcset="https://assets.mangodisk.app/images/screenshots/tw/light-02-large-file-cleanup.jpg?ver=2.0.0">
-          <img src="https://assets.mangodisk.app/images/screenshots/tw/light-02-large-file-cleanup.jpg?ver=2.0.0" width="100%" alt="MangoDisk 大型檔案清理介面">
+          <source media="(prefers-color-scheme: dark)" srcset="https://assets.mangodisk.app/images/screenshots/tw/dark-02-large-file-cleanup.jpg?ver=2.1.1">
+          <source media="(prefers-color-scheme: light)" srcset="https://assets.mangodisk.app/images/screenshots/tw/light-02-large-file-cleanup.jpg?ver=2.1.1">
+          <img src="https://assets.mangodisk.app/images/screenshots/tw/light-02-large-file-cleanup.jpg?ver=2.1.1" width="100%" alt="MangoDisk 大型檔案清理介面">
         </picture>
       </a>
     </td>
     <td width="50%" align="center">
       <strong>重複檔案清理</strong><br>
       <sub>安全清理重複副本，並確保每組至少保留一份</sub><br><br>
-      <a href="https://assets.mangodisk.app/images/screenshots/tw/light-03-duplicate-cleanup.jpg?ver=2.0.0" target="_blank" rel="noopener noreferrer">
+      <a href="https://assets.mangodisk.app/images/screenshots/tw/light-03-duplicate-cleanup.jpg?ver=2.1.1" target="_blank" rel="noopener noreferrer">
         <picture>
-          <source media="(prefers-color-scheme: dark)" srcset="https://assets.mangodisk.app/images/screenshots/tw/dark-03-duplicate-cleanup.jpg?ver=2.0.0">
-          <source media="(prefers-color-scheme: light)" srcset="https://assets.mangodisk.app/images/screenshots/tw/light-03-duplicate-cleanup.jpg?ver=2.0.0">
-          <img src="https://assets.mangodisk.app/images/screenshots/tw/light-03-duplicate-cleanup.jpg?ver=2.0.0" width="100%" alt="MangoDisk 重複檔案清理介面">
+          <source media="(prefers-color-scheme: dark)" srcset="https://assets.mangodisk.app/images/screenshots/tw/dark-03-duplicate-cleanup.jpg?ver=2.1.1">
+          <source media="(prefers-color-scheme: light)" srcset="https://assets.mangodisk.app/images/screenshots/tw/light-03-duplicate-cleanup.jpg?ver=2.1.1">
+          <img src="https://assets.mangodisk.app/images/screenshots/tw/light-03-duplicate-cleanup.jpg?ver=2.1.1" width="100%" alt="MangoDisk 重複檔案清理介面">
         </picture>
       </a>
     </td>
   </tr>
   <tr>
-    <td width="50%" align="center">
-      <strong>磁碟空間分析</strong><br>
-      <sub>一眼看懂空間去向，快速找出佔用最多的內容</sub><br><br>
-      <a href="https://assets.mangodisk.app/images/screenshots/tw/light-05-disk-space-analysis.jpg?ver=2.0.0" target="_blank" rel="noopener noreferrer">
-        <picture>
-          <source media="(prefers-color-scheme: dark)" srcset="https://assets.mangodisk.app/images/screenshots/tw/dark-05-disk-space-analysis.jpg?ver=2.0.0">
-          <source media="(prefers-color-scheme: light)" srcset="https://assets.mangodisk.app/images/screenshots/tw/light-05-disk-space-analysis.jpg?ver=2.0.0">
-          <img src="https://assets.mangodisk.app/images/screenshots/tw/light-05-disk-space-analysis.jpg?ver=2.0.0" width="100%" alt="MangoDisk 磁碟空間分析介面">
-        </picture>
-      </a>
-    </td>
     <td width="50%" align="center">
       <strong>啟動項目管理</strong><br>
       <sub>減少不必要的開機啟動程式，加快登入並降低背景占用</sub><br><br>
-      <a href="https://assets.mangodisk.app/images/screenshots/tw/light-06-startup-items.jpg?ver=2.0.0" target="_blank" rel="noopener noreferrer">
+      <a href="https://assets.mangodisk.app/images/screenshots/tw/light-06-startup-items.jpg?ver=2.1.1" target="_blank" rel="noopener noreferrer">
         <picture>
-          <source media="(prefers-color-scheme: dark)" srcset="https://assets.mangodisk.app/images/screenshots/tw/dark-06-startup-items.jpg?ver=2.0.0">
-          <source media="(prefers-color-scheme: light)" srcset="https://assets.mangodisk.app/images/screenshots/tw/light-06-startup-items.jpg?ver=2.0.0">
-          <img src="https://assets.mangodisk.app/images/screenshots/tw/light-06-startup-items.jpg?ver=2.0.0" width="100%" alt="MangoDisk 啟動項目管理介面">
+          <source media="(prefers-color-scheme: dark)" srcset="https://assets.mangodisk.app/images/screenshots/tw/dark-06-startup-items.jpg?ver=2.1.1">
+          <source media="(prefers-color-scheme: light)" srcset="https://assets.mangodisk.app/images/screenshots/tw/light-06-startup-items.jpg?ver=2.1.1">
+          <img src="https://assets.mangodisk.app/images/screenshots/tw/light-06-startup-items.jpg?ver=2.1.1" width="100%" alt="MangoDisk 啟動項目管理介面">
         </picture>
       </a>
     </td>
-  </tr>
-  <tr>
     <td width="50%" align="center">
       <strong>解除安裝應用程式與殘留清理</strong><br>
       <sub>解除安裝應用程式並清除相關殘留，釋放更多磁碟空間</sub><br><br>
-      <a href="https://assets.mangodisk.app/images/screenshots/tw/light-04-app-uninstaller.jpg?ver=2.0.0" target="_blank" rel="noopener noreferrer">
+      <a href="https://assets.mangodisk.app/images/screenshots/tw/light-04-app-uninstaller.jpg?ver=2.1.1" target="_blank" rel="noopener noreferrer">
         <picture>
-          <source media="(prefers-color-scheme: dark)" srcset="https://assets.mangodisk.app/images/screenshots/tw/dark-04-app-uninstaller.jpg?ver=2.0.0">
-          <source media="(prefers-color-scheme: light)" srcset="https://assets.mangodisk.app/images/screenshots/tw/light-04-app-uninstaller.jpg?ver=2.0.0">
-          <img src="https://assets.mangodisk.app/images/screenshots/tw/light-04-app-uninstaller.jpg?ver=2.0.0" width="100%" alt="MangoDisk 解除安裝應用程式介面">
-        </picture>
-      </a>
-    </td>
-    <td width="50%" align="center">
-      <strong>系統最佳化</strong><br>
-      <sub>一鍵改善效能、隱私與使用體驗，讓系統運作更流暢</sub><br><br>
-      <a href="https://assets.mangodisk.app/images/screenshots/tw/light-07-system-optimization.jpg?ver=2.0.0" target="_blank" rel="noopener noreferrer">
-        <picture>
-          <source media="(prefers-color-scheme: dark)" srcset="https://assets.mangodisk.app/images/screenshots/tw/dark-07-system-optimization.jpg?ver=2.0.0">
-          <source media="(prefers-color-scheme: light)" srcset="https://assets.mangodisk.app/images/screenshots/tw/light-07-system-optimization.jpg?ver=2.0.0">
-          <img src="https://assets.mangodisk.app/images/screenshots/tw/light-07-system-optimization.jpg?ver=2.0.0" width="100%" alt="MangoDisk 系統最佳化介面">
+          <source media="(prefers-color-scheme: dark)" srcset="https://assets.mangodisk.app/images/screenshots/tw/dark-04-app-uninstaller.jpg?ver=2.1.1">
+          <source media="(prefers-color-scheme: light)" srcset="https://assets.mangodisk.app/images/screenshots/tw/light-04-app-uninstaller.jpg?ver=2.1.1">
+          <img src="https://assets.mangodisk.app/images/screenshots/tw/light-04-app-uninstaller.jpg?ver=2.1.1" width="100%" alt="MangoDisk 解除安裝應用程式介面">
         </picture>
       </a>
     </td>
   </tr>
   <tr>
     <td width="50%" align="center">
-      <strong>系統維護</strong><br>
-      <sub>快速解決常見系統問題，讓電腦恢復正常</sub><br><br>
-      <a href="https://assets.mangodisk.app/images/screenshots/tw/light-08-system-maintenance.jpg?ver=2.0.0" target="_blank" rel="noopener noreferrer">
+      <strong>系統最佳化</strong><br>
+      <sub>一鍵改善效能、隱私與使用體驗，讓系統運作更流暢</sub><br><br>
+      <a href="https://assets.mangodisk.app/images/screenshots/tw/light-07-system-optimization.jpg?ver=2.1.1" target="_blank" rel="noopener noreferrer">
         <picture>
-          <source media="(prefers-color-scheme: dark)" srcset="https://assets.mangodisk.app/images/screenshots/tw/dark-08-system-maintenance.jpg?ver=2.0.0">
-          <source media="(prefers-color-scheme: light)" srcset="https://assets.mangodisk.app/images/screenshots/tw/light-08-system-maintenance.jpg?ver=2.0.0">
-          <img src="https://assets.mangodisk.app/images/screenshots/tw/light-08-system-maintenance.jpg?ver=2.0.0" width="100%" alt="MangoDisk 系統維護介面">
+          <source media="(prefers-color-scheme: dark)" srcset="https://assets.mangodisk.app/images/screenshots/tw/dark-07-system-optimization.jpg?ver=2.1.1">
+          <source media="(prefers-color-scheme: light)" srcset="https://assets.mangodisk.app/images/screenshots/tw/light-07-system-optimization.jpg?ver=2.1.1">
+          <img src="https://assets.mangodisk.app/images/screenshots/tw/light-07-system-optimization.jpg?ver=2.1.1" width="100%" alt="MangoDisk 系統最佳化介面">
         </picture>
       </a>
     </td>
     <td width="50%" align="center">
+      <strong>系統維護</strong><br>
+      <sub>快速解決常見系統問題，讓電腦恢復正常</sub><br><br>
+      <a href="https://assets.mangodisk.app/images/screenshots/tw/light-08-system-maintenance.jpg?ver=2.1.1" target="_blank" rel="noopener noreferrer">
+        <picture>
+          <source media="(prefers-color-scheme: dark)" srcset="https://assets.mangodisk.app/images/screenshots/tw/dark-08-system-maintenance.jpg?ver=2.1.1">
+          <source media="(prefers-color-scheme: light)" srcset="https://assets.mangodisk.app/images/screenshots/tw/light-08-system-maintenance.jpg?ver=2.1.1">
+          <img src="https://assets.mangodisk.app/images/screenshots/tw/light-08-system-maintenance.jpg?ver=2.1.1" width="100%" alt="MangoDisk 系統維護介面">
+        </picture>
+      </a>
+    </td>
+  </tr>
+  <tr>
+    <td width="50%" align="center">
       <strong>隱私清理</strong><br>
       <sub>減少活動痕跡殘留，讓日常隱私更有保障</sub><br><br>
-      <a href="https://assets.mangodisk.app/images/screenshots/tw/light-09-privacy-cleanup.jpg?ver=2.0.0" target="_blank" rel="noopener noreferrer">
+      <a href="https://assets.mangodisk.app/images/screenshots/tw/light-09-privacy-cleanup.jpg?ver=2.1.1" target="_blank" rel="noopener noreferrer">
         <picture>
-          <source media="(prefers-color-scheme: dark)" srcset="https://assets.mangodisk.app/images/screenshots/tw/dark-09-privacy-cleanup.jpg?ver=2.0.0">
-          <source media="(prefers-color-scheme: light)" srcset="https://assets.mangodisk.app/images/screenshots/tw/light-09-privacy-cleanup.jpg?ver=2.0.0">
-          <img src="https://assets.mangodisk.app/images/screenshots/tw/light-09-privacy-cleanup.jpg?ver=2.0.0" width="100%" alt="MangoDisk 隱私清理介面">
+          <source media="(prefers-color-scheme: dark)" srcset="https://assets.mangodisk.app/images/screenshots/tw/dark-09-privacy-cleanup.jpg?ver=2.1.1">
+          <source media="(prefers-color-scheme: light)" srcset="https://assets.mangodisk.app/images/screenshots/tw/light-09-privacy-cleanup.jpg?ver=2.1.1">
+          <img src="https://assets.mangodisk.app/images/screenshots/tw/light-09-privacy-cleanup.jpg?ver=2.1.1" width="100%" alt="MangoDisk 隱私清理介面">
         </picture>
       </a>
     </td>

@@ -20,9 +20,9 @@
 <p align="center">
   <a href="https://mangodisk.app/ja">
     <picture>
-      <source media="(prefers-color-scheme: dark)" srcset="https://assets.mangodisk.app/images/screenshots/ja/dark-00-overview.jpg?ver=2.0.0">
-      <source media="(prefers-color-scheme: light)" srcset="https://assets.mangodisk.app/images/screenshots/ja/light-00-overview.jpg?ver=2.0.0">
-      <img src="https://assets.mangodisk.app/images/screenshots/ja/light-00-overview.jpg?ver=2.0.0" width="1200" alt="MangoDisk の概要画面">
+      <source media="(prefers-color-scheme: dark)" srcset="https://assets.mangodisk.app/images/screenshots/ja/dark-00-overview.jpg?ver=2.1.1">
+      <source media="(prefers-color-scheme: light)" srcset="https://assets.mangodisk.app/images/screenshots/ja/light-00-overview.jpg?ver=2.1.1">
+      <img src="https://assets.mangodisk.app/images/screenshots/ja/light-00-overview.jpg?ver=2.1.1" width="1200" alt="MangoDisk の概要画面">
     </picture>
   </a>
 </p>
@@ -146,10 +146,55 @@ MangoDisk はデフォルトで読み取り専用のスキャンを行います�
 
 <p align="center">
   <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="https://assets.mangodisk.app/images/screenshots/ja/dark-01-deep-cleanup.jpg?ver=2.0.0">
-    <source media="(prefers-color-scheme: light)" srcset="https://assets.mangodisk.app/images/screenshots/ja/light-01-deep-cleanup.jpg?ver=2.0.0">
-    <img src="https://assets.mangodisk.app/images/screenshots/ja/light-01-deep-cleanup.jpg?ver=2.0.0" width="1200" alt="MangoDisk ディープクリーン画面">
+    <source media="(prefers-color-scheme: dark)" srcset="https://assets.mangodisk.app/images/screenshots/ja/dark-01-deep-cleanup.jpg?ver=2.1.1">
+    <source media="(prefers-color-scheme: light)" srcset="https://assets.mangodisk.app/images/screenshots/ja/light-01-deep-cleanup.jpg?ver=2.1.1">
+    <img src="https://assets.mangodisk.app/images/screenshots/ja/light-01-deep-cleanup.jpg?ver=2.1.1" width="1200" alt="MangoDisk ディープクリーン画面">
   </picture>
+</p>
+
+<p align="center">
+  <strong>容量の分布</strong><br>
+  <sub>容量の使い道をひと目で把握し、サイズの大きいデータをすばやく見つけます</sub>
+</p>
+
+<p align="center">
+  <a href="https://assets.mangodisk.app/images/screenshots/ja/light-05-disk-space-analysis.jpg?ver=2.1.1" target="_blank" rel="noopener noreferrer">
+    <picture>
+      <source media="(prefers-color-scheme: dark)" srcset="https://assets.mangodisk.app/images/screenshots/ja/dark-05-disk-space-analysis.jpg?ver=2.1.1">
+      <source media="(prefers-color-scheme: light)" srcset="https://assets.mangodisk.app/images/screenshots/ja/light-05-disk-space-analysis.jpg?ver=2.1.1">
+      <img src="https://assets.mangodisk.app/images/screenshots/ja/light-05-disk-space-analysis.jpg?ver=2.1.1" width="1200" alt="MangoDisk ディスク容量分析画面">
+    </picture>
+  </a>
+</p>
+
+<p align="center">
+  <strong>容量の変化</strong><br>
+  <sub>2回のスキャン結果を比較し、どのファイルやフォルダーの使用容量が増減したかを確認</sub>
+</p>
+
+<p align="center">
+  <a href="https://assets.mangodisk.app/images/screenshots/ja/light-05-disk-space-analysis-space-changes.jpg?ver=2.1.1" target="_blank" rel="noopener noreferrer">
+    <picture>
+      <source media="(prefers-color-scheme: dark)" srcset="https://assets.mangodisk.app/images/screenshots/ja/dark-05-disk-space-analysis-space-changes.jpg?ver=2.1.1">
+      <source media="(prefers-color-scheme: light)" srcset="https://assets.mangodisk.app/images/screenshots/ja/light-05-disk-space-analysis-space-changes.jpg?ver=2.1.1">
+      <img src="https://assets.mangodisk.app/images/screenshots/ja/light-05-disk-space-analysis-space-changes.jpg?ver=2.1.1" width="1200" alt="MangoDisk の容量の変化画面に表示されたスキャン結果の比較">
+    </picture>
+  </a>
+</p>
+
+<p align="center">
+  <strong>システムモニター</strong><br>
+  <sub>CPU、メモリ、ネットワーク、ディスクの使用状況がひと目でわかる</sub>
+</p>
+
+<p align="center">
+  <a href="https://assets.mangodisk.app/images/screenshots/ja/light-system-monitoring-memory.jpg?ver=2.1.1" target="_blank" rel="noopener noreferrer">
+    <picture>
+      <source media="(prefers-color-scheme: dark)" srcset="https://assets.mangodisk.app/images/screenshots/ja/dark-system-monitoring-memory.jpg?ver=2.1.1">
+      <source media="(prefers-color-scheme: light)" srcset="https://assets.mangodisk.app/images/screenshots/ja/light-system-monitoring-memory.jpg?ver=2.1.1">
+      <img src="https://assets.mangodisk.app/images/screenshots/ja/light-system-monitoring-memory.jpg?ver=2.1.1" width="720" alt="MangoDisk のシステムモニターとメモリ管理画面">
+    </picture>
+  </a>
 </p>
 
 <table>
@@ -157,94 +202,83 @@ MangoDisk はデフォルトで読み取り専用のスキャンを行います�
     <td width="50%" align="center">
 <strong>大容量ファイル</strong><br>
 <sub>フォルダーを一つずつたどらずに、容量を多く使うファイルを見つけます</sub><br><br>
-      <a href="https://assets.mangodisk.app/images/screenshots/ja/light-02-large-file-cleanup.jpg?ver=2.0.0" target="_blank" rel="noopener noreferrer">
+      <a href="https://assets.mangodisk.app/images/screenshots/ja/light-02-large-file-cleanup.jpg?ver=2.1.1" target="_blank" rel="noopener noreferrer">
         <picture>
-          <source media="(prefers-color-scheme: dark)" srcset="https://assets.mangodisk.app/images/screenshots/ja/dark-02-large-file-cleanup.jpg?ver=2.0.0">
-          <source media="(prefers-color-scheme: light)" srcset="https://assets.mangodisk.app/images/screenshots/ja/light-02-large-file-cleanup.jpg?ver=2.0.0">
-          <img src="https://assets.mangodisk.app/images/screenshots/ja/light-02-large-file-cleanup.jpg?ver=2.0.0" width="100%" alt="MangoDisk 大容量ファイル画面">
+          <source media="(prefers-color-scheme: dark)" srcset="https://assets.mangodisk.app/images/screenshots/ja/dark-02-large-file-cleanup.jpg?ver=2.1.1">
+          <source media="(prefers-color-scheme: light)" srcset="https://assets.mangodisk.app/images/screenshots/ja/light-02-large-file-cleanup.jpg?ver=2.1.1">
+          <img src="https://assets.mangodisk.app/images/screenshots/ja/light-02-large-file-cleanup.jpg?ver=2.1.1" width="100%" alt="MangoDisk 大容量ファイル画面">
         </picture>
       </a>
     </td>
     <td width="50%" align="center">
 <strong>重複ファイル</strong><br>
 <sub>完全に同じファイルを安全に整理し、各グループに少なくとも 1 ファイルを残します</sub><br><br>
-      <a href="https://assets.mangodisk.app/images/screenshots/ja/light-03-duplicate-cleanup.jpg?ver=2.0.0" target="_blank" rel="noopener noreferrer">
+      <a href="https://assets.mangodisk.app/images/screenshots/ja/light-03-duplicate-cleanup.jpg?ver=2.1.1" target="_blank" rel="noopener noreferrer">
         <picture>
-          <source media="(prefers-color-scheme: dark)" srcset="https://assets.mangodisk.app/images/screenshots/ja/dark-03-duplicate-cleanup.jpg?ver=2.0.0">
-          <source media="(prefers-color-scheme: light)" srcset="https://assets.mangodisk.app/images/screenshots/ja/light-03-duplicate-cleanup.jpg?ver=2.0.0">
-          <img src="https://assets.mangodisk.app/images/screenshots/ja/light-03-duplicate-cleanup.jpg?ver=2.0.0" width="100%" alt="MangoDisk 重複ファイル画面">
+          <source media="(prefers-color-scheme: dark)" srcset="https://assets.mangodisk.app/images/screenshots/ja/dark-03-duplicate-cleanup.jpg?ver=2.1.1">
+          <source media="(prefers-color-scheme: light)" srcset="https://assets.mangodisk.app/images/screenshots/ja/light-03-duplicate-cleanup.jpg?ver=2.1.1">
+          <img src="https://assets.mangodisk.app/images/screenshots/ja/light-03-duplicate-cleanup.jpg?ver=2.1.1" width="100%" alt="MangoDisk 重複ファイル画面">
         </picture>
       </a>
     </td>
   </tr>
   <tr>
-    <td width="50%" align="center">
-<strong>ディスク容量分析</strong><br>
-<sub>容量の使い道をひと目で把握し、サイズの大きいデータをすばやく見つけます</sub><br><br>
-      <a href="https://assets.mangodisk.app/images/screenshots/ja/light-05-disk-space-analysis.jpg?ver=2.0.0" target="_blank" rel="noopener noreferrer">
-        <picture>
-          <source media="(prefers-color-scheme: dark)" srcset="https://assets.mangodisk.app/images/screenshots/ja/dark-05-disk-space-analysis.jpg?ver=2.0.0">
-          <source media="(prefers-color-scheme: light)" srcset="https://assets.mangodisk.app/images/screenshots/ja/light-05-disk-space-analysis.jpg?ver=2.0.0">
-          <img src="https://assets.mangodisk.app/images/screenshots/ja/light-05-disk-space-analysis.jpg?ver=2.0.0" width="100%" alt="MangoDisk ディスク容量分析画面">
-        </picture>
-      </a>
-    </td>
     <td width="50%" align="center">
 <strong>スタートアップ項目の管理</strong><br>
 <sub>不要な自動起動を減らし、サインインを速くしてバックグラウンドの負荷を抑えます</sub><br><br>
-      <a href="https://assets.mangodisk.app/images/screenshots/ja/light-06-startup-items.jpg?ver=2.0.0" target="_blank" rel="noopener noreferrer">
+      <a href="https://assets.mangodisk.app/images/screenshots/ja/light-06-startup-items.jpg?ver=2.1.1" target="_blank" rel="noopener noreferrer">
         <picture>
-          <source media="(prefers-color-scheme: dark)" srcset="https://assets.mangodisk.app/images/screenshots/ja/dark-06-startup-items.jpg?ver=2.0.0">
-          <source media="(prefers-color-scheme: light)" srcset="https://assets.mangodisk.app/images/screenshots/ja/light-06-startup-items.jpg?ver=2.0.0">
-          <img src="https://assets.mangodisk.app/images/screenshots/ja/light-06-startup-items.jpg?ver=2.0.0" width="100%" alt="MangoDisk スタートアップ項目管理画面">
+          <source media="(prefers-color-scheme: dark)" srcset="https://assets.mangodisk.app/images/screenshots/ja/dark-06-startup-items.jpg?ver=2.1.1">
+          <source media="(prefers-color-scheme: light)" srcset="https://assets.mangodisk.app/images/screenshots/ja/light-06-startup-items.jpg?ver=2.1.1">
+          <img src="https://assets.mangodisk.app/images/screenshots/ja/light-06-startup-items.jpg?ver=2.1.1" width="100%" alt="MangoDisk スタートアップ項目管理画面">
         </picture>
       </a>
     </td>
-  </tr>
-  <tr>
     <td width="50%" align="center">
 <strong>アプリのアンインストールとクリーンアップ</strong><br>
 <sub>アプリと関連する残存ファイルをまとめて削除し、空き容量を増やします</sub><br><br>
-      <a href="https://assets.mangodisk.app/images/screenshots/ja/light-04-app-uninstaller.jpg?ver=2.0.0" target="_blank" rel="noopener noreferrer">
+      <a href="https://assets.mangodisk.app/images/screenshots/ja/light-04-app-uninstaller.jpg?ver=2.1.1" target="_blank" rel="noopener noreferrer">
         <picture>
-          <source media="(prefers-color-scheme: dark)" srcset="https://assets.mangodisk.app/images/screenshots/ja/dark-04-app-uninstaller.jpg?ver=2.0.0">
-          <source media="(prefers-color-scheme: light)" srcset="https://assets.mangodisk.app/images/screenshots/ja/light-04-app-uninstaller.jpg?ver=2.0.0">
-          <img src="https://assets.mangodisk.app/images/screenshots/ja/light-04-app-uninstaller.jpg?ver=2.0.0" width="100%" alt="MangoDisk アプリアンインストーラー画面">
-        </picture>
-      </a>
-    </td>
-    <td width="50%" align="center">
-<strong>システム最適化</strong><br>
-<sub>パフォーマンス、プライバシー、使いやすさをワンクリックで整えます</sub><br><br>
-      <a href="https://assets.mangodisk.app/images/screenshots/ja/light-07-system-optimization.jpg?ver=2.0.0" target="_blank" rel="noopener noreferrer">
-        <picture>
-          <source media="(prefers-color-scheme: dark)" srcset="https://assets.mangodisk.app/images/screenshots/ja/dark-07-system-optimization.jpg?ver=2.0.0">
-          <source media="(prefers-color-scheme: light)" srcset="https://assets.mangodisk.app/images/screenshots/ja/light-07-system-optimization.jpg?ver=2.0.0">
-          <img src="https://assets.mangodisk.app/images/screenshots/ja/light-07-system-optimization.jpg?ver=2.0.0" width="100%" alt="MangoDisk システム最適化画面">
+          <source media="(prefers-color-scheme: dark)" srcset="https://assets.mangodisk.app/images/screenshots/ja/dark-04-app-uninstaller.jpg?ver=2.1.1">
+          <source media="(prefers-color-scheme: light)" srcset="https://assets.mangodisk.app/images/screenshots/ja/light-04-app-uninstaller.jpg?ver=2.1.1">
+          <img src="https://assets.mangodisk.app/images/screenshots/ja/light-04-app-uninstaller.jpg?ver=2.1.1" width="100%" alt="MangoDisk アプリアンインストーラー画面">
         </picture>
       </a>
     </td>
   </tr>
   <tr>
     <td width="50%" align="center">
-<strong>システムメンテナンス</strong><br>
-<sub>よくあるシステムの問題をすばやく解消し、いつもの状態に戻します</sub><br><br>
-      <a href="https://assets.mangodisk.app/images/screenshots/ja/light-08-system-maintenance.jpg?ver=2.0.0" target="_blank" rel="noopener noreferrer">
+<strong>システム最適化</strong><br>
+<sub>パフォーマンス、プライバシー、使いやすさをワンクリックで整えます</sub><br><br>
+      <a href="https://assets.mangodisk.app/images/screenshots/ja/light-07-system-optimization.jpg?ver=2.1.1" target="_blank" rel="noopener noreferrer">
         <picture>
-          <source media="(prefers-color-scheme: dark)" srcset="https://assets.mangodisk.app/images/screenshots/ja/dark-08-system-maintenance.jpg?ver=2.0.0">
-          <source media="(prefers-color-scheme: light)" srcset="https://assets.mangodisk.app/images/screenshots/ja/light-08-system-maintenance.jpg?ver=2.0.0">
-          <img src="https://assets.mangodisk.app/images/screenshots/ja/light-08-system-maintenance.jpg?ver=2.0.0" width="100%" alt="MangoDisk システムメンテナンス画面">
+          <source media="(prefers-color-scheme: dark)" srcset="https://assets.mangodisk.app/images/screenshots/ja/dark-07-system-optimization.jpg?ver=2.1.1">
+          <source media="(prefers-color-scheme: light)" srcset="https://assets.mangodisk.app/images/screenshots/ja/light-07-system-optimization.jpg?ver=2.1.1">
+          <img src="https://assets.mangodisk.app/images/screenshots/ja/light-07-system-optimization.jpg?ver=2.1.1" width="100%" alt="MangoDisk システム最適化画面">
         </picture>
       </a>
     </td>
     <td width="50%" align="center">
+<strong>システムメンテナンス</strong><br>
+<sub>よくあるシステムの問題をすばやく解消し、いつもの状態に戻します</sub><br><br>
+      <a href="https://assets.mangodisk.app/images/screenshots/ja/light-08-system-maintenance.jpg?ver=2.1.1" target="_blank" rel="noopener noreferrer">
+        <picture>
+          <source media="(prefers-color-scheme: dark)" srcset="https://assets.mangodisk.app/images/screenshots/ja/dark-08-system-maintenance.jpg?ver=2.1.1">
+          <source media="(prefers-color-scheme: light)" srcset="https://assets.mangodisk.app/images/screenshots/ja/light-08-system-maintenance.jpg?ver=2.1.1">
+          <img src="https://assets.mangodisk.app/images/screenshots/ja/light-08-system-maintenance.jpg?ver=2.1.1" width="100%" alt="MangoDisk システムメンテナンス画面">
+        </picture>
+      </a>
+    </td>
+  </tr>
+  <tr>
+    <td width="50%" align="center">
 <strong>プライバシークリーンアップ</strong><br>
 <sub>不要な利用履歴を減らし、日々のプライバシーを守ります</sub><br><br>
-      <a href="https://assets.mangodisk.app/images/screenshots/ja/light-09-privacy-cleanup.jpg?ver=2.0.0" target="_blank" rel="noopener noreferrer">
+      <a href="https://assets.mangodisk.app/images/screenshots/ja/light-09-privacy-cleanup.jpg?ver=2.1.1" target="_blank" rel="noopener noreferrer">
         <picture>
-          <source media="(prefers-color-scheme: dark)" srcset="https://assets.mangodisk.app/images/screenshots/ja/dark-09-privacy-cleanup.jpg?ver=2.0.0">
-          <source media="(prefers-color-scheme: light)" srcset="https://assets.mangodisk.app/images/screenshots/ja/light-09-privacy-cleanup.jpg?ver=2.0.0">
-          <img src="https://assets.mangodisk.app/images/screenshots/ja/light-09-privacy-cleanup.jpg?ver=2.0.0" width="100%" alt="MangoDisk プライバシークリーンアップ画面">
+          <source media="(prefers-color-scheme: dark)" srcset="https://assets.mangodisk.app/images/screenshots/ja/dark-09-privacy-cleanup.jpg?ver=2.1.1">
+          <source media="(prefers-color-scheme: light)" srcset="https://assets.mangodisk.app/images/screenshots/ja/light-09-privacy-cleanup.jpg?ver=2.1.1">
+          <img src="https://assets.mangodisk.app/images/screenshots/ja/light-09-privacy-cleanup.jpg?ver=2.1.1" width="100%" alt="MangoDisk プライバシークリーンアップ画面">
         </picture>
       </a>
     </td>
