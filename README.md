@@ -57,7 +57,13 @@ Reclaim space taken up by duplicate copies without treating files as duplicates 
 
 ### 4. Disk Space Analysis
 
+#### Space Distribution
+
 See where your disk space is going at a glance. Switch between a **treemap** and a **sunburst chart**, and choose how many levels to display to explore space usage and folder structure. Browse folders alongside the file list to quickly find the largest folders and files and decide what to clean up.
+
+#### Space Changes
+
+Disk space suddenly running low? Turn on scan history and compare two scans of the same drive or folder to see which files and folders grew or shrank, and by how much. Scan again after cleanup to see where you freed up space.
 
 > **Privacy & Security**
 
