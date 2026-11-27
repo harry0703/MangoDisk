@@ -2,7 +2,7 @@
   <img src="public/mangodisk.svg" width="40" alt="MangoDisk application icon"> MangoDisk
 </h1>
 
-<p align="center">Disk cleanup, storage analysis, and privacy protection for <b>macOS</b>, <b>Windows</b>, and <b>Linux</b></p>
+<p align="center">Disk cleanup and storage analysis for <b>macOS</b>, <b>Windows</b>, and <b>Linux</b></p>
 
 <p align="center">
   English · <a href="README.zh-CN.md">简体中文</a> · <a href="README.zh-TW.md">繁體中文</a> · <a href="README.ja.md">日本語</a> · <a href="README.ko.md">한국어</a> · <a href="README.ru.md">Русский</a>
@@ -33,115 +33,105 @@
 
 ### 1. Deep Cleanup
 
-Recover storage used by everyday apps, development work, and AI tools. Find caches, build artifacts, and local models in one place, without hunting through hidden folders:
+Find caches, build artifacts, and local AI models left by apps and developer tools, even in hidden folders.
 
-- **System and user caches**: Reclaim space taken up over time by system temporary files, diagnostic data, and rebuildable caches.
-- **Application caches**: Keep application caches, logs, update packages, and temporary content from quietly consuming more and more storage.
-- **Browser data**: Reclaim space used by cached and temporary web data from Chrome, Edge, Firefox, Brave, Arc, Opera, and other browsers.
-- **Developer tools and Xcode**: Quickly recover substantial storage used by package managers, IDEs, compiler caches, and Xcode development data.
-- **Container caches**: Free up space used by inactive build caches and rebuildable data from Docker and other container tools.
-- **Project build artifacts**: Recover space used by rebuildable dependencies, caches, and build directories across Node.js, Rust, Gradle, Swift, Python, .NET, Godot, CMake, and other projects.
-- **AI tools**: Reclaim space taken up by caches, old logs, and temporary downloads from tools such as ChatGPT, Codex, and Claude, without tracking down each tool's data folders.
-- **AI models**: See how much space local models from Ollama, LM Studio, Hugging Face, and ComfyUI use, and remove those you no longer need to make room for new models and everyday files. Models are selected manually and must be downloaded again if needed later.
-- **Application optimization**: Shrink supported applications without affecting normal use, leaving more room on your disk.
+- **System and user caches**: Clear temporary system files, diagnostic data, and caches that can be rebuilt.
+- **Application caches**: Clear caches, logs, update packages, and temporary files left by apps.
+- **Browser data**: Clear caches and temporary web data from Chrome, Edge, Firefox, Brave, Arc, Opera, and other browsers.
+- **Developer tools and Xcode**: Clear caches from package managers, IDEs, and compilers, as well as Xcode development data.
+- **Container caches**: Remove unused build caches and other data that Docker and similar tools can regenerate.
+- **Project build artifacts**: Clean up regenerable dependencies, caches, and build directories from Node.js, Rust, Gradle, Swift, Python, .NET, Godot, CMake, and other projects.
+- **AI tools**: Remove caches, old logs, and temporary downloads from ChatGPT, Codex, Claude, and similar apps.
+- **AI models**: Check how much space local models in Ollama, LM Studio, Hugging Face, and ComfyUI use. Choose which models to remove. You’ll need to download any deleted models you want to use later.
+- **Application optimization**: Reduce the size of supported apps while keeping them usable.
 
-Smart recommendations help you make safe choices quickly. You can also review items individually and see the estimated reclaimable space upfront, keeping every cleanup predictable and under your control.
+Start with the recommended items or review them one by one. See how much space you can free before you clean.
 
 ### 2. Large File Cleanup
 
-Quickly find the largest files and reclaim space used by old installers, videos, archives, and other bulky content without digging through folders one by one.
+Find the files taking up the most space, from old installers to videos and archives, without digging through folders.
 
 ### 3. Duplicate File Cleanup
 
-Reclaim space taken up by duplicate copies without treating files as duplicates just because they share a name. Smart selection keeps at least one file in every group, so cleanup stays effortless and safe.
+MangoDisk compares file contents to find exact duplicates, even when filenames differ. Smart selection keeps at least one copy in each group.
 
 ### 4. Disk Space Analysis
 
 #### Space Distribution
 
-See where your disk space is going at a glance. Switch between a **treemap** and a **sunburst chart**, and choose how many levels to display to explore space usage and folder structure. Browse folders alongside the file list to quickly find the largest folders and files and decide what to clean up.
+See where your storage goes. Switch between a **treemap** and a **sunburst chart**, set the folder depth, and use the file list to drill down to the largest folders and files.
 
 #### Space Changes
 
-Disk space suddenly running low? Turn on scan history and compare two scans of the same drive or folder to see which files and folders grew or shrank, and by how much. Scan again after cleanup to see where you freed up space.
+Wondering where your free space went? Turn on scan history and compare two scans of the same drive or folder to see what grew or shrank. Scan again after cleaning to check where you freed up space.
 
 > **Privacy & Security**
 
 ### 5. Privacy Cleanup
 
-Keep browsing history, searches, cookies, recent items, and clipboard data from lingering on your computer. Clear traces left by browsers, applications, and the system to reduce exposure of your activity and make everyday privacy easier to manage.
+Clear browsing and search history, cookies, recent items, and clipboard contents to remove traces of activity left by browsers, apps, and the system.
 
 > **System Tools**
 
 ### 6. Application Uninstall and Cleanup
 
-Uninstall applications and clear related caches, settings, and leftovers so removing an application actually gives you the space back. Potential personal files are handled cautiously to reduce the risk of accidental deletion.
+Remove apps along with their caches, settings, and leftover files. MangoDisk takes extra care with locations that may contain personal files.
 
 ### 7. Startup Item Management
 
-Reduce unnecessary startup delays and background resource use, so your computer starts faster and feels lighter. Turn items back on at any time when you need them again.
+Disable startup items you don’t need to shorten startup times and reduce background activity. You can enable them again whenever you need them.
 
 ### 8. System Optimization
 
-Reduce unnecessary settings that slow down your system or get in the way. Balance performance, privacy, and personal preferences so your computer feels faster and easier to use.
+Adjust system settings for better performance, more privacy, or a setup that suits the way you work.
 
 ### 9. System Maintenance
 
-Fix common problems like missing search results, incorrect icons, no sound, or network connection failures—without hunting down fixes or typing complex commands. Get your computer back to normal sooner.
+Fix common issues with search, icons, audio, or network connections without troubleshooting manually or running commands.
 
 ### 10. Context Menus (Windows)
 
-> Available since version 1.2.3
+Browse right-click menu entries by location or app. Disable, restore, or remove supported entries, and tailor menus to individual file types.
 
-Keep right-click menus tidy and easy to use. Browse entries by menu location or app, disable, restore or remove supported items, and adjust menus for individual file types.
-
-Add everyday actions such as copying paths and opening a terminal, along with shortcuts to system tools.
+Add shortcuts for everyday actions such as copying a path, opening a terminal, or launching system tools.
 
 > **Activity**
 
 ### 11. Operation History
 
-Keep a clear record of every cleanup and system change. See how much space you recovered, what completed successfully, and whether anything still needs your attention.
+Review past cleanups and system changes. See how much space you freed, which actions completed, and what still needs attention.
 
 ## Resource Usage and Memory Management
 
-> Available since version 1.1.1
+Track CPU, GPU, memory, network, and disk activity in real time. On supported hardware, check temperature, power use, battery status, and disk health.
 
-Track CPU, GPU, memory, network speeds and disk activity in real time, with trends to help you understand resource use. On supported devices, you can also check temperatures, power usage, battery status and disk health.
+Find and quit apps using too many resources, or free memory manually or automatically.
 
-Quickly find resource-heavy apps, quit those you no longer need, and free memory manually or automatically.
-
-Display metrics in the menu bar, taskbar, system tray or a floating desktop window. Customize the content and appearance to keep an eye on your computer without opening the main window.
+Keep an eye on your system from the menu bar, taskbar, system tray, or a floating desktop window. Choose which metrics to show and how they look.
 
 ## AI Explanations
 
-> Available since version 1.1.0
-
-Unsure what an item does or what might happen if you change it? AI explanations use the item's description and current scan results to explain its purpose and what to consider before taking action. Spend less time looking things up and make more informed choices.
-
-Get explanations directly from items in Deep Cleanup (built-in rules), Privacy Cleanup, Startup Item Management, System Optimization, and System Maintenance.
-
-Official releases include free explanations each day, with the option to connect your own AI service. AI offers guidance; you decide which actions to take.
+Unsure what an item does or what changing it might affect? Ask for an explanation next to the item. It uses the item’s description and scan results to explain its purpose and what to consider before acting. Available for built-in Deep Cleanup rules, Privacy Cleanup, Startup Item Management, System Optimization, and System Maintenance.
 
 ## Safety and Rules
 
 > [!IMPORTANT]
-> **MangoDisk puts data safety ahead of reclaiming more space.**
-> Cleanup rules and system optimizations only ship after their safety boundaries are clearly defined and they pass validation on real systems.
+> **MangoDisk puts data safety first.**
+> Cleanup rules and system optimizations ship only after their safe operating limits are defined and tested on real systems.
 
-MangoDisk scans in read-only mode by default. Before cleanup, deletion, uninstall, or system setting changes begin, you can review and confirm exactly what will happen. Results are saved to Operation History.
+Scans are read-only by default. Before cleaning, deleting files, uninstalling apps, or changing system settings, MangoDisk shows what will change and asks for confirmation. Results are saved to Operation History.
 
-System Optimization only uses built-in, validated settings. It never accepts arbitrary registry paths, terminal commands, or scripts. MangoDisk reads each setting again after changing it and calls out high-impact items and changes that require administrator access or a restart.
+System Optimization runs only built-in, tested settings. MangoDisk checks the setting after applying it and warns you beforehand about risks, administrator access, or a restart.
 
-MangoDisk maintains its own cleanup rules. Third-party projects may provide research leads, but a candidate rule is only accepted after reliable sources, safe boundaries, and real-system behavior have been verified. Anything without a clear safety boundary is excluded.
+MangoDisk maintains its own cleanup rules. Third-party projects can suggest areas to investigate. Each new rule is checked against reliable sources and tested on real systems before inclusion.
 
-The complete rule library and revision history are open for inspection: [view the MangoDisk cleanup rule library](https://github.com/harry0703/MangoDisk/tree/main/src-tauri/crates/mangodisk-core/rules).
+The rules and their revision history are public. [Browse the MangoDisk cleanup rules](https://github.com/harry0703/MangoDisk/tree/main/src-tauri/crates/mangodisk-core/rules).
 
 ## Screenshots
 
 <p align="center">
   <strong>Deep Cleanup</strong><br>
-  <sub>Make room for what matters by clearing accumulated caches, build artifacts, and AI models you no longer need</sub>
+  <sub>Clear built-up caches, build artifacts, and AI models you no longer need</sub>
 </p>
 
 <p align="center">
@@ -154,7 +144,7 @@ The complete rule library and revision history are open for inspection: [view th
 
 <p align="center">
   <strong>Space Distribution</strong><br>
-  <sub>See where your storage is going and quickly find the largest files and folders</sub>
+  <sub>See where your storage goes and find the largest files and folders</sub>
 </p>
 
 <p align="center">
@@ -169,7 +159,7 @@ The complete rule library and revision history are open for inspection: [view th
 
 <p align="center">
   <strong>Space Changes</strong><br>
-  <sub>Compare two scans to see which files and folders take up more or less space</sub>
+  <sub>Compare two scans to see where disk usage changed</sub>
 </p>
 
 <p align="center">
@@ -201,7 +191,7 @@ The complete rule library and revision history are open for inspection: [view th
   <tr>
     <td width="50%" align="center">
       <strong>Large File Cleanup</strong><br>
-      <sub>Find the files taking up the most space without digging through folders</sub><br><br>
+      <sub>Find the files taking up the most space</sub><br><br>
       <a href="https://assets.mangodisk.app/images/screenshots/en/light-02-large-file-cleanup.jpg?ver=2.1.1" target="_blank" rel="noopener noreferrer">
         <picture>
           <source media="(prefers-color-scheme: dark)" srcset="https://assets.mangodisk.app/images/screenshots/en/dark-02-large-file-cleanup.jpg?ver=2.1.1">
@@ -212,7 +202,7 @@ The complete rule library and revision history are open for inspection: [view th
     </td>
     <td width="50%" align="center">
       <strong>Duplicate File Cleanup</strong><br>
-      <sub>Safely remove exact duplicates while keeping at least one copy</sub><br><br>
+      <sub>Remove exact duplicates and keep at least one copy per group</sub><br><br>
       <a href="https://assets.mangodisk.app/images/screenshots/en/light-03-duplicate-cleanup.jpg?ver=2.1.1" target="_blank" rel="noopener noreferrer">
         <picture>
           <source media="(prefers-color-scheme: dark)" srcset="https://assets.mangodisk.app/images/screenshots/en/dark-03-duplicate-cleanup.jpg?ver=2.1.1">
@@ -225,7 +215,7 @@ The complete rule library and revision history are open for inspection: [view th
   <tr>
     <td width="50%" align="center">
       <strong>Startup Item Management</strong><br>
-      <sub>Reduce unnecessary startup programs for faster sign-in and less background activity</sub><br><br>
+      <sub>Disable startup items you don’t need</sub><br><br>
       <a href="https://assets.mangodisk.app/images/screenshots/en/light-06-startup-items.jpg?ver=2.1.1" target="_blank" rel="noopener noreferrer">
         <picture>
           <source media="(prefers-color-scheme: dark)" srcset="https://assets.mangodisk.app/images/screenshots/en/dark-06-startup-items.jpg?ver=2.1.1">
@@ -236,7 +226,7 @@ The complete rule library and revision history are open for inspection: [view th
     </td>
     <td width="50%" align="center">
       <strong>Application Uninstall and Cleanup</strong><br>
-      <sub>Uninstall applications and remove related leftovers to reclaim more space</sub><br><br>
+      <sub>Remove apps and the files they leave behind</sub><br><br>
       <a href="https://assets.mangodisk.app/images/screenshots/en/light-04-app-uninstaller.jpg?ver=2.1.1" target="_blank" rel="noopener noreferrer">
         <picture>
           <source media="(prefers-color-scheme: dark)" srcset="https://assets.mangodisk.app/images/screenshots/en/dark-04-app-uninstaller.jpg?ver=2.1.1">
@@ -249,7 +239,7 @@ The complete rule library and revision history are open for inspection: [view th
   <tr>
     <td width="50%" align="center">
       <strong>System Optimization</strong><br>
-      <sub>Optimize performance, privacy, and everyday usability in one click</sub><br><br>
+      <sub>Adjust system settings for performance, privacy, and everyday use</sub><br><br>
       <a href="https://assets.mangodisk.app/images/screenshots/en/light-07-system-optimization.jpg?ver=2.1.1" target="_blank" rel="noopener noreferrer">
         <picture>
           <source media="(prefers-color-scheme: dark)" srcset="https://assets.mangodisk.app/images/screenshots/en/dark-07-system-optimization.jpg?ver=2.1.1">
@@ -260,7 +250,7 @@ The complete rule library and revision history are open for inspection: [view th
     </td>
     <td width="50%" align="center">
       <strong>System Maintenance</strong><br>
-      <sub>Fix common system issues quickly and get your computer back to normal</sub><br><br>
+      <sub>Fix common system issues</sub><br><br>
       <a href="https://assets.mangodisk.app/images/screenshots/en/light-08-system-maintenance.jpg?ver=2.1.1" target="_blank" rel="noopener noreferrer">
         <picture>
           <source media="(prefers-color-scheme: dark)" srcset="https://assets.mangodisk.app/images/screenshots/en/dark-08-system-maintenance.jpg?ver=2.1.1">
@@ -273,7 +263,7 @@ The complete rule library and revision history are open for inspection: [view th
   <tr>
     <td width="50%" align="center">
       <strong>Privacy Cleanup</strong><br>
-      <sub>Leave fewer activity traces behind and keep everyday use more private</sub><br><br>
+      <sub>Clear activity traces left by browsers, apps, and the system</sub><br><br>
       <a href="https://assets.mangodisk.app/images/screenshots/en/light-09-privacy-cleanup.jpg?ver=2.1.1" target="_blank" rel="noopener noreferrer">
         <picture>
           <source media="(prefers-color-scheme: dark)" srcset="https://assets.mangodisk.app/images/screenshots/en/dark-09-privacy-cleanup.jpg?ver=2.1.1">
@@ -289,9 +279,9 @@ The complete rule library and revision history are open for inspection: [view th
 
 > [!CAUTION]
 >
-> 1. Cleanup, permanent deletion, and uninstall operations may not be reversible. Review the selected content and keep reliable backups of important data.
-> 2. Before running system maintenance or changing a startup item or system setting, make sure you understand its purpose and impact.
-> 3. Some system optimizations can affect security, privacy, battery life, or update behavior.
+> 1. Cleanup, permanent deletion, and uninstall operations may be irreversible. Check what you’ve selected and back up important data before continuing.
+> 2. Check what an item does and what may change before running system maintenance or adjusting startup items or system settings.
+> 3. Some system optimizations can affect security, privacy, battery life, or system updates.
 
 ## Desktop App
 
@@ -352,7 +342,7 @@ curl -fsSL https://get.mangodisk.app/linux | bash
 
 ## Command Line (CLI)
 
-Use MangoDisk in your terminal or scripts, with the same safety-first cleanup engine as the desktop app.
+Run MangoDisk from a terminal or a script using the same cleanup engine as the desktop app.
 
 ### macOS
 
@@ -404,7 +394,7 @@ mangodisk clean --apply --selection all --dry-run
 mangodisk clean --format json --no-progress
 ```
 
-`mangodisk clean` only scans and never modifies files by default. To perform cleanup in a non-interactive environment, you must also pass `--yes` to confirm explicitly. Run the following command for all available options:
+`mangodisk clean` scans in read-only mode by default. For cleanup in a non-interactive environment, pass `--yes` to confirm. Run the following command to see all options:
 
 ```sh
 mangodisk clean --help
@@ -448,7 +438,11 @@ pnpm tauri:build
 pnpm cli:build
 ```
 
-Local builds do not include the signing, notarization, or update metadata provided by official MangoDisk releases. Use them for local development and validation only.
+Local builds are for development and verification. Release signing, notarization, and update metadata are handled by the official release process.
+
+## Support MangoDisk
+
+MangoDisk is free, open source, and ad-free. The core features are free for personal and commercial use under GPL-3.0. To support development and use MangoDisk’s hosted AI, [become a supporter](https://mangodisk.app/supporter).
 
 ## Contributing
 

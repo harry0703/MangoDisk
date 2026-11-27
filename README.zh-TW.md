@@ -2,7 +2,7 @@
   <img src="public/mangodisk.svg" width="40" alt="MangoDisk 應用程式圖示"> MangoDisk
 </h1>
 
-<p align="center">適用於 <b>macOS</b>、<b>Windows</b> 與 <b>Linux</b> 的磁碟清理、儲存空間分析與隱私保護工具</p>
+<p align="center">適用於 <b>macOS</b>、<b>Windows</b> 與 <b>Linux</b> 的磁碟清理與儲存空間分析工具</p>
 
 <p align="center">
   <a href="README.md">English</a> · <a href="README.zh-CN.md">简体中文</a> · 繁體中文 · <a href="README.ja.md">日本語</a> · <a href="README.ko.md">한국어</a> · <a href="README.ru.md">Русский</a>
@@ -33,115 +33,105 @@
 
 ### 1. 深度清理
 
-日常使用、開發建置和 AI 工具留下的檔案，往往在不知不覺中占滿磁碟。集中找出散落各處的快取、建置產物與本機模型，不必逐一翻找隱藏資料夾，輕鬆為需要的內容騰出空間：
+日常使用的應用程式、開發工具和 AI 工具會留下快取、建置產物和本機模型。MangoDisk 會把散落各處的內容集中列出，省去逐一翻找隱藏資料夾的麻煩。
 
-- **系統與使用者快取**：釋放系統暫存檔案、診斷資料和可重建快取長期佔用的空間。
-- **應用程式快取**：避免常用應用程式的快取、記錄檔、更新套件和暫存內容持續累積、佔用更多空間。
-- **瀏覽器資料**：取回 Chrome、Edge、Firefox、Brave、Arc、Opera 等瀏覽器快取和暫存網頁資料佔用的空間。
-- **開發工具與 Xcode**：快速釋放套件管理工具、IDE、編譯工具和 Xcode 開發資料佔用的大量空間。
-- **容器快取**：釋放 Docker 等容器工具的閒置建置快取和可重新產生資料佔用的空間。
-- **專案建置產物**：找回 Node.js、Rust、Gradle、Swift、Python、.NET、Godot、CMake 等專案中相依套件、快取和建置目錄佔用的空間。
-- **AI 工具**：清理 ChatGPT、Codex、Claude 等工具累積的快取、舊記錄檔與下載暫存檔，不必逐一查找各個工具的資料夾。
-- **AI 模型**：掌握 Ollama、LM Studio、Hugging Face、ComfyUI 等本機模型的空間用量，移除不再需要的模型，為新模型與日常檔案騰出空間。模型需手動選取，清理後若要再次使用，須重新下載。
-- **應用程式最佳化**：在不影響正常使用的情況下縮小應用程式體積，為磁碟騰出更多空間。
+- **系統與使用者快取**：清除系統暫存檔、診斷資料和可重新產生的快取。
+- **應用程式快取**：清理應用程式留下的快取、記錄檔、更新套件和暫存檔。
+- **瀏覽器資料**：清除 Chrome、Edge、Firefox、Brave、Arc、Opera 等瀏覽器的快取和暫存網頁資料。
+- **開發工具與 Xcode**：清除套件管理工具、IDE、編譯工具的快取，以及 Xcode 開發資料。
+- **容器快取**：清除 Docker 等容器工具閒置的建置快取和可重新產生的資料。
+- **專案建置產物**：清理 Node.js、Rust、Gradle、Swift、Python、.NET、Godot、CMake 等專案可重新產生的相依套件、快取和建置目錄。
+- **AI 工具**：清除 ChatGPT、Codex、Claude 等工具留下的快取、舊記錄檔和下載暫存檔。
+- **AI 模型**：查看 Ollama、LM Studio、Hugging Face、ComfyUI 等本機模型占用的空間，再手動選取不需要的模型。刪除後若要再使用，需重新下載。
+- **應用程式最佳化**：縮小支援的應用程式體積，維持正常使用。
 
-智慧建議能協助你快速做出安全選擇，也可以逐項確認並事先掌握預估可釋放空間，讓每次清理都更安心、更容易掌控。
+你可以採用智慧推薦，或逐項檢查，並在清理前查看預計可釋放的空間。
 
 ### 2. 大型檔案清理
 
-快速找出最佔空間的大型檔案，輕鬆釋放舊安裝檔、影片、封存檔等內容佔用的空間，不必再逐層翻找資料夾。
+集中查看最占空間的檔案，像是舊安裝檔、影片或封存檔，不必一層層翻找資料夾。
 
 ### 3. 重複檔案清理
 
-找回被重複副本佔用的空間，同時避免把同名但內容不同的檔案誤判為重複項目；智慧選取會為每組至少保留一份，清理更省心。
+依檔案內容比對，即使檔名不同，也能找出內容完全相同的檔案。智慧選取會為每組至少保留一份。
 
 ### 4. 磁碟空間分析
 
 #### 空間分布
 
-一眼看懂磁碟空間都用在哪裡。可切換**樹狀圖**與**旭日圖**，自行調整顯示的階層深度，查看空間占比與資料夾結構；搭配檔案清單逐層瀏覽，快速找出最占空間的資料夾與檔案，更容易判斷哪些內容值得清理。
+用**樹狀圖**或**旭日圖**看清空間用在哪裡。你可以調整顯示層級，再透過檔案清單逐層查看，找出最占空間的資料夾和檔案。
 
 #### 空間變化
 
-磁碟空間突然少了一大截？開啟掃描記錄後，比較同一個磁碟或資料夾的兩次掃描，就能看出哪些檔案和資料夾的空間占用增加或減少，以及差了多少。清理後再掃描一次，就能看看哪些地方騰出了空間。
+磁碟空間突然變少了？開啟掃描紀錄後，比較同一個磁碟或資料夾的兩次掃描，就能看到哪些檔案和資料夾的占用空間有變化。清理後再掃描一次，也能確認哪些地方騰出了空間。
 
 > **隱私與安全**
 
 ### 5. 隱私清理
 
-減少瀏覽紀錄、搜尋紀錄、Cookie、最近使用項目和剪貼簿內容長期留在電腦中，降低瀏覽習慣、活動紀錄和登入狀態意外曝光的風險，讓日常隱私更容易掌握與管理。
+清除瀏覽紀錄、搜尋紀錄、Cookie、最近使用的項目和剪貼簿內容，減少瀏覽器、應用程式及系統留下的使用痕跡。
 
 > **系統工具**
 
 ### 6. 解除安裝應用程式與殘留清理
 
-解除安裝應用程式時一併清除相關快取、設定與殘留檔案，避免程式移除了，磁碟空間卻沒有真正釋放；謹慎處理可能包含個人檔案的內容，在騰出空間的同時降低誤刪風險。
+解除安裝時，一併清除相關快取、設定和殘留檔案。若資料夾可能含有個人檔案，MangoDisk 會謹慎處理，降低誤刪風險。
 
 ### 7. 啟動項目管理
 
-減少不必要的開機等待與背景佔用，讓電腦啟動更快、運作更輕快；需要時仍可隨時重新啟用。
+停用不需要的開機啟動項目，縮短開機等待並減少背景資源用量。需要時可以再啟用。
 
 ### 8. 系統最佳化
 
-減少拖慢系統或干擾日常使用的不必要設定，兼顧效能、隱私與使用習慣，讓電腦運作更流暢、用起來更順手。
+依照你的需求調整系統設定，改善效能、隱私和日常操作。
 
 ### 9. 系統維護
 
-快速解決搜尋異常、圖示錯亂、沒有聲音或網路連線異常等常見系統問題，不必逐項檢查或輸入複雜指令，讓電腦盡快恢復正常。
+修正搜尋異常、圖示顯示錯誤、沒聲音或網路連線異常等常見問題，省去手動排查或輸入指令的麻煩。
 
 ### 10. 右鍵選單（Windows）
 
-> 自 1.2.3 版本起提供
+依選單位置或應用程式瀏覽項目，停用、還原或移除可管理的項目，也能依檔案類型分別調整。
 
-整理不常用的選單項目，讓右鍵選單更清爽、更好用。可依選單位置或所屬應用程式查看，停用、還原或刪除可管理的項目，也能針對不同檔案類型分別調整。
-
-可加入複製路徑、開啟終端機等常用操作與系統工具捷徑，讓日常操作更順手。
+還可加入複製路徑、開啟終端機等常用操作，以及系統工具的捷徑。
 
 > **操作紀錄**
 
 ### 11. 操作紀錄
 
-讓每次清理與系統調整都有紀錄可查，方便確認釋放了多少空間、哪些操作已經完成，以及是否仍有需要處理的問題。
+每次清理和系統變更都有紀錄，方便查看釋放了多少空間、完成了哪些操作，還有哪些問題需要處理。
 
 ## 運作狀態與記憶體管理
 
-> 自 1.1.1 版本起提供
+即時查看 CPU、GPU、記憶體、網路和磁碟的使用狀況。支援的裝置也能顯示溫度、功耗、電池狀態和磁碟健康資訊。
 
-即時查看 CPU、GPU、記憶體、網路速度與磁碟狀態，掌握資源用量與變化趨勢。在支援的裝置上，還可查看溫度、耗電量、電池狀態與磁碟健康資訊。
+找出資源用量高的應用程式，視需要結束程式，或手動、自動釋放記憶體。
 
-快速找出占用較多資源的應用程式，結束不需要的程式，並手動或自動釋放記憶體。
-
-支援在選單列、工作列、系統匣或桌面浮動視窗顯示，可自訂顯示內容與外觀，不必開啟主視窗，電腦狀態一目瞭然。
+無須開啟主視窗，就能從選單列、工作列、系統匣或桌面浮動視窗查看系統狀態。顯示項目和外觀都可以自訂。
 
 ## AI 解讀
 
-> 自 1.1.0 版本起提供
-
-不清楚某個項目有什麼用途，或操作後會有什麼影響？AI 解讀會結合項目說明與目前的掃描結果，用易懂的文字說明用途與注意事項，省去四處查資料的麻煩，協助你判斷是否需要處理。
-
-支援深度清理的內建規則、隱私清理、啟動項目管理、系統最佳化和系統維護，可直接在項目旁查看解讀。
-
-官方版本提供每日免費解讀額度，也支援連接自己的 AI 服務。解讀僅供參考，實際操作仍由你決定。
+不確定某個項目有什麼用途，或處理後會發生什麼事？AI 解讀會根據項目說明和掃描結果，簡要說明用途與注意事項。深度清理的內建規則、隱私清理、啟動項目管理、系統最佳化和系統維護，都能在項目旁查看解讀。
 
 ## 安全與規則
 
 > [!IMPORTANT]
-> **MangoDisk 始終將資料安全放在清理效果之前。**
-> 所有清理規則與系統最佳化項目，只有在安全邊界明確且通過實際系統驗證後，才會納入正式版本。
+> **MangoDisk 以資料安全為優先。**
+> 清理規則和系統最佳化項目都必須先確認在哪些情況下可以安全執行，並在實際系統上驗證，才會納入正式版。
 
-MangoDisk 預設只進行唯讀掃描。執行清理、刪除、解除安裝或變更系統設定前，會先顯示內容並由使用者確認；操作結果會保留在操作紀錄中。
+掃描預設為唯讀。清理、刪除、解除安裝或變更系統設定前，請先檢查並確認操作內容。結果會存入操作紀錄。
 
-系統最佳化只會執行內建且經過驗證的設定，不接受任意登錄路徑、終端機指令或腳本。變更後會重新讀取系統狀態；高影響、需要系統管理員權限或需要重新啟動的項目都會提前提示。
+系統最佳化只執行內建且已驗證的設定變更，完成後會重新讀取設定。高風險、需要系統管理員權限或需要重新啟動的項目，都會事先提醒。
 
-清理規則由 MangoDisk 獨立維護。第三方專案只用來提供研究線索；候選規則必須核對可靠來源、確認安全範圍，並通過真實系統驗證後才會收錄。安全範圍不明確的內容不會加入規則庫。
+MangoDisk 自行維護清理規則。其他專案可作為調查線索，每條新規則都會查證可靠來源、確認安全範圍，並在實際系統上測試後才收錄。
 
-完整規則庫與修改紀錄均可檢視、追溯：[查看 MangoDisk 清理規則庫](https://github.com/harry0703/MangoDisk/tree/main/src-tauri/crates/mangodisk-core/rules)。
+完整規則和歷次變更皆可公開查閱。[查看 MangoDisk 清理規則庫](https://github.com/harry0703/MangoDisk/tree/main/src-tauri/crates/mangodisk-core/rules)
 
 ## 介面預覽
 
 <p align="center">
   <strong>深度清理</strong><br>
-  <sub>整理累積的快取、建置產物與不再需要的 AI 模型，為需要的內容騰出空間</sub>
+  <sub>清理累積的快取、建置產物和不再需要的 AI 模型</sub>
 </p>
 
 <p align="center">
@@ -154,7 +144,7 @@ MangoDisk 預設只進行唯讀掃描。執行清理、刪除、解除安裝或�
 
 <p align="center">
   <strong>空間分布</strong><br>
-  <sub>一眼看懂空間去向，快速找出佔用最多的內容</sub>
+  <sub>看清空間用在哪裡，找出最占空間的檔案和資料夾</sub>
 </p>
 
 <p align="center">
@@ -169,7 +159,7 @@ MangoDisk 預設只進行唯讀掃描。執行清理、刪除、解除安裝或�
 
 <p align="center">
   <strong>空間變化</strong><br>
-  <sub>比較兩次掃描，查看哪些檔案和資料夾的空間占用增加或減少</sub>
+  <sub>比較兩次掃描，查看哪些檔案和資料夾的占用空間有變化</sub>
 </p>
 
 <p align="center">
@@ -184,7 +174,7 @@ MangoDisk 預設只進行唯讀掃描。執行清理、刪除、解除安裝或�
 
 <p align="center">
   <strong>系統監控</strong><br>
-  <sub>CPU、記憶體、網路與磁碟狀態一目了然</sub>
+  <sub>一眼掌握 CPU、記憶體、網路和磁碟的使用狀況</sub>
 </p>
 
 <p align="center">
@@ -201,7 +191,7 @@ MangoDisk 預設只進行唯讀掃描。執行清理、刪除、解除安裝或�
   <tr>
     <td width="50%" align="center">
       <strong>大型檔案清理</strong><br>
-      <sub>快速鎖定最佔空間的檔案，不必逐層翻找</sub><br><br>
+      <sub>快速找出最占空間的檔案</sub><br><br>
       <a href="https://assets.mangodisk.app/images/screenshots/tw/light-02-large-file-cleanup.jpg?ver=2.1.1" target="_blank" rel="noopener noreferrer">
         <picture>
           <source media="(prefers-color-scheme: dark)" srcset="https://assets.mangodisk.app/images/screenshots/tw/dark-02-large-file-cleanup.jpg?ver=2.1.1">
@@ -212,7 +202,7 @@ MangoDisk 預設只進行唯讀掃描。執行清理、刪除、解除安裝或�
     </td>
     <td width="50%" align="center">
       <strong>重複檔案清理</strong><br>
-      <sub>安全清理重複副本，並確保每組至少保留一份</sub><br><br>
+      <sub>清理內容完全相同的檔案，每組至少保留一份</sub><br><br>
       <a href="https://assets.mangodisk.app/images/screenshots/tw/light-03-duplicate-cleanup.jpg?ver=2.1.1" target="_blank" rel="noopener noreferrer">
         <picture>
           <source media="(prefers-color-scheme: dark)" srcset="https://assets.mangodisk.app/images/screenshots/tw/dark-03-duplicate-cleanup.jpg?ver=2.1.1">
@@ -225,7 +215,7 @@ MangoDisk 預設只進行唯讀掃描。執行清理、刪除、解除安裝或�
   <tr>
     <td width="50%" align="center">
       <strong>啟動項目管理</strong><br>
-      <sub>減少不必要的開機啟動程式，加快登入並降低背景占用</sub><br><br>
+      <sub>停用不需要的開機啟動項目</sub><br><br>
       <a href="https://assets.mangodisk.app/images/screenshots/tw/light-06-startup-items.jpg?ver=2.1.1" target="_blank" rel="noopener noreferrer">
         <picture>
           <source media="(prefers-color-scheme: dark)" srcset="https://assets.mangodisk.app/images/screenshots/tw/dark-06-startup-items.jpg?ver=2.1.1">
@@ -236,7 +226,7 @@ MangoDisk 預設只進行唯讀掃描。執行清理、刪除、解除安裝或�
     </td>
     <td width="50%" align="center">
       <strong>解除安裝應用程式與殘留清理</strong><br>
-      <sub>解除安裝應用程式並清除相關殘留，釋放更多磁碟空間</sub><br><br>
+      <sub>解除安裝應用程式，順帶清理殘留檔案</sub><br><br>
       <a href="https://assets.mangodisk.app/images/screenshots/tw/light-04-app-uninstaller.jpg?ver=2.1.1" target="_blank" rel="noopener noreferrer">
         <picture>
           <source media="(prefers-color-scheme: dark)" srcset="https://assets.mangodisk.app/images/screenshots/tw/dark-04-app-uninstaller.jpg?ver=2.1.1">
@@ -249,7 +239,7 @@ MangoDisk 預設只進行唯讀掃描。執行清理、刪除、解除安裝或�
   <tr>
     <td width="50%" align="center">
       <strong>系統最佳化</strong><br>
-      <sub>一鍵改善效能、隱私與使用體驗，讓系統運作更流暢</sub><br><br>
+      <sub>調整與效能、隱私及日常操作相關的系統設定</sub><br><br>
       <a href="https://assets.mangodisk.app/images/screenshots/tw/light-07-system-optimization.jpg?ver=2.1.1" target="_blank" rel="noopener noreferrer">
         <picture>
           <source media="(prefers-color-scheme: dark)" srcset="https://assets.mangodisk.app/images/screenshots/tw/dark-07-system-optimization.jpg?ver=2.1.1">
@@ -260,7 +250,7 @@ MangoDisk 預設只進行唯讀掃描。執行清理、刪除、解除安裝或�
     </td>
     <td width="50%" align="center">
       <strong>系統維護</strong><br>
-      <sub>快速解決常見系統問題，讓電腦恢復正常</sub><br><br>
+      <sub>修正常見的系統問題</sub><br><br>
       <a href="https://assets.mangodisk.app/images/screenshots/tw/light-08-system-maintenance.jpg?ver=2.1.1" target="_blank" rel="noopener noreferrer">
         <picture>
           <source media="(prefers-color-scheme: dark)" srcset="https://assets.mangodisk.app/images/screenshots/tw/dark-08-system-maintenance.jpg?ver=2.1.1">
@@ -273,7 +263,7 @@ MangoDisk 預設只進行唯讀掃描。執行清理、刪除、解除安裝或�
   <tr>
     <td width="50%" align="center">
       <strong>隱私清理</strong><br>
-      <sub>減少活動痕跡殘留，讓日常隱私更有保障</sub><br><br>
+      <sub>減少瀏覽器、應用程式和系統留下的使用痕跡</sub><br><br>
       <a href="https://assets.mangodisk.app/images/screenshots/tw/light-09-privacy-cleanup.jpg?ver=2.1.1" target="_blank" rel="noopener noreferrer">
         <picture>
           <source media="(prefers-color-scheme: dark)" srcset="https://assets.mangodisk.app/images/screenshots/tw/dark-09-privacy-cleanup.jpg?ver=2.1.1">
@@ -289,9 +279,9 @@ MangoDisk 預設只進行唯讀掃描。執行清理、刪除、解除安裝或�
 
 > [!CAUTION]
 >
-> 1. 清理、永久刪除與解除安裝可能無法復原。執行前請確認內容，並妥善備份重要資料。
-> 2. 執行系統維護、變更啟動項目或系統設定前，請先確認相關項目的用途與影響。
-> 3. 部分系統最佳化可能影響安全性、隱私、電池續航力或系統更新策略。
+> 1. 清理、永久刪除或解除安裝後，資料可能無法復原。執行前請確認所選項目，並備份重要資料。
+> 2. 執行系統維護、調整開機啟動項目或系統設定前，請先了解項目的用途和變更後的影響。
+> 3. 部分系統最佳化項目可能影響安全性、隱私、電池續航力或系統更新。
 
 ## 桌面版
 
@@ -352,7 +342,7 @@ curl -fsSL https://get.mangodisk.app/linux | bash
 
 ## 命令列版（CLI）
 
-適合在終端機中使用或搭配指令碼，與桌面版採用同一套安全清理引擎。
+你可以在終端機或指令碼中使用 CLI。它和桌面版共用同一套清理引擎。
 
 ### macOS
 
@@ -404,7 +394,7 @@ mangodisk clean --apply --selection all --dry-run
 mangodisk clean --format json --no-progress
 ```
 
-`mangodisk clean` 預設只會掃描，不會修改檔案。在非互動式環境執行實際清理時，還必須傳入 `--yes` 明確確認；完整選項請執行：
+`mangodisk clean` 預設只掃描，檔案會維持原樣。在非互動環境中執行清理時，請加上 `--yes` 確認。完整選項可用下列指令查看：
 
 ```sh
 mangodisk clean --help
@@ -448,7 +438,11 @@ pnpm tauri:build
 pnpm cli:build
 ```
 
-本機建置產物不包含 MangoDisk 正式發布流程提供的簽名、公證和更新元資料，僅用於開發與驗證。
+本機建置只供開發和驗證使用。簽署、公證和更新中繼資料由正式發布流程提供。
+
+## 支持 MangoDisk
+
+MangoDisk 免費、開放原始碼，而且沒有廣告。核心功能依 GPL-3.0 免費提供，可用於個人或商業用途。想支持開發並使用官方雲端 AI，歡迎 [成為支持者](https://mangodisk.app/tw/supporter)。
 
 ## 參與貢獻
 

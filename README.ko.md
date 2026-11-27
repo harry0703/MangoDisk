@@ -1,8 +1,8 @@
 <h1 align="center">
-  <img src="public/mangodisk.svg" width="40" alt="MangoDisk application icon"> MangoDisk
+  <img src="public/mangodisk.svg" width="40" alt="MangoDisk 앱 아이콘"> MangoDisk
 </h1>
 
-<p align="center"><b>macOS</b>, <b>Windows</b>, <b>Linux</b>용 디스크 정리·저장 공간 분석·개인정보 보호 도구</p>
+<p align="center"><b>macOS</b>, <b>Windows</b>, <b>Linux</b>용 디스크 정리 및 저장 공간 분석 도구</p>
 
 <p align="center">
   <a href="README.md">English</a> · <a href="README.zh-CN.md">简体中文</a> · <a href="README.zh-TW.md">繁體中文</a> · <a href="README.ja.md">日本語</a> · 한국어 · <a href="README.ru.md">Русский</a>
@@ -33,115 +33,105 @@
 
 ### 1. 심층 정리
 
-일상 작업과 개발, AI 도구 사용 중에 쌓인 파일로 저장 공간이 부족해졌나요? 곳곳에 흩어진 캐시, 빌드 산출물, 로컬 모델을 한곳에서 확인하고, 숨겨진 폴더를 일일이 찾지 않아도 필요한 파일을 위한 공간을 확보할 수 있습니다.
+앱과 개발 도구, AI 도구가 남긴 캐시와 빌드 결과물, 로컬 모델을 한곳에서 확인할 수 있습니다. 숨겨진 폴더를 하나씩 찾아다닐 필요가 없습니다.
 
-- **시스템 및 사용자 캐시**: 시간이 지나며 쌓인 시스템 임시 파일, 진단 데이터, 다시 만들 수 있는 캐시가 차지한 공간을 회수합니다.
-- **앱 캐시**: 앱 캐시, 로그, 업데이트 패키지, 임시 콘텐츠가 조용히 저장 공간을 잠식하지 않게 합니다.
-- **브라우저 데이터**: Chrome, Edge, Firefox, Brave, Arc, Opera 등 브라우저의 캐시와 임시 웹 데이터가 쓰는 공간을 회수합니다.
-- **개발자 도구 및 Xcode**: 패키지 관리자, IDE, 컴파일러 캐시, Xcode 개발 데이터가 차지한 큰 용량을 빠르게 되찾습니다.
-- **컨테이너 캐시**: Docker 등 컨테이너 도구의 사용하지 않는 빌드 캐시와 다시 만들 수 있는 데이터가 쓰는 공간을 확보합니다.
-- **프로젝트 빌드 산출물**: Node.js, Rust, Gradle, Swift, Python, .NET, Godot, CMake 등 프로젝트의 다시 만들 수 있는 의존성, 캐시, 빌드 디렉터리가 쓰는 공간을 되찾습니다.
-- **AI 도구**: ChatGPT, Codex, Claude 등에 쌓인 캐시, 오래된 로그, 다운로드 임시 파일을 정리합니다. 도구마다 데이터가 저장된 폴더를 직접 찾을 필요가 없습니다.
-- **AI 모델**: Ollama, LM Studio, Hugging Face, ComfyUI 등의 로컬 모델이 차지하는 용량을 확인하고, 더 이상 쓰지 않는 모델을 삭제해 새 모델과 일상 파일을 위한 공간을 확보합니다. 모델은 직접 선택해야 하며, 나중에 다시 사용하려면 재다운로드가 필요합니다.
-- **앱 최적화**: 지원되는 앱을 정상 사용에 영향 없이 줄여 디스크 여유 공간을 늘립니다.
+- **시스템 및 사용자 캐시**: 시스템 임시 파일, 진단 데이터, 다시 생성할 수 있는 캐시를 정리합니다.
+- **앱 캐시**: 앱에 쌓인 캐시, 로그, 업데이트 패키지, 임시 파일을 정리합니다.
+- **브라우저 데이터**: Chrome, Edge, Firefox, Brave, Arc, Opera 등에서 쌓인 캐시와 임시 웹 데이터를 지웁니다.
+- **개발 도구 및 Xcode**: 패키지 관리자, IDE, 컴파일러의 캐시와 Xcode 개발 데이터를 정리합니다.
+- **컨테이너 캐시**: Docker 등에서 사용하지 않는 빌드 캐시와 다시 생성할 수 있는 데이터를 정리합니다.
+- **프로젝트 빌드 결과물**: Node.js, Rust, Gradle, Swift, Python, .NET, Godot, CMake 등의 프로젝트에서 다시 생성할 수 있는 의존성 파일, 캐시, 빌드 폴더를 정리합니다.
+- **AI 도구**: ChatGPT, Codex, Claude 등이 남긴 캐시, 오래된 로그, 다운로드 임시 파일을 지웁니다.
+- **AI 모델**: Ollama, LM Studio, Hugging Face, ComfyUI 등의 로컬 모델이 차지하는 공간을 확인하고, 필요 없는 모델을 직접 골라 삭제합니다. 나중에 다시 쓰려면 모델을 다시 내려받아야 합니다.
+- **앱 최적화**: 지원하는 앱의 용량을 줄이면서 정상적으로 사용할 수 있도록 합니다.
 
-스마트 추천이 안전한 선택을 빠르게 돕습니다. 항목을 하나씩 검토하고 회수 예상 공간을 미리 확인할 수 있어 모든 정리를 예측 가능하게, 직접 통제하며 진행할 수 있습니다.
+추천 항목을 선택하거나 하나씩 검토할 수 있습니다. 정리하기 전에 얼마나 많은 공간을 확보할 수 있는지도 확인할 수 있습니다.
 
 ### 2. 대용량 파일 정리
 
-폴더를 일일이 뒤지지 않고 가장 큰 파일을 빠르게 찾아 오래된 설치 파일, 동영상, 압축 파일 등 부피 큰 콘텐츠가 쓰는 공간을 회수합니다.
+오래된 설치 파일이나 동영상, 압축 파일처럼 공간을 많이 차지하는 파일을 빠르게 찾습니다.
 
 ### 3. 중복 파일 정리
 
-이름이 같다는 이유만으로 중복으로 보지 않고, 실제 중복 복사본이 차지한 공간을 회수합니다. 스마트 선택은 각 그룹에 파일을 하나 이상 남기므로 정리가 간편하고 안전합니다.
+파일 이름과 관계없이 내용이 완전히 같은 파일을 찾습니다. 자동 선택은 중복 그룹마다 복사본을 하나 이상 남깁니다.
 
 ### 4. 디스크 공간 분석
 
 #### 공간 분포
 
-디스크 공간이 어디에 쓰이는지 한눈에 확인하세요. **트리맵**과 **선버스트**를 전환하고 표시할 폴더 계층의 깊이를 조절해 공간 사용 비율과 폴더 구조를 살펴볼 수 있습니다. 파일 목록과 함께 폴더를 차례로 탐색하면 용량이 큰 폴더와 파일을 빠르게 찾아 무엇을 정리할지 쉽게 판단할 수 있습니다.
+**트리맵**과 **선버스트 차트**로 저장 공간이 어디에 쓰이는지 확인합니다. 표시할 폴더 깊이를 조절하고 파일 목록을 살펴보면 용량이 큰 폴더와 파일을 쉽게 찾을 수 있습니다.
 
 #### 공간 변화
 
-디스크 여유 공간이 갑자기 줄었나요? 스캔 기록을 켜고 같은 디스크나 폴더의 스캔 결과 두 개를 비교하면 어떤 파일과 폴더가 차지하는 공간이 얼마나 늘거나 줄었는지 알 수 있습니다. 정리한 뒤 다시 스캔하면 어디에서 공간이 확보됐는지도 확인할 수 있습니다.
+여유 공간이 갑자기 줄었나요? 스캔 기록을 켜고 같은 디스크나 폴더의 두 스캔 결과를 비교하면 어느 파일이나 폴더의 용량이 얼마나 달라졌는지 알 수 있습니다. 정리 후 다시 스캔하면 어느 곳에서 공간을 확보했는지도 확인할 수 있습니다.
 
 > **개인정보 보호 및 보안**
 
 ### 5. 개인정보 정리
 
-방문 기록, 검색어, 쿠키, 최근 항목, 클립보드 데이터가 컴퓨터에 남지 않게 합니다. 브라우저, 앱, 시스템이 남긴 흔적을 지워 활동 노출을 줄이고 일상적인 개인정보 관리를 쉽게 합니다.
+방문 및 검색 기록, 쿠키, 최근 사용 항목, 클립보드 내용을 지워 브라우저와 앱, 시스템에 남은 사용 흔적을 줄입니다.
 
 > **시스템 도구**
 
 ### 6. 앱 제거 및 정리
 
-앱을 제거하면서 관련 캐시, 설정, 잔여 파일까지 지워 실제로 공간을 되돌려 받습니다. 개인 파일일 가능성이 있는 항목은 실수로 삭제되지 않도록 신중하게 다룹니다.
+앱을 제거하면서 관련 캐시, 설정, 남은 파일도 함께 정리합니다. 개인 파일이 있을 수 있는 위치는 실수로 삭제하는 일을 줄이도록 신중하게 처리합니다.
 
 ### 7. 시작 항목 관리
 
-불필요한 시작 지연과 백그라운드 리소스 사용을 줄여 컴퓨터가 더 빨리 켜지고 가볍게 느껴지게 합니다. 다시 필요하면 언제든 항목을 켤 수 있습니다.
+불필요한 자동 시작 항목을 꺼 부팅 대기 시간과 백그라운드 부하를 줄입니다. 필요할 때 다시 켤 수 있습니다.
 
 ### 8. 시스템 최적화
 
-시스템을 느리게 하거나 방해하는 불필요한 설정을 줄입니다. 성능, 개인정보 보호, 개인 취향의 균형을 맞춰 컴퓨터를 더 빠르고 쓰기 편하게 만듭니다.
+성능과 개인정보 보호, 평소 사용 방식에 맞게 시스템 설정을 조정합니다.
 
 ### 9. 시스템 유지 관리
 
-검색 결과 누락, 잘못된 아이콘, 소리 안 남, 네트워크 연결 실패 같은 흔한 문제를 해결책을 찾아 헤매거나 복잡한 명령을 입력하지 않고 고칩니다. 컴퓨터를 더 빨리 정상으로 되돌립니다.
+검색이 되지 않거나 아이콘이 깨지는 문제, 소리가 나지 않거나 네트워크에 연결되지 않는 문제 등을 해결합니다. 복잡한 명령을 입력하거나 직접 원인을 찾아다닐 필요가 없습니다.
 
 ### 10. 우클릭 메뉴(Windows)
 
-> 버전 1.2.3부터 제공
+메뉴 위치나 앱별로 항목을 살펴보고, 지원하는 항목을 끄거나 복원하거나 삭제할 수 있습니다. 파일 유형별로도 조정할 수 있습니다.
 
-자주 쓰지 않는 항목을 정리해 우클릭 메뉴를 더 깔끔하고 편리하게 만드세요. 메뉴 위치나 앱별로 항목을 확인하고, 관리 가능한 항목을 비활성화·복원·삭제하거나 파일 형식별로 조정할 수 있습니다.
-
-경로 복사, 터미널 열기 등 자주 쓰는 작업과 시스템 도구 바로가기도 추가할 수 있습니다.
+경로 복사, 터미널 열기 같은 자주 쓰는 동작이나 시스템 도구 바로가기를 추가할 수 있습니다.
 
 > **활동**
 
 ### 11. 작업 기록
 
-모든 정리와 시스템 변경을 명확히 기록합니다. 얼마나 많은 공간을 되찾았는지, 무엇이 성공적으로 끝났는지, 아직 확인이 필요한 것이 있는지 볼 수 있습니다.
+정리와 시스템 변경 내역을 확인합니다. 얼마나 많은 공간을 확보했는지, 어떤 작업이 끝났는지, 처리할 문제가 남아 있는지 알 수 있습니다.
 
 ## 리소스 사용 현황과 메모리 관리
 
-> 버전 1.1.1부터 제공
+CPU, GPU, 메모리, 네트워크, 디스크 사용량을 실시간으로 확인합니다. 지원하는 기기에서는 온도, 전력 사용량, 배터리 상태, 디스크 상태도 볼 수 있습니다.
 
-CPU, GPU, 메모리, 네트워크 속도와 디스크 상태를 실시간으로 확인하고 사용량 변화를 살펴보세요. 지원되는 기기에서는 온도, 전력 사용량, 배터리 상태와 디스크 건강 상태도 확인할 수 있습니다.
+리소스를 많이 쓰는 앱을 찾아 종료하거나 메모리를 수동 또는 자동으로 확보할 수 있습니다.
 
-리소스를 많이 사용하는 앱을 빠르게 찾아 종료하고, 메모리를 수동 또는 자동으로 정리할 수 있습니다.
-
-메뉴 막대, 작업 표시줄, 시스템 트레이 또는 바탕화면의 플로팅 창에 표시할 수 있습니다. 표시 내용과 모양을 원하는 대로 설정해 메인 창을 열지 않고도 컴퓨터 상태를 한눈에 파악하세요.
+기본 창을 열지 않아도 메뉴 막대, 작업 표시줄, 시스템 트레이, 바탕 화면의 플로팅 창에서 상태를 확인할 수 있습니다. 표시할 정보와 모양을 원하는 대로 바꿀 수 있습니다.
 
 ## AI 설명
 
-> 버전 1.1.0부터 제공
-
-항목이 무엇을 하는지, 바꾸면 어떤 일이 생길지 확신이 없나요? AI 설명은 항목 설명과 현재 스캔 결과를 바탕으로 그 용도와 실행 전 고려할 점을 설명합니다. 찾아보는 시간은 줄이고 더 나은 선택을 하세요.
-
-심층 정리(내장 규칙), 개인정보 정리, 시작 항목 관리, 시스템 최적화, 시스템 유지 관리의 항목에서 바로 설명을 볼 수 있습니다.
-
-공식 릴리스에는 매일 무료 설명이 포함되며, 자신의 AI 서비스를 연결할 수도 있습니다. AI는 안내를 제공할 뿐, 어떤 작업을 실행할지는 사용자가 결정합니다.
+항목의 용도나 변경했을 때의 영향이 궁금하다면 항목 옆에서 AI 설명을 열어 보세요. 항목 정보와 스캔 결과를 바탕으로 용도와 주의할 점을 알려 줍니다. 심층 정리의 기본 제공 규칙, 개인정보 정리, 시작 항목 관리, 시스템 최적화, 시스템 유지 관리에서 쓸 수 있습니다.
 
 ## 안전과 규칙
 
 > [!IMPORTANT]
-> **MangoDisk는 더 많은 공간을 회수하는 것보다 데이터 안전을 우선합니다.**
-> 정리 규칙과 시스템 최적화는 안전 경계가 명확히 정의되고 실제 시스템에서 검증을 통과한 뒤에만 배포됩니다.
+> **MangoDisk는 데이터 안전을 우선합니다.**
+> 안전하게 실행할 수 있는 조건을 확인하고 실제 시스템에서 검증한 정리 규칙과 시스템 최적화 항목을 정식 버전에 포함합니다.
 
-MangoDisk는 기본적으로 읽기 전용으로 스캔합니다. 정리, 삭제, 제거, 시스템 설정 변경을 시작하기 전에 정확히 무슨 일이 일어날지 검토하고 확인할 수 있습니다. 결과는 작업 기록에 저장됩니다.
+스캔은 기본적으로 읽기 전용입니다. 정리, 파일 삭제, 앱 제거, 시스템 설정 변경은 내용을 검토하고 확인한 후에 실행됩니다. 결과는 작업 기록에 저장됩니다.
 
-시스템 최적화는 내장된 검증 완료 설정만 사용합니다. 임의의 레지스트리 경로, 터미널 명령, 스크립트는 받지 않습니다. MangoDisk는 설정을 변경한 뒤 다시 읽어 확인하며, 영향이 큰 항목과 관리자 권한이나 재시동이 필요한 변경을 명확히 알립니다.
+시스템 최적화는 검증을 거쳐 기본 제공되는 설정만 변경합니다. 변경 후에는 설정을 다시 읽어 결과를 확인합니다. 위험도가 높거나 관리자 권한 또는 재시작이 필요한 항목은 실행 전에 알려 줍니다.
 
-MangoDisk는 자체 정리 규칙을 관리합니다. 서드파티 프로젝트가 조사 단서를 줄 수는 있지만, 후보 규칙은 신뢰할 수 있는 출처, 안전 경계, 실제 시스템 동작이 검증된 뒤에만 채택됩니다. 안전 경계가 명확하지 않은 것은 제외됩니다.
+정리 규칙은 MangoDisk에서 직접 관리합니다. 다른 프로젝트는 조사에 참고하며, 새 규칙은 신뢰할 수 있는 출처와 안전하게 실행할 수 있는 조건을 확인한 뒤 실제 시스템에서 검증합니다.
 
-전체 규칙 라이브러리와 변경 이력은 공개되어 있습니다: [MangoDisk 정리 규칙 라이브러리 보기](https://github.com/harry0703/MangoDisk/tree/main/src-tauri/crates/mangodisk-core/rules).
+정리 규칙과 변경 이력은 모두 공개되어 있습니다. [MangoDisk 정리 규칙 보기](https://github.com/harry0703/MangoDisk/tree/main/src-tauri/crates/mangodisk-core/rules)
 
 ## 스크린샷
 
 <p align="center">
   <strong>심층 정리</strong><br>
-  <sub>쌓인 캐시와 빌드 산출물, 더 이상 쓰지 않는 AI 모델을 정리해 필요한 파일을 위한 공간을 확보하세요</sub>
+  <sub>쌓인 캐시와 빌드 결과물, 필요 없는 AI 모델 정리</sub>
 </p>
 
 <p align="center">
@@ -154,7 +144,7 @@ MangoDisk는 자체 정리 규칙을 관리합니다. 서드파티 프로젝트�
 
 <p align="center">
   <strong>공간 분포</strong><br>
-  <sub>저장 공간이 어디에 쓰이는지 보고 가장 큰 파일과 폴더를 빠르게 찾습니다</sub>
+  <sub>저장 공간이 어디에 쓰이는지 보고 큰 파일과 폴더 찾기</sub>
 </p>
 
 <p align="center">
@@ -169,7 +159,7 @@ MangoDisk는 자체 정리 규칙을 관리합니다. 서드파티 프로젝트�
 
 <p align="center">
   <strong>공간 변화</strong><br>
-  <sub>두 스캔 결과를 비교해 어떤 파일과 폴더의 사용 공간이 늘거나 줄었는지 확인</sub>
+  <sub>스캔 결과를 비교해 공간 사용량 변화 확인</sub>
 </p>
 
 <p align="center">
@@ -201,7 +191,7 @@ MangoDisk는 자체 정리 규칙을 관리합니다. 서드파티 프로젝트�
   <tr>
     <td width="50%" align="center">
       <strong>대용량 파일 정리</strong><br>
-      <sub>폴더를 뒤지지 않고 가장 많은 공간을 차지하는 파일을 찾습니다</sub><br><br>
+      <sub>공간을 많이 차지하는 파일을 빠르게 찾기</sub><br><br>
       <a href="https://assets.mangodisk.app/images/screenshots/en/light-02-large-file-cleanup.jpg?ver=2.1.1" target="_blank" rel="noopener noreferrer">
         <picture>
           <source media="(prefers-color-scheme: dark)" srcset="https://assets.mangodisk.app/images/screenshots/en/dark-02-large-file-cleanup.jpg?ver=2.1.1">
@@ -212,7 +202,7 @@ MangoDisk는 자체 정리 규칙을 관리합니다. 서드파티 프로젝트�
     </td>
     <td width="50%" align="center">
       <strong>중복 파일 정리</strong><br>
-      <sub>복사본을 하나 이상 남기면서 완전히 동일한 중복 파일을 안전하게 제거합니다</sub><br><br>
+      <sub>내용이 같은 파일을 정리하고 그룹마다 복사본을 하나 이상 남기기</sub><br><br>
       <a href="https://assets.mangodisk.app/images/screenshots/en/light-03-duplicate-cleanup.jpg?ver=2.1.1" target="_blank" rel="noopener noreferrer">
         <picture>
           <source media="(prefers-color-scheme: dark)" srcset="https://assets.mangodisk.app/images/screenshots/en/dark-03-duplicate-cleanup.jpg?ver=2.1.1">
@@ -225,7 +215,7 @@ MangoDisk는 자체 정리 규칙을 관리합니다. 서드파티 프로젝트�
   <tr>
     <td width="50%" align="center">
       <strong>시작 항목 관리</strong><br>
-      <sub>불필요한 시작 프로그램을 줄여 더 빠른 로그인과 더 적은 백그라운드 활동을 만듭니다</sub><br><br>
+      <sub>불필요한 자동 시작 항목 끄기</sub><br><br>
       <a href="https://assets.mangodisk.app/images/screenshots/en/light-06-startup-items.jpg?ver=2.1.1" target="_blank" rel="noopener noreferrer">
         <picture>
           <source media="(prefers-color-scheme: dark)" srcset="https://assets.mangodisk.app/images/screenshots/en/dark-06-startup-items.jpg?ver=2.1.1">
@@ -236,7 +226,7 @@ MangoDisk는 자체 정리 규칙을 관리합니다. 서드파티 프로젝트�
     </td>
     <td width="50%" align="center">
       <strong>앱 제거 및 정리</strong><br>
-      <sub>앱을 제거하고 관련 잔여 파일까지 지워 더 많은 공간을 회수합니다</sub><br><br>
+      <sub>앱과 함께 남은 파일 정리</sub><br><br>
       <a href="https://assets.mangodisk.app/images/screenshots/en/light-04-app-uninstaller.jpg?ver=2.1.1" target="_blank" rel="noopener noreferrer">
         <picture>
           <source media="(prefers-color-scheme: dark)" srcset="https://assets.mangodisk.app/images/screenshots/en/dark-04-app-uninstaller.jpg?ver=2.1.1">
@@ -249,7 +239,7 @@ MangoDisk는 자체 정리 규칙을 관리합니다. 서드파티 프로젝트�
   <tr>
     <td width="50%" align="center">
       <strong>시스템 최적화</strong><br>
-      <sub>성능, 개인정보 보호, 일상적인 사용성을 한 번의 클릭으로 최적화합니다</sub><br><br>
+      <sub>성능과 개인정보 보호, 평소 사용 방식에 맞게 시스템 설정 조정</sub><br><br>
       <a href="https://assets.mangodisk.app/images/screenshots/en/light-07-system-optimization.jpg?ver=2.1.1" target="_blank" rel="noopener noreferrer">
         <picture>
           <source media="(prefers-color-scheme: dark)" srcset="https://assets.mangodisk.app/images/screenshots/en/dark-07-system-optimization.jpg?ver=2.1.1">
@@ -260,7 +250,7 @@ MangoDisk는 자체 정리 규칙을 관리합니다. 서드파티 프로젝트�
     </td>
     <td width="50%" align="center">
       <strong>시스템 유지 관리</strong><br>
-      <sub>흔한 시스템 문제를 빠르게 고쳐 컴퓨터를 정상으로 되돌립니다</sub><br><br>
+      <sub>자주 발생하는 시스템 문제 해결</sub><br><br>
       <a href="https://assets.mangodisk.app/images/screenshots/en/light-08-system-maintenance.jpg?ver=2.1.1" target="_blank" rel="noopener noreferrer">
         <picture>
           <source media="(prefers-color-scheme: dark)" srcset="https://assets.mangodisk.app/images/screenshots/en/dark-08-system-maintenance.jpg?ver=2.1.1">
@@ -273,7 +263,7 @@ MangoDisk는 자체 정리 규칙을 관리합니다. 서드파티 프로젝트�
   <tr>
     <td width="50%" align="center">
       <strong>개인정보 정리</strong><br>
-      <sub>활동 흔적을 덜 남기고 일상적인 사용을 더 비공개로 유지합니다</sub><br><br>
+      <sub>브라우저, 앱, 시스템에 남은 사용 흔적 지우기</sub><br><br>
       <a href="https://assets.mangodisk.app/images/screenshots/en/light-09-privacy-cleanup.jpg?ver=2.1.1" target="_blank" rel="noopener noreferrer">
         <picture>
           <source media="(prefers-color-scheme: dark)" srcset="https://assets.mangodisk.app/images/screenshots/en/dark-09-privacy-cleanup.jpg?ver=2.1.1">
@@ -289,9 +279,9 @@ MangoDisk는 자체 정리 규칙을 관리합니다. 서드파티 프로젝트�
 
 > [!CAUTION]
 >
-> 1. 정리, 영구 삭제, 앱 제거 후에는 복구가 불가능할 수 있습니다. 실행 전에 선택한 내용을 확인하고 중요한 데이터는 안전하게 백업해 두세요.
-> 2. 시스템 유지 관리 작업을 실행하거나 시작 항목 또는 시스템 설정을 변경하기 전에 해당 항목의 용도와 영향을 확인하세요.
-> 3. 일부 시스템 최적화는 보안, 개인정보 보호, 배터리 사용 시간, 시스템 업데이트 방식에 영향을 줄 수 있습니다.
+> 1. 정리, 영구 삭제, 앱 제거는 되돌리지 못할 수 있습니다. 실행 전에 선택한 항목을 확인하고 중요한 데이터는 백업하세요.
+> 2. 시스템 유지 관리를 실행하거나 시작 항목 또는 시스템 설정을 변경하기 전에 용도와 영향을 확인하세요.
+> 3. 일부 시스템 최적화는 보안, 개인정보 보호, 배터리 사용 시간 또는 시스템 업데이트에 영향을 줄 수 있습니다.
 
 ## 데스크톱 버전
 
@@ -352,7 +342,7 @@ curl -fsSL https://get.mangodisk.app/linux | bash
 
 ## 명령줄 버전(CLI)
 
-터미널에서 사용하거나 스크립트에 통합할 수 있으며, 데스크톱 버전과 동일한 안전 중심의 정리 엔진을 사용합니다.
+터미널이나 스크립트에서 사용할 수 있습니다. 데스크톱 버전과 같은 정리 엔진을 사용합니다.
 
 ### macOS
 
@@ -404,7 +394,7 @@ mangodisk clean --apply --selection all --dry-run
 mangodisk clean --format json --no-progress
 ```
 
-`mangodisk clean`은 기본적으로 스캔만 하며 파일을 수정하지 않습니다. 비대화형 환경에서 정리를 실행하려면 `--yes`를 함께 넘겨 명시적으로 확인해야 합니다. 사용 가능한 모든 옵션은 다음 명령으로 확인하세요:
+`mangodisk clean`은 기본적으로 읽기 전용으로 스캔합니다. 대화형 입력 없이 정리하려면 `--yes`를 지정해 실행을 확인하세요. 전체 옵션은 다음 명령으로 확인할 수 있습니다.
 
 ```sh
 mangodisk clean --help
@@ -448,13 +438,17 @@ pnpm tauri:build
 pnpm cli:build
 ```
 
-로컬 빌드에는 공식 MangoDisk 릴리스가 제공하는 서명, 공증, 업데이트 메타데이터가 포함되지 않습니다. 로컬 개발과 검증 용도로만 사용하세요.
+로컬 빌드는 개발과 검증에 사용하세요. 서명, 공증, 업데이트 메타데이터는 공식 배포 과정에서 제공됩니다.
+
+## MangoDisk 후원하기
+
+MangoDisk는 광고 없는 무료 오픈 소스 앱입니다. GPL-3.0에 따라 개인 및 상업 용도로 핵심 기능을 무료로 이용할 수 있습니다. 개발을 후원하고 공식 클라우드 AI를 이용하고 싶다면 [후원 안내](https://mangodisk.app/supporter)를 확인하세요.
 
 ## 기여하기
 
 이슈, 정리 규칙, 수정, 새 기능 모두 환영합니다. 시작하기 전에 [`CONTRIBUTING.md`](CONTRIBUTING.md)와 [`AGENTS.md`](AGENTS.md)를 읽어 주세요.
 
-일반적인 정리 범위는 빌드 시 검증되는 선언형 TOML 규칙을 사용해야 합니다. 규칙 스키마, 안전 제약, 검증 방법은 [`src-tauri/crates/mangodisk-core/rules/README.md`](src-tauri/crates/mangodisk-core/rules/README.md)를 참고하세요.
+일반적인 정리 항목은 빌드 시 검증되는 선언형 TOML 규칙으로 추가하세요. 규칙 스키마, 안전 제약, 검증 방법은 [`src-tauri/crates/mangodisk-core/rules/README.md`](src-tauri/crates/mangodisk-core/rules/README.md)를 참고하세요.
 
 변경 사항을 제출하기 전에 최소한 다음을 실행하세요:
 
