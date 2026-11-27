@@ -289,7 +289,7 @@ mod tests {
         };
         for locale in [
             "en-US", "zh-CN", "zh-TW", "ja-JP", "ko-KR", "de-DE", "es-ES", "fr-FR", "pt-BR",
-            "ru-RU", "tr-TR",
+            "ru-RU", "tr-TR", "uk-UA",
         ] {
             let label = super::super::labels::Labels::for_locale(locale)
                 .text("frequencyIdle")

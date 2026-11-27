@@ -4,7 +4,7 @@ describe('network country names', () => {
   it('localizes country names without flags', () => {
     expect(networkCountryLabel('SG', 'zh-CN')).toBe('SG · 新加坡');
     expect(networkCountryLabel('SG', 'en-US')).toBe('SG · Singapore');
-    for (const locale of ['zh-TW', 'de-DE', 'es-ES', 'fr-FR', 'ja-JP', 'ko-KR', 'pt-BR', 'ru-RU', 'tr-TR']) {
+    for (const locale of ['zh-TW', 'de-DE', 'es-ES', 'fr-FR', 'ja-JP', 'ko-KR', 'pt-BR', 'ru-RU', 'tr-TR', 'uk-UA']) {
       expect(networkCountryLabel('CN', locale)).toMatch(/^CN · .+/);
     }
   });

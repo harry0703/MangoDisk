@@ -196,7 +196,7 @@ mod tests {
         use mangodisk_platform::system_resources::cpu::details::CpuFrequencyActivity;
         for locale in [
             "en-US", "zh-CN", "zh-TW", "ja-JP", "ko-KR", "de-DE", "es-ES", "fr-FR", "pt-BR",
-            "ru-RU", "tr-TR",
+            "ru-RU", "tr-TR", "uk-UA",
         ] {
             let labels = Labels::for_locale(locale);
             let mut values = readings();
@@ -243,7 +243,7 @@ mod tests {
     fn frequency_units_and_core_classes_keep_their_meaning() {
         for locale in [
             "en-US", "zh-CN", "zh-TW", "ja-JP", "ko-KR", "de-DE", "es-ES", "fr-FR", "pt-BR",
-            "ru-RU", "tr-TR",
+            "ru-RU", "tr-TR", "uk-UA",
         ] {
             let labels = Labels::for_locale(locale);
             for (id, expected, marker) in [
@@ -301,7 +301,7 @@ mod tests {
         ] {
             for locale in [
                 "en-US", "zh-CN", "zh-TW", "ja-JP", "ko-KR", "de-DE", "es-ES", "fr-FR", "pt-BR",
-                "ru-RU", "tr-TR",
+                "ru-RU", "tr-TR", "uk-UA",
             ] {
                 let labels = Labels::for_locale(locale);
                 let mut values = readings();
